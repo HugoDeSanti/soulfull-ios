@@ -76,8 +76,8 @@ struct RetreatDetailView: View {
                 Spacer()
                 HStack(spacing: 12) {
                     MetaPill(text: retreat.when)
-                    MetaPill(text: "\(retreat.guests) guests")
-                    MetaPill(text: retreat.price)
+                    MetaPill(text: "\(retreat.maxGuests) guests")
+                    MetaPill(text: retreat.priceFormatted)
                 }
                 Text(retreat.blurb)
                     .font(Theme.body(12))

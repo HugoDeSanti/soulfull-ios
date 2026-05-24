@@ -338,7 +338,7 @@ struct HomeView: View {
                     .font(Theme.headline(22))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.2)
-                Text("\(r.days) days · \(r.guests) guests")
+                Text("\(r.durationDays) days · \(r.maxGuests) guests")
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)
             }

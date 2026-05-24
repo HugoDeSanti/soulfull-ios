@@ -1,6 +1,6 @@
 # Soulfull Gatherings — iOS App
 
-SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial aesthetic throughout. All data is currently mock; no backend or network layer exists.
+SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial aesthetic throughout. Backend is Supabase (PostgreSQL). Mock data still exists in `Models.swift` and is used while real Supabase tables are being seeded.
 
 **Minimum deployment target: iOS 18.** Always use the latest Swift and SwiftUI idioms — `@Observable` over `ObservableObject`, `@Environment` over `@EnvironmentObject`, `@State` over `@StateObject`/`@ObservedObject`, typed throws, `NavigationStack` with typed `Route` enums, etc. Do not reach for deprecated patterns for compatibility — there is no older OS to support.
 
@@ -33,6 +33,9 @@ Stage transitions are animated and persisted via `@AppStorage("sg.hasOnboarded")
 ## File Map
 
 ```
+Config/
+└── Secrets.xcconfig                   # Gitignored — Supabase credentials (copy from Secrets.xcconfig.example)
+
 SoulfullGatherings/
 ├── SoulfullGatheringsApp.swift        # @main entry, creates AppState, forces dark mode
 │
@@ -47,8 +50,11 @@ SoulfullGatherings/
 │   ├── Models/
 │   │   └── Models.swift              # All data models + mock data (Retreat, Program, etc.)
 │   ├── DesignSystem/
-│   │   ├── Theme.swift               # Brand colors, gradients, typography helpers
+│   │   ├── Theme.swift               # Brand colors, gradients, typography helpers + Color(hex:)
 │   │   └── Components.swift          # SGPrimaryButton, GlassCard, PhotoBackdrop, TabPlaceholder, etc.
+│   ├── Services/
+│   │   ├── SupabaseConfig.swift      # Reads Supabase URL + anon key from Bundle.main (Info.plist)
+│   │   └── SupabaseService.swift     # Singleton data layer — fetchRetreats/Programs/CommunityCircles
 │   └── Utils/
 │       └── Haptics.swift             # Thin UIKit haptic wrapper (tap/bump/select/success)
 │
@@ -94,6 +100,27 @@ All brand values live in `Theme.swift`. Use `Theme.*` constants — never hardco
 
 **Photo backdrops:** Use `PhotoBackdrop(imageName:blur:darken:)` — handles solid floor, blur, saturation, and vignette.
 
+## Backend
+
+**Supabase** project hosts all content data. The Swift SDK (`import Supabase`) is added via SPM.
+
+**Credentials flow:** `Config/Secrets.xcconfig` → build settings → `Info.plist` (`SupabaseHost`, `SupabaseAnonKey`) → `Bundle.main` → `SupabaseConfig` → `SupabaseService`. Never hardcode credentials in Swift source.
+
+- `Config/Secrets.xcconfig` is gitignored. Copy `Secrets.xcconfig.example` to set up a new machine.
+- `SUPABASE_HOST` stores the host only (e.g. `abc123.supabase.co`) — no `https://` prefix because `//` is a comment delimiter in xcconfig.
+
+**Database tables** (snake_case columns, match DTO `CodingKeys` in `SupabaseService.swift`):
+
+| Table | Key columns |
+|---|---|
+| `retreats` | `id`, `name`, `country`, `date_range`, `days`, `guests`, `price`, `tag`, `blurb`, `image`, `tone_top`, `tone_mid`, `tone_base` |
+| `programs` | `id`, `title`, `lead`, `date_range`, `days`, `image` |
+| `community_circles` | `id`, `title`, `host`, `attendees`, `time_label`, `is_live` |
+
+**Tone colors** are stored in the DB as hex strings (e.g. `#728FA5`) and decoded via `Color(hex:)` (extension on `Color` in `Theme.swift`).
+
+**Adding a new fetch:** add a `Codable` DTO struct (private, inside `SupabaseService.swift`) with a `CodingKeys` mapping snake_case → camelCase and a computed property that returns the app model type. Then add a `func fetch…() async throws -> [T]` method on `SupabaseService`.
+
 ## Key Conventions
 
 - `@MainActor` on all ViewModels.
@@ -107,7 +134,8 @@ All brand values live in `Theme.swift`. Use `Theme.*` constants — never hardco
 
 - **Implemented:** Welcome flow, Onboarding (4 steps + finish), Home dashboard, Retreats stack, Retreat detail.
 - **Placeholder (unbuilt):** Practice tab (Library), Circle tab (Community), You tab (Profile) — each shows a branded empty state (`Features/Practice/`, `Features/Circle/`, `Features/Profile/`).
-- **No backend:** All content is mock data. No networking, auth, or persistence beyond `UserDefaults`.
+- **Backend:** `SupabaseService` is scaffolded. ViewModels still use `Retreat.mock` / `Program.mock` etc. — migration to real Supabase fetches is in progress, starting with the Retreats tab.
+- **No auth:** Supabase Auth not yet wired up. User profile data (onboarding answers) lives only in `UserDefaults`.
 - **No tests:** No test targets exist yet.
 
 ## Resources

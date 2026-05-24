@@ -18,6 +18,9 @@ targets:
   SoulfullGatherings:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
     sources:
       - path: SoulfullGatherings
     info:
@@ -42,6 +45,8 @@ targets:
           - CormorantGaramond-Regular.ttf
           - CormorantGaramond-SemiBold.ttf
           - CormorantGaramond-Italic.ttf
+        SupabaseHost: $(SUPABASE_HOST)
+        SupabaseAnonKey: $(SUPABASE_ANON_KEY)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.soulfullgatherings.app

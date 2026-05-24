@@ -125,7 +125,7 @@ struct RetreatsStackView: View {
                 .kerning(-1.4)
                 .foregroundStyle(.white)
                 .underline(isActive, color: .white)
-            Text("\(r.guests)")
+            Text("\(r.maxGuests)")
                 .font(Theme.body(12, weight: .medium))
                 .baselineOffset(28)
                 .foregroundStyle(isActive ? Color(red: 1, green: 0.82, blue: 0.6) : Color.white.opacity(0.7))

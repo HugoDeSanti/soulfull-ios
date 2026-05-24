@@ -14,93 +14,129 @@ struct Retreat: Identifiable, Hashable {
     let id: String
     let name: String
     let country: String
-    let when: String
-    let days: Int
-    let guests: Int
-    let price: String
+    let startDate: Date
+    let endDate: Date
+    let maxGuests: Int
+    let priceUsd: Int
     let tag: String
     let blurb: String
     /// Asset catalog name for the full-bleed photo.
     let image: String
-    /// Three-stop tone used for the warm corner glow on the stack view.
-    let tone: (top: Color, mid: Color, base: Color)
+
+    /// Three-stop tone keyed by retreat id — see `Retreat.tones`.
+    var tone: (top: Color, mid: Color, base: Color) { Retreat.tones[id] ?? Retreat.fallbackTone }
+
+    /// Formatted date range for display, e.g. "April 18–23" or "Jan 10–Feb 3".
+    var when: String {
+        let cal = Calendar.current
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        if cal.component(.month, from: startDate) == cal.component(.month, from: endDate) {
+            fmt.dateFormat = "MMMM d"
+            let start = fmt.string(from: startDate)
+            fmt.dateFormat = "d"
+            return "\(start)–\(fmt.string(from: endDate))"
+        } else {
+            fmt.dateFormat = "MMM d"
+            return "\(fmt.string(from: startDate))–\(fmt.string(from: endDate))"
+        }
+    }
+
+    var durationDays: Int {
+        Calendar.current.dateComponents([.day], from: startDate, to: endDate).day ?? 0
+    }
+
+    var priceFormatted: String {
+        priceUsd.formatted(.currency(code: "USD").precision(.fractionLength(0)))
+    }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: Retreat, rhs: Retreat) -> Bool { lhs.id == rhs.id }
 }
 
 extension Retreat {
-    static let mock: [Retreat] = [
-        Retreat(
-            id: "mallorca", name: "Mallorca", country: "Spain",
-            when: "April 18–23", days: 5, guests: 14, price: "$4,400",
-            tag: "Hyrox · Recovery · Wellness",
-            blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
-            image: "retreat-mallorca",
-            tone: (Color(red: 0.45, green: 0.62, blue: 0.65),
-                   Color(red: 0.20, green: 0.32, blue: 0.40),
-                   Color(red: 0.06, green: 0.10, blue: 0.14))
-        ),
-        Retreat(
-            id: "kyoto", name: "Kyoto", country: "Japan",
-            when: "May 9–15", days: 6, guests: 10, price: "$6,800",
-            tag: "Meditation",
-            blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
-            image: "retreat-kyoto",
-            tone: (Color(red: 0.78, green: 0.40, blue: 0.22),
-                   Color(red: 0.45, green: 0.22, blue: 0.13),
-                   Color(red: 0.12, green: 0.06, blue: 0.05))
-        ),
-        Retreat(
-            id: "sedona", name: "Sedona", country: "Arizona",
-            when: "June 6–11", days: 5, guests: 12, price: "$4,200",
-            tag: "Hiking · Meditation",
-            blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
-            image: "retreat-sedona",
-            tone: (Color(red: 0.80, green: 0.41, blue: 0.18),
-                   Color(red: 0.48, green: 0.22, blue: 0.10),
-                   Color(red: 0.13, green: 0.06, blue: 0.04))
-        ),
-        Retreat(
-            id: "chamonix", name: "Chamonix", country: "France",
-            when: "February 2–7", days: 5, guests: 12, price: "$5,400",
-            tag: "Ski · Yoga · Wellness",
-            blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
-            image: "retreat-chamonix",
-            tone: (Color(red: 0.60, green: 0.65, blue: 0.72),
-                   Color(red: 0.30, green: 0.36, blue: 0.45),
-                   Color(red: 0.10, green: 0.13, blue: 0.18))
-        ),
-        Retreat(
-            id: "bali", name: "Bali", country: "Indonesia",
-            when: "July 14–20", days: 6, guests: 14, price: "$3,900",
-            tag: "Yoga · Meditation",
-            blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
-            image: "retreat-bali",
-            tone: (Color(red: 0.28, green: 0.52, blue: 0.32),
-                   Color(red: 0.14, green: 0.28, blue: 0.18),
-                   Color(red: 0.04, green: 0.10, blue: 0.06))
-        ),
-        Retreat(
-            id: "lapland", name: "Lapland", country: "Finland",
-            when: "January 10–15", days: 5, guests: 10, price: "$5,800",
-            tag: "Ski · Yoga · Wellness",
-            blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
-            image: "retreat-lapland",
-            tone: (Color(red: 0.38, green: 0.48, blue: 0.62),
-                   Color(red: 0.18, green: 0.24, blue: 0.40),
-                   Color(red: 0.04, green: 0.06, blue: 0.16))
-        ),
-        Retreat(
-            id: "dolomites", name: "Dolomites", country: "Italy",
-            when: "September 8–13", days: 5, guests: 12, price: "$4,600",
-            tag: "Cycling · Recovery · Wellness",
-            blurb: "Alpine passes by bike, recovery in the spa, long Italian dinners at altitude.",
-            image: "retreat-dolomites",
-            tone: (Color(red: 0.42, green: 0.56, blue: 0.32),
-                   Color(red: 0.20, green: 0.30, blue: 0.14),
-                   Color(red: 0.07, green: 0.10, blue: 0.05))
-        )
+    static let mock: [Retreat] = {
+        func d(_ month: Int, _ day: Int, year: Int = 2026) -> Date {
+            Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
+        }
+        return [
+            Retreat(id: "mallorca",  name: "Mallorca",  country: "Spain",
+                    startDate: d(4, 18),            endDate: d(4, 23),
+                    maxGuests: 14, priceUsd: 4400,
+                    tag: "Hyrox · Recovery · Wellness",
+                    blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
+                    image: "retreat-mallorca"),
+            Retreat(id: "kyoto",     name: "Kyoto",     country: "Japan",
+                    startDate: d(5, 9),             endDate: d(5, 15),
+                    maxGuests: 10, priceUsd: 6800,
+                    tag: "Meditation",
+                    blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
+                    image: "retreat-kyoto"),
+            Retreat(id: "sedona",    name: "Sedona",    country: "Arizona",
+                    startDate: d(6, 6),             endDate: d(6, 11),
+                    maxGuests: 12, priceUsd: 4200,
+                    tag: "Hiking · Meditation",
+                    blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
+                    image: "retreat-sedona"),
+            Retreat(id: "chamonix",  name: "Chamonix",  country: "France",
+                    startDate: d(2, 2, year: 2027), endDate: d(2, 7, year: 2027),
+                    maxGuests: 12, priceUsd: 5400,
+                    tag: "Ski · Yoga · Wellness",
+                    blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
+                    image: "retreat-chamonix"),
+            Retreat(id: "bali",      name: "Bali",      country: "Indonesia",
+                    startDate: d(7, 14),            endDate: d(7, 20),
+                    maxGuests: 14, priceUsd: 3900,
+                    tag: "Yoga · Meditation",
+                    blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
+                    image: "retreat-bali"),
+            Retreat(id: "lapland",   name: "Lapland",   country: "Finland",
+                    startDate: d(1, 10, year: 2027), endDate: d(1, 15, year: 2027),
+                    maxGuests: 10, priceUsd: 5800,
+                    tag: "Ski · Yoga · Wellness",
+                    blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
+                    image: "retreat-lapland"),
+            Retreat(id: "dolomites", name: "Dolomites", country: "Italy",
+                    startDate: d(9, 8),             endDate: d(9, 13),
+                    maxGuests: 12, priceUsd: 4600,
+                    tag: "Cycling · Recovery · Wellness",
+                    blurb: "Alpine passes by bike, recovery in the spa, long Italian dinners at altitude.",
+                    image: "retreat-dolomites"),
+        ]
+    }()
+}
+
+// MARK: - Visual tones
+
+extension Retreat {
+    static let fallbackTone: (top: Color, mid: Color, base: Color) = (
+        Color(red: 0.38, green: 0.48, blue: 0.62),
+        Color(red: 0.18, green: 0.24, blue: 0.40),
+        Color(red: 0.04, green: 0.06, blue: 0.16)
+    )
+
+    static let tones: [String: (top: Color, mid: Color, base: Color)] = [
+        "mallorca":  (Color(red: 0.45, green: 0.62, blue: 0.65),
+                      Color(red: 0.20, green: 0.32, blue: 0.40),
+                      Color(red: 0.06, green: 0.10, blue: 0.14)),
+        "kyoto":     (Color(red: 0.78, green: 0.40, blue: 0.22),
+                      Color(red: 0.45, green: 0.22, blue: 0.13),
+                      Color(red: 0.12, green: 0.06, blue: 0.05)),
+        "sedona":    (Color(red: 0.80, green: 0.41, blue: 0.18),
+                      Color(red: 0.48, green: 0.22, blue: 0.10),
+                      Color(red: 0.13, green: 0.06, blue: 0.04)),
+        "chamonix":  (Color(red: 0.60, green: 0.65, blue: 0.72),
+                      Color(red: 0.30, green: 0.36, blue: 0.45),
+                      Color(red: 0.10, green: 0.13, blue: 0.18)),
+        "bali":      (Color(red: 0.28, green: 0.52, blue: 0.32),
+                      Color(red: 0.14, green: 0.28, blue: 0.18),
+                      Color(red: 0.04, green: 0.10, blue: 0.06)),
+        "lapland":   (Color(red: 0.38, green: 0.48, blue: 0.62),
+                      Color(red: 0.18, green: 0.24, blue: 0.40),
+                      Color(red: 0.04, green: 0.06, blue: 0.16)),
+        "dolomites": (Color(red: 0.42, green: 0.56, blue: 0.32),
+                      Color(red: 0.20, green: 0.30, blue: 0.14),
+                      Color(red: 0.07, green: 0.10, blue: 0.05)),
     ]
 }
 
