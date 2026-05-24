@@ -51,6 +51,9 @@ struct WelcomeView: View {
                     .transition(.opacity)
             }
         }
+        .background {
+            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62)
+        }
         .animation(.easeInOut(duration: 0.4), value: step)
         .onAppear {
             // Auto-advance from splash after one breath cycle.
@@ -65,8 +68,6 @@ struct WelcomeView: View {
 
     private var splash: some View {
         ZStack {
-            Theme.splash.ignoresSafeArea()
-
             // Halo
             Circle()
                 .fill(
@@ -116,97 +117,92 @@ struct WelcomeView: View {
         let isLast = step == slides.count
         let slide = slides[step - 1]
 
-        return ZStack {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62)
-
-            VStack(alignment: .leading, spacing: 0) {
-                // Top bar
-                HStack {
-                    Image("soulfull-logo-white")
-                        .resizable().scaledToFit()
-                        .frame(width: 56, height: 56)
-                        .opacity(0.88)
-                    Spacer()
-                    if !isLast {
-                        Button {
-                            Haptics.tap()
-                            app.beginOnboarding()
-                        } label: {
-                            Text("SKIP")
-                                .font(.system(size: 12))
-                                .tracking(2)
-                                .foregroundStyle(Color.white.opacity(0.6))
-                                .padding(6)
-                        }
-                        .buttonStyle(.plain)
+        return VStack(alignment: .leading, spacing: 0) {
+            // Top bar
+            HStack {
+                Image("soulfull-logo-white")
+                    .resizable().scaledToFit()
+                    .frame(width: 56, height: 56)
+                    .opacity(0.88)
+                Spacer()
+                if !isLast {
+                    Button {
+                        Haptics.tap()
+                        app.beginOnboarding()
+                    } label: {
+                        Text("SKIP")
+                            .font(.system(size: 12))
+                            .tracking(2)
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .padding(6)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-
-                Spacer(minLength: 0)
-
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(slide.eyebrow.uppercased())
-                        .font(.system(size: 9))
-                        .tracking(3)
-                        .foregroundStyle(Color(white: 0.95).opacity(0.7))
-
-                    twoTone(first: slide.firstHalf, accent: slide.accentHalf)
-
-                    Text(slide.body)
-                        .font(Theme.body(13))
-                        .foregroundStyle(Color.white.opacity(0.66))
-                        .lineSpacing(3)
-                        .frame(maxWidth: 340, alignment: .leading)
-
-                    // Dots
-                    HStack(spacing: 8) {
-                        ForEach(0..<slides.count, id: \.self) { i in
-                            Capsule()
-                                .fill(i + 1 == step ? Color.white : Color.white.opacity(0.24))
-                                .frame(width: i + 1 == step ? 26 : 8, height: 8)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: step)
-                                .onTapGesture {
-                                    Haptics.select()
-                                    step = i + 1
-                                }
-                        }
-                    }
-                    .padding(.top, 6)
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, 30)
-                .id(slide.id) // re-animate on slide change
-                .transition(.opacity)
-
-                Spacer(minLength: 44)
-
-                VStack(spacing: 4) {
-                    SGPrimaryButton(title: isLast ? "Begin" : "Next") {
-                        if isLast {
-                            app.beginOnboarding()
-                        } else {
-                            step += 1
-                        }
-                    }
-                    if isLast {
-                        Button {
-                            Haptics.tap()
-                            app.beginOnboarding()
-                        } label: {
-                            Text("I already have an account")
-                                .font(Theme.body(13))
-                                .foregroundStyle(Color.white.opacity(0.6))
-                                .padding(12)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 30)
-                .padding(.bottom, 32)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+
+            Spacer()
+
+            VStack(alignment: .leading, spacing: 18) {
+                Text(slide.eyebrow.uppercased())
+                    .font(.system(size: 9))
+                    .tracking(3)
+                    .foregroundStyle(Color(white: 0.95).opacity(0.7))
+
+                twoTone(first: slide.firstHalf, accent: slide.accentHalf)
+
+                Text(slide.body)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Color.white.opacity(0.66))
+                    .lineSpacing(3)
+
+                // Dots
+                HStack(spacing: 8) {
+                    ForEach(0..<slides.count, id: \.self) { i in
+                        Capsule()
+                            .fill(i + 1 == step ? Color.white : Color.white.opacity(0.24))
+                            .frame(width: i + 1 == step ? 26 : 8, height: 8)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: step)
+                            .onTapGesture {
+                                Haptics.select()
+                                step = i + 1
+                            }
+                    }
+                }
+                .padding(.top, 6)
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 30)
+            .id(slide.id)
+            .transition(.opacity)
+
+            VStack(spacing: 4) {
+                SGPrimaryButton(title: isLast ? "Begin" : "Next") {
+                    if isLast {
+                        app.beginOnboarding()
+                    } else {
+                        step += 1
+                    }
+                }
+                if isLast {
+                    Button {
+                        Haptics.tap()
+                        app.beginOnboarding()
+                    } label: {
+                        Text("I already have an account")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .padding(12)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 30)
+            .padding(.top, 32)
+            .padding(.bottom, 32)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func twoTone(first: String, accent: String) -> some View {
