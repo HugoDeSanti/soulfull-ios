@@ -182,104 +182,116 @@ private struct NameStep: View {
 
 private struct IntentionStep: View {
     let vm: OnboardingViewModel
-    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible())]
 
     var body: some View {
         let mainOpts = IntentionOption.all.filter { !$0.isSubtle }
         let subtleOpts = IntentionOption.all.filter { $0.isSubtle }
 
-        VStack(alignment: .leading, spacing: 18) {
-            eyebrow("Select all that apply")
-            headline(vm.name.isEmpty
-                     ? "what's calling you here?"
-                     : "\(vm.name), what's calling you here?")
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                eyebrow("Select all that apply")
+                headline(vm.name.isEmpty
+                         ? "what's calling you here?"
+                         : "\(vm.name), what's calling you here?")
 
-            VStack(spacing: 12) {
-                LazyVGrid(columns: cols, spacing: 12) {
-                    ForEach(Array(mainOpts.enumerated()), id: \.element.id) { idx, opt in
+                VStack(spacing: 12) {
+                    LazyVGrid(columns: cols, spacing: 12) {
+                        ForEach(Array(mainOpts.enumerated()), id: \.element.id) { idx, opt in
+                            OptionCard(
+                                index: idx + 1,
+                                label: opt.label,
+                                selected: vm.intentions.contains(opt.id),
+                                subtle: false
+                            ) { vm.toggleIntention(opt.id) }
+                        }
+                    }
+                    ForEach(subtleOpts) { opt in
                         OptionCard(
-                            index: idx + 1,
+                            index: nil,
                             label: opt.label,
                             selected: vm.intentions.contains(opt.id),
-                            subtle: false
+                            subtle: true
                         ) { vm.toggleIntention(opt.id) }
                     }
                 }
-                ForEach(subtleOpts) { opt in
-                    OptionCard(
-                        index: nil,
-                        label: opt.label,
-                        selected: vm.intentions.contains(opt.id),
-                        subtle: true
-                    ) { vm.toggleIntention(opt.id) }
-                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
-            Spacer()
+            .padding(.horizontal, 8)
+            .containerRelativeFrame(.horizontal, alignment: .leading)
         }
+        .clipped()
     }
 }
 
 private struct BodyStateStep: View {
     let vm: OnboardingViewModel
-    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible())]
 
     var body: some View {
         let mainOpts = BodyStateOption.all.filter { !$0.isSubtle }
         let subtleOpts = BodyStateOption.all.filter { $0.isSubtle }
 
-        VStack(alignment: .leading, spacing: 18) {
-            eyebrow("Choose one")
-            headline("how is your nervous system today?")
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                eyebrow("Choose one")
+                headline("how is your nervous system today?")
 
-            VStack(spacing: 12) {
-                LazyVGrid(columns: cols, spacing: 12) {
-                    ForEach(Array(mainOpts.enumerated()), id: \.element.id) { idx, opt in
+                VStack(spacing: 12) {
+                    LazyVGrid(columns: cols, spacing: 12) {
+                        ForEach(Array(mainOpts.enumerated()), id: \.element.id) { idx, opt in
+                            OptionCard(
+                                index: idx + 1,
+                                label: opt.label,
+                                selected: vm.bodyState == opt.id,
+                                subtle: false
+                            ) { vm.pickState(opt.id) }
+                        }
+                    }
+                    ForEach(subtleOpts) { opt in
                         OptionCard(
-                            index: idx + 1,
+                            index: nil,
                             label: opt.label,
                             selected: vm.bodyState == opt.id,
-                            subtle: false
+                            subtle: true
                         ) { vm.pickState(opt.id) }
                     }
                 }
-                ForEach(subtleOpts) { opt in
-                    OptionCard(
-                        index: nil,
-                        label: opt.label,
-                        selected: vm.bodyState == opt.id,
-                        subtle: true
-                    ) { vm.pickState(opt.id) }
-                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
-            Spacer()
+            .padding(.horizontal, 8)
+            .containerRelativeFrame(.horizontal, alignment: .leading)
         }
+        .clipped()
     }
 }
 
 private struct FrequencyStep: View {
     let vm: OnboardingViewModel
-    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    private let cols = [GridItem(.flexible(), spacing: 12), GridItem(.flexible())]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            eyebrow("Choose one")
-            headline("and, what rhythm feels right?")
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                eyebrow("Choose one")
+                headline("and, what rhythm feels right?")
 
-            LazyVGrid(columns: cols, spacing: 12) {
-                ForEach(Array(FrequencyOption.all.enumerated()), id: \.element.id) { idx, opt in
-                    OptionCard(
-                        index: idx + 1,
-                        label: opt.label,
-                        selected: vm.frequency == opt.id,
-                        subtle: false
-                    ) { vm.pickFrequency(opt.id) }
+                LazyVGrid(columns: cols, spacing: 12) {
+                    ForEach(Array(FrequencyOption.all.enumerated()), id: \.element.id) { idx, opt in
+                        OptionCard(
+                            index: idx + 1,
+                            label: opt.label,
+                            selected: vm.frequency == opt.id,
+                            subtle: false
+                        ) { vm.pickFrequency(opt.id) }
+                    }
                 }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
-            Spacer()
+            .padding(.horizontal, 8)
+            .containerRelativeFrame(.horizontal, alignment: .leading)
         }
+        .clipped()
     }
 }
 
@@ -351,21 +363,6 @@ private struct OptionCard: View {
     var body: some View {
         Button(action: onTap) {
             ZStack(alignment: subtle ? .center : .topLeading) {
-                if selected && !subtle {
-                    // Honey glow blob in the lower-right of the card.
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Theme.honey.opacity(0.55), Theme.honey.opacity(0.18), .clear],
-                                center: .center, startRadius: 6, endRadius: 90
-                            )
-                        )
-                        .blur(radius: 8)
-                        .frame(width: 220, height: 220)
-                        .offset(x: 60, y: 50)
-                        .allowsHitTesting(false)
-                }
-
                 VStack(alignment: .leading, spacing: 0) {
                     if let idx = index {
                         Text(String(format: "%02d", idx))
@@ -385,15 +382,30 @@ private struct OptionCard: View {
                 .padding(subtle ? 18 : 16)
             }
             .frame(minHeight: subtle ? 64 : 108)
-            .background(
-                RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
-                    .fill(Color.white.opacity(selected ? 0.22 : 0.10))
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
-            )
-            .overlay(
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
+                        .fill(Color.white.opacity(selected ? 0.22 : 0.10))
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
+                    if selected && !subtle {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    colors: [Theme.honey.opacity(0.55), Theme.honey.opacity(0.18), .clear],
+                                    center: .center, startRadius: 6, endRadius: 90
+                                )
+                            )
+                            .blur(radius: 8)
+                            .frame(width: 220, height: 220)
+                            .offset(x: 60, y: 50)
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
+            .overlay {
                 RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
                     .strokeBorder(Color.white.opacity(selected ? 0.55 : 0.20), lineWidth: 1)
-            )
+            }
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selected)
         }
         .buttonStyle(.plain)
