@@ -28,40 +28,49 @@ welcome → onboarding → main
 ```
 Stage transitions are animated and persisted via `@AppStorage("sg.hasOnboarded")`.
 
-**Navigation within Main:** `MainTabView` hosts four tabs. The Home tab wraps its content in a `NavigationStack` with typed `Route` enum values so `RetreatsStackView` and `RetreatDetailView` push correctly with native swipe-back.
+**Navigation within Main:** `App/MainTabView.swift` hosts four tabs. The Home tab wraps its content in a `NavigationStack` with typed `Route` enum values so `RetreatsStackView` and `RetreatDetailView` push correctly with native swipe-back.
 
 ## File Map
 
 ```
 SoulfullGatherings/
-├── SoulfullGatheringsApp.swift   # @main entry, creates AppState, forces dark mode
-├── AppState.swift                # Global state: stage routing + persisted user prefs
-├── RootView.swift                # Stage switcher (welcome/onboarding/main)
-├── Models.swift                  # All data models + mock data (Retreat, Program, etc.)
-├── Theme.swift                   # Brand colors, gradients, typography helpers
-├── Components.swift              # Shared UI: SGPrimaryButton, GlassCard, PhotoBackdrop, etc.
-├── Haptics.swift                 # Thin UIKit haptic wrapper (tap/bump/select/success)
-├── Placeholders.swift            # Empty states for Practice, Circle, Profile tabs
+├── SoulfullGatheringsApp.swift        # @main entry, creates AppState, forces dark mode
 │
-├── Welcome/
-│   └── WelcomeView.swift         # Splash + 3 explainer slides → routes to onboarding
+├── App/                               # App-level: global state, routing, navigation shell
+│   ├── AppState.swift                 # Stage routing (welcome → onboarding → main)
+│   ├── AppSettings.swift             # Persisted UserDefaults values (@Observable)
+│   ├── RootView.swift                # Stage switcher (welcome/onboarding/main)
+│   ├── MainTabView.swift             # Tab container + HomeRoot NavigationStack
+│   └── BottomNav.swift              # Custom floating glass tab bar
 │
-├── Onboarding/
-│   ├── OnboardingView.swift      # 4-step flow + finish screen; all step sub-views inline
-│   └── OnboardingViewModel.swift # Step state, validation, next/back, commit to AppState
+├── Core/                              # Shared foundational code
+│   ├── Models/
+│   │   └── Models.swift              # All data models + mock data (Retreat, Program, etc.)
+│   ├── DesignSystem/
+│   │   ├── Theme.swift               # Brand colors, gradients, typography helpers
+│   │   └── Components.swift          # SGPrimaryButton, GlassCard, PhotoBackdrop, TabPlaceholder, etc.
+│   └── Utils/
+│       └── Haptics.swift             # Thin UIKit haptic wrapper (tap/bump/select/success)
 │
-├── Home/
-│   ├── HomeView.swift            # Main dashboard: greeting, moods, ritual, retreats, circles
-│   └── HomeViewModel.swift      # Greeting logic, mood selection, mock data surfaces
-│
-├── Retreats/
-│   ├── RetreatsStackView.swift   # Foodle-style scrolling name stack with crossfading backdrop
-│   ├── RetreatsViewModel.swift   # Active retreat index + haptics
-│   └── RetreatDetailView.swift   # Editorial full-bleed detail + Reserve button
-│
-└── Main/
-    ├── MainTabView.swift         # Tab container + HomeRoot NavigationStack
-    └── BottomNav.swift           # Custom floating glass tab bar
+└── Features/                          # One folder per feature/tab; each owns its views + VMs
+    ├── Welcome/
+    │   └── WelcomeView.swift          # Splash + 3 explainer slides → routes to onboarding
+    ├── Onboarding/
+    │   ├── OnboardingView.swift       # 4-step flow + finish screen; all step sub-views inline
+    │   └── OnboardingViewModel.swift  # Step state, validation, next/back, commit to AppState
+    ├── Home/
+    │   ├── HomeView.swift             # Main dashboard: greeting, moods, ritual, retreats, circles
+    │   └── HomeViewModel.swift        # Greeting logic, mood selection, mock data surfaces
+    ├── Retreats/
+    │   ├── RetreatsStackView.swift    # Scrolling name stack with crossfading backdrop
+    │   ├── RetreatsViewModel.swift    # Active retreat index + haptics
+    │   └── RetreatDetailView.swift    # Editorial full-bleed detail + Reserve button
+    ├── Practice/
+    │   └── LibraryPlaceholder.swift   # Empty state for Practice tab (Wellness Library)
+    ├── Circle/
+    │   └── CommunityPlaceholder.swift # Empty state for Circle tab (Community)
+    └── Profile/
+        └── ProfilePlaceholder.swift   # Empty state for Profile tab (You)
 ```
 
 ## Design System
@@ -97,7 +106,7 @@ All brand values live in `Theme.swift`. Use `Theme.*` constants — never hardco
 ## Current State
 
 - **Implemented:** Welcome flow, Onboarding (4 steps + finish), Home dashboard, Retreats stack, Retreat detail.
-- **Placeholder (unbuilt):** Practice tab (Library), Circle tab (Community), You tab (Profile) — each shows a branded empty state.
+- **Placeholder (unbuilt):** Practice tab (Library), Circle tab (Community), You tab (Profile) — each shows a branded empty state (`Features/Practice/`, `Features/Circle/`, `Features/Profile/`).
 - **No backend:** All content is mock data. No networking, auth, or persistence beyond `UserDefaults`.
 - **No tests:** No test targets exist yet.
 

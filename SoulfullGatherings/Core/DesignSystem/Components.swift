@@ -159,3 +159,45 @@ struct CircleIconButton: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - Tab placeholder (shared empty-state shell for unbuilt tabs)
+
+struct TabPlaceholder: View {
+    let eyebrow: String
+    let headline: String
+    let message: String
+
+    var body: some View {
+        ZStack {
+            PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
+
+            VStack(spacing: 18) {
+                Spacer()
+                Image("soulfull-logo-white")
+                    .resizable().scaledToFit()
+                    .frame(width: 72, height: 72)
+                    .opacity(0.85)
+                Text(eyebrow.uppercased())
+                    .font(Theme.eyebrow(11))
+                    .tracking(3)
+                    .foregroundStyle(Theme.muted)
+                Text(headline)
+                    .font(Theme.headline(34))
+                    .foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .kerning(-0.3)
+                    .frame(maxWidth: 320)
+                Text(message)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .frame(maxWidth: 320)
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 100)
+        }
+    }
+}
