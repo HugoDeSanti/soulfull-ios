@@ -43,6 +43,8 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
+            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62)
+
             if step == 0 {
                 splash
                     .transition(.opacity)
@@ -51,15 +53,15 @@ struct WelcomeView: View {
                     .transition(.opacity)
             }
         }
-        .background {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if step == 0 {
+                Haptics.tap()
+                step = 1
+            }
         }
         .animation(.easeInOut(duration: 0.4), value: step)
         .onAppear {
-            // Auto-advance from splash after one breath cycle.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5.5) {
-                if step == 0 { step = 1 }
-            }
             splashBreathing = true
         }
     }
@@ -125,19 +127,6 @@ struct WelcomeView: View {
                     .frame(width: 56, height: 56)
                     .opacity(0.88)
                 Spacer()
-                if !isLast {
-                    Button {
-                        Haptics.tap()
-                        app.beginOnboarding()
-                    } label: {
-                        Text("SKIP")
-                            .font(.system(size: 12))
-                            .tracking(2)
-                            .foregroundStyle(Color.white.opacity(0.6))
-                            .padding(6)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -203,6 +192,19 @@ struct WelcomeView: View {
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .gesture(
+            DragGesture(minimumDistance: 40)
+                .onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    if value.translation.width < 0, step < slides.count {
+                        Haptics.select()
+                        step += 1
+                    } else if value.translation.width > 0, step > 1 {
+                        Haptics.select()
+                        step -= 1
+                    }
+                }
+        )
     }
 
     private func twoTone(first: String, accent: String) -> some View {
