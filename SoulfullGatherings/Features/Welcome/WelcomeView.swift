@@ -117,10 +117,9 @@ struct WelcomeView: View {
 
     @ViewBuilder
     private var slideStack: some View {
-        let idx = step - 1
-        guard idx >= 0, idx < slides.count else { return }
+        if step > 0, step - 1 < slides.count {
         let isLast = step == slides.count
-        let slide = slides[idx]
+        let slide = slides[step - 1]
 
         VStack(alignment: .leading, spacing: 0) {
             // Top bar
@@ -208,6 +207,7 @@ struct WelcomeView: View {
                     }
                 }
         )
+        } // end if step > 0
     }
 
     private func twoTone(first: String, accent: String) -> some View {

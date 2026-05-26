@@ -2,8 +2,8 @@
 //  Models.swift
 //  Soulfull Gatherings
 //
-//  Data models + mock content. All structs are value types, Identifiable,
-//  and Hashable so they slot into NavigationStack value destinations.
+//  Data models. All structs are value types, Identifiable, and Hashable so
+//  they slot into NavigationStack value destinations.
 //
 
 import SwiftUI
@@ -55,79 +55,6 @@ struct Retreat: Identifiable, Hashable {
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: Retreat, rhs: Retreat) -> Bool { lhs.id == rhs.id }
-}
-
-extension Retreat {
-    static let mock: [Retreat] = {
-        func d(_ month: Int, _ day: Int, year: Int = 2026) -> Date {
-            Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
-        }
-        return [
-            Retreat(id: 1, name: "Mallorca", country: "Spain",
-                    startDate: d(4, 18), endDate: d(4, 23),
-                    maxGuests: 14, priceUsd: 4400,
-                    tags: ["Hyrox", "Recovery", "Wellness"],
-                    blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
-                    imageUrl: "retreat-mallorca",
-                    toneTop:  Color(red: 0.45, green: 0.62, blue: 0.65),
-                    toneMid:  Color(red: 0.20, green: 0.32, blue: 0.40),
-                    toneBase: Color(red: 0.06, green: 0.10, blue: 0.14)),
-            Retreat(id: 2, name: "Kyoto", country: "Japan",
-                    startDate: d(5, 9), endDate: d(5, 15),
-                    maxGuests: 10, priceUsd: 6800,
-                    tags: ["Meditation"],
-                    blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
-                    imageUrl: "retreat-kyoto",
-                    toneTop:  Color(red: 0.78, green: 0.40, blue: 0.22),
-                    toneMid:  Color(red: 0.45, green: 0.22, blue: 0.13),
-                    toneBase: Color(red: 0.12, green: 0.06, blue: 0.05)),
-            Retreat(id: 3, name: "Sedona", country: "Arizona",
-                    startDate: d(6, 6), endDate: d(6, 11),
-                    maxGuests: 12, priceUsd: 4200,
-                    tags: ["Hiking", "Meditation"],
-                    blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
-                    imageUrl: "retreat-sedona",
-                    toneTop:  Color(red: 0.80, green: 0.41, blue: 0.18),
-                    toneMid:  Color(red: 0.48, green: 0.22, blue: 0.10),
-                    toneBase: Color(red: 0.13, green: 0.06, blue: 0.04)),
-            Retreat(id: 4, name: "Chamonix", country: "France",
-                    startDate: d(2, 2, year: 2027), endDate: d(2, 7, year: 2027),
-                    maxGuests: 12, priceUsd: 5400,
-                    tags: ["Ski", "Yoga", "Wellness"],
-                    blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
-                    imageUrl: "retreat-chamonix",
-                    toneTop:  Color(red: 0.60, green: 0.65, blue: 0.72),
-                    toneMid:  Color(red: 0.30, green: 0.36, blue: 0.45),
-                    toneBase: Color(red: 0.10, green: 0.13, blue: 0.18)),
-            Retreat(id: 5, name: "Bali", country: "Indonesia",
-                    startDate: d(7, 14), endDate: d(7, 20),
-                    maxGuests: 14, priceUsd: 3900,
-                    tags: ["Yoga", "Meditation"],
-                    blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
-                    imageUrl: "retreat-bali",
-                    toneTop:  Color(red: 0.28, green: 0.52, blue: 0.32),
-                    toneMid:  Color(red: 0.14, green: 0.28, blue: 0.18),
-                    toneBase: Color(red: 0.04, green: 0.10, blue: 0.06)),
-            Retreat(id: 6, name: "Lapland", country: "Finland",
-                    startDate: d(1, 10, year: 2027), endDate: d(1, 15, year: 2027),
-                    maxGuests: 10, priceUsd: 5800,
-                    tags: ["Ski", "Yoga", "Wellness"],
-                    blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
-                    imageUrl: "retreat-lapland",
-                    toneTop:  Color(red: 0.38, green: 0.48, blue: 0.62),
-                    toneMid:  Color(red: 0.18, green: 0.24, blue: 0.40),
-                    toneBase: Color(red: 0.04, green: 0.06, blue: 0.16)),
-            Retreat(id: 7, name: "Dolomites", country: "Italy",
-                    startDate: d(9, 8), endDate: d(9, 13),
-                    maxGuests: 12, priceUsd: 4600,
-                    tags: ["Cycling", "Recovery", "Wellness"],
-                    blurb: "Alpine passes by bike, recovery in the spa, long Italian dinners at altitude.",
-                    imageUrl: "retreat-dolomites",
-                    toneTop:  Color(red: 0.42, green: 0.56, blue: 0.32),
-                    toneMid:  Color(red: 0.20, green: 0.30, blue: 0.14),
-                    toneBase: Color(red: 0.07, green: 0.10, blue: 0.05)),
-        ]
-    }()
 }
 
 // MARK: - Digital programs (for home carousel)

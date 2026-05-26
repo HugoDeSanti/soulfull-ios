@@ -37,23 +37,39 @@ struct RetreatsStackView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 16)
 
-                stackScroller
+                if vm.isLoading {
+                    Spacer()
+                    ProgressView().tint(.white)
+                    Spacer()
+                } else if let msg = vm.loadError {
+                    Spacer()
+                    VStack(spacing: 20) {
+                        Text(msg)
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.inkSoft)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        Button {
+                            Haptics.tap()
+                            Task { await vm.load() }
+                        } label: {
+                            Text("Try again")
+                                .font(Theme.body(13, weight: .medium))
+                                .foregroundStyle(Theme.ink)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 10)
+                                .overlay(Capsule().strokeBorder(Theme.glassBorder, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer()
+                } else {
+                    stackScroller
 
-                bottomCard
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-            }
-
-            if vm.isLoading {
-                Theme.bg.ignoresSafeArea()
-                ProgressView().tint(.white)
-            } else if let msg = vm.loadError {
-                Theme.bg.ignoresSafeArea()
-                Text(msg)
-                    .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
-                    .multilineTextAlignment(.center)
-                    .padding(32)
+                    bottomCard
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
             }
         }
         .task { await vm.load() }

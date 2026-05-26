@@ -132,8 +132,21 @@ private struct MetaPill: View {
 }
 
 #Preview {
-    NavigationStack {
-        RetreatDetailView(retreat: Retreat.mock[0])
+    let cal = Calendar.current
+    let sample = Retreat(
+        id: 0, name: "Mallorca", country: "Spain",
+        startDate: cal.date(from: DateComponents(year: 2026, month: 4, day: 18))!,
+        endDate:   cal.date(from: DateComponents(year: 2026, month: 4, day: 23))!,
+        maxGuests: 14, priceUsd: 4400,
+        tags: ["Hyrox", "Recovery", "Wellness"],
+        blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
+        imageUrl: "retreat-mallorca",
+        toneTop:  Color(red: 0.45, green: 0.62, blue: 0.65),
+        toneMid:  Color(red: 0.20, green: 0.32, blue: 0.40),
+        toneBase: Color(red: 0.06, green: 0.10, blue: 0.14)
+    )
+    return NavigationStack {
+        RetreatDetailView(retreat: sample)
             .toolbar(.hidden, for: .navigationBar)
     }
     .preferredColorScheme(.dark)

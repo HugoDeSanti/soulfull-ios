@@ -48,7 +48,7 @@ final class AuthManager {
             _ = try await supabase.auth.signInAnonymously()
             state = .authenticated
         } catch {
-            let msg = AppError.authFailure(error).localizedDescription ?? "Sign-in failed."
+            let msg = AppError.authFailure(error).localizedDescription
             state = .failed(msg)
             print("[AuthManager] Anonymous sign-in failed: \(error)")
         }
