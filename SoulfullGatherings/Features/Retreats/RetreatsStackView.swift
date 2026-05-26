@@ -19,18 +19,8 @@ struct RetreatsStackView: View {
 
     var body: some View {
         ZStack {
-            // Crossfading photo backdrop
+            // Crossfading photo backdrop (vignette baked in)
             backdrop
-
-            // Top vignette
-            LinearGradient(
-                colors: [.black.opacity(0.30), .black.opacity(0.15), .black.opacity(0.45), .black.opacity(0.78)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Warm corner glow keyed to the active tone
-            warmGlow
 
             VStack(spacing: 0) {
                 header
@@ -161,7 +151,6 @@ struct RetreatsStackView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: rowHeight)
-        .padding(.horizontal, 24)
         .opacity(isActive ? 1 : 0.42)
         .animation(.easeInOut(duration: 0.3), value: vm.activeIndex)
     }
@@ -216,6 +205,9 @@ struct RetreatsStackView: View {
     // MARK: - Backdrop crossfade
 
     private var backdrop: some View {
+        // All retreat photos are stacked full-bleed; only the active one is
+        // opaque, so changing `activeIndex` crossfades between them. The
+        // tone-tinted color floor prevents a black flash while images load.
         ZStack {
             (vm.active?.tone.base ?? Theme.bg).ignoresSafeArea()
             ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
@@ -225,20 +217,14 @@ struct RetreatsStackView: View {
                     .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
                     .ignoresSafeArea()
             }
+            LinearGradient(
+                colors: [.black.opacity(0.30), .black.opacity(0.15), .black.opacity(0.45), .black.opacity(0.78)],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
         }
     }
 
-    private var warmGlow: some View {
-        RadialGradient(
-            colors: [(vm.active?.tone.top ?? .clear).opacity(0.55), .clear],
-            center: UnitPoint(x: 0.22, y: -0.05),
-            startRadius: 10, endRadius: 360
-        )
-        .blendMode(.screen)
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
-        .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
-    }
 }
 
 #Preview {
