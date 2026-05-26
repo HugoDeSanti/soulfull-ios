@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - Retreats (in-person)
 
 struct Retreat: Identifiable, Hashable {
-    let id: String
+    let id: Int
     let name: String
     let country: String
     let startDate: Date
@@ -23,8 +23,7 @@ struct Retreat: Identifiable, Hashable {
     /// Asset catalog name (current) or Supabase Storage URL (future).
     let imageUrl: String
 
-    /// Three-stop tone keyed by retreat id — see `Retreat.tones`.
-    var tone: (top: Color, mid: Color, base: Color) { Retreat.tones[id] ?? Retreat.fallbackTone }
+    var tone: (top: Color, mid: Color, base: Color) { Retreat.tones[name.lowercased()] ?? Retreat.fallbackTone }
 
     /// Formatted date range for display, e.g. "April 18–23" or "Jan 10–Feb 3".
     var when: String {
@@ -60,43 +59,43 @@ extension Retreat {
             Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
         }
         return [
-            Retreat(id: "mallorca",  name: "Mallorca",  country: "Spain",
+            Retreat(id: 1, name: "Mallorca",  country: "Spain",
                     startDate: d(4, 18),            endDate: d(4, 23),
                     maxGuests: 14, priceUsd: 4400,
                     tags: ["Hyrox", "Recovery", "Wellness"],
                     blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
                     imageUrl: "retreat-mallorca"),
-            Retreat(id: "kyoto",     name: "Kyoto",     country: "Japan",
+            Retreat(id: 2, name: "Kyoto",     country: "Japan",
                     startDate: d(5, 9),             endDate: d(5, 15),
                     maxGuests: 10, priceUsd: 6800,
                     tags: ["Meditation"],
                     blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
                     imageUrl: "retreat-kyoto"),
-            Retreat(id: "sedona",    name: "Sedona",    country: "Arizona",
+            Retreat(id: 3, name: "Sedona",    country: "Arizona",
                     startDate: d(6, 6),             endDate: d(6, 11),
                     maxGuests: 12, priceUsd: 4200,
                     tags: ["Hiking", "Meditation"],
                     blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
                     imageUrl: "retreat-sedona"),
-            Retreat(id: "chamonix",  name: "Chamonix",  country: "France",
+            Retreat(id: 4, name: "Chamonix",  country: "France",
                     startDate: d(2, 2, year: 2027), endDate: d(2, 7, year: 2027),
                     maxGuests: 12, priceUsd: 5400,
                     tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
                     imageUrl: "retreat-chamonix"),
-            Retreat(id: "bali",      name: "Bali",      country: "Indonesia",
+            Retreat(id: 5, name: "Bali",      country: "Indonesia",
                     startDate: d(7, 14),            endDate: d(7, 20),
                     maxGuests: 14, priceUsd: 3900,
                     tags: ["Yoga", "Meditation"],
                     blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
                     imageUrl: "retreat-bali"),
-            Retreat(id: "lapland",   name: "Lapland",   country: "Finland",
+            Retreat(id: 6, name: "Lapland",   country: "Finland",
                     startDate: d(1, 10, year: 2027), endDate: d(1, 15, year: 2027),
                     maxGuests: 10, priceUsd: 5800,
                     tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
                     imageUrl: "retreat-lapland"),
-            Retreat(id: "dolomites", name: "Dolomites", country: "Italy",
+            Retreat(id: 7, name: "Dolomites", country: "Italy",
                     startDate: d(9, 8),             endDate: d(9, 13),
                     maxGuests: 12, priceUsd: 4600,
                     tags: ["Cycling", "Recovery", "Wellness"],

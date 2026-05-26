@@ -36,14 +36,14 @@ final class SupabaseService: Sendable {
 // MARK: - DTOs
 
 private struct RetreatRow: Codable {
-    let id: String
+    let id: Int
     let name: String
     let country: String
     let startDate: String   // "yyyy-MM-dd" from Postgres date column
     let endDate: String
     let maxGuests: Int
     let priceUsd: Int
-    let tags: [String]
+    let tags: [String]?
     let blurb: String
     let imageUrl: String
 
@@ -70,7 +70,7 @@ private struct RetreatRow: Codable {
             id: id, name: name, country: country,
             startDate: start, endDate: end,
             maxGuests: maxGuests, priceUsd: priceUsd,
-            tags: tags, blurb: blurb, imageUrl: imageUrl
+            tags: tags ?? [], blurb: blurb, imageUrl: imageUrl
         )
     }
 }
