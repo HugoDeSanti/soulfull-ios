@@ -20,6 +20,10 @@
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>SupabaseAnonKey</key>
+	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>SupabaseHost</key>
+	<string>$(SUPABASE_HOST)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>CormorantGaramond-Light.ttf</string>

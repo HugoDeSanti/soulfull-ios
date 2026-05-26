@@ -15,7 +15,7 @@ final class HomeViewModel {
 
     let circles: [CommunityCircle] = CommunityCircle.mock
     let programs: [Program] = Program.mock
-    let retreats: [Retreat] = Retreat.mock
+    var retreats: [Retreat] = []
     let moods: [MoodChip] = MoodChip.all
 
     var greeting: String {
@@ -24,6 +24,17 @@ final class HomeViewModel {
         case ..<12:  return "Good morning,"
         case 12..<18: return "Good afternoon,"
         default:      return "Good evening,"
+        }
+    }
+
+    func load() async {
+        print("[HomeViewModel] Fetching retreats from Supabase…")
+        do {
+            retreats = try await SupabaseService.shared.fetchRetreats()
+            print("[HomeViewModel] Fetched \(retreats.count) retreats")
+        } catch {
+            print("[HomeViewModel] fetchRetreats failed: \(error)")
+            retreats = []
         }
     }
 

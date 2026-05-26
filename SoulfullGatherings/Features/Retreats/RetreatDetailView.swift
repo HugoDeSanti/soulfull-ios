@@ -18,7 +18,7 @@ struct RetreatDetailView: View {
     var body: some View {
         ZStack {
             // Full-bleed photo
-            Image(retreat.image)
+            Image(retreat.imageUrl)
                 .resizable().scaledToFill()
                 .ignoresSafeArea()
 

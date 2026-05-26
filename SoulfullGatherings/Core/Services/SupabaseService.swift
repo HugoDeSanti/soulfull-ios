@@ -1,3 +1,4 @@
+import Foundation
 import Supabase
 
 final class SupabaseService: Sendable {
@@ -42,12 +43,13 @@ private struct RetreatRow: Codable {
     let endDate: String
     let maxGuests: Int
     let priceUsd: Int
-    let tag: String
+    let tags: [String]
     let blurb: String
-    let image: String
+    let imageUrl: String
 
     enum CodingKeys: String, CodingKey {
-        case id, name, country, tag, blurb, image
+        case id, name, country, tags, blurb
+        case imageUrl  = "image_url"
         case startDate = "start_date"
         case endDate   = "end_date"
         case maxGuests = "max_guests"
@@ -68,7 +70,7 @@ private struct RetreatRow: Codable {
             id: id, name: name, country: country,
             startDate: start, endDate: end,
             maxGuests: maxGuests, priceUsd: priceUsd,
-            tag: tag, blurb: blurb, image: image
+            tags: tags, blurb: blurb, imageUrl: imageUrl
         )
     }
 }
@@ -79,14 +81,15 @@ private struct ProgramRow: Codable {
     let lead: String
     let dateRange: String
     let days: Int
-    let image: String
+    let imageUrl: String
 
     enum CodingKeys: String, CodingKey {
-        case id, title, lead, days, image
+        case id, title, lead, days
         case dateRange = "date_range"
+        case imageUrl  = "image_url"
     }
 
     var program: Program {
-        Program(id: id, title: title, lead: lead, when: dateRange, days: days, image: image)
+        Program(id: id, title: title, lead: lead, when: dateRange, days: days, imageUrl: imageUrl)
     }
 }

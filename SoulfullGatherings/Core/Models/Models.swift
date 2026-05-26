@@ -18,10 +18,10 @@ struct Retreat: Identifiable, Hashable {
     let endDate: Date
     let maxGuests: Int
     let priceUsd: Int
-    let tag: String
+    let tags: [String]
     let blurb: String
-    /// Asset catalog name for the full-bleed photo.
-    let image: String
+    /// Asset catalog name (current) or Supabase Storage URL (future).
+    let imageUrl: String
 
     /// Three-stop tone keyed by retreat id — see `Retreat.tones`.
     var tone: (top: Color, mid: Color, base: Color) { Retreat.tones[id] ?? Retreat.fallbackTone }
@@ -63,45 +63,45 @@ extension Retreat {
             Retreat(id: "mallorca",  name: "Mallorca",  country: "Spain",
                     startDate: d(4, 18),            endDate: d(4, 23),
                     maxGuests: 14, priceUsd: 4400,
-                    tag: "Hyrox · Recovery · Wellness",
+                    tags: ["Hyrox", "Recovery", "Wellness"],
                     blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
-                    image: "retreat-mallorca"),
+                    imageUrl: "retreat-mallorca"),
             Retreat(id: "kyoto",     name: "Kyoto",     country: "Japan",
                     startDate: d(5, 9),             endDate: d(5, 15),
                     maxGuests: 10, priceUsd: 6800,
-                    tag: "Meditation",
+                    tags: ["Meditation"],
                     blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
-                    image: "retreat-kyoto"),
+                    imageUrl: "retreat-kyoto"),
             Retreat(id: "sedona",    name: "Sedona",    country: "Arizona",
                     startDate: d(6, 6),             endDate: d(6, 11),
                     maxGuests: 12, priceUsd: 4200,
-                    tag: "Hiking · Meditation",
+                    tags: ["Hiking", "Meditation"],
                     blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
-                    image: "retreat-sedona"),
+                    imageUrl: "retreat-sedona"),
             Retreat(id: "chamonix",  name: "Chamonix",  country: "France",
                     startDate: d(2, 2, year: 2027), endDate: d(2, 7, year: 2027),
                     maxGuests: 12, priceUsd: 5400,
-                    tag: "Ski · Yoga · Wellness",
+                    tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
-                    image: "retreat-chamonix"),
+                    imageUrl: "retreat-chamonix"),
             Retreat(id: "bali",      name: "Bali",      country: "Indonesia",
                     startDate: d(7, 14),            endDate: d(7, 20),
                     maxGuests: 14, priceUsd: 3900,
-                    tag: "Yoga · Meditation",
+                    tags: ["Yoga", "Meditation"],
                     blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
-                    image: "retreat-bali"),
+                    imageUrl: "retreat-bali"),
             Retreat(id: "lapland",   name: "Lapland",   country: "Finland",
                     startDate: d(1, 10, year: 2027), endDate: d(1, 15, year: 2027),
                     maxGuests: 10, priceUsd: 5800,
-                    tag: "Ski · Yoga · Wellness",
+                    tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
-                    image: "retreat-lapland"),
+                    imageUrl: "retreat-lapland"),
             Retreat(id: "dolomites", name: "Dolomites", country: "Italy",
                     startDate: d(9, 8),             endDate: d(9, 13),
                     maxGuests: 12, priceUsd: 4600,
-                    tag: "Cycling · Recovery · Wellness",
+                    tags: ["Cycling", "Recovery", "Wellness"],
                     blurb: "Alpine passes by bike, recovery in the spa, long Italian dinners at altitude.",
-                    image: "retreat-dolomites"),
+                    imageUrl: "retreat-dolomites"),
         ]
     }()
 }
@@ -148,16 +148,16 @@ struct Program: Identifiable, Hashable {
     let lead: String
     let when: String
     let days: Int
-    let image: String
+    let imageUrl: String
 }
 
 extension Program {
     static let mock: [Program] = [
-        Program(id: "cyc7",  title: "Cycling & Recovery",            lead: "Valentina Velasco",  when: "June 12–19",     days: 7,  image: "retreat-mallorca"),
-        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",       when: "June 24–28",     days: 5,  image: "retreat-bali"),
-        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",      days: 14, image: "retreat-dolomites"),
-        Program(id: "hcl14", title: "Heal Yourself, Change Your Life",lead: "Michelle Campos",    when: "August 1–14",    days: 14, image: "retreat-sedona"),
-        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",     days: 7,  image: "retreat-kyoto")
+        Program(id: "cyc7",  title: "Cycling & Recovery",            lead: "Valentina Velasco",  when: "June 12–19",     days: 7,  imageUrl: "retreat-mallorca"),
+        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",       when: "June 24–28",     days: 5,  imageUrl: "retreat-bali"),
+        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",      days: 14, imageUrl: "retreat-dolomites"),
+        Program(id: "hcl14", title: "Heal Yourself, Change Your Life",lead: "Michelle Campos",    when: "August 1–14",    days: 14, imageUrl: "retreat-sedona"),
+        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",     days: 7,  imageUrl: "retreat-kyoto")
     ]
 }
 

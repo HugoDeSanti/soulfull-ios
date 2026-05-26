@@ -19,25 +19,24 @@ struct HomeView: View {
     let onOpenRetreat: (Retreat) -> Void
 
     var body: some View {
-        ZStack {
-            // Blurred dark backdrop — matches the welcome/onboarding world.
-            PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
-
-            ScrollView {
-                VStack(spacing: 32) {
-                    header
-                    moodRow
-                    todaysRitual
-                    continueJourney
-                    digitalRetreats
-                    circlesList
-                    upcomingGatherings
-                    Color.clear.frame(height: 120) // breathing room above tab bar
-                }
-                .padding(.top, 24)
+        ScrollView {
+            VStack(spacing: 32) {
+                header
+                moodRow
+                todaysRitual
+                continueJourney
+                digitalRetreats
+                circlesList
+                upcomingGatherings
+                Color.clear.frame(height: 120)
             }
-            .scrollIndicators(.hidden)
+            .padding(.top, 24)
         }
+        .scrollIndicators(.hidden)
+        .background {
+            PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
+        }
+        .task { await vm.load() }
     }
 
     // MARK: - Sections
@@ -207,7 +206,7 @@ struct HomeView: View {
     private func programCard(_ p: Program) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                Image(p.image)
+                Image(p.imageUrl)
                     .resizable().scaledToFill()
                     .frame(width: 260, height: 200)
                     .clipped()
@@ -321,7 +320,7 @@ struct HomeView: View {
     private func retreatCard(_ r: Retreat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                Image(r.image)
+                Image(r.imageUrl)
                     .resizable().scaledToFill()
                     .frame(width: 260, height: 150)
                     .clipped()

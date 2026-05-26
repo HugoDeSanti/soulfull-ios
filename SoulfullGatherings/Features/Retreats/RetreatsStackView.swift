@@ -43,7 +43,20 @@ struct RetreatsStackView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
+
+            if vm.isLoading {
+                Theme.bg.ignoresSafeArea()
+                ProgressView().tint(.white)
+            } else if let msg = vm.loadError {
+                Theme.bg.ignoresSafeArea()
+                Text(msg)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.center)
+                    .padding(32)
+            }
         }
+        .task { await vm.load() }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
     }
@@ -139,15 +152,16 @@ struct RetreatsStackView: View {
 
     // MARK: - Bottom card
 
+    @ViewBuilder
     private var bottomCard: some View {
-        let r = vm.active
-        return HStack(spacing: 14) {
+        if let r = vm.active {
+        HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(r.when) · \(r.country)".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2.5)
                     .foregroundStyle(Color.white.opacity(0.75))
-                Text(r.tag)
+                Text(r.tags.joined(separator: " · "))
                     .font(Theme.body(15, weight: .medium))
                     .foregroundStyle(.white)
                     .kerning(-0.2)
@@ -180,15 +194,16 @@ struct RetreatsStackView: View {
             Haptics.bump()
             onSelect(r)
         }
+        }
     }
 
     // MARK: - Backdrop crossfade
 
     private var backdrop: some View {
         ZStack {
-            vm.active.tone.base.ignoresSafeArea()
+            (vm.active?.tone.base ?? Theme.bg).ignoresSafeArea()
             ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
-                Image(r.image)
+                Image(r.imageUrl)
                     .resizable().scaledToFill()
                     .opacity(idx == vm.activeIndex ? 1 : 0)
                     .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
@@ -199,7 +214,7 @@ struct RetreatsStackView: View {
 
     private var warmGlow: some View {
         RadialGradient(
-            colors: [vm.active.tone.top.opacity(0.55), .clear],
+            colors: [(vm.active?.tone.top ?? .clear).opacity(0.55), .clear],
             center: UnitPoint(x: 0.22, y: -0.05),
             startRadius: 10, endRadius: 360
         )

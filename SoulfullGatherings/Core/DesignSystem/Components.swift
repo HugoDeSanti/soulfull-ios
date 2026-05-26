@@ -44,6 +44,7 @@ struct SGPrimaryButton: View {
             .opacity(enabled ? 1 : 0.45)
             .scaleEffect(pressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.12), value: pressed)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
