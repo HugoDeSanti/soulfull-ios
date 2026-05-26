@@ -68,7 +68,7 @@ struct GlassCard<Content: View>: View {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
             )
     }
 }
@@ -147,7 +147,6 @@ struct CircleIconButton: View {
 
     var body: some View {
         Button {
-            Haptics.tap()
             action()
         } label: {
             Image(systemName: systemName)
@@ -155,7 +154,7 @@ struct CircleIconButton: View {
                 .foregroundStyle(Theme.ink)
                 .frame(width: size, height: size)
                 .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Theme.glassBorderHigh, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -201,4 +200,21 @@ struct TabPlaceholder: View {
             .padding(.bottom, 100)
         }
     }
+}
+
+// MARK: - Pulse modifier (white dot live-indicator, used for circles and live events)
+
+struct PulseModifier: ViewModifier {
+    @State private var on = false
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(on ? 1 : 0.85)
+            .opacity(on ? 1 : 0.4)
+            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: on)
+            .onAppear { on = true }
+    }
+}
+
+extension View {
+    func pulse() -> some View { modifier(PulseModifier()) }
 }

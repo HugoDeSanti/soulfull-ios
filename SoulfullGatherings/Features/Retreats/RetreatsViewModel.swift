@@ -14,17 +14,19 @@ final class RetreatsViewModel {
 
     func load() async {
         isLoading = true
+        defer { isLoading = false }
         loadError = nil
         do {
             print("[RetreatsViewModel] Fetching retreats from Supabase…")
             retreats = try await SupabaseService.shared.fetchRetreats()
             activeIndex = 0
             print("[RetreatsViewModel] Fetched \(retreats.count) retreats")
+        } catch is CancellationError {
+            // View was dismissed mid-fetch; leave existing data intact.
         } catch {
             print("[RetreatsViewModel] fetchRetreats failed: \(error)")
-            loadError = error.localizedDescription
+            loadError = "Couldn't load retreats. Please try again."
         }
-        isLoading = false
     }
 
     func setActive(_ idx: Int) {

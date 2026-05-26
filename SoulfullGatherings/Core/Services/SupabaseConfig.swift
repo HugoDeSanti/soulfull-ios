@@ -1,21 +1,35 @@
 import Foundation
 
 enum SupabaseConfig {
-    static let url: URL = {
-        let host = plistValue(for: "SupabaseHost")
-        guard let url = URL(string: "https://\(host)") else {
-            fatalError("SupabaseHost '\(host)' could not form a valid URL")
+
+    enum ConfigError: LocalizedError {
+        case missingKey(String)
+        case malformedHost(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .missingKey(let key):
+                return "'\(key)' is missing or unfilled. Copy Config/Secrets.xcconfig.example → Config/Secrets.xcconfig."
+            case .malformedHost(let host):
+                return "'\(host)' could not form a valid URL."
+            }
         }
-        return url
-    }()
+    }
 
-    static let anonKey: String = plistValue(for: "SupabaseAnonKey")
+    static func make() throws -> (url: URL, anonKey: String) {
+        let host = try plistValue(for: "SupabaseHost")
+        guard let url = URL(string: "https://\(host)") else {
+            throw ConfigError.malformedHost(host)
+        }
+        let key = try plistValue(for: "SupabaseAnonKey")
+        return (url, key)
+    }
 
-    private static func plistValue(for key: String) -> String {
+    private static func plistValue(for key: String) throws -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
               !value.isEmpty,
               !value.hasPrefix("YOUR_") else {
-            fatalError("'\(key)' is missing or unfilled in Config/Secrets.xcconfig")
+            throw ConfigError.missingKey(key)
         }
         return value
     }

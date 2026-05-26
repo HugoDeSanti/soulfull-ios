@@ -127,7 +127,7 @@ private struct MetaPill: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(Theme.glassBorderHigh, lineWidth: 1))
     }
 }
 

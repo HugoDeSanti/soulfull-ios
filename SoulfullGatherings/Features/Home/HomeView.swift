@@ -88,7 +88,7 @@ struct HomeView: View {
                                             Capsule().strokeBorder(
                                                 vm.selectedMood == m.id
                                                 ? Color.white.opacity(0.55)
-                                                : Color.white.opacity(0.14),
+                                                : Theme.glassBorder,
                                                 lineWidth: 1
                                             )
                                         )
@@ -157,7 +157,7 @@ struct HomeView: View {
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                                .strokeBorder(Theme.glassBorder, lineWidth: 1)
                         )
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -240,7 +240,7 @@ struct HomeView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22)
-                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                .strokeBorder(Theme.glassBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .onTapGesture { Haptics.tap() }
@@ -266,7 +266,7 @@ struct HomeView: View {
                 .foregroundStyle(Theme.ink)
                 .frame(width: 44, height: 44)
                 .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -291,7 +291,7 @@ struct HomeView: View {
         .padding(.vertical, 14)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.glassBorder, lineWidth: 1)
         )
         .onTapGesture { Haptics.tap() }
     }
@@ -347,27 +347,10 @@ struct HomeView: View {
         .frame(width: 260)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22).strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.glassBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
-}
-
-// MARK: - Pulse modifier (white dot, "live" indicators)
-
-private struct PulseModifier: ViewModifier {
-    @State private var on = false
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(on ? 1 : 0.85)
-            .opacity(on ? 1 : 0.4)
-            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: on)
-            .onAppear { on = true }
-    }
-}
-
-extension View {
-    func pulse() -> some View { modifier(PulseModifier()) }
 }
 
 #Preview {

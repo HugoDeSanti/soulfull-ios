@@ -22,8 +22,12 @@ struct Retreat: Identifiable, Hashable {
     let blurb: String
     /// Asset catalog name (current) or Supabase Storage URL (future).
     let imageUrl: String
+    /// Visual tone sourced from the DB; used for backdrop color grading.
+    let toneTop: Color
+    let toneMid: Color
+    let toneBase: Color
 
-    var tone: (top: Color, mid: Color, base: Color) { Retreat.tones[name.lowercased()] ?? Retreat.fallbackTone }
+    var tone: (top: Color, mid: Color, base: Color) { (toneTop, toneMid, toneBase) }
 
     /// Formatted date range for display, e.g. "April 18–23" or "Jan 10–Feb 3".
     var when: String {
@@ -59,84 +63,71 @@ extension Retreat {
             Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
         }
         return [
-            Retreat(id: 1, name: "Mallorca",  country: "Spain",
-                    startDate: d(4, 18),            endDate: d(4, 23),
+            Retreat(id: 1, name: "Mallorca", country: "Spain",
+                    startDate: d(4, 18), endDate: d(4, 23),
                     maxGuests: 14, priceUsd: 4400,
                     tags: ["Hyrox", "Recovery", "Wellness"],
                     blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
-                    imageUrl: "retreat-mallorca"),
-            Retreat(id: 2, name: "Kyoto",     country: "Japan",
-                    startDate: d(5, 9),             endDate: d(5, 15),
+                    imageUrl: "retreat-mallorca",
+                    toneTop:  Color(red: 0.45, green: 0.62, blue: 0.65),
+                    toneMid:  Color(red: 0.20, green: 0.32, blue: 0.40),
+                    toneBase: Color(red: 0.06, green: 0.10, blue: 0.14)),
+            Retreat(id: 2, name: "Kyoto", country: "Japan",
+                    startDate: d(5, 9), endDate: d(5, 15),
                     maxGuests: 10, priceUsd: 6800,
                     tags: ["Meditation"],
                     blurb: "Temple to temple, walking. Tea ceremony every morning. Practice arriving where you already are.",
-                    imageUrl: "retreat-kyoto"),
-            Retreat(id: 3, name: "Sedona",    country: "Arizona",
-                    startDate: d(6, 6),             endDate: d(6, 11),
+                    imageUrl: "retreat-kyoto",
+                    toneTop:  Color(red: 0.78, green: 0.40, blue: 0.22),
+                    toneMid:  Color(red: 0.45, green: 0.22, blue: 0.13),
+                    toneBase: Color(red: 0.12, green: 0.06, blue: 0.05)),
+            Retreat(id: 3, name: "Sedona", country: "Arizona",
+                    startDate: d(6, 6), endDate: d(6, 11),
                     maxGuests: 12, priceUsd: 4200,
                     tags: ["Hiking", "Meditation"],
                     blurb: "Red rock canyon walks at sunrise. Vortex meditation. Stargazing on the mesa.",
-                    imageUrl: "retreat-sedona"),
-            Retreat(id: 4, name: "Chamonix",  country: "France",
+                    imageUrl: "retreat-sedona",
+                    toneTop:  Color(red: 0.80, green: 0.41, blue: 0.18),
+                    toneMid:  Color(red: 0.48, green: 0.22, blue: 0.10),
+                    toneBase: Color(red: 0.13, green: 0.06, blue: 0.04)),
+            Retreat(id: 4, name: "Chamonix", country: "France",
                     startDate: d(2, 2, year: 2027), endDate: d(2, 7, year: 2027),
                     maxGuests: 12, priceUsd: 5400,
                     tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Powder mornings under Mont Blanc. Afternoon yoga in the chalet. Spa nights, cold plunge, repeat.",
-                    imageUrl: "retreat-chamonix"),
-            Retreat(id: 5, name: "Bali",      country: "Indonesia",
-                    startDate: d(7, 14),            endDate: d(7, 20),
+                    imageUrl: "retreat-chamonix",
+                    toneTop:  Color(red: 0.60, green: 0.65, blue: 0.72),
+                    toneMid:  Color(red: 0.30, green: 0.36, blue: 0.45),
+                    toneBase: Color(red: 0.10, green: 0.13, blue: 0.18)),
+            Retreat(id: 5, name: "Bali", country: "Indonesia",
+                    startDate: d(7, 14), endDate: d(7, 20),
                     maxGuests: 14, priceUsd: 3900,
                     tags: ["Yoga", "Meditation"],
                     blurb: "Rice paddy mornings in Ubud. Twice-daily yoga, breathwork at dusk, jungle silence between.",
-                    imageUrl: "retreat-bali"),
-            Retreat(id: 6, name: "Lapland",   country: "Finland",
+                    imageUrl: "retreat-bali",
+                    toneTop:  Color(red: 0.28, green: 0.52, blue: 0.32),
+                    toneMid:  Color(red: 0.14, green: 0.28, blue: 0.18),
+                    toneBase: Color(red: 0.04, green: 0.10, blue: 0.06)),
+            Retreat(id: 6, name: "Lapland", country: "Finland",
                     startDate: d(1, 10, year: 2027), endDate: d(1, 15, year: 2027),
                     maxGuests: 10, priceUsd: 5800,
                     tags: ["Ski", "Yoga", "Wellness"],
                     blurb: "Aurora skies, sauna and ice plunge, forest skiing. The most still place we hold a circle.",
-                    imageUrl: "retreat-lapland"),
+                    imageUrl: "retreat-lapland",
+                    toneTop:  Color(red: 0.38, green: 0.48, blue: 0.62),
+                    toneMid:  Color(red: 0.18, green: 0.24, blue: 0.40),
+                    toneBase: Color(red: 0.04, green: 0.06, blue: 0.16)),
             Retreat(id: 7, name: "Dolomites", country: "Italy",
-                    startDate: d(9, 8),             endDate: d(9, 13),
+                    startDate: d(9, 8), endDate: d(9, 13),
                     maxGuests: 12, priceUsd: 4600,
                     tags: ["Cycling", "Recovery", "Wellness"],
                     blurb: "Alpine passes by bike, recovery in the spa, long Italian dinners at altitude.",
-                    imageUrl: "retreat-dolomites"),
+                    imageUrl: "retreat-dolomites",
+                    toneTop:  Color(red: 0.42, green: 0.56, blue: 0.32),
+                    toneMid:  Color(red: 0.20, green: 0.30, blue: 0.14),
+                    toneBase: Color(red: 0.07, green: 0.10, blue: 0.05)),
         ]
     }()
-}
-
-// MARK: - Visual tones
-
-extension Retreat {
-    static let fallbackTone: (top: Color, mid: Color, base: Color) = (
-        Color(red: 0.38, green: 0.48, blue: 0.62),
-        Color(red: 0.18, green: 0.24, blue: 0.40),
-        Color(red: 0.04, green: 0.06, blue: 0.16)
-    )
-
-    static let tones: [String: (top: Color, mid: Color, base: Color)] = [
-        "mallorca":  (Color(red: 0.45, green: 0.62, blue: 0.65),
-                      Color(red: 0.20, green: 0.32, blue: 0.40),
-                      Color(red: 0.06, green: 0.10, blue: 0.14)),
-        "kyoto":     (Color(red: 0.78, green: 0.40, blue: 0.22),
-                      Color(red: 0.45, green: 0.22, blue: 0.13),
-                      Color(red: 0.12, green: 0.06, blue: 0.05)),
-        "sedona":    (Color(red: 0.80, green: 0.41, blue: 0.18),
-                      Color(red: 0.48, green: 0.22, blue: 0.10),
-                      Color(red: 0.13, green: 0.06, blue: 0.04)),
-        "chamonix":  (Color(red: 0.60, green: 0.65, blue: 0.72),
-                      Color(red: 0.30, green: 0.36, blue: 0.45),
-                      Color(red: 0.10, green: 0.13, blue: 0.18)),
-        "bali":      (Color(red: 0.28, green: 0.52, blue: 0.32),
-                      Color(red: 0.14, green: 0.28, blue: 0.18),
-                      Color(red: 0.04, green: 0.10, blue: 0.06)),
-        "lapland":   (Color(red: 0.38, green: 0.48, blue: 0.62),
-                      Color(red: 0.18, green: 0.24, blue: 0.40),
-                      Color(red: 0.04, green: 0.06, blue: 0.16)),
-        "dolomites": (Color(red: 0.42, green: 0.56, blue: 0.32),
-                      Color(red: 0.20, green: 0.30, blue: 0.14),
-                      Color(red: 0.07, green: 0.10, blue: 0.05)),
-    ]
 }
 
 // MARK: - Digital programs (for home carousel)
@@ -152,11 +143,11 @@ struct Program: Identifiable, Hashable {
 
 extension Program {
     static let mock: [Program] = [
-        Program(id: "cyc7",  title: "Cycling & Recovery",            lead: "Valentina Velasco",  when: "June 12–19",     days: 7,  imageUrl: "retreat-mallorca"),
-        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",       when: "June 24–28",     days: 5,  imageUrl: "retreat-bali"),
-        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",      days: 14, imageUrl: "retreat-dolomites"),
-        Program(id: "hcl14", title: "Heal Yourself, Change Your Life",lead: "Michelle Campos",    when: "August 1–14",    days: 14, imageUrl: "retreat-sedona"),
-        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",     days: 7,  imageUrl: "retreat-kyoto")
+        Program(id: "cyc7",  title: "Cycling & Recovery",             lead: "Valentina Velasco", when: "June 12–19",  days: 7,  imageUrl: "retreat-mallorca"),
+        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",      when: "June 24–28",  days: 5,  imageUrl: "retreat-bali"),
+        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",   days: 14, imageUrl: "retreat-dolomites"),
+        Program(id: "hcl14", title: "Heal Yourself, Change Your Life", lead: "Michelle Campos",   when: "August 1–14", days: 14, imageUrl: "retreat-sedona"),
+        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",  days: 7,  imageUrl: "retreat-kyoto"),
     ]
 }
 
@@ -173,8 +164,8 @@ struct CommunityCircle: Identifiable, Hashable {
 
 extension CommunityCircle {
     static let mock: [CommunityCircle] = [
-        CommunityCircle(id: "wih",  title: "Women in Healing", host: "Mara Solé", attendees: 47, timeLabel: "Live now",   isLive: true),
-        CommunityCircle(id: "mar",  title: "Men at Rest",      host: "Theo Park", attendees: 18, timeLabel: "In 25 min",  isLive: false)
+        CommunityCircle(id: "wih", title: "Women in Healing", host: "Mara Solé", attendees: 47, timeLabel: "Live now",  isLive: true),
+        CommunityCircle(id: "mar", title: "Men at Rest",      host: "Theo Park", attendees: 18, timeLabel: "In 25 min", isLive: false),
     ]
 }
 
@@ -188,12 +179,12 @@ struct IntentionOption: Identifiable, Hashable {
 
 extension IntentionOption {
     static let all: [IntentionOption] = [
-        .init(id: "travel",  label: "travel & retreat",   isSubtle: false),
-        .init(id: "heal",    label: "heal emotionally",    isSubtle: false),
-        .init(id: "move",    label: "move my body",        isSubtle: false),
-        .init(id: "connect", label: "find my community",   isSubtle: false),
-        .init(id: "rest",    label: "rest & recover",      isSubtle: false),
-        .init(id: "other",   label: "something else",      isSubtle: true)
+        .init(id: "travel",  label: "travel & retreat",  isSubtle: false),
+        .init(id: "heal",    label: "heal emotionally",   isSubtle: false),
+        .init(id: "move",    label: "move my body",       isSubtle: false),
+        .init(id: "connect", label: "find my community",  isSubtle: false),
+        .init(id: "rest",    label: "rest & recover",     isSubtle: false),
+        .init(id: "other",   label: "something else",     isSubtle: true),
     ]
 }
 
@@ -205,12 +196,12 @@ struct BodyStateOption: Identifiable, Hashable {
 
 extension BodyStateOption {
     static let all: [BodyStateOption] = [
-        .init(id: "soft",    label: "soft & open",         isSubtle: false),
-        .init(id: "tender",  label: "tender today",        isSubtle: false),
-        .init(id: "anxious", label: "anxious or racing",   isSubtle: false),
-        .init(id: "numb",    label: "numb or shut down",   isSubtle: false),
-        .init(id: "tired",   label: "tired & depleted",    isSubtle: false),
-        .init(id: "other",   label: "self-describe",       isSubtle: true)
+        .init(id: "soft",    label: "soft & open",       isSubtle: false),
+        .init(id: "tender",  label: "tender today",       isSubtle: false),
+        .init(id: "anxious", label: "anxious or racing",  isSubtle: false),
+        .init(id: "numb",    label: "numb or shut down",  isSubtle: false),
+        .init(id: "tired",   label: "tired & depleted",   isSubtle: false),
+        .init(id: "other",   label: "self-describe",      isSubtle: true),
     ]
 }
 
@@ -224,7 +215,7 @@ extension FrequencyOption {
         .init(id: "daily",  label: "every day"),
         .init(id: "most",   label: "most days"),
         .init(id: "few",    label: "a few times a week"),
-        .init(id: "weekly", label: "weekly, when I need it")
+        .init(id: "weekly", label: "weekly, when I need it"),
     ]
 }
 
@@ -248,6 +239,6 @@ extension MoodChip {
         .init(id: "sad",       label: "Sad"),
         .init(id: "peaceful",  label: "Peaceful"),
         .init(id: "angry",     label: "Angry"),
-        .init(id: "inspired",  label: "Inspired")
+        .init(id: "inspired",  label: "Inspired"),
     ]
 }

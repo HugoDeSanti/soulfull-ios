@@ -78,7 +78,7 @@ struct RetreatsStackView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 10) {
-                CircleIconButton(systemName: "xmark", size: 42) { dismiss() }
+                CircleIconButton(systemName: "xmark", size: 42) { Haptics.tap(); dismiss() }
                 ZStack {
                     Circle().strokeBorder(Color.white.opacity(0.40), lineWidth: 1)
                     Text(String(format: "%02d", vm.retreats.count))
@@ -187,7 +187,7 @@ struct RetreatsStackView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22)
-                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
+                .strokeBorder(Theme.glassBorderHigh, lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {

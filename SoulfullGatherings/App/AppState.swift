@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Top-level stage routing. Persisted user data lives in `settings`
-//  (AppSettings), injected into the environment alongside this object.
+//  (AppSettings). Auth lives in `auth` (AuthManager).
 //
 
 import SwiftUI
@@ -12,19 +12,28 @@ import SwiftUI
 final class AppState {
 
     enum Stage: Equatable {
+        case loading    // while auth initializes
         case welcome
         case onboarding
         case main
     }
 
-    var stage: Stage
+    var stage: Stage = .loading
 
     let settings: AppSettings
+    let auth: AuthManager
 
     init() {
-        let settings = AppSettings()
-        self.settings = settings
-        self.stage = settings.hasOnboarded ? .main : .welcome
+        settings = AppSettings()
+        auth = AuthManager()
+    }
+
+    /// Called once at launch from `SoulfullGatheringsApp.body` via `.task`.
+    /// Establishes auth then routes to the correct stage.
+    func initializeAuth() async {
+        await auth.initialize()
+        let next: Stage = settings.hasOnboarded ? .main : .welcome
+        withAnimation(.easeInOut(duration: 0.45)) { stage = next }
     }
 
     func beginOnboarding() {
@@ -35,6 +44,11 @@ final class AppState {
         settings.hasOnboarded = true
         Haptics.success()
         withAnimation(.easeInOut(duration: 0.45)) { stage = .main }
+    }
+
+    func finishOnboardingSkipping(name: String) {
+        settings.userName = name.trimmingCharacters(in: .whitespaces)
+        finishOnboarding()
     }
 
     /// Used by the in-app "reset onboarding" Profile action (handy during dev).

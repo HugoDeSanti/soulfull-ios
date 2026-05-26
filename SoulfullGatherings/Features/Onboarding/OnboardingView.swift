@@ -434,15 +434,6 @@ private func headline(_ text: String) -> some View {
         .frame(maxWidth: 320, alignment: .leading)
 }
 
-// MARK: - Skip helper (commits whatever is filled and proceeds)
-
-extension AppState {
-    func finishOnboardingSkipping(name: String) {
-        settings.userName = name.trimmingCharacters(in: .whitespaces)
-        finishOnboarding()
-    }
-}
-
 #Preview {
     OnboardingView().environment(AppState())
 }

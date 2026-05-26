@@ -32,9 +32,10 @@ final class HomeViewModel {
         do {
             retreats = try await SupabaseService.shared.fetchRetreats()
             print("[HomeViewModel] Fetched \(retreats.count) retreats")
+        } catch is CancellationError {
+            // View was dismissed mid-fetch; leave existing data intact.
         } catch {
             print("[HomeViewModel] fetchRetreats failed: \(error)")
-            retreats = []
         }
     }
 

@@ -3,7 +3,9 @@
 //  Soulfull Gatherings
 //
 //  App entry. Owns the single AppState that drives stage routing
-//  (welcome → onboarding → main) and persisted user data.
+//  (loading → welcome → onboarding → main) and anonymous auth via
+//  AuthManager. The `.task` initiates auth and transitions out of
+//  the loading stage as quickly as the network allows.
 //
 
 import SwiftUI
@@ -17,8 +19,10 @@ struct SoulfullGatheringsApp: App {
             RootView()
                 .environment(appState)
                 .environment(appState.settings)
+                .environment(appState.auth)
                 .preferredColorScheme(.dark)
                 .tint(Theme.ink)
+                .task { await appState.initializeAuth() }
         }
     }
 }

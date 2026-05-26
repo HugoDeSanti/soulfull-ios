@@ -24,6 +24,12 @@ enum Theme {
     /// Hairline.
     static let line = Color.white.opacity(0.10)
 
+    /// Standard glass card / pill border.
+    static let glassBorder = Color.white.opacity(0.14)
+
+    /// Stronger border — active states, higher-contrast glass surfaces.
+    static let glassBorderHigh = Color.white.opacity(0.18)
+
     /// The Soulfull logo's olive-green — used as primary accent.
     static let accent = Color(red: 0.244, green: 0.263, blue: 0.082)
 

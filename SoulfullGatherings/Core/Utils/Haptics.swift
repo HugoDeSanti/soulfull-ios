@@ -2,31 +2,37 @@
 //  Haptics.swift
 //  Soulfull Gatherings
 //
-//  Tiny façade over UIImpactFeedbackGenerator / UINotificationFeedbackGenerator
-//  so any view can call `Haptics.tap()` without importing UIKit directly.
+//  Thin façade over UIKit feedback generators. Generators are cached as
+//  statics so the Taptic Engine is warmed up and ready on first use.
 //
 
 import UIKit
 
+@MainActor
 enum Haptics {
 
+    private static let light        = UIImpactFeedbackGenerator(style: .light)
+    private static let medium       = UIImpactFeedbackGenerator(style: .medium)
+    private static let selection    = UISelectionFeedbackGenerator()
+    private static let notification = UINotificationFeedbackGenerator()
+
     /// Standard tap — soft. Default for chips, list rows, secondary actions.
-    static func tap() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
+    static func tap()     { light.impactOccurred() }
 
     /// Stronger tap — for primary CTAs ("Begin", "Reserve").
-    static func bump() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
+    static func bump()    { medium.impactOccurred() }
 
     /// Selection change — used when the retreat stack scrolls past a new name.
-    static func select() {
-        UISelectionFeedbackGenerator().selectionChanged()
-    }
+    static func select()  { selection.selectionChanged() }
 
     /// Success — onboarding complete, reservation confirmed.
-    static func success() {
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    static func success() { notification.notificationOccurred(.success) }
+
+    /// Call when a gesture begins so the engine is fully warmed before impact.
+    static func prepare() {
+        light.prepare()
+        medium.prepare()
+        selection.prepare()
+        notification.prepare()
     }
 }

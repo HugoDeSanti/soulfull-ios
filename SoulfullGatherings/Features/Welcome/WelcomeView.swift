@@ -115,11 +115,14 @@ struct WelcomeView: View {
 
     // MARK: - Slides
 
+    @ViewBuilder
     private var slideStack: some View {
+        let idx = step - 1
+        guard idx >= 0, idx < slides.count else { return }
         let isLast = step == slides.count
-        let slide = slides[step - 1]
+        let slide = slides[idx]
 
-        return VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             // Top bar
             HStack {
                 Image("soulfull-logo-white")

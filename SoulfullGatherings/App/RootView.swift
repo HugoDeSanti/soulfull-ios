@@ -2,8 +2,9 @@
 //  RootView.swift
 //  Soulfull Gatherings
 //
-//  Stage router. Switches between Welcome / Onboarding / Main with a
-//  soft cross-fade. Each stage is a self-contained screen.
+//  Stage router. Switches between Loading / Welcome / Onboarding / Main
+//  with a soft cross-fade. The loading state lasts only as long as it
+//  takes to establish (or restore) the Supabase auth session.
 //
 
 import SwiftUI
@@ -16,6 +17,10 @@ struct RootView: View {
             Theme.bg.ignoresSafeArea()
 
             switch app.stage {
+            case .loading:
+                ProgressView()
+                    .tint(Theme.inkSoft)
+                    .transition(.opacity)
             case .welcome:
                 WelcomeView()
                     .transition(.opacity)
