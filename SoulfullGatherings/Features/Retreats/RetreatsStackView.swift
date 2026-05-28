@@ -12,6 +12,7 @@ import SwiftUI
 struct RetreatsStackView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm = RetreatsViewModel()
+    @State private var scrollerHeight: CGFloat = 0
 
     let onSelect: (Retreat) -> Void
 
@@ -19,13 +20,10 @@ struct RetreatsStackView: View {
 
     var body: some View {
         ZStack {
-            // Crossfading photo backdrop (vignette baked in)
             backdrop
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
 
                 if vm.isLoading {
                     Spacer()
@@ -58,10 +56,11 @@ struct RetreatsStackView: View {
 
                     bottomCard
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 110)
                 }
             }
         }
+        .ignoresSafeArea()
         .task { await vm.load() }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
@@ -94,45 +93,51 @@ struct RetreatsStackView: View {
                 .frame(width: 42, height: 42)
             }
         }
+        .safeAreaPadding(.top)
+        .padding(.top, 36)
+        .padding(.horizontal, 24)
     }
 
     // MARK: - Stack scroller
 
     private var stackScroller: some View {
-        GeometryReader { geo in
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // Leading spacer so first row can center.
-                        Color.clear.frame(height: max(0, geo.size.height / 2 - rowHeight / 2))
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    // Leading spacer so first row can center.
+                    Color.clear.frame(height: max(0, scrollerHeight / 2 - rowHeight / 2))
 
-                        ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
-                            row(idx: idx, retreat: r)
-                                .id(idx)
-                                .onTapGesture {
-                                    if idx == vm.activeIndex {
-                                        Haptics.bump()
-                                        onSelect(r)
-                                    } else {
-                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                                            vm.setActive(idx)
-                                            proxy.scrollTo(idx, anchor: .center)
-                                        }
+                    ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
+                        row(idx: idx, retreat: r)
+                            .id(idx)
+                            .onTapGesture {
+                                if idx == vm.activeIndex {
+                                    Haptics.bump()
+                                    onSelect(r)
+                                } else {
+                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                                        vm.setActive(idx)
+                                        proxy.scrollTo(idx, anchor: .center)
                                     }
                                 }
-                        }
-
-                        Color.clear.frame(height: max(0, geo.size.height / 2 - rowHeight / 2))
+                            }
                     }
+
+                    Color.clear.frame(height: max(0, scrollerHeight / 2 - rowHeight / 2))
                 }
-                .scrollTargetBehavior(.viewAligned)
-                .mask(
-                    LinearGradient(
-                        colors: [.clear, .black, .black, .clear],
-                        startPoint: .top, endPoint: .bottom
-                    )
-                )
             }
+            .scrollTargetBehavior(.viewAligned)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { newHeight in
+                scrollerHeight = newHeight
+            }
+            .mask(
+                LinearGradient(
+                    colors: [.clear, .black, .black, .clear],
+                    startPoint: .top, endPoint: .bottom
+                )
+            )
         }
     }
 
@@ -140,7 +145,7 @@ struct RetreatsStackView: View {
         let isActive = idx == vm.activeIndex
         return HStack(alignment: .lastTextBaseline, spacing: 8) {
             Text(r.name)
-                .font(.system(size: isActive ? 54 : 44, weight: isActive ? .semibold : .light))
+                .font(Theme.headline(isActive ? 54 : 44, weight: isActive ? .semibold : .light))
                 .kerning(-1.4)
                 .foregroundStyle(.white)
                 .underline(isActive, color: .white)
@@ -208,21 +213,26 @@ struct RetreatsStackView: View {
         // All retreat photos are stacked full-bleed; only the active one is
         // opaque, so changing `activeIndex` crossfades between them. The
         // tone-tinted color floor prevents a black flash while images load.
-        ZStack {
-            (vm.active?.tone.base ?? Theme.bg).ignoresSafeArea()
-            ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
-                Image(r.imageUrl)
-                    .resizable().scaledToFill()
-                    .opacity(idx == vm.activeIndex ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
-                    .ignoresSafeArea()
-            }
-            LinearGradient(
-                colors: [.black.opacity(0.30), .black.opacity(0.15), .black.opacity(0.45), .black.opacity(0.78)],
-                startPoint: .top, endPoint: .bottom
+        GeometryReader { proxy in
+            ZStack {
+                (vm.active?.tone.base ?? Theme.bg)
+                ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
+                    Image(r.imageUrl)
+                        .resizable().scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+                        .clipped()
+                        .opacity(idx == vm.activeIndex ? 1 : 0)
+                }
+                LinearGradient(
+                    colors: [.black.opacity(0.30), .black.opacity(0.15), .black.opacity(0.45), .black.opacity(0.78)],
+                    startPoint: .top, endPoint: .bottom
             )
             .ignoresSafeArea()
+
+            }
         }
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
     }
 
 }

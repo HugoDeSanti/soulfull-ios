@@ -100,7 +100,7 @@ struct WelcomeView: View {
                     step = 1
                 } label: {
                     Text("TAP TO CONTINUE")
-                        .font(.system(size: 11, weight: .regular))
+                        .font(Theme.eyebrow(11))
                         .tracking(3.4)
                         .foregroundStyle(Color(white: 0.92).opacity(0.62))
                         .padding(14)
@@ -137,7 +137,7 @@ struct WelcomeView: View {
 
             VStack(alignment: .leading, spacing: 18) {
                 Text(slide.eyebrow.uppercased())
-                    .font(.system(size: 9))
+                    .font(Theme.eyebrow(9))
                     .tracking(3)
                     .foregroundStyle(Color(white: 0.95).opacity(0.7))
 

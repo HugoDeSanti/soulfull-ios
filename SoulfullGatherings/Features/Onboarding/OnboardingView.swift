@@ -144,7 +144,7 @@ private struct NameStep: View {
     var body: some View {
         VStack(spacing: 26) {
             Spacer()
-            Text("what should we call you?")
+            Text("What should we call you?")
                 .font(Theme.headline(30))
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
@@ -152,7 +152,7 @@ private struct NameStep: View {
                 .kerning(-0.2)
 
             TextField("", text: $vm.name, prompt:
-                Text("your name")
+                Text("Your name")
                     .font(Theme.headline(20))
                     .italic()
                     .foregroundStyle(Color.white.opacity(0.45))
@@ -318,7 +318,7 @@ private struct FinishStepView: View {
                     .animation(.easeInOut(duration: 5).repeatForever(autoreverses: true), value: breathing)
 
                 Text("WELCOME, \(name.isEmpty ? "friend" : name.uppercased())")
-                    .font(.system(size: 11))
+                    .font(Theme.eyebrow(11))
                     .tracking(4)
                     .foregroundStyle(Theme.ink.opacity(0.7))
                     .padding(.top, 24)

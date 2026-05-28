@@ -72,19 +72,32 @@ enum Theme {
 
     // MARK: - Typography
 
-    /// Serif headline — falls back to system serif if New York is unavailable.
+    /// Display headline — Geist at the requested weight.
     static func headline(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .serif)
+        .custom(geistName(for: weight), size: size)
     }
 
-    /// Default UI font (SF Pro).
+    /// Body / UI text — Geist at the requested weight.
     static func body(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .default)
+        .custom(geistName(for: weight), size: size)
     }
 
-    /// Tracked eyebrow caps.
+    /// Tracked eyebrow caps — Geist Regular.
     static func eyebrow(_ size: CGFloat = 11) -> Font {
-        .system(size: size, weight: .regular, design: .default)
+        .custom("Geist-Regular", size: size)
+    }
+
+    /// Maps `Font.Weight` to the matching Geist PostScript name.
+    /// Only Thin, Light, Regular, Medium, SemiBold, and Bold are shipped — heavier weights fall through to Bold.
+    private static func geistName(for weight: Font.Weight) -> String {
+        switch weight {
+        case .ultraLight, .thin:       return "Geist-Thin"
+        case .light:                   return "Geist-Light"
+        case .medium:                  return "Geist-Medium"
+        case .semibold:                return "Geist-SemiBold"
+        case .bold, .heavy, .black:    return "Geist-Bold"
+        default:                       return "Geist-Regular"
+        }
     }
 
     // MARK: - Shape

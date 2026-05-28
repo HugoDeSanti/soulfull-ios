@@ -26,10 +26,12 @@
 	<string>$(SUPABASE_HOST)</string>
 	<key>UIAppFonts</key>
 	<array>
-		<string>CormorantGaramond-Light.ttf</string>
-		<string>CormorantGaramond-Regular.ttf</string>
-		<string>CormorantGaramond-SemiBold.ttf</string>
-		<string>CormorantGaramond-Italic.ttf</string>
+		<string>Geist-Thin.otf</string>
+		<string>Geist-Light.otf</string>
+		<string>Geist-Regular.otf</string>
+		<string>Geist-Medium.otf</string>
+		<string>Geist-SemiBold.otf</string>
+		<string>Geist-Bold.otf</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

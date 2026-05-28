@@ -43,7 +43,7 @@ struct RetreatDetailView: View {
                     .font(Theme.body(15))
                     .foregroundStyle(Color.white.opacity(0.85))
                 Text(retreat.name)
-                    .font(.system(size: 64, weight: .semibold))
+                    .font(Theme.headline(64, weight: .semibold))
                     .kerning(-2.4)
                     .foregroundStyle(.white)
 

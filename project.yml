@@ -28,6 +28,8 @@ targets:
       Release: Config/Secrets.xcconfig
     sources:
       - path: SoulfullGatherings
+      - path: Resources/Fonts
+        buildPhase: resources
     info:
       path: SoulfullGatherings/Info.plist
       properties:
@@ -43,10 +45,12 @@ targets:
           - UIInterfaceOrientationPortrait
         UIStatusBarStyle: UIStatusBarStyleDefault
         UIAppFonts:
-          - CormorantGaramond-Light.ttf
-          - CormorantGaramond-Regular.ttf
-          - CormorantGaramond-SemiBold.ttf
-          - CormorantGaramond-Italic.ttf
+          - Geist-Thin.otf
+          - Geist-Light.otf
+          - Geist-Regular.otf
+          - Geist-Medium.otf
+          - Geist-SemiBold.otf
+          - Geist-Bold.otf
         SupabaseHost: $(SUPABASE_HOST)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)
     dependencies:
