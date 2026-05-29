@@ -114,9 +114,9 @@ enum PracticeCategory: String, Identifiable, Hashable, CaseIterable {
     /// Backdrop asset (placeholder reuse until category art is added).
     var imageName: String {
         switch self {
-        case .somatic:    return "retreat-sedona"
-        case .breathwork: return "retreat-bali"
-        case .meditation: return "retreat-kyoto"
+        case .somatic:    return "practice-somatic"
+        case .breathwork: return "practice-breathwork"
+        case .meditation: return "practice-meditation"
         }
     }
 }
@@ -259,10 +259,10 @@ enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
     var imageName: String {
         switch self {
         case .somatic, .breathwork, .meditation: return mediaCategory!.imageName
-        case .journal:   return "retreat-dolomites"
-        case .exercises: return "retreat-mallorca"
-        case .recipes:   return "retreat-bali"
-        case .massages:  return "retreat-kyoto"
+        case .journal:   return "practice-journals"
+        case .exercises: return "practice-exercises"
+        case .recipes:   return "practice-recipes"
+        case .massages:  return "practice-massage"
         }
     }
 }
