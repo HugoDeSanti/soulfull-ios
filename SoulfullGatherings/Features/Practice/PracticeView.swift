@@ -61,6 +61,7 @@ struct PracticeView: View {
         ZStack(alignment: .bottomLeading) {
             Image(item.imageName)
                 .resizable().scaledToFill()
+                .frame(maxWidth: .infinity)
                 .frame(height: 210)
                 .clipped()
 
@@ -104,6 +105,11 @@ struct PracticeView: View {
                 .strokeBorder(Theme.glassBorder, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        // Clip the hit-test region to the card bounds. `.clipped()`/`.clipShape()`
+        // only clip visually; without this the `scaledToFill` image's tap area
+        // overflows into the neighboring view above, shifting every card's
+        // destination by one (header → first section, first card → second, …).
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 
