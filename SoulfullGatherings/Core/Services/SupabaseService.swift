@@ -24,6 +24,8 @@ actor SupabaseService {
     private var retreatsCacheDate: Date?
     private var programsCache: [Program]?
     private var programsCacheDate: Date?
+    private var practiceCache: [PracticeCategory: [PracticeSession]] = [:]
+    private var practiceCacheDate: [PracticeCategory: Date] = [:]
     private let cacheTTL: TimeInterval = 300
 
     private init() throws {
@@ -71,11 +73,44 @@ actor SupabaseService {
         return programs
     }
 
+    /// Sessions for one practice track, newest-friendly ordering by title.
+    func fetchPracticeSessions(category: PracticeCategory) async throws -> [PracticeSession] {
+        if let cache = practiceCache[category],
+           let date = practiceCacheDate[category],
+           Date().timeIntervalSince(date) < cacheTTL {
+            return cache
+        }
+        let rows: [PracticeSessionRow] = try await client
+            .from("practice_sessions")
+            .select()
+            .eq("category", value: category.rawValue)
+            .order("title", ascending: true)
+            .limit(100)
+            .execute()
+            .value
+        let sessions = rows.map(\.session)
+        practiceCache[category] = sessions
+        practiceCacheDate[category] = Date()
+        return sessions
+    }
+
+    /// Resolves a private Storage object path into a time-limited playable URL.
+    /// Media in a *public* bucket can skip this and use its permanent URL.
+    func signedMediaURL(path: String,
+                        bucket: String = "practice-media",
+                        expiresIn: Int = 3600) async throws -> URL {
+        try await client.storage
+            .from(bucket)
+            .createSignedURL(path: path, expiresIn: expiresIn)
+    }
+
     func invalidateCache() {
         retreatsCache = nil
         retreatsCacheDate = nil
         programsCache = nil
         programsCacheDate = nil
+        practiceCache.removeAll()
+        practiceCacheDate.removeAll()
     }
 }
 
@@ -143,5 +178,39 @@ private struct ProgramRow: Codable {
 
     var program: Program {
         Program(id: id, title: title, lead: lead, when: dateRange, days: days, imageUrl: imageUrl)
+    }
+}
+
+private struct PracticeSessionRow: Codable {
+    let id: Int
+    let category: String
+    let title: String
+    let lead: String
+    let mediaKind: String
+    let storagePath: String
+    let durationSeconds: Int
+    let imageUrl: String
+    let blurb: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, category, title, lead, blurb
+        case mediaKind       = "media_kind"
+        case storagePath     = "storage_path"
+        case durationSeconds = "duration_seconds"
+        case imageUrl        = "image_url"
+    }
+
+    var session: PracticeSession {
+        PracticeSession(
+            id: id,
+            category: PracticeCategory(rawValue: category) ?? .somatic,
+            title: title,
+            lead: lead,
+            mediaKind: MediaKind(rawValue: mediaKind) ?? .audio,
+            storagePath: storagePath,
+            durationSeconds: durationSeconds,
+            imageUrl: imageUrl,
+            blurb: blurb ?? ""
+        )
     }
 }

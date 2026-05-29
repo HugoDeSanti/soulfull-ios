@@ -41,7 +41,7 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .home:     HomeRoot()
-                case .practice: LibraryPlaceholder()
+                case .practice: PracticeRoot()
                 case .circle:   CommunityPlaceholder()
                 case .you:      ProfilePlaceholder()
                 }
@@ -83,6 +83,70 @@ private struct HomeRoot: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+// MARK: - Practice wrapped in its own NavigationStack so category lists push correctly.
+
+private struct PracticeRoot: View {
+    enum Route: Hashable {
+        case sessions(PracticeCategory)
+        case journalList
+        case exerciseList
+        case recipeList
+        case massageList
+        case journalDetail(JournalPrompt)
+        case exerciseDetail(Exercise)
+        case recipeDetail(Recipe)
+        case massageDetail(Massage)
+    }
+    @State private var path: [Route] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            PracticeView(onSelect: open)
+                .navigationDestination(for: Route.self) { route in
+                    destination(route)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
+                .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    /// Maps a tapped menu card to its list route.
+    private func open(_ item: PracticeMenuItem) {
+        switch item {
+        case .somatic, .breathwork, .meditation:
+            if let category = item.mediaCategory { path.append(.sessions(category)) }
+        case .journal:   path.append(.journalList)
+        case .exercises: path.append(.exerciseList)
+        case .recipes:   path.append(.recipeList)
+        case .massages:  path.append(.massageList)
+        }
+    }
+
+    @ViewBuilder
+    private func destination(_ route: Route) -> some View {
+        switch route {
+        case .sessions(let category):
+            PracticeListView(category: category)
+        case .journalList:
+            JournalListView(onOpen: { path.append(.journalDetail($0)) })
+        case .exerciseList:
+            ExerciseListView(onOpen: { path.append(.exerciseDetail($0)) })
+        case .recipeList:
+            RecipeListView(onOpen: { path.append(.recipeDetail($0)) })
+        case .massageList:
+            MassageListView(onOpen: { path.append(.massageDetail($0)) })
+        case .journalDetail(let prompt):
+            JournalDetailView(prompt: prompt)
+        case .exerciseDetail(let exercise):
+            ExerciseDetailView(exercise: exercise)
+        case .recipeDetail(let recipe):
+            RecipeDetailView(recipe: recipe)
+        case .massageDetail(let massage):
+            MassageDetailView(massage: massage)
         }
     }
 }
