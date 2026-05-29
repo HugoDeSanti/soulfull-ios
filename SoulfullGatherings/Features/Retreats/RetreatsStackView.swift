@@ -101,44 +101,60 @@ struct RetreatsStackView: View {
     // MARK: - Stack scroller
 
     private var stackScroller: some View {
-        ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // Leading spacer so first row can center.
-                    Color.clear.frame(height: max(0, scrollerHeight / 2 - rowHeight / 2))
-
-                    ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
-                        row(idx: idx, retreat: r)
-                            .id(idx)
-                            .onTapGesture {
-                                if idx == vm.activeIndex {
-                                    Haptics.bump()
-                                    onSelect(r)
-                                } else {
-                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                                        vm.setActive(idx)
-                                        proxy.scrollTo(idx, anchor: .center)
-                                    }
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
+                    row(idx: idx, retreat: r)
+                        .id(idx)
+                        .onTapGesture {
+                            if idx == vm.activeIndex {
+                                Haptics.bump()
+                                onSelect(r)
+                            } else {
+                                Haptics.select()
+                                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                                    vm.activeIndex = idx
                                 }
                             }
-                    }
-
-                    Color.clear.frame(height: max(0, scrollerHeight / 2 - rowHeight / 2))
+                        }
                 }
             }
-            .scrollTargetBehavior(.viewAligned)
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.height
-            } action: { newHeight in
-                scrollerHeight = newHeight
-            }
-            .mask(
-                LinearGradient(
-                    colors: [.clear, .black, .black, .clear],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
+            .scrollTargetLayout()
         }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: activeIndexBinding, anchor: .center)
+        // Symmetric inset (half the viewport, minus half a row) lets the first
+        // and last rows scroll all the way to center — the same job the manual
+        // spacers used to do, but understood by `viewAligned` so its snap and
+        // our centering agree instead of fighting.
+        .contentMargins(.vertical, max(0, (scrollerHeight - rowHeight) / 2), for: .scrollContent)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { newHeight in
+            scrollerHeight = newHeight
+        }
+        .mask(
+            LinearGradient(
+                colors: [.clear, .black, .black, .clear],
+                startPoint: .top, endPoint: .bottom
+            )
+        )
+    }
+
+    /// Bridges the view-model's non-optional `activeIndex` to the optional id
+    /// binding `scrollPosition` expects, so the centered row and the highlighted
+    /// row are always the same value: free-scrolling settles a row at center and
+    /// updates the highlight, while tapping a row drives `activeIndex` here and
+    /// animates that row to center. One source of truth, identical motion for
+    /// every row regardless of how far down the list it sits.
+    private var activeIndexBinding: Binding<Int?> {
+        Binding(
+            get: { vm.activeIndex },
+            set: { newValue in
+                guard let newValue, vm.retreats.indices.contains(newValue) else { return }
+                vm.activeIndex = newValue
+            }
+        )
     }
 
     private func row(idx: Int, retreat r: Retreat) -> some View {
@@ -163,9 +179,10 @@ struct RetreatsStackView: View {
     @ViewBuilder
     private var bottomCard: some View {
         if let r = vm.active {
+        let year = Calendar.current.component(.year, from: r.startDate)
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(r.when) · \(r.country)".uppercased())
+                Text("\(r.when), \(year) · \(r.country)".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2.5)
                     .foregroundStyle(Color.white.opacity(0.75))

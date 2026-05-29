@@ -28,10 +28,4 @@ final class RetreatsViewModel {
             loadError = "Couldn't load retreats. Please try again."
         }
     }
-
-    func setActive(_ idx: Int) {
-        guard idx != activeIndex, retreats.indices.contains(idx) else { return }
-        Haptics.select()
-        activeIndex = idx
-    }
 }
