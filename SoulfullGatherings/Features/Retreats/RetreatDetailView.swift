@@ -85,7 +85,7 @@ struct RetreatDetailView: View {
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
                     .frame(maxWidth: 320)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 90)
             }
             .padding(.horizontal, 24)
         }
