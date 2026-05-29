@@ -3,8 +3,9 @@
 //  Soulfull Gatherings
 //
 //  Foodle-style scrolling stack of retreat names with crossfading photo
-//  backdrops. Tap an inactive row to scroll it to center; tap the active
-//  row (or the bottom reserve card) to push the detail view.
+//  backdrops. Scrolling snaps the nearest row to center and makes it active;
+//  tapping an inactive row animates it to center, and tapping the active row
+//  (or the bottom reserve card) pushes the detail view.
 //
 
 import SwiftUI
