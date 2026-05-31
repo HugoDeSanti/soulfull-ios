@@ -16,6 +16,7 @@ struct PracticePlayerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var player: AVPlayer?
+    @State private var transport: AudioTransport?
     @State private var loadError: String?
 
     var body: some View {
@@ -51,7 +52,10 @@ struct PracticePlayerView: View {
         }
         .preferredColorScheme(.dark)
         .task { await resolveAndPlay() }
-        .onDisappear { player?.pause() }
+        .onDisappear {
+            player?.pause()
+            transport?.stop()
+        }
     }
 
     // MARK: - Audio stage (cover art + title; AVPlayer drives playback)
@@ -81,8 +85,8 @@ struct PracticePlayerView: View {
             }
             .padding(.horizontal, 28)
 
-            if let player {
-                PlayPauseButton(player: player)
+            if let transport {
+                AudioControls(transport: transport)
             }
             Spacer()
             Spacer()
@@ -116,6 +120,11 @@ struct PracticePlayerView: View {
                 url = try await SupabaseService.shared.signedMediaURL(path: media.storagePath)
             }
             let avPlayer = AVPlayer(url: url)
+            if media.mediaKind == .audio {
+                let t = AudioTransport(player: avPlayer, duration: Double(media.durationSeconds))
+                t.start()
+                transport = t
+            }
             player = avPlayer
             avPlayer.play()
         } catch {
@@ -125,19 +134,62 @@ struct PracticePlayerView: View {
     }
 }
 
-// MARK: - Minimal play/pause control for the audio stage
+// MARK: - Audio transport (scrubber + skip + play/pause)
 
-private struct PlayPauseButton: View {
-    let player: AVPlayer
-    @State private var isPlaying = true
+private struct AudioControls: View {
+    @Bindable var transport: AudioTransport
 
     var body: some View {
+        VStack(spacing: 20) {
+            scrubber
+            buttons
+        }
+    }
+
+    // Draggable progress bar with elapsed / remaining labels.
+    private var scrubber: some View {
+        VStack(spacing: 8) {
+            Slider(
+                value: $transport.currentTime,
+                in: 0...max(transport.duration, 1),
+                onEditingChanged: { editing in
+                    transport.isScrubbing = editing
+                    if editing {
+                        Haptics.prepare()
+                    } else {
+                        transport.seek(to: transport.currentTime)
+                        Haptics.select()
+                    }
+                }
+            )
+            .tint(Theme.ink)
+
+            HStack {
+                Text(Self.time(transport.currentTime))
+                Spacer()
+                Text("-" + Self.time(max(0, transport.duration - transport.currentTime)))
+            }
+            .font(Theme.body(11))
+            .monospacedDigit()
+            .foregroundStyle(Theme.muted)
+        }
+        .padding(.horizontal, 28)
+    }
+
+    private var buttons: some View {
+        HStack(spacing: 40) {
+            skip(icon: "gobackward.15", by: -15)
+            playPause
+            skip(icon: "goforward.15", by: 15)
+        }
+    }
+
+    private var playPause: some View {
         Button {
             Haptics.bump()
-            if isPlaying { player.pause() } else { player.play() }
-            isPlaying.toggle()
+            transport.togglePlay()
         } label: {
-            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            Image(systemName: transport.isPlaying ? "pause.fill" : "play.fill")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(.black)
                 .frame(width: 72, height: 72)
@@ -145,6 +197,96 @@ private struct PlayPauseButton: View {
                 .shadow(color: .black.opacity(0.2), radius: 18, y: 6)
         }
         .buttonStyle(.plain)
+    }
+
+    private func skip(icon: String, by seconds: Double) -> some View {
+        Button {
+            Haptics.tap()
+            transport.skip(seconds)
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 52, height: 52)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// `mm:ss` from a seconds value, defensively clamping non-finite input.
+    private static func time(_ seconds: Double) -> String {
+        guard seconds.isFinite, seconds >= 0 else { return "0:00" }
+        let total = Int(seconds.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+}
+
+/// Drives the audio stage: mirrors `AVPlayer` time into observable state for the
+/// scrubber, and turns scrub/skip gestures back into seeks. The periodic time
+/// observer fires on the main queue, so `MainActor.assumeIsolated` lets it touch
+/// this `@MainActor` state without an extra hop.
+@Observable @MainActor
+private final class AudioTransport {
+    var currentTime: Double = 0
+    var duration: Double
+    var isPlaying = true
+    /// While the user drags the slider, suppress observer-driven updates so the
+    /// thumb doesn't fight the finger.
+    var isScrubbing = false
+
+    private let player: AVPlayer
+    private var observer: Any?
+
+    init(player: AVPlayer, duration: Double) {
+        self.player = player
+        self.duration = max(duration, 1)
+    }
+
+    func start() {
+        let interval = CMTime(seconds: 0.2, preferredTimescale: 600)
+        observer = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            MainActor.assumeIsolated { self?.tick(time) }
+        }
+    }
+
+    func stop() {
+        if let observer { player.removeTimeObserver(observer) }
+        observer = nil
+    }
+
+    private func tick(_ time: CMTime) {
+        // Prefer the asset's true duration once it's known; fall back to metadata.
+        if let itemDuration = player.currentItem?.duration, itemDuration.isNumeric {
+            let secs = CMTimeGetSeconds(itemDuration)
+            if secs.isFinite, secs > 0 { duration = secs }
+        }
+        if !isScrubbing { currentTime = CMTimeGetSeconds(time) }
+        isPlaying = player.timeControlStatus != .paused
+    }
+
+    func togglePlay() {
+        if isPlaying {
+            player.pause()
+            isPlaying = false
+        } else {
+            // Replay from the top if we're parked at the end.
+            if currentTime >= duration - 0.25 {
+                seek(to: 0)
+                currentTime = 0
+            }
+            player.play()
+            isPlaying = true
+        }
+    }
+
+    func skip(_ seconds: Double) {
+        let target = min(max(currentTime + seconds, 0), duration)
+        currentTime = target
+        seek(to: target)
+    }
+
+    func seek(to seconds: Double) {
+        player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600),
+                    toleranceBefore: .zero, toleranceAfter: .zero)
     }
 }
 
