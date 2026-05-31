@@ -153,5 +153,8 @@ private struct PracticeRoot: View {
 
 #Preview {
     let a = AppState()
-    return MainTabView().environment(a).environment(a.settings)
+    return MainTabView()
+        .environment(a)
+        .environment(a.settings)
+        .environment(a.auth)
 }

@@ -94,6 +94,39 @@ actor SupabaseService {
         return sessions
     }
 
+    // MARK: - Profiles
+
+    /// Fetches the profile row for a user id, or `nil` if none exists yet.
+    /// Not cached — profiles are small and change with user edits / sign-in.
+    func fetchProfile(id: UUID) async throws -> Profile? {
+        let rows: [ProfileRow] = try await client
+            .from("profiles")
+            .select()
+            .eq("id", value: id.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return rows.first?.profile
+    }
+
+    /// Inserts or updates the caller's profile. RLS enforces that `profile.id`
+    /// matches the signed-in user. `stripeCustomerId` is deliberately not sent —
+    /// it is owned by the Phase 2 webhook.
+    func upsertProfile(_ profile: Profile) async throws {
+        let payload = ProfileUpsert(
+            id: profile.id,
+            email: profile.email,
+            fullName: profile.fullName,
+            intentions: profile.intentions,
+            bodyState: profile.bodyState,
+            frequency: profile.frequency
+        )
+        try await client
+            .from("profiles")
+            .upsert(payload)
+            .execute()
+    }
+
     /// Resolves a private Storage object path into a time-limited playable URL.
     /// Media in a *public* bucket can skip this and use its permanent URL.
     func signedMediaURL(path: String,
@@ -115,6 +148,54 @@ actor SupabaseService {
 }
 
 // MARK: - DTOs
+
+/// Read model for `profiles`. Tolerant of nulls so a freshly-created (trigger)
+/// row with only an id still decodes.
+private struct ProfileRow: Decodable {
+    let id: UUID
+    let email: String?
+    let fullName: String?
+    let intentions: [String]?
+    let bodyState: String?
+    let frequency: String?
+    let stripeCustomerId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, email, intentions, frequency
+        case fullName         = "full_name"
+        case bodyState        = "body_state"
+        case stripeCustomerId = "stripe_customer_id"
+    }
+
+    var profile: Profile {
+        Profile(
+            id: id,
+            email: email ?? "",
+            fullName: fullName ?? "",
+            intentions: intentions ?? [],
+            bodyState: bodyState ?? "",
+            frequency: frequency ?? "",
+            stripeCustomerId: stripeCustomerId
+        )
+    }
+}
+
+/// Write model for `profiles` — only the columns the app owns. Excludes
+/// `stripe_customer_id` (server-managed) and timestamps (DB defaults / trigger).
+private struct ProfileUpsert: Encodable {
+    let id: UUID
+    let email: String
+    let fullName: String
+    let intentions: [String]
+    let bodyState: String
+    let frequency: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, email, intentions, frequency
+        case fullName  = "full_name"
+        case bodyState = "body_state"
+    }
+}
 
 private struct RetreatRow: Codable {
     let id: Int

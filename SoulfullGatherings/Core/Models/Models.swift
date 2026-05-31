@@ -8,6 +8,23 @@
 
 import SwiftUI
 
+// MARK: - User profile (Supabase `profiles` table)
+
+/// One row per authenticated user (anonymous guest or permanent account).
+/// Mirrors the `profiles` table: the row is created server-side by a trigger
+/// and synced from the app via `SupabaseService.upsertProfile`/`fetchProfile`.
+/// `stripeCustomerId` is read-only here — it is written by the Phase 2 Stripe
+/// webhook, never by the client.
+struct Profile: Identifiable, Hashable {
+    let id: UUID
+    var email: String
+    var fullName: String
+    var intentions: [String]
+    var bodyState: String
+    var frequency: String
+    var stripeCustomerId: String?
+}
+
 // MARK: - Retreats (in-person)
 
 struct Retreat: Identifiable, Hashable {

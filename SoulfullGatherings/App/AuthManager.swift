@@ -1,9 +1,11 @@
 import SwiftUI
 @preconcurrency import Supabase
 
-/// Manages Supabase Auth. Establishes an anonymous session on first launch
-/// and restores it on subsequent launches. Injected into the environment
-/// alongside AppState so any view can gate on `auth.isAuthenticated`.
+/// Manages Supabase Auth. Opens an anonymous session on first launch and
+/// restores it on subsequent launches, and lets the user upgrade that guest
+/// session into a permanent email/password account (preserving their user id
+/// and any data). Injected into the environment alongside AppState so any view
+/// can gate on `auth.isAuthenticated` / `auth.hasAccount`.
 @Observable @MainActor
 final class AuthManager {
 
@@ -24,7 +26,20 @@ final class AuthManager {
 
     private(set) var state: State = .initializing
 
+    /// True while the active session is an anonymous guest (the default at launch).
+    private(set) var isAnonymous = true
+
+    /// Email of the signed-in permanent account, if any.
+    private(set) var email: String?
+
     var isAuthenticated: Bool { state == .authenticated }
+
+    /// A permanent (non-anonymous) account is signed in. Gate Reserve / paid
+    /// flows on this — not on `isAuthenticated`, which is true for guests too.
+    var hasAccount: Bool { isAuthenticated && !isAnonymous }
+
+    /// Current user id — used to key the `profiles` row.
+    var userID: UUID? { supabase.auth.currentUser?.id }
 
     private let supabase: SupabaseClient
 
@@ -36,21 +51,72 @@ final class AuthManager {
     /// Called once from `AppState.initializeAuth()` at launch.
     func initialize() async {
         do {
-            _ = try await supabase.auth.session
+            let session = try await supabase.auth.session
+            apply(session.user)
             state = .authenticated
         } catch {
             await signInAnonymously()
         }
     }
 
+    // MARK: - Account creation / sign-in
+
+    /// Creates a permanent account. If the current session is an anonymous
+    /// guest (the usual case), it is *upgraded in place* so the same user id
+    /// and any existing data carry over; otherwise a fresh account is created.
+    ///
+    /// Note: when "Confirm email" is enabled in Supabase, the anonymous→permanent
+    /// upgrade only completes once the user verifies the email. Keep it disabled
+    /// during development, or handle the confirmation redirect in-app.
+    func createAccount(email: String, password: String, fullName: String) async throws {
+        let trimmed = fullName.trimmingCharacters(in: .whitespaces)
+        let metadata: [String: AnyJSON]? = trimmed.isEmpty ? nil : ["full_name": .string(trimmed)]
+        if isAnonymous {
+            _ = try await supabase.auth.update(
+                user: UserAttributes(email: email, password: password, data: metadata)
+            )
+        } else {
+            _ = try await supabase.auth.signUp(email: email, password: password, data: metadata)
+        }
+        apply(supabase.auth.currentUser)
+    }
+
+    /// Signs in to an existing permanent account.
+    func signIn(email: String, password: String) async throws {
+        let session = try await supabase.auth.signIn(email: email, password: password)
+        apply(session.user)
+    }
+
+    /// Signs out of a permanent account and returns to a fresh anonymous guest
+    /// session so the rest of the app keeps working.
+    func signOut() async {
+        do {
+            try await supabase.auth.signOut()
+        } catch {
+            print("[AuthManager] Sign-out failed: \(error)")
+        }
+        await SupabaseService.shared.invalidateCache()
+        await signInAnonymously()
+    }
+
+    // MARK: - Private
+
     private func signInAnonymously() async {
         do {
-            _ = try await supabase.auth.signInAnonymously()
+            let session = try await supabase.auth.signInAnonymously()
+            apply(session.user)
             state = .authenticated
         } catch {
             let msg = AppError.authFailure(error).localizedDescription
             state = .failed(msg)
             print("[AuthManager] Anonymous sign-in failed: \(error)")
         }
+    }
+
+    /// Mirrors the current user's identity into the observable properties.
+    private func apply(_ user: User?) {
+        isAnonymous = user?.isAnonymous ?? true
+        let mail = user?.email
+        email = (mail?.isEmpty ?? true) ? nil : mail
     }
 }
