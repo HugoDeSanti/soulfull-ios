@@ -118,9 +118,13 @@ final class AuthManager {
     }
 
     /// Mirrors the current user's identity into the observable properties.
+    /// A present user means a live session, so reflect that in `state` too —
+    /// otherwise a successful createAccount/signIn after a failed launch-time
+    /// anonymous sign-in would leave `state == .failed` and `hasAccount == false`.
     private func apply(_ user: User?) {
         isAnonymous = user?.isAnonymous ?? true
         let mail = user?.email
         email = (mail?.isEmpty ?? true) ? nil : mail
+        if user != nil { state = .authenticated }
     }
 }

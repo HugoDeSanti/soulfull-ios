@@ -20,7 +20,7 @@ Two functions back retreat reservations:
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
    **Use a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) (`rk_…`), not a secret key**, following least privilege. Minimum permissions:
-   - `create-payment-intent`: **Customers** = Write, **PaymentIntents** = Write (covers ephemeral keys).
+   - `create-payment-intent`: **Customers** = Write, **PaymentIntents** = Write, **Ephemeral Keys** = Write (PaymentSheet requires `rak_ephemeral_key_write` — it is a *separate* permission, not implied by Customers).
    - `stripe-webhook`: no resource permissions needed (it only verifies signatures locally) — a key with no write scopes is fine; it still needs `STRIPE_WEBHOOK_SECRET`.
 
    Use separate keys per environment (test/live), and ideally add an IP allowlist to each key.
