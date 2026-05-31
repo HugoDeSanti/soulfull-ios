@@ -127,6 +127,25 @@ actor SupabaseService {
             .execute()
     }
 
+    // MARK: - Bookings
+
+    /// The most recent booking the signed-in user has for a retreat, if any.
+    /// RLS guarantees only the caller's own rows are visible; the explicit
+    /// `user_id` filter just makes intent obvious. Uncached — reservation state
+    /// must always reflect the latest webhook write.
+    func fetchBooking(retreatID: Int, userID: UUID) async throws -> Booking? {
+        let rows: [BookingRow] = try await client
+            .from("bookings")
+            .select()
+            .eq("user_id", value: userID)
+            .eq("retreat_id", value: retreatID)
+            .order("created_at", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+        return rows.first?.booking
+    }
+
     /// Resolves a private Storage object path into a time-limited playable URL.
     /// Media in a *public* bucket can skip this and use its permanent URL.
     func signedMediaURL(path: String,
@@ -194,6 +213,29 @@ private struct ProfileUpsert: Encodable {
         case id, email, intentions, frequency
         case fullName  = "full_name"
         case bodyState = "body_state"
+    }
+}
+
+/// Read model for `bookings`. `created_at` decodes straight to `Date` via the
+/// client's default (Postgres-timestamp-aware) decoder.
+private struct BookingRow: Decodable {
+    let id: UUID
+    let retreatId: Int
+    let amountUsd: Int
+    let currency: String
+    let status: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, currency, status
+        case retreatId = "retreat_id"
+        case amountUsd = "amount_usd"
+        case createdAt = "created_at"
+    }
+
+    var booking: Booking {
+        Booking(id: id, retreatId: retreatId, amountUsd: amountUsd,
+                currency: currency, status: status, createdAt: createdAt)
     }
 }
 

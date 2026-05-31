@@ -71,7 +71,11 @@ final class AuthManager {
     func createAccount(email: String, password: String, fullName: String) async throws {
         let trimmed = fullName.trimmingCharacters(in: .whitespaces)
         let metadata: [String: AnyJSON]? = trimmed.isEmpty ? nil : ["full_name": .string(trimmed)]
-        if isAnonymous {
+        // Upgrade in place only when there's a live anonymous session to upgrade.
+        // If there's no session (e.g. anonymous sign-in is unavailable), fall back
+        // to a fresh signUp rather than calling `update` with no session — which
+        // would throw "Auth session missing".
+        if supabase.auth.currentUser?.isAnonymous == true {
             _ = try await supabase.auth.update(
                 user: UserAttributes(email: email, password: password, data: metadata)
             )

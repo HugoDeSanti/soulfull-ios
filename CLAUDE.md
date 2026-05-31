@@ -6,7 +6,9 @@ SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial a
 
 ## Build & Run
 
-This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the `.xcodeproj` from `project.yml`. `project.yml` is the single source of truth for the build (target, Swift 6, iOS 18 deployment, bundle ID `com.soulfullgatherings.app`, Supabase SPM dependency, Geist font resources, `Secrets.xcconfig` injection). Regenerate `.xcodeproj` whenever you edit `project.yml`.
+This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the `.xcodeproj` from `project.yml`. `project.yml` is the single source of truth for the build (target, Swift 6, iOS 18 deployment, bundle ID `com.soulfullgatherings.app`, Supabase + Stripe (`StripePaymentSheet`) SPM dependencies, Geist font resources, `Secrets.xcconfig` injection). Regenerate `.xcodeproj` whenever you edit `project.yml`.
+
+> Stripe is pulled from **`github.com/stripe/stripe-ios-spm`** (the slim, SPM-optimized distribution), **not** `stripe/stripe-ios` — the main repo's multi-GB history makes SPM resolution extremely slow. Don't switch it back.
 
 ```bash
 # Regenerate the Xcode project after editing project.yml
@@ -36,9 +38,13 @@ Config/
 ├── Secrets.xcconfig                   # Gitignored — real Supabase host + anon key (never commit)
 └── Secrets.xcconfig.example           # Template; copy to Secrets.xcconfig on a new machine
 
-supabase/
-└── migrations/
-    └── 0001_profiles.sql              # `profiles` table + RLS + auto-create/updated_at triggers (run in dashboard SQL editor or `supabase db push`). NOT part of the Xcode build.
+supabase/                              # Backend-as-code. NOT part of the Xcode build (project.yml only sources SoulfullGatherings/ + Resources/Fonts).
+├── migrations/
+│   ├── 0001_profiles.sql              # `profiles` table + RLS + auto-create/updated_at triggers
+│   └── 0002_bookings.sql              # `bookings` table + RLS (read-only for owner; webhook writes via service role)
+└── functions/                         # Deno Edge Functions (Stripe). See functions/README.md for deploy + secrets.
+    ├── create-payment-intent/         # Auth'd: reads authoritative retreat price, reuses/creates Stripe customer, returns PaymentIntent + ephemeral key
+    └── stripe-webhook/                # Stripe-signed (deploy --no-verify-jwt): writes bookings on payment_intent.succeeded/payment_failed
 
 SoulfullGatherings/
 ├── SoulfullGatheringsApp.swift        # @main entry; creates AppState, injects environment, forces dark mode, kicks off auth via .task
@@ -61,7 +67,8 @@ SoulfullGatherings/
 │   │   └── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop, CircleIconButton, TabPlaceholder, PulseModifier
 │   ├── Services/
 │   │   ├── SupabaseConfig.swift       # Loads + validates Supabase host/anon key from Info.plist (Bundle.main); ConfigError (missingKey/malformedHost)
-│   │   ├── SupabaseService.swift      # Actor data layer: nonisolated client, 5-min TTL caches, fetchRetreats/Programs/PracticeSessions, fetchProfile/upsertProfile (uncached), signedMediaURL, invalidateCache
+│   │   ├── SupabaseService.swift      # Actor data layer: nonisolated client, 5-min TTL caches, fetchRetreats/Programs/PracticeSessions, fetchProfile/upsertProfile/fetchBooking (uncached), signedMediaURL, invalidateCache
+│   │   ├── PaymentService.swift       # @MainActor Stripe façade: createPaymentIntent (calls Edge Function) + presentPaymentSheet (StripePaymentSheet); publishable key comes from the function, never stored in-app
 │   │   └── AppError.swift             # App-level LocalizedError enum (configurationMissing/authFailure/networkFailure/unknown)
 │   └── Utils/
 │       └── Haptics.swift              # @MainActor UIKit haptic facade with cached generators (tap/bump/select/success/prepare)
@@ -81,7 +88,8 @@ SoulfullGatherings/
     ├── Retreats/
     │   ├── RetreatsStackView.swift    # Viewport-aligned scrolling name stack with crossfading photo backdrop; loadError retry
     │   ├── RetreatsViewModel.swift    # Retreat array + active index, loading/error state, fetches from Supabase
-    │   └── RetreatDetailView.swift    # Editorial full-bleed detail + Reserve button (local @State only)
+    │   ├── RetreatDetailView.swift    # Editorial full-bleed detail; Reserve gated on auth.hasAccount → AccountView sheet, else Stripe PaymentSheet via the VM
+    │   └── RetreatDetailViewModel.swift # @Observable; loadExistingBooking (reflect a paid booking) + reserve() (PaymentIntent → PaymentSheet → phase)
     ├── Practice/
     │   ├── PracticeView.swift         # Landing: scrolling cards for media categories (Somatic/Breathwork/Meditation) + menu items; onSelect callback
     │   ├── PracticeShared.swift       # Shared chrome: PracticeBackBar, PracticeListScaffold, NumberedStepRow
@@ -144,12 +152,15 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 | `retreats` | `id`, `name`, `country`, `start_date`, `end_date`, `max_guests`, `price_usd`, `tags` (array), `blurb`, `image_url`, `tone_top`, `tone_mid`, `tone_base` | `fetchRetreats()` (order by `start_date`) | 50 |
 | `programs` | `id`, `title`, `lead`, `date_range`, `days`, `image_url` | `fetchPrograms()` (order by `title`) | 50 |
 | `practice_sessions` | `id`, `category` (`somatic`/`breathwork`/`meditation`), `title`, `lead`, `media_kind` (`audio`/`video`), `storage_path`, `duration_seconds`, `image_url`, `blurb` | `fetchPracticeSessions(category:)` (filtered by `category`) | 100 |
-| `profiles` | `id` (uuid = `auth.users.id`), `email`, `full_name`, `intentions` (text[]), `body_state`, `frequency`, `stripe_customer_id` (Phase 2, server-only), `created_at`, `updated_at` | `fetchProfile(id:)` / `upsertProfile(_:)` (uncached) | 1 |
+| `profiles` | `id` (uuid = `auth.users.id`), `email`, `full_name`, `intentions` (text[]), `body_state`, `frequency`, `stripe_customer_id` (server-only), `created_at`, `updated_at` | `fetchProfile(id:)` / `upsertProfile(_:)` (uncached) | 1 |
+| `bookings` | `id`, `user_id`, `retreat_id`, `amount_usd`, `currency`, `status` (`pending`/`paid`/`failed`/`refunded`), `stripe_payment_intent_id`, `created_at`, `updated_at` | `fetchBooking(retreatID:userID:)` (uncached) | 1 |
 
 - `RetreatRow` parses `start_date`/`end_date` with a per-call `DateFormatter` (`yyyy-MM-dd`, `en_US_POSIX`); `Retreat` then derives its display `when` string and `durationDays`/`priceFormatted` itself.
 - **Tone colors** are hex strings (e.g. `#728FA5`) decoded via `Color(hex:)` (extension in `Theme.swift`).
 - `CommunityCircle` has **no** Supabase fetch yet — it is mock-only (`CommunityCircle.mock`). `programs` has a `fetchPrograms()` method but is **not** yet called by any ViewModel (Home uses `Program.mock`).
 - **`profiles` is protected by row-level security** (`auth.uid() = id` for select/insert/update; no delete; no client write to `stripe_customer_id`). A row is auto-created by an `auth.users` insert trigger (covers anonymous guests too), and `updated_at` is bumped by a trigger. The app only ever reads/writes its **own** row. `upsertProfile` deliberately omits `stripe_customer_id` and timestamps so it never clobbers server-managed columns. Account creation pushes local onboarding answers up; sign-in hydrates `AppSettings` from the row. **Caveat:** keep "Confirm email" **off** during development so the anonymous→permanent upgrade completes immediately; enabling it requires handling the email-confirmation redirect.
+
+**Payments (Phase 2 — Stripe, retreat reservations).** Retreats are real-world services, so Stripe (not Apple IAP) is the correct, App-Store-allowed rail. Flow: `RetreatDetailView` Reserve → (gate on `auth.hasAccount`, else present `AccountView`) → `PaymentService.createPaymentIntent` invokes the **`create-payment-intent`** Edge Function (authoritative price read server-side from `retreats`; reuses/creates the Stripe customer on `profiles.stripe_customer_id`) → `PaymentService.presentPaymentSheet` shows Stripe's `PaymentSheet` → on success the **`stripe-webhook`** function writes the `bookings` row with the service role. The client **never** writes payment state and never holds Stripe secrets — even the publishable key is returned by the function. `bookings` RLS is read-only for the owner. Stripe keys live only in Supabase function secrets (`STRIPE_API_KEY` — a **restricted** `rk_` key — plus `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET`). Server calls omit `payment_method_types` (dynamic payment methods) and use the account-default API version. The app sends its `STPAPIClient.apiVersion` so the function mints the ephemeral key with the matching version — no server/SDK version coordination needed. See `supabase/functions/README.md` for deploy steps + restricted-key permissions.
 
 **Practice media** lives in a Supabase **Storage** bucket (default `practice-media`); `practice_sessions.storage_path` stores only the bucket-relative path. `SupabaseService.signedMediaURL(path:bucket:expiresIn:)` (default 1-hour expiry) turns a private path into a time-limited signed URL. `PracticePlayerView` plays a `storagePath` that is an absolute `http(s)` URL directly (without signing) and signs everything else; the mock sessions use absolute sample URLs.
 
@@ -170,10 +181,11 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 ## Current State
 
 - **Implemented:** anonymous Supabase auth on launch; **email/password accounts (Phase 1)** — create-account upgrades the anonymous guest in place, sign-in/sign-out, `profiles` table with RLS + sync (You tab → `AccountView`); Welcome flow; Onboarding (4 questions + finish); Home dashboard; Retreats stack + detail; full Practice tab (category/menu landing → list → detail/player for the 3 media tracks plus Journal Prompts, Exercises, Food Recipes, Personal Massages; media plays via `PracticePlayerView`).
-- **Backend wiring:** `SupabaseService` (actor + caching) is live. `retreats` is fetched from Supabase by both `HomeViewModel` and `RetreatsViewModel`. `practice_sessions` is fetched per category by `PracticeViewModel`, gracefully falling back to `PracticeSession.mock(for:)` if the table is unseeded. `profiles` is read/written via `fetchProfile`/`upsertProfile` (uncached, RLS-protected).
+- **Retreat payments (Phase 2):** Stripe is wired end-to-end — `RetreatDetailView` Reserve → `create-payment-intent` Edge Function → Stripe `PaymentSheet` → `stripe-webhook` writes `bookings`. Reserve requires `auth.hasAccount` (else presents `AccountView`); an existing paid booking shows as "Reserved". Needs the Stripe account + secrets + function deploy to run live (see `supabase/functions/README.md`).
+- **Backend wiring:** `SupabaseService` (actor + caching) is live. `retreats` is fetched from Supabase by both `HomeViewModel` and `RetreatsViewModel`. `practice_sessions` is fetched per category by `PracticeViewModel`, gracefully falling back to `PracticeSession.mock(for:)` if the table is unseeded. `profiles` is read/written via `fetchProfile`/`upsertProfile`; `bookings` is read via `fetchBooking` (all uncached, RLS-protected).
 - **Mock-driven:** `programs` and `CommunityCircle` on Home (`fetchPrograms()` exists but is unused); all Journal / Exercise / Recipe / Massage content (driven by `.all` arrays in `Models.swift`, pending their own tables). `JournalDetailView` stores reflections device-locally only.
 - **Placeholder (unbuilt):** Circle tab (Community) — branded empty state via `TabPlaceholder`. The You tab (Profile) is now partly real (account UI + status); its "Reset onboarding" button is gated behind `#if DEBUG`.
-- **Not yet built (next phases):** Sign in with Apple (needs the Apple capability/entitlement); **Phase 2 — retreat payments via Stripe** (Edge Functions create PaymentIntents from `retreats.price_usd`, webhook writes a `bookings` table, `RetreatDetailView` Reserve wired to it — retreats are real-world services so Stripe is App-Store-allowed); **membership** subscription (a "mix" of digital + real-world perks → must use StoreKit IAP).
+- **Not yet built (next phases):** Sign in with Apple (needs the Apple capability/entitlement); a bookings list/history UI (data exists in `bookings`); refund handling; **membership** subscription (a "mix" of digital + real-world perks → must use StoreKit IAP, not Stripe).
 - **No tests:** no test targets exist yet.
 
 ## Resources

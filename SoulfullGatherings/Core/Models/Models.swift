@@ -25,6 +25,23 @@ struct Profile: Identifiable, Hashable {
     var stripeCustomerId: String?
 }
 
+// MARK: - Bookings (retreat reservations / payments)
+
+/// A retreat reservation paid through Stripe. Written server-side by the
+/// `stripe-webhook` Edge Function; the app only ever reads its own rows
+/// (`SupabaseService.fetchBooking`). Never construct/persist these client-side.
+struct Booking: Identifiable, Hashable {
+    let id: UUID
+    let retreatId: Int
+    let amountUsd: Int
+    let currency: String
+    /// `pending` | `paid` | `failed` | `refunded` (authoritative from Stripe).
+    let status: String
+    let createdAt: Date
+
+    var isPaid: Bool { status == "paid" }
+}
+
 // MARK: - Retreats (in-person)
 
 struct Retreat: Identifiable, Hashable {

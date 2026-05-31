@@ -11,9 +11,16 @@ import SwiftUI
 
 struct RetreatDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var auth
     let retreat: Retreat
 
-    @State private var reserved = false
+    @State private var vm: RetreatDetailViewModel
+    @State private var showAccount = false
+
+    init(retreat: Retreat) {
+        self.retreat = retreat
+        _vm = State(initialValue: RetreatDetailViewModel(retreat: retreat))
+    }
 
     var body: some View {
         ZStack {
@@ -48,16 +55,22 @@ struct RetreatDetailView: View {
                     .foregroundStyle(.white)
 
                 Button {
-                    Haptics.success()
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                        reserved = true
+                    Haptics.bump()
+                    if auth.hasAccount {
+                        Task { await vm.reserve() }
+                    } else {
+                        showAccount = true
                     }
                 } label: {
                     HStack(spacing: 8) {
-                        if reserved {
+                        if vm.isReserved {
                             Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
+                        } else if vm.isBusy {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.black)
                         }
-                        Text(reserved ? "Reserved" : "Reserve")
+                        Text(reserveTitle)
                             .font(Theme.body(15, weight: .medium))
                     }
                     .foregroundStyle(.black)
@@ -65,11 +78,23 @@ struct RetreatDetailView: View {
                     .padding(.vertical, 14)
                     .background(Capsule().fill(.white))
                     .shadow(color: .black.opacity(0.18), radius: 20, y: 6)
+                    .opacity(vm.isBusy ? 0.7 : 1)
                 }
                 .buttonStyle(.plain)
+                .disabled(vm.isBusy || vm.isReserved)
                 .padding(.top, 4)
+
+                if let error = vm.errorMessage {
+                    Text(error)
+                        .font(Theme.body(12))
+                        .foregroundStyle(Color.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 300)
+                        .padding(.top, 2)
+                }
             }
             .padding(.horizontal, 24)
+            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: vm.phase)
 
             // Bottom meta + tagline
             VStack(spacing: 12) {
@@ -92,6 +117,14 @@ struct RetreatDetailView: View {
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .task(id: auth.userID) { await vm.loadExistingBooking(userID: auth.userID) }
+        .sheet(isPresented: $showAccount) { AccountView() }
+    }
+
+    private var reserveTitle: String {
+        if vm.isReserved { return "Reserved" }
+        if vm.isBusy { return "Processing…" }
+        return auth.hasAccount ? "Reserve" : "Sign in to reserve"
     }
 
     private var topBar: some View {
@@ -149,5 +182,6 @@ private struct MetaPill: View {
         RetreatDetailView(retreat: sample)
             .toolbar(.hidden, for: .navigationBar)
     }
+    .environment(AppState().auth)
     .preferredColorScheme(.dark)
 }

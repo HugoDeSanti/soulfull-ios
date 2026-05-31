@@ -18,6 +18,12 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
+  Stripe:
+    # Slim, SPM-optimized distribution (no multi-GB git history / test fixtures
+    # that make the main stripe/stripe-ios repo extremely slow to resolve).
+    url: https://github.com/stripe/stripe-ios-spm
+    minVersion: 23.0.0
+    maxVersion: 100.0.0
 
 targets:
   SoulfullGatherings:
@@ -56,6 +62,8 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+      - package: Stripe
+        product: StripePaymentSheet
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.soulfullgatherings.app
