@@ -108,7 +108,7 @@ SoulfullGatherings/
         └── ProfilePlaceholder.swift   # You tab: greeting + intentions + account status; Create account/Sign in (→ AccountView sheet) when guest, Sign out + Delete account (confirmationDialog → AuthManager.deleteAccount) when signed in; dev-only "Reset onboarding" gated behind #if DEBUG; custom layout, not TabPlaceholder
 ```
 
-> Resources (`Resources/Images/`, `Resources/Fonts/`) live at the **repo root**, not under `SoulfullGatherings/`. `project.yml` adds `Resources/Fonts` as a resources build phase; images are managed through `SoulfullGatherings/Assets.xcassets`.
+> Geist fonts live in `Resources/Fonts/` at the **repo root**, not under `SoulfullGatherings/`. `project.yml` adds `Resources/Fonts` as a resources build phase. All images are managed through `SoulfullGatherings/Assets.xcassets`.
 
 ## Design System
 
@@ -196,4 +196,4 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 
 ## Resources
 
-Images live in `Resources/Images/` and Geist fonts in `Resources/Fonts/` (both at the **repo root**, not inside `SoulfullGatherings/`). Images are referenced by string name (e.g. `"retreat-mallorca"`, `"home-bg"`, `"soulfull-logo-white"`); the same handful of retreat photos currently double as placeholder art across Practice content. Images must also be in the asset catalog (`SoulfullGatherings/Assets.xcassets`) for `Image(_:)` to find them, and fonts must be listed in `Info.plist` `UIAppFonts` (currently the six shipped Geist weights).
+Geist fonts live in `Resources/Fonts/` at the **repo root** (not inside `SoulfullGatherings/`) and must be listed in `Info.plist` `UIAppFonts` (currently the six shipped Geist weights). Images live in the asset catalog at `SoulfullGatherings/Assets.xcassets` and are referenced by string name (e.g. `"retreat-mallorca"`, `"home-bg"`, `"soulfull-logo-white"`); the same handful of retreat photos currently double as placeholder art across Practice content.

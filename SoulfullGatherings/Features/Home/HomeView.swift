@@ -3,9 +3,9 @@
 //  Soulfull Gatherings
 //
 //  The main landing screen. Centered logo, greeting, mood chips, today's
-//  ritual card, continue-journey card, digital retreats carousel, circles
-//  meeting now, and the upcoming-gatherings carousel that opens the
-//  retreats stack / detail.
+//  ritual card, continue-journey card, upcoming-gatherings carousel that
+//  opens the retreats stack / detail, digital retreats carousel, and
+//  circles meeting now.
 //
 
 import SwiftUI
@@ -25,9 +25,9 @@ struct HomeView: View {
                 moodRow
                 todaysRitual
                 continueJourney
+                upcomingGatherings
                 digitalRetreats
                 circlesList
-                upcomingGatherings
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 24)
