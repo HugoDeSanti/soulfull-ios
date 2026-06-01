@@ -25,12 +25,22 @@ final class AccountViewModel {
         var cta: String { self == .createAccount ? "Create account" : "Sign in" }
     }
 
+    /// Result of a submit attempt, so the view knows whether to dismiss, show an
+    /// error, or switch to the "check your email" panel.
+    enum Outcome { case signedIn, confirmationRequired, failed }
+
     var mode: Mode
     var fullName = ""
     var email = ""
     var password = ""
     var isWorking = false
     var errorMessage: String?
+    /// Set when account creation succeeded but the user must confirm their email
+    /// (Supabase "Confirm email" is on) before the session becomes permanent.
+    var awaitingConfirmation = false
+
+    /// The address a confirmation link was sent to (shown on the confirm panel).
+    var confirmationEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     init(mode: Mode = .createAccount) {
         self.mode = mode
@@ -52,10 +62,13 @@ final class AccountViewModel {
         errorMessage = nil
     }
 
-    /// Performs the auth call + profile sync. Returns `true` on success so the
-    /// view can dismiss.
-    func submit(auth: AuthManager, settings: AppSettings) async -> Bool {
-        guard canSubmit else { return false }
+    /// Performs the auth call + profile sync.
+    /// - `.signedIn`: dismiss (session is live).
+    /// - `.confirmationRequired`: account created but email must be confirmed —
+    ///   show the "check your email" panel; the deep link completes it.
+    /// - `.failed`: `errorMessage` is set.
+    func submit(auth: AuthManager, settings: AppSettings) async -> Outcome {
+        guard canSubmit else { return .failed }
         isWorking = true
         errorMessage = nil
         defer { isWorking = false }
@@ -65,16 +78,26 @@ final class AccountViewModel {
             case .createAccount:
                 try await auth.createAccount(email: trimmedEmail, password: password, fullName: trimmedName)
                 try await pushProfile(auth: auth, settings: settings)
+                // With "Confirm email" on, the upgrade stays a guest session until
+                // the emailed link is tapped, so hasAccount is still false here.
+                if auth.hasAccount {
+                    Haptics.success()
+                    return .signedIn
+                } else {
+                    awaitingConfirmation = true
+                    Haptics.tap()
+                    return .confirmationRequired
+                }
             case .signIn:
                 try await auth.signIn(email: trimmedEmail, password: password)
                 await hydrateProfile(auth: auth, settings: settings)
+                Haptics.success()
+                return .signedIn
             }
-            Haptics.success()
-            return true
         } catch {
             Haptics.bump()
             errorMessage = error.localizedDescription
-            return false
+            return .failed
         }
     }
 

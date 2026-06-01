@@ -91,6 +91,25 @@ final class AuthManager {
         apply(session.user)
     }
 
+    /// Completes an email-confirmation / magic-link deep link. When the user
+    /// taps the link in their email, the app opens at `soulfull://auth-callback?code=…`;
+    /// the SDK exchanges the PKCE code for a confirmed session. After this the
+    /// (previously anonymous) user is permanent — `hasAccount` becomes true.
+    /// Returns true if the URL was an auth callback we handled.
+    @discardableResult
+    func handleDeepLink(_ url: URL) async -> Bool {
+        guard url.scheme == SupabaseService.authRedirectURL.scheme else { return false }
+        do {
+            let session = try await supabase.auth.session(from: url)
+            apply(session.user)
+            return true
+        } catch {
+            print("[AuthManager] Auth deep link failed: \(error)")
+            state = .failed(AppError.authFailure(error).localizedDescription)
+            return false
+        }
+    }
+
     /// Signs out of a permanent account and returns to a fresh anonymous guest
     /// session so the rest of the app keeps working.
     func signOut() async {

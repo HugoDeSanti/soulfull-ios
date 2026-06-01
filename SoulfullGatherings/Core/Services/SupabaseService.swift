@@ -28,9 +28,20 @@ actor SupabaseService {
     private var practiceCacheDate: [PracticeCategory: Date] = [:]
     private let cacheTTL: TimeInterval = 300
 
+    /// Deep-link the app handles for auth email confirmations / magic links.
+    /// Must be allow-listed in Supabase → Authentication → URL Configuration,
+    /// and registered as a URL scheme in `project.yml` (`soulfull`).
+    nonisolated static let authRedirectURL = URL(string: "soulfull://auth-callback")!
+
     private init() throws {
         let config = try SupabaseConfig.make()
-        client = SupabaseClient(supabaseURL: config.url, supabaseKey: config.anonKey)
+        // PKCE flow + Keychain session storage are the SDK defaults; we add the
+        // redirect URL so signUp / anonymous-upgrade confirmation emails return
+        // to the app instead of a web page.
+        let options = SupabaseClientOptions(
+            auth: .init(redirectToURL: Self.authRedirectURL)
+        )
+        client = SupabaseClient(supabaseURL: config.url, supabaseKey: config.anonKey, options: options)
     }
 
     // MARK: - Fetches

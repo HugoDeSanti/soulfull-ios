@@ -23,6 +23,10 @@ struct SoulfullGatheringsApp: App {
                 .preferredColorScheme(.dark)
                 .tint(Theme.ink)
                 .task { await appState.initializeAuth() }
+                .onOpenURL { url in
+                    // Email-confirmation / magic-link callback (soulfull://auth-callback).
+                    Task { await appState.auth.handleDeepLink(url) }
+                }
         }
     }
 }

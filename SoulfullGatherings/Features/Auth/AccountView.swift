@@ -28,11 +28,15 @@ struct AccountView: View {
 
             ScrollView {
                 VStack(spacing: 22) {
-                    header
-                    fields
-                    if let msg = vm.errorMessage { errorBanner(msg) }
-                    submitButton
-                    modeToggle
+                    if vm.awaitingConfirmation {
+                        confirmationPanel
+                    } else {
+                        header
+                        fields
+                        if let msg = vm.errorMessage { errorBanner(msg) }
+                        submitButton
+                        modeToggle
+                    }
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 84)
@@ -43,6 +47,33 @@ struct AccountView: View {
             closeButton
         }
         .preferredColorScheme(.dark)
+        .onChange(of: auth.hasAccount) { _, hasAccount in
+            // The emailed link was tapped (deep link) while this sheet was open —
+            // the session is now permanent, so close back to the profile.
+            if hasAccount { dismiss() }
+        }
+    }
+
+    // MARK: - Email confirmation panel
+
+    private var confirmationPanel: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "envelope.badge")
+                .font(.system(size: 38, weight: .light))
+                .foregroundStyle(Theme.honey)
+            Text("Almost there — confirm your email")
+                .font(Theme.headline(24))
+                .foregroundStyle(Theme.ink)
+                .kerning(-0.2)
+                .multilineTextAlignment(.center)
+            Text("We sent a link to \(vm.confirmationEmail). Open it on this device to finish — we'll sign you in automatically.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .frame(maxWidth: 300)
+        }
+        .padding(.top, 24)
     }
 
     // MARK: - Header
@@ -186,7 +217,12 @@ struct AccountView: View {
 
     private func trySubmit() async {
         focus = nil
-        if await vm.submit(auth: auth, settings: settings) { dismiss() }
+        switch await vm.submit(auth: auth, settings: settings) {
+        case .signedIn:
+            dismiss()
+        case .confirmationRequired, .failed:
+            break // VM drives the confirmation panel / error banner
+        }
     }
 }
 

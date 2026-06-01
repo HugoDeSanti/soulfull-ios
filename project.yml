@@ -50,6 +50,11 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UIStatusBarStyle: UIStatusBarStyleDefault
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.soulfullgatherings.app
+            CFBundleURLSchemes:
+              - soulfull
         UIAppFonts:
           - Geist-Thin.otf
           - Geist-Light.otf
