@@ -30,14 +30,6 @@ struct ProfilePlaceholder: View {
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
 
-                if !settings.intentions.isEmpty {
-                    Text("Intentions: " + settings.intentions.sorted().joined(separator: " · "))
-                        .font(Theme.body(13))
-                        .foregroundStyle(Theme.inkSoft)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-
                 accountStatus
 
                 Spacer()

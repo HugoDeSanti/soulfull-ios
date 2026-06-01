@@ -39,7 +39,7 @@ targets:
     info:
       path: SoulfullGatherings/Info.plist
       properties:
-        CFBundleDisplayName: Soulfull Gatherings
+        CFBundleDisplayName: Soulfull
         CFBundleIdentifier: com.soulfullgatherings.app
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0.0"
