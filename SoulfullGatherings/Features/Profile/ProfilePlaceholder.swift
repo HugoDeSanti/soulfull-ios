@@ -7,6 +7,9 @@ struct ProfilePlaceholder: View {
 
     @State private var showAccount = false
     @State private var accountMode: AccountViewModel.Mode = .createAccount
+    @State private var showDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     var body: some View {
         ZStack {
@@ -47,6 +50,31 @@ struct ProfilePlaceholder: View {
         .sheet(isPresented: $showAccount) {
             AccountView(mode: accountMode)
         }
+        .confirmationDialog("Delete your account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete account", role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your account, reservations, and saved data. This can't be undone.")
+        }
+        .alert("Couldn't delete account", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
+            Button("OK", role: .cancel) { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
+    }
+
+    private func deleteAccount() async {
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await auth.deleteAccount()
+            Haptics.success()
+        } catch {
+            Haptics.bump()
+            deleteError = error.localizedDescription
+        }
     }
 
     // MARK: - Account status line
@@ -73,6 +101,18 @@ struct ProfilePlaceholder: View {
                 SGPrimaryButton(title: "Sign out") {
                     Task { await auth.signOut() }
                 }
+                Button {
+                    Haptics.tap()
+                    showDeleteConfirm = true
+                } label: {
+                    Text(isDeleting ? "Deleting…" : "Delete account")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Color(red: 0.85, green: 0.36, blue: 0.33))
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .disabled(isDeleting)
             } else {
                 SGPrimaryButton(title: "Create account", filled: true) {
                     accountMode = .createAccount

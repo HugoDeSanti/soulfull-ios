@@ -122,6 +122,20 @@ final class AuthManager {
         await signInAnonymously()
     }
 
+    /// Permanently deletes the signed-in account via the `delete-account` Edge
+    /// Function (removes the Stripe customer, then deletes the auth user —
+    /// cascading to `profiles` + `bookings`), then returns to a fresh guest
+    /// session. Required for App Store compliance (sign-up ⇒ must offer deletion).
+    func deleteAccount() async throws {
+        struct DeleteResult: Decodable { let deleted: Bool }
+        // The Functions client attaches the current session's JWT, so the server
+        // deletes exactly this user.
+        let _: DeleteResult = try await supabase.functions.invoke("delete-account")
+        // The session is now invalid server-side; drop it and open a fresh
+        // anonymous one so the app stays usable.
+        await signOut()
+    }
+
     // MARK: - Private
 
     private func signInAnonymously() async {

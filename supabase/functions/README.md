@@ -1,11 +1,10 @@
-# Supabase Edge Functions — Phase 2 (Stripe payments)
-
-Two functions back retreat reservations:
+# Supabase Edge Functions
 
 | Function | Auth | Purpose |
 |---|---|---|
 | `create-payment-intent` | Caller's Supabase JWT | Reads the authoritative retreat price, reuses/creates the Stripe customer, returns a PaymentIntent client secret + ephemeral key for the iOS PaymentSheet. |
 | `stripe-webhook` | Stripe signature (no Supabase JWT) | On `payment_intent.succeeded` / `…payment_failed`, writes a row to `bookings` with the service role. The only writer of payment state. |
+| `delete-account` | Caller's Supabase JWT | Deletes the caller's own account (App Store 5.1.1(v)): best-effort deletes their Stripe customer, then deletes the auth user with the service role — cascading to `profiles` + `bookings`. |
 
 ## One-time setup
 
@@ -29,6 +28,7 @@ Two functions back retreat reservations:
    ```bash
    supabase functions deploy create-payment-intent
    supabase functions deploy stripe-webhook --no-verify-jwt   # Stripe sends its own signature, not a Supabase JWT
+   supabase functions deploy delete-account                   # keep JWT verification ON (default)
    ```
 
 4. **Create the Stripe webhook endpoint** (Stripe dashboard → Developers → Webhooks):

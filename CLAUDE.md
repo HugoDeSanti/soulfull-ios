@@ -43,9 +43,10 @@ supabase/                              # Backend-as-code. NOT part of the Xcode 
 │   ├── 0001_profiles.sql              # `profiles` table + RLS + auto-create/updated_at triggers
 │   ├── 0002_bookings.sql              # `bookings` table + RLS (read-only for owner; webhook writes via service role)
 │   └── 0003_retreats_public_read.sql  # retreats SELECT policy for `anon` + `authenticated` (see RLS-role gotcha below)
-└── functions/                         # Deno Edge Functions (Stripe). See functions/README.md for deploy + secrets.
+└── functions/                         # Deno Edge Functions. See functions/README.md for deploy + secrets.
     ├── create-payment-intent/         # Auth'd: reads authoritative retreat price, reuses/creates Stripe customer, returns PaymentIntent + ephemeral key
-    └── stripe-webhook/                # Stripe-signed (deploy --no-verify-jwt): writes bookings on payment_intent.succeeded/payment_failed
+    ├── stripe-webhook/                # Stripe-signed (deploy --no-verify-jwt): writes bookings on payment_intent.succeeded/payment_failed
+    └── delete-account/                # Auth'd: deletes the caller's Stripe customer (best-effort) + auth user (cascades to profiles/bookings) — App Store account-deletion compliance
 
 SoulfullGatherings/
 ├── SoulfullGatheringsApp.swift        # @main entry; creates AppState, injects environment, forces dark mode, kicks off auth via .task; .onOpenURL routes soulfull:// auth deep links to AuthManager.handleDeepLink
@@ -54,7 +55,7 @@ SoulfullGatherings/
 │
 ├── App/                               # App-level: global state, routing, auth, navigation shell
 │   ├── AppState.swift                 # @Observable stage router (loading/welcome/onboarding/main) + lifecycle; initializeAuth()/resetAll()
-│   ├── AuthManager.swift              # @Observable Supabase auth; initialize() restores/opens anonymous session; createAccount (upgrades guest in place)/signIn/signOut; handleDeepLink (email-confirmation callback via PKCE session(from:)); exposes isAnonymous/hasAccount/email/userID
+│   ├── AuthManager.swift              # @Observable Supabase auth; initialize() restores/opens anonymous session; createAccount (upgrades guest in place)/signIn/signOut/deleteAccount (delete-account fn → re-anon); handleDeepLink (email-confirmation callback via PKCE session(from:)); exposes isAnonymous/hasAccount/email/userID
 │   ├── AppSettings.swift              # @Observable UserDefaults wrapper (didSet persistence); hasOnboarded/userName/bodyState/frequency/intentions
 │   ├── RootView.swift                 # Stage switcher with opacity + motion transitions
 │   ├── MainTabView.swift              # Four-tab container + private HomeRoot/PracticeRoot NavigationStacks
@@ -104,7 +105,7 @@ SoulfullGatherings/
     ├── Circle/
     │   └── CommunityPlaceholder.swift # Branded empty state for Circle tab (delegates to TabPlaceholder)
     └── Profile/
-        └── ProfilePlaceholder.swift   # You tab: greeting + intentions + account status; Create account/Sign in (→ AccountView sheet) when guest, Sign out when signed in; dev-only "Reset onboarding" gated behind #if DEBUG; custom layout, not TabPlaceholder
+        └── ProfilePlaceholder.swift   # You tab: greeting + intentions + account status; Create account/Sign in (→ AccountView sheet) when guest, Sign out + Delete account (confirmationDialog → AuthManager.deleteAccount) when signed in; dev-only "Reset onboarding" gated behind #if DEBUG; custom layout, not TabPlaceholder
 ```
 
 > Resources (`Resources/Images/`, `Resources/Fonts/`) live at the **repo root**, not under `SoulfullGatherings/`. `project.yml` adds `Resources/Fonts` as a resources build phase; images are managed through `SoulfullGatherings/Assets.xcassets`.
@@ -185,7 +186,7 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 
 ## Current State
 
-- **Implemented:** anonymous Supabase auth on launch; **email/password accounts (Phase 1)** — create-account upgrades the anonymous guest in place, sign-in/sign-out, `profiles` table with RLS + sync (You tab → `AccountView`); Welcome flow; Onboarding (4 questions + finish); Home dashboard; Retreats stack + detail; full Practice tab (category/menu landing → list → detail/player for the 3 media tracks plus Journal Prompts, Exercises, Food Recipes, Personal Massages; media plays via `PracticePlayerView`).
+- **Implemented:** anonymous Supabase auth on launch; **email/password accounts (Phase 1)** — create-account upgrades the anonymous guest in place, sign-in/sign-out, **account deletion** (`delete-account` Edge Function → re-anon; App Store 5.1.1(v) compliant), email-confirmation deep linking, `profiles` table with RLS + sync (You tab → `AccountView`); Welcome flow; Onboarding (4 questions + finish); Home dashboard; Retreats stack + detail; full Practice tab (category/menu landing → list → detail/player for the 3 media tracks plus Journal Prompts, Exercises, Food Recipes, Personal Massages; media plays via `PracticePlayerView`).
 - **Retreat payments (Phase 2):** Stripe is wired end-to-end and **deployed + verified working in Stripe test mode** — `RetreatDetailView` Reserve → `create-payment-intent` Edge Function → Stripe `PaymentSheet` → `stripe-webhook` writes `bookings`. Reserve requires `auth.hasAccount` (else presents `AccountView`); an existing paid booking shows as "Reserved". Both Edge Functions are deployed, function secrets are set, and the Stripe webhook endpoint is configured. Going to **live mode** still needs live Stripe keys + a live webhook endpoint/secret (see `supabase/functions/README.md`).
 - **Backend wiring:** `SupabaseService` (actor + caching) is live. `retreats` is fetched from Supabase by both `HomeViewModel` and `RetreatsViewModel`. `practice_sessions` is fetched per category by `PracticeViewModel`, gracefully falling back to `PracticeSession.mock(for:)` if the table is unseeded. `profiles` is read/written via `fetchProfile`/`upsertProfile`; `bookings` is read via `fetchBooking` (all uncached, RLS-protected).
 - **Mock-driven:** `programs` and `CommunityCircle` on Home (`fetchPrograms()` exists but is unused); all Journal / Exercise / Recipe / Massage content (driven by `.all` arrays in `Models.swift`, pending their own tables). `JournalDetailView` stores reflections device-locally only.
