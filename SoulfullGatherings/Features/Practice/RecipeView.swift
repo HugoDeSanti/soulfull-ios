@@ -63,6 +63,10 @@ struct RecipeListView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        // Clip the hit-test region: `scaledToFill` + `.clipped()`/`.clipShape()`
+        // only clip visually, so the hero image's tap area overflows up into
+        // the back bar and the first card swallows the "Practices" tap.
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -73,35 +77,20 @@ struct RecipeDetailView: View {
     let recipe: Recipe
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .top) {
-                    Image(recipe.imageUrl)
-                        .resizable().scaledToFill()
-                        .frame(height: 320)
-                        .clipped()
-                    LinearGradient(colors: [.black.opacity(0.45), .clear, .black.opacity(0.35)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .frame(height: 320)
-                    HStack {
-                        Button {
-                            Haptics.tap()
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
-                                Text("Recipes").font(Theme.body(13)).underline()
-                            }
-                            .foregroundStyle(.white)
-                        }
-                        .buttonStyle(.plain)
-                        Spacer()
+        ZStack(alignment: .topLeading) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ZStack(alignment: .top) {
+                        Image(recipe.imageUrl)
+                            .resizable().scaledToFill()
+                            .frame(height: 320)
+                            .clipped()
+                        LinearGradient(colors: [.black.opacity(0.45), .clear, .black.opacity(0.35)],
+                                       startPoint: .top, endPoint: .bottom)
+                            .frame(height: 320)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                }
 
-                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(recipe.lead.uppercased())
                             .font(Theme.eyebrow(11))
@@ -156,9 +145,24 @@ struct RecipeDetailView: View {
                 .padding(.horizontal, 20)
             }
         }
-        .scrollIndicators(.hidden)
-        .ignoresSafeArea(edges: .top)
-        .background(Theme.bg)
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea(edges: .top)
+            .background(Theme.bg)
+
+            Button {
+                Haptics.tap()
+                dismiss()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Recipes").font(Theme.body(13)).underline()
+                }
+                .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+        }
     }
 
     private func metaPill(_ icon: String, _ text: String) -> some View {
