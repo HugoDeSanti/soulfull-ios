@@ -2,10 +2,10 @@
 //  HomeView.swift
 //  Soulfull Gatherings
 //
-//  The main landing screen. Centered logo, greeting, mood chips, today's
-//  ritual card, continue-journey card, upcoming-gatherings carousel that
-//  opens the retreats stack / detail, digital retreats carousel, and
-//  circles meeting now.
+//  The main landing screen. Sections rise out of a blur as they scroll in,
+//  card imagery drifts in parallax, mood chips bloom on selection, and the
+//  ritual card has a living aurora interior. Retreat cards are zoom-hero
+//  sources into the detail screen.
 //
 
 import SwiftUI
@@ -17,17 +17,19 @@ struct HomeView: View {
 
     let onOpenRetreats: () -> Void
     let onOpenRetreat: (Retreat) -> Void
+    /// Zoom-hero namespace owned by HomeRoot; retreat cards register as sources.
+    var zoomNamespace: Namespace.ID? = nil
 
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
                 header
-                moodRow
-                todaysRitual
-                continueJourney
-                upcomingGatherings
-                digitalRetreats
-                circlesList
+                section { moodRow }
+                section { todaysRitual }
+                section { continueJourney }
+                section { upcomingGatherings }
+                section { digitalRetreats }
+                section { circlesList }
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 24)
@@ -39,6 +41,19 @@ struct HomeView: View {
         .task { await vm.load() }
     }
 
+    /// Shared scroll-in reveal: sections rise out of a blur as they enter
+    /// from the bottom; nothing happens scrolling back past the top.
+    private func section(@ViewBuilder _ content: () -> some View) -> some View {
+        content()
+            .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+                let entering = max(phase.value, 0) // only the bottom edge
+                return view
+                    .opacity(1 - entering * 0.6)
+                    .blur(radius: entering * 3)
+                    .offset(y: entering * 26)
+            }
+    }
+
     // MARK: - Sections
 
     private var header: some View {
@@ -46,7 +61,7 @@ struct HomeView: View {
             Image("soulfull-logo-white")
                 .resizable().scaledToFit()
                 .frame(width: 88, height: 88)
-                .opacity(0.92)
+                .breathing(scale: 0.985...1.015, opacity: 0.88...0.96, period: 6)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(vm.greeting.uppercased())
@@ -73,119 +88,204 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(vm.moods) { m in
-                        Button {
-                            vm.tapMood(m.id)
-                        } label: {
-                            Text(m.label)
-                                .font(Theme.body(13))
-                                .foregroundStyle(Theme.ink)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .fill(.ultraThinMaterial)
-                                        .overlay(
-                                            Capsule().strokeBorder(
-                                                vm.selectedMood == m.id
-                                                ? Color.white.opacity(0.55)
-                                                : Theme.glassBorder,
-                                                lineWidth: 1
-                                            )
-                                        )
-                                )
-                        }
-                        .buttonStyle(.plain)
+                        moodChip(m)
                     }
                 }
                 .padding(.horizontal, 24)
+                .padding(.vertical, 6) // headroom for the selection pop
             }
         }
     }
 
-    private var todaysRitual: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            GlassCard(radius: 22, padding: 18) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TODAY'S RITUAL")
-                        .font(Theme.eyebrow(10))
-                        .tracking(2)
-                        .foregroundStyle(.white)
-                        .padding(.bottom, 4)
-                    Text("Nervous System Reset")
-                        .font(Theme.headline(22))
-                        .foregroundStyle(Theme.ink)
-                        .kerning(-0.2)
-                    Text("4 minutes · guided breath")
-                        .font(Theme.body(11.5, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.top, 2)
-
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 6, height: 6)
-                            .pulse()
-                        Text("Begin now")
-                            .font(Theme.body(11.5, weight: .semibold))
-                            .tracking(0.4)
-                            .foregroundStyle(.white)
+    private func moodChip(_ m: MoodChip) -> some View {
+        let selected = vm.selectedMood == m.id
+        return Button {
+            vm.tapMood(m.id)
+        } label: {
+            Text(m.label)
+                .font(Theme.body(13, weight: selected ? .medium : .regular))
+                .foregroundStyle(selected ? Color.black : Theme.ink)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background {
+                    if selected {
+                        Capsule().fill(Theme.ink)
+                            .shadow(color: Theme.honey.opacity(0.35), radius: 12, y: 2)
+                    } else {
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Capsule().strokeBorder(Theme.glassBorder, lineWidth: 1))
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .overlay(
-                        Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1)
-                    )
-                    .padding(.top, 12)
                 }
-            }
-            .padding(.horizontal, 20)
-            .contentShape(Rectangle())
-            .onTapGesture { Haptics.bump() }
+                .scaleEffect(selected ? 1.06 : 1)
+                .animation(.spring(response: 0.38, dampingFraction: 0.6), value: selected)
         }
+        .buttonStyle(SoulPressableStyle(scale: 0.9, hapticOnPress: false, dim: false))
+    }
+
+    private var todaysRitual: some View {
+        PressableCard(action: {}) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("TODAY'S RITUAL")
+                    .font(Theme.eyebrow(10))
+                    .tracking(2)
+                    .foregroundStyle(.white)
+                    .padding(.bottom, 4)
+                Text("Nervous System Reset")
+                    .font(Theme.headline(22))
+                    .foregroundStyle(Theme.ink)
+                    .kerning(-0.2)
+                Text("4 minutes · guided breath")
+                    .font(Theme.body(11.5, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(.top, 2)
+
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 6, height: 6)
+                        .pulse()
+                    Text("Begin now")
+                        .font(Theme.body(11.5, weight: .semibold))
+                        .tracking(0.4)
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .overlay(
+                    Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1)
+                )
+                .padding(.top, 12)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(18)
+            .background {
+                // Living interior: slow aurora under the glass.
+                AuroraBackground(speed: 0.7)
+                    .opacity(0.55)
+                    .overlay(.ultraThinMaterial)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+            )
+        }
+        .padding(.horizontal, 20)
     }
 
     private var continueJourney: some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionLabel(title: "Continue your journey", action: "VIEW") { }
 
-            GlassCard(radius: 22, padding: 16) {
-                HStack(spacing: 16) {
-                    Text("3")
-                        .font(Theme.body(38, weight: .ultraLight))
-                        .foregroundStyle(Theme.ink)
-                        .frame(width: 84, height: 84)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-                        )
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("DAY 3 OF 7")
-                            .font(Theme.eyebrow(10))
-                            .tracking(2)
-                            .foregroundStyle(.white)
-                        Text("Nervous System Healing")
-                            .font(Theme.headline(20))
+            PressableCard(action: {}) {
+                GlassCard(radius: 22, padding: 16) {
+                    HStack(spacing: 16) {
+                        Text("3")
+                            .font(Theme.body(38, weight: .ultraLight))
                             .foregroundStyle(Theme.ink)
-                            .kerning(-0.2)
-                        Text("with Dr. Anya Iyer")
-                            .font(Theme.body(12))
-                            .foregroundStyle(Theme.muted)
+                            .frame(width: 84, height: 84)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                            )
 
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(Theme.line)
-                                Capsule().fill(Color.white).frame(width: geo.size.width * 0.43)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("DAY 3 OF 7")
+                                .font(Theme.eyebrow(10))
+                                .tracking(2)
+                                .foregroundStyle(.white)
+                            Text("Nervous System Healing")
+                                .font(Theme.headline(20))
+                                .foregroundStyle(Theme.ink)
+                                .kerning(-0.2)
+                            Text("with Dr. Anya Iyer")
+                                .font(Theme.body(12))
+                                .foregroundStyle(Theme.muted)
+
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Theme.line)
+                                    Capsule()
+                                        .fill(
+                                            LinearGradient(colors: [Theme.honey.opacity(0.8), Theme.ink],
+                                                           startPoint: .leading, endPoint: .trailing)
+                                        )
+                                        .frame(width: geo.size.width * 0.43)
+                                }
                             }
+                            .frame(height: 3)
+                            .padding(.top, 8)
                         }
-                        .frame(height: 3)
-                        .padding(.top, 8)
                     }
                 }
             }
             .padding(.horizontal, 20)
         }
+    }
+
+    private var upcomingGatherings: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionLabel(title: "Upcoming gatherings", action: "ALL") {
+                onOpenRetreats()
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(vm.retreats.prefix(5)) { r in
+                        retreatCard(r)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
+        }
+    }
+
+    private func retreatCard(_ r: Retreat) -> some View {
+        PressableCard(action: { onOpenRetreat(r) }) {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .bottomLeading) {
+                    Image(r.imageUrl)
+                        .resizable().scaledToFill()
+                        .frame(width: 260, height: 150)
+                        .scaleEffect(1.18)
+                        .scrollParallax(strength: 34, axis: .horizontal)
+                        .frame(width: 260, height: 150)
+                        .clipped()
+                    LinearGradient(colors: [.clear, .black.opacity(0.55)],
+                                   startPoint: .top, endPoint: .bottom)
+                    Text("\(r.country) · \(r.when)".uppercased())
+                        .font(Theme.eyebrow(10))
+                        .tracking(2)
+                        .foregroundStyle(.white)
+                        .padding(14)
+                }
+                .frame(width: 260, height: 150)
+                .clipped()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(r.name)
+                        .font(Theme.headline(22))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                    Text("\(r.durationDays) days · \(r.maxGuests) guests")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(width: 260)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.glassBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }
+        .modifier(ZoomSourceIfAvailable(id: "home-retreat-\(r.id)", namespace: zoomNamespace))
     }
 
     private var digitalRetreats: some View {
@@ -199,51 +299,59 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                .scrollTargetLayout()
             }
+            .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
         }
     }
 
     private func programCard(_ p: Program) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                Image(p.imageUrl)
-                    .resizable().scaledToFill()
-                    .frame(width: 260, height: 200)
-                    .clipped()
+        PressableCard(action: {}) {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .bottomLeading) {
+                    Image(p.imageUrl)
+                        .resizable().scaledToFill()
+                        .frame(width: 260, height: 200)
+                        .scaleEffect(1.18)
+                        .scrollParallax(strength: 34, axis: .horizontal)
+                        .frame(width: 260, height: 200)
+                        .clipped()
 
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.62)],
-                    startPoint: .top, endPoint: .bottom
-                )
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.62)],
+                        startPoint: .top, endPoint: .bottom
+                    )
 
-                Text("\(p.days) DAYS · DIGITAL · \(p.when)".uppercased())
-                    .font(Theme.eyebrow(10))
-                    .tracking(2)
-                    .foregroundStyle(.white)
-                    .padding(14)
+                    Text("\(p.days) DAYS · DIGITAL · \(p.when)".uppercased())
+                        .font(Theme.eyebrow(10))
+                        .tracking(2)
+                        .foregroundStyle(.white)
+                        .padding(14)
+                }
+                .frame(width: 260, height: 200)
+                .clipped()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(p.title)
+                        .font(Theme.headline(22))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                        .lineLimit(2)
+                    Text("with \(p.lead)")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(p.title)
-                    .font(Theme.headline(22))
-                    .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
-                    .lineLimit(2)
-                Text("with \(p.lead)")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(width: 260)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22)
+                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .frame(width: 260)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .onTapGesture { Haptics.tap() }
     }
 
     private var circlesList: some View {
@@ -260,96 +368,54 @@ struct HomeView: View {
     }
 
     private func circleRow(_ c: CommunityCircle) -> some View {
-        HStack(spacing: 14) {
-            Text(String(c.title.prefix(1)))
-                .font(Theme.headline(18))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    if c.isLive {
-                        Circle().fill(Color.white).frame(width: 6, height: 6).pulse()
-                    }
-                    Text(c.timeLabel.uppercased())
-                        .font(Theme.eyebrow(10))
-                        .tracking(2)
-                        .foregroundStyle(.white)
-                }
-                Text(c.title)
-                    .font(Theme.headline(17))
+        PressableCard(action: {}) {
+            HStack(spacing: 14) {
+                Text(String(c.title.prefix(1)))
+                    .font(Theme.headline(18))
                     .foregroundStyle(Theme.ink)
-                Text("\(c.host) · \(c.attendees) attending")
-                    .font(Theme.body(11))
-                    .foregroundStyle(Theme.muted)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .onTapGesture { Haptics.tap() }
-    }
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
 
-    private var upcomingGatherings: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Upcoming gatherings", action: "ALL") {
-                onOpenRetreats()
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(vm.retreats.prefix(5)) { r in
-                        retreatCard(r)
-                            .onTapGesture {
-                                Haptics.tap()
-                                onOpenRetreat(r)
-                            }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        if c.isLive {
+                            Circle().fill(Color.white).frame(width: 6, height: 6).pulse()
+                        }
+                        Text(c.timeLabel.uppercased())
+                            .font(Theme.eyebrow(10))
+                            .tracking(2)
+                            .foregroundStyle(.white)
                     }
+                    Text(c.title)
+                        .font(Theme.headline(17))
+                        .foregroundStyle(Theme.ink)
+                    Text("\(c.host) · \(c.attendees) attending")
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.muted)
                 }
-                .padding(.horizontal, 20)
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .soulGlassCard(radius: 16)
         }
     }
+}
 
-    private func retreatCard(_ r: Retreat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                Image(r.imageUrl)
-                    .resizable().scaledToFill()
-                    .frame(width: 260, height: 150)
-                    .clipped()
-                LinearGradient(colors: [.clear, .black.opacity(0.55)],
-                               startPoint: .top, endPoint: .bottom)
-                Text("\(r.country) · \(r.when)".uppercased())
-                    .font(Theme.eyebrow(10))
-                    .tracking(2)
-                    .foregroundStyle(.white)
-                    .padding(14)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(r.name)
-                    .font(Theme.headline(22))
-                    .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
-                Text("\(r.durationDays) days · \(r.maxGuests) guests")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
+/// Registers a zoom-hero source only when the owning stack provided a
+/// namespace (previews pass none).
+private struct ZoomSourceIfAvailable: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if let namespace {
+            content.matchedTransitionSource(id: id, in: namespace)
+        } else {
+            content
         }
-        .frame(width: 260)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 

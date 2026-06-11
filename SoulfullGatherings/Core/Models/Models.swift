@@ -91,6 +91,67 @@ struct Retreat: Identifiable, Hashable {
     static func == (lhs: Retreat, rhs: Retreat) -> Bool { lhs.id == rhs.id }
 }
 
+extension Retreat {
+    private static func day(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        Calendar.current.date(from: DateComponents(year: y, month: m, day: d))!
+    }
+
+    /// Sample retreats mirroring the seeded `retreats` table, used as a
+    /// graceful fallback when Supabase is unreachable (same pattern as
+    /// `PracticeSession.mock`).
+    static let mock: [Retreat] = [
+        Retreat(id: 1, name: "Mallorca", country: "Spain",
+                startDate: day(2026, 7, 18), endDate: day(2026, 7, 23),
+                maxGuests: 14, priceUsd: 4400,
+                tags: ["Hyrox", "Recovery", "Wellness"],
+                blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
+                imageUrl: "retreat-mallorca",
+                toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24")),
+        Retreat(id: 2, name: "Bali", country: "Indonesia",
+                startDate: day(2026, 8, 9), endDate: day(2026, 8, 16),
+                maxGuests: 16, priceUsd: 3900,
+                tags: ["Breathwork", "Somatic", "Jungle"],
+                blurb: "Seven nights between rice terraces and temple mornings. Breath, stillness, and green without end.",
+                imageUrl: "retreat-bali",
+                toneTop: Color(hex: "#9DBA6E"), toneMid: Color(hex: "#4C6B33"), toneBase: Color(hex: "#15200D")),
+        Retreat(id: 3, name: "Dolomites", country: "Italy",
+                startDate: day(2026, 9, 4), endDate: day(2026, 9, 9),
+                maxGuests: 12, priceUsd: 5200,
+                tags: ["Alpine", "Hiking", "Cold Therapy"],
+                blurb: "Granite light, long ridgelines, and evenings that ask very little of you. Walk up, settle down.",
+                imageUrl: "retreat-dolomites",
+                toneTop: Color(hex: "#B9C3CD"), toneMid: Color(hex: "#5C6B7A"), toneBase: Color(hex: "#161B21")),
+        Retreat(id: 4, name: "Kyoto", country: "Japan",
+                startDate: day(2026, 10, 12), endDate: day(2026, 10, 18),
+                maxGuests: 10, priceUsd: 6100,
+                tags: ["Zen", "Tea", "Forest Bathing"],
+                blurb: "Temple gardens at first light, tea in silence, maple shade. A week of deliberate slowness.",
+                imageUrl: "retreat-kyoto",
+                toneTop: Color(hex: "#C98A66"), toneMid: Color(hex: "#7A4631"), toneBase: Color(hex: "#1F120C")),
+        Retreat(id: 5, name: "Sedona", country: "United States",
+                startDate: day(2026, 11, 6), endDate: day(2026, 11, 11),
+                maxGuests: 14, priceUsd: 4800,
+                tags: ["Desert", "Sound Healing", "Hiking"],
+                blurb: "Red rock amphitheaters, canyon hikes, sound baths under enormous sky.",
+                imageUrl: "retreat-sedona",
+                toneTop: Color(hex: "#D88E5E"), toneMid: Color(hex: "#8C4A2D"), toneBase: Color(hex: "#23120A")),
+        Retreat(id: 6, name: "Chamonix", country: "France",
+                startDate: day(2027, 1, 15), endDate: day(2027, 1, 20),
+                maxGuests: 12, priceUsd: 5600,
+                tags: ["Snow", "Sauna", "Breathwork"],
+                blurb: "Mont Blanc out every window. Powder mornings, sauna and plunge, fireside circles.",
+                imageUrl: "retreat-chamonix",
+                toneTop: Color(hex: "#A9C3DD"), toneMid: Color(hex: "#4F6B85"), toneBase: Color(hex: "#101822")),
+        Retreat(id: 7, name: "Lapland", country: "Finland",
+                startDate: day(2027, 2, 19), endDate: day(2027, 2, 24),
+                maxGuests: 10, priceUsd: 5900,
+                tags: ["Aurora", "Ice Bath", "Silence"],
+                blurb: "Northern lights over frozen lakes. Ice, heat, and the deepest quiet you've ever heard.",
+                imageUrl: "retreat-lapland",
+                toneTop: Color(hex: "#6FA08F"), toneMid: Color(hex: "#2E5247"), toneBase: Color(hex: "#0C1714")),
+    ]
+}
+
 // MARK: - Digital programs (for home carousel)
 
 struct Program: Identifiable, Hashable {

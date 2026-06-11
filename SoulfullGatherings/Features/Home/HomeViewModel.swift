@@ -36,6 +36,8 @@ final class HomeViewModel {
             // View was dismissed mid-fetch; leave existing data intact.
         } catch {
             print("[HomeViewModel] fetchRetreats failed: \(error)")
+            // Same graceful fallback as practice sessions: never an empty shelf.
+            if retreats.isEmpty { retreats = Retreat.mock }
         }
     }
 

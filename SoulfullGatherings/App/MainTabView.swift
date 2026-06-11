@@ -70,26 +70,37 @@ struct MainTabView: View {
 private struct HomeRoot: View {
     enum Route: Hashable {
         case retreatsStack
-        case retreatDetail(Retreat)
+        /// `zoom` is true when pushed from a Home card that registered a
+        /// matched zoom-hero source; pushes from the retreats stack use the
+        /// default slide (the full-bleed photo already carries continuity).
+        case retreatDetail(Retreat, zoom: Bool)
     }
     @State private var path: [Route] = []
+    @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
             HomeView(
                 onOpenRetreats: { path.append(.retreatsStack) },
-                onOpenRetreat: { r in path.append(.retreatDetail(r)) }
+                onOpenRetreat: { r in path.append(.retreatDetail(r, zoom: true)) },
+                zoomNamespace: zoomNS
             )
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .retreatsStack:
                     RetreatsStackView(
-                        onSelect: { r in path.append(.retreatDetail(r)) }
+                        onSelect: { r in path.append(.retreatDetail(r, zoom: false)) }
                     )
                     .toolbar(.hidden, for: .navigationBar)
-                case .retreatDetail(let r):
-                    RetreatDetailView(retreat: r)
-                        .toolbar(.hidden, for: .navigationBar)
+                case .retreatDetail(let r, let zoom):
+                    if zoom {
+                        RetreatDetailView(retreat: r)
+                            .toolbar(.hidden, for: .navigationBar)
+                            .navigationTransition(.zoom(sourceID: "home-retreat-\(r.id)", in: zoomNS))
+                    } else {
+                        RetreatDetailView(retreat: r)
+                            .toolbar(.hidden, for: .navigationBar)
+                    }
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
