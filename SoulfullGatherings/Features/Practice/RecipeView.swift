@@ -22,11 +22,10 @@ struct RecipeListView: View {
         ) {
             VStack(spacing: 14) {
                 ForEach(recipes) { recipe in
-                    recipeCard(recipe)
-                        .onTapGesture {
-                            Haptics.tap()
-                            onOpen(recipe)
-                        }
+                    PressableCard(action: { onOpen(recipe) }) {
+                        recipeCard(recipe)
+                    }
+                    .listReveal()
                 }
             }
         }
@@ -38,6 +37,10 @@ struct RecipeListView: View {
                 Image(recipe.imageUrl)
                     .resizable().scaledToFill()
                     .frame(height: 160)
+                    .frame(maxWidth: .infinity)
+                    .scaleEffect(1.15)
+                    .scrollParallax(strength: 18)
+                    .frame(height: 160)
                     .clipped()
                 LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
                 Text("\(recipe.lead) · \(recipe.minutes) MIN".uppercased())
@@ -46,6 +49,8 @@ struct RecipeListView: View {
                     .foregroundStyle(.white)
                     .padding(14)
             }
+            .frame(height: 160)
+            .clipped()
             VStack(alignment: .leading, spacing: 4) {
                 Text(recipe.title)
                     .font(Theme.headline(20))
@@ -60,8 +65,7 @@ struct RecipeListView: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+        .soulGlassCard(radius: 18)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         // Clip the hit-test region: `scaledToFill` + `.clipped()`/`.clipShape()`
         // only clip visually, so the hero image's tap area overflows up into
@@ -75,6 +79,10 @@ struct RecipeListView: View {
 struct RecipeDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let recipe: Recipe
+    /// Pantry checklist — ticked ingredients for this cooking session.
+    @State private var gathered: Set<String> = []
+    /// Normalized scroll offset for the stretchy hero.
+    @State private var scrollY: CGFloat = 0
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -85,6 +93,8 @@ struct RecipeDetailView: View {
                             .resizable().scaledToFill()
                             .frame(height: 320)
                             .clipped()
+                            // Stretch on pull-down, anchored to the top edge.
+                            .scaleEffect(1 + max(0, -scrollY) / 500, anchor: .top)
                         LinearGradient(colors: [.black.opacity(0.45), .clear, .black.opacity(0.35)],
                                        startPoint: .top, endPoint: .bottom)
                             .frame(height: 320)
@@ -117,16 +127,9 @@ struct RecipeDetailView: View {
                     }
 
                     section("INGREDIENTS") {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
                             ForEach(recipe.ingredients, id: \.self) { item in
-                                HStack(alignment: .top, spacing: 12) {
-                                    Circle().fill(Theme.inkSoft).frame(width: 5, height: 5).padding(.top, 7)
-                                    Text(item)
-                                        .font(Theme.body(15))
-                                        .foregroundStyle(Theme.ink)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Spacer(minLength: 0)
-                                }
+                                ingredientRow(item)
                             }
                         }
                     }
@@ -148,6 +151,11 @@ struct RecipeDetailView: View {
             .scrollIndicators(.hidden)
             .ignoresSafeArea(edges: .top)
             .background(Theme.bg)
+            .onScrollGeometryChange(for: CGFloat.self) { geo in
+                geo.contentOffset.y + geo.contentInsets.top
+            } action: { _, new in
+                scrollY = new
+            }
 
             Button {
                 Haptics.tap()
@@ -163,6 +171,44 @@ struct RecipeDetailView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
         }
+    }
+
+    /// Tappable pantry row: ticking an ingredient springs the check in and
+    /// softens the label — a tiny mise-en-place ritual.
+    private func ingredientRow(_ item: String) -> some View {
+        let checked = gathered.contains(item)
+        return Button {
+            Haptics.select()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                if checked { gathered.remove(item) } else { gathered.insert(item) }
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(checked ? Theme.honey : Theme.inkSoft.opacity(0.5), lineWidth: 1.2)
+                        .frame(width: 20, height: 20)
+                    if checked {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Theme.honey)
+                            .transition(.scale(scale: 0.3).combined(with: .opacity))
+                    }
+                }
+                .padding(.top, 1)
+
+                Text(item)
+                    .font(Theme.body(15))
+                    .foregroundStyle(checked ? Theme.muted : Theme.ink)
+                    .strikethrough(checked, color: Theme.muted.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(checked ? .isSelected : [])
     }
 
     private func metaPill(_ icon: String, _ text: String) -> some View {

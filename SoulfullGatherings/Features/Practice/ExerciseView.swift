@@ -22,11 +22,10 @@ struct ExerciseListView: View {
         ) {
             VStack(spacing: 10) {
                 ForEach(exercises) { exercise in
-                    exerciseRow(exercise)
-                        .onTapGesture {
-                            Haptics.tap()
-                            onOpen(exercise)
-                        }
+                    PressableCard(action: { onOpen(exercise) }) {
+                        exerciseRow(exercise)
+                    }
+                    .listReveal()
                 }
             }
         }
@@ -64,8 +63,8 @@ struct ExerciseListView: View {
                 .foregroundStyle(Theme.muted)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+        .frame(maxWidth: .infinity)
+        .soulGlassCard(radius: 18)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }

@@ -176,12 +176,19 @@ struct TabPlaceholder: View {
         ZStack {
             PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
 
+            // Living veil over the photo — placeholders still breathe.
+            AuroraBackground(speed: 0.7)
+                .opacity(0.4)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+
             VStack(spacing: 18) {
                 Spacer()
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
                     .frame(width: 72, height: 72)
-                    .opacity(0.85)
+                    .breathing(scale: 0.95...1.05, opacity: 0.75...0.95, period: 5.5)
                 Text(eyebrow.uppercased())
                     .font(Theme.eyebrow(11))
                     .tracking(3)

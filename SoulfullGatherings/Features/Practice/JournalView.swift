@@ -22,11 +22,10 @@ struct JournalListView: View {
         ) {
             VStack(spacing: 10) {
                 ForEach(prompts) { prompt in
-                    promptRow(prompt)
-                        .onTapGesture {
-                            Haptics.tap()
-                            onOpen(prompt)
-                        }
+                    PressableCard(action: { onOpen(prompt) }) {
+                        promptRow(prompt)
+                    }
+                    .listReveal()
                 }
             }
         }
@@ -59,8 +58,8 @@ struct JournalListView: View {
                 .padding(.top, 14)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+        .frame(maxWidth: .infinity)
+        .soulGlassCard(radius: 18)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
@@ -72,11 +71,16 @@ struct JournalDetailView: View {
     @State private var entry = ""
     @FocusState private var writing: Bool
 
+    /// Reflections are private, device-local notes (per CLAUDE.md) — one
+    /// UserDefaults entry per prompt.
+    private var storageKey: String { "sg.journal.\(prompt.id)" }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 PracticeBackBar(label: "Journal")
 
+                // The question recedes while writing so the words take the room.
                 VStack(alignment: .leading, spacing: 8) {
                     Text(prompt.theme.uppercased())
                         .font(Theme.eyebrow(11))
@@ -87,13 +91,23 @@ struct JournalDetailView: View {
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.3)
                         .fixedSize(horizontal: false, vertical: true)
-                }
 
-                Text(prompt.prompt)
-                    .font(Theme.body(15))
-                    .foregroundStyle(Theme.inkSoft)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
+                    // Framing as a pull-quote against a honey rule.
+                    HStack(alignment: .top, spacing: 14) {
+                        Rectangle()
+                            .fill(Theme.honey.opacity(0.65))
+                            .frame(width: 2)
+                        Text(prompt.prompt)
+                            .font(Theme.body(15))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineSpacing(5)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 8)
+                }
+                .opacity(writing ? 0.45 : 1)
+                .blur(radius: writing ? 1.5 : 0)
+                .animation(.easeInOut(duration: 0.35), value: writing)
 
                 GlassCard(radius: 18, padding: 16) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -120,9 +134,17 @@ struct JournalDetailView: View {
                     }
                 }
 
-                Text("Saved only on this device for now.")
-                    .font(Theme.body(11))
-                    .foregroundStyle(Theme.muted)
+                HStack {
+                    Text("Saved on this device.")
+                    Spacer()
+                    if !entry.isEmpty {
+                        Text("\(entry.split(whereSeparator: \.isWhitespace).count) words")
+                            .contentTransition(.numericText())
+                            .animation(.default, value: entry.count)
+                    }
+                }
+                .font(Theme.body(11))
+                .foregroundStyle(Theme.muted)
 
                 Color.clear.frame(height: 120)
             }
@@ -134,6 +156,10 @@ struct JournalDetailView: View {
             PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }
         .scrollDismissesKeyboard(.interactively)
+        .onAppear { entry = UserDefaults.standard.string(forKey: storageKey) ?? "" }
+        .onChange(of: entry) {
+            UserDefaults.standard.set(entry, forKey: storageKey)
+        }
         .toolbar {
             if writing {
                 ToolbarItem(placement: .keyboard) {

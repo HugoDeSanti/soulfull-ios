@@ -23,11 +23,10 @@ struct MassageListView: View {
         ) {
             VStack(spacing: 10) {
                 ForEach(massages) { massage in
-                    massageRow(massage)
-                        .onTapGesture {
-                            Haptics.tap()
-                            onOpen(massage)
-                        }
+                    PressableCard(action: { onOpen(massage) }) {
+                        massageRow(massage)
+                    }
+                    .listReveal()
                 }
             }
         }
@@ -74,8 +73,8 @@ struct MassageListView: View {
                 .foregroundStyle(Theme.muted)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+        .frame(maxWidth: .infinity)
+        .soulGlassCard(radius: 18)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
@@ -132,7 +131,7 @@ struct MassageDetailView: View {
                     .padding(.vertical, 16)
                     .background(Capsule().fill(.white))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SoulPressableStyle(scale: 0.97, hapticOnPress: false, dim: false))
 
                 Text("THE TECHNIQUE")
                     .font(Theme.eyebrow(11))

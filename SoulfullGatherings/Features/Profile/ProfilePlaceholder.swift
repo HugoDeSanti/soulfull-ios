@@ -15,12 +15,18 @@ struct ProfilePlaceholder: View {
         ZStack {
             PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
 
+            AuroraBackground(speed: 0.7)
+                .opacity(0.35)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+
             VStack(spacing: 18) {
                 Spacer()
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
                     .frame(width: 88, height: 88)
-                    .opacity(0.9)
+                    .breathing(scale: 0.96...1.04, opacity: 0.82...0.95, period: 5.5)
                 Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
                     .font(Theme.eyebrow(12))
                     .tracking(3)
@@ -31,6 +37,7 @@ struct ProfilePlaceholder: View {
                     .kerning(-0.3)
 
                 accountStatus
+                intentionsRow
 
                 Spacer()
 
@@ -66,6 +73,25 @@ struct ProfilePlaceholder: View {
         } catch {
             Haptics.bump()
             deleteError = error.localizedDescription
+        }
+    }
+
+    /// What they came here for, as quiet glass chips.
+    @ViewBuilder
+    private var intentionsRow: some View {
+        let intentions = IntentionOption.all.filter { settings.intentions.contains($0.id) }
+        if !intentions.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(intentions.prefix(3)) { intention in
+                    Text(intention.label)
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.inkSoft)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .soulGlassCapsule()
+                }
+            }
+            .padding(.top, 6)
         }
     }
 

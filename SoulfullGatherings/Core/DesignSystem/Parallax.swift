@@ -52,3 +52,16 @@ extension CGFloat {
         Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
 }
+
+extension View {
+    /// Standard list-row entrance: rows rise and fade in as they enter from
+    /// the bottom of the viewport. Interactive (scrubs with the scroll).
+    func listReveal() -> some View {
+        scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+            let entering = max(phase.value, 0)
+            return view
+                .opacity(1 - entering * 0.5)
+                .offset(y: entering * 18)
+        }
+    }
+}
