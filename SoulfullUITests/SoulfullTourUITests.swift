@@ -163,14 +163,50 @@ final class SoulfullTourUITests: XCTestCase {
         app.buttons["Practices"].firstMatch.tap() // back bar
         sleep(1)
 
+        // ── Journal: prompt list → writing room ────────────────────────────
+        app.swipeUp()
+        sleep(1)
+        tapAny(app, "JOURNAL PROMPTS")
+        XCTAssertTrue(app.staticTexts["Journal Prompts"].waitForExistence(timeout: 8))
+        sleep(1)
+        snap(app, "24-journal-list")
+
+        tapAny(app, "What is your body asking for today?")
+        sleep(1)
+        snap(app, "25-journal-detail")
+        app.buttons["Journal"].firstMatch.tap()
+        sleep(1)
+        app.buttons["Practices"].firstMatch.tap()
+        sleep(1)
+
+        // ── Recipes: card list → spread with pantry checklist ─────────────
+        app.swipeUp()
+        sleep(1)
+        tapAny(app, "FOOD RECIPES")
+        XCTAssertTrue(app.staticTexts["Food Recipes"].waitForExistence(timeout: 8))
+        sleep(1)
+        snap(app, "26-recipe-list")
+
+        tapAny(app, "Golden Turmeric Lentils")
+        sleep(1)
+        app.swipeUp()
+        sleep(1)
+        tapAny(app, "1 cup red lentils")
+        tapAny(app, "1 onion, diced")
+        snap(app, "27-recipe-detail-checked")
+        app.buttons["Recipes"].firstMatch.tap()
+        sleep(1)
+        app.buttons["Practices"].firstMatch.tap()
+        sleep(1)
+
         // ── Other tabs ─────────────────────────────────────────────────────
         app.buttons["Circle"].tap()
         sleep(1)
-        snap(app, "24-circle")
+        snap(app, "28-circle")
 
         app.buttons["You"].tap()
         sleep(1)
-        snap(app, "25-you")
+        snap(app, "29-you")
     }
 
     // MARK: - Helpers

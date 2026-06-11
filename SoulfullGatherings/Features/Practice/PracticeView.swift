@@ -83,13 +83,15 @@ struct PracticeView: View {
         let height: CGFloat = sheet ? 168 : 210
         return PressableCard(action: { onSelect(item) }) {
             ZStack(alignment: .bottomLeading) {
-                Image(item.imageName)
-                    .resizable().scaledToFill()
+                // No image parallax here: visualEffect offsets escape
+                // ancestor clips, so clipped cards must keep imagery static.
+                Color.clear
                     .frame(height: height)
                     .frame(maxWidth: .infinity)
-                    .scaleEffect(1.15)
-                    .scrollParallax(strength: sheet ? 0 : 18)
-                    .frame(height: height)
+                    .overlay {
+                        Image(item.imageName)
+                            .resizable().scaledToFill()
+                    }
                     .clipped()
 
                 LinearGradient(

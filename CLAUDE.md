@@ -66,14 +66,21 @@ SoulfullGatherings/
 │   │   └── Models.swift               # All domain models + mock data (Profile, Retreat, Program, CommunityCircle, PracticeCategory, MediaKind, MediaItem, PracticeSession, PracticeMenuItem, JournalPrompt, ExerciseStep, Exercise, Recipe, Massage, IntentionOption, BodyStateOption, FrequencyOption, MoodChip)
 │   ├── DesignSystem/
 │   │   ├── Theme.swift                # Brand colors, gradients, Geist typography helpers, shape constants + Color(hex:)
-│   │   └── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop, CircleIconButton, TabPlaceholder, PulseModifier
+│   │   ├── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop (film grain + pan; image contained in a Color overlay so scaledToFill can't inflate layout), CircleIconButton, TabPlaceholder, PulseModifier, BreathingModifier (.breathing — 5–6s idle loop)
+│   │   ├── Shaders.metal              # Stitchable shader suite: filmGrain, aurora, shimmer, noiseDissolve, ripple
+│   │   ├── ShaderFX.swift             # Wrappers for Shaders.metal (feature code never touches ShaderLibrary): .filmGrain, AuroraBackground, .shimmer(on:), NoiseDissolve Transition (+ .soulStage), .ripple, editorialRise/Page(/Soft) transitions. All Reduce Motion-aware.
+│   │   ├── SoulGlass.swift            # .soulGlass(in:)/.soulGlassCapsule/.soulGlassCard — real Liquid Glass on iOS 26+, material+hairline on 18–25. The only place that branches on OS.
+│   │   ├── Pressable.swift            # SoulPressableStyle (.soulPressable/.soulPressableChip/.soulPressableQuiet) + PressableCard — unified touch physics (spring squish + haptic on touch-down)
+│   │   ├── PinchBrowse.swift          # .pinchBrowsable(zoomedOut:) — interactive pinch zoom-out for catalogs (scrub → spring commit); pair w/ LazyVGrid column morph + a toggle button
+│   │   └── Parallax.swift             # .listReveal() row-entrance scrollTransition
 │   ├── Services/
 │   │   ├── SupabaseConfig.swift       # Loads + validates Supabase host/anon key from Info.plist (Bundle.main); ConfigError (missingKey/malformedHost)
 │   │   ├── SupabaseService.swift      # Actor data layer: nonisolated client, 5-min TTL caches, fetchRetreats/Programs/PracticeSessions, fetchProfile/upsertProfile/fetchBooking (uncached), signedMediaURL, invalidateCache
 │   │   ├── PaymentService.swift       # @MainActor Stripe façade: createPaymentIntent (calls Edge Function) + presentPaymentSheet (StripePaymentSheet); publishable key comes from the function, never stored in-app
 │   │   └── AppError.swift             # App-level LocalizedError enum (configurationMissing/authFailure/networkFailure/unknown)
 │   └── Utils/
-│       └── Haptics.swift              # @MainActor UIKit haptic facade with cached generators (tap/bump/select/success/prepare)
+│       ├── Haptics.swift              # @MainActor UIKit haptic facade with cached generators (tap/bump/select/success/prepare)
+│       └── ArtworkTones.swift         # CIAreaAverage → (top/mid/base) tone triple from an asset; grades the player's aurora to the artwork
 │
 └── Features/                          # One folder per feature/tab; each owns its views + VMs
     ├── Auth/
@@ -172,10 +179,26 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 
 **Adding a new fetch:** add a private `Codable` `…Row` DTO inside `SupabaseService.swift` with `CodingKeys` mapping snake_case → camelCase and a computed property returning the app model. Then add a `func fetch…() async throws -> [T]` (consider a cache + TTL if it mirrors the existing pattern). Wrap/surface failures through `AppError`.
 
+## Design System & Motion (2026-06 overhaul)
+
+See `docs/DESIGN.md` for the full direction ("quiet luxury, editorial"). The short version:
+
+- **Glass:** every glass surface goes through `SoulGlass` (`.soulGlass(in:)`/`.soulGlassCapsule`/`.soulGlassCard`) — real `glassEffect` on iOS 26+, material+hairline below. Never branch on OS in feature code.
+- **Touch physics:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in `PressableCard`) — spring squish + haptic on touch-down. Don't add `onTapGesture` to cards.
+- **Shaders** only via `ShaderFX` wrappers (grain/aurora/shimmer/dissolve/ripple); all are Reduce Motion-aware.
+- **Navigation delight:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`; tab roots report pushes via a `navHidden` binding so `BottomNav` bows out on detail screens. Retreats & Practice support pinch-out into "catalog" contact sheets (always paired with a visible grid-toggle button for discoverability).
+- **UI tour test:** `SoulfullUITests/SoulfullTourUITests` drives welcome → onboarding → home → retreat detail → stack/catalog pinch → practice → player → journal/recipe → tabs, attaching named screenshots. Run it after UI work and review the frames (`xcrun xcresulttool export attachments`). Launch hooks: `-uitest-reset`, `-uitest-onboarded`.
+
+**Rendering gotchas that have actually bitten this codebase — re-read before adding effects:**
+1. **Metal effects (layerEffect/colorEffect/distortionEffect, incl. disabled ones) over UIKit-backed views** (NavigationStack, TextField, video) render the yellow ⃠ placeholder. Blur-carrying transitions count (blur(0) still attaches a filter). Keep shader/blur effects on pure-SwiftUI leaf subtrees; use `editorialPageSoft`/plain transitions around platform views.
+2. **`visualEffect` offsets/scales escape ancestor clips** — scroll-parallax imagery inside clipped cards bleeds outside the card. Scroll-driven image motion only on full-bleed surfaces; cards animate as whole units (`listReveal`).
+3. **`scaledToFill` grows layout, not just drawing** — an unconstrained fill image inflates its ZStack and pushes siblings offscreen (capsules render as full-width bands, buttons land past the screen edge). Contain fill images in a `Color.clear.overlay { … }.clipped()` (as `PhotoBackdrop` does).
+4. GeometryReader inside an HStack over-claims width; prefer leading-anchored `scaleEffect` fills (see onboarding progress bar).
+
 ## Key Conventions
 
 - `@Observable @MainActor` on all ViewModels and app-level singletons (`AppState`, `AppSettings`, `AuthManager`). No `ObservableObject`/`@Published`.
-- Haptics are mandatory on every interactive tap: `Haptics.tap()` for secondary, `Haptics.bump()` for primary CTAs, `Haptics.select()` for scroll/toggle updates, `Haptics.success()` for confirmations; `Haptics.prepare()` to warm the engine on gesture start.
+- Haptics are mandatory on every interactive tap: `Haptics.tap()` for secondary, `Haptics.bump()` for primary CTAs, `Haptics.select()` for scroll/toggle updates, `Haptics.success()` for confirmations; `Haptics.prepare()` to warm the engine on gesture start. `SoulPressableStyle` fires `tap` on touch-down — actions using it shouldn't double-fire.
 - Navigation is value-based (`NavigationStack` + typed `Route` enums per tab root), not `NavigationLink` with destinations.
 - All onboarding answers are validated before `canAdvance` returns `true`; never allow advancing with empty state. The step machine has 5 cases but `questionCount = 4` (the `finish` case is not a question).
 - Mock data is defined as static `.mock` / `.mock(for:)` / `.all` properties on model types in `Models.swift`.
@@ -192,7 +215,8 @@ All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Th
 - **Mock-driven:** `programs` and `CommunityCircle` on Home (`fetchPrograms()` exists but is unused); all Journal / Exercise / Recipe / Massage content (driven by `.all` arrays in `Models.swift`, pending their own tables). `JournalDetailView` stores reflections device-locally only.
 - **Placeholder (unbuilt):** Circle tab (Community) — branded empty state via `TabPlaceholder`. The You tab (Profile) is now partly real (account UI + status); its "Reset onboarding" button is gated behind `#if DEBUG`.
 - **Not yet built (next phases):** Sign in with Apple (needs the Apple capability/entitlement); a bookings list/history UI (data exists in `bookings`); refund handling; **membership** subscription (a "mix" of digital + real-world perks → must use StoreKit IAP, not Stripe).
-- **No tests:** no test targets exist yet.
+- **Tests:** `SoulfullUITests` (UI tour with screenshot attachments) is the only test target; no unit tests yet.
+- **Offline fallbacks:** `retreats` (Home + stack) and `practice_sessions` fall back to mock data when Supabase is unreachable. As of 2026-06-10 the Supabase project host (`qkepgohdosmzebdmsctn.supabase.co`) returns NXDOMAIN — likely paused; reserve/auth flows need it restored.
 
 ## Resources
 

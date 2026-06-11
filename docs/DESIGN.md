@@ -27,8 +27,8 @@ with intent. Three pillars:
 | `ShaderFX.swift` | SwiftUI wrappers: `.filmGrain(intensity:)`, `AuroraBackground(tones:)` (TimelineView-driven), `.shimmerSweep(trigger:)`, `NoiseDissolve` custom `Transition`, `.heroRipple(...)` |
 | `SoulGlass.swift` | `.soulGlass(in:)` — real `glassEffect` on iOS 26+, `.ultraThinMaterial` + stroke fallback on 18–25. One abstraction point; all cards/pills go through it. |
 | `Pressable.swift` | `.pressable(scale:haptic:)` — touch-down spring squish + haptic; replaces ad-hoc DragGesture press handling |
-| `ZoomableCatalog.swift` | Pinch-driven layout morph: LazyVGrid column-count morph (1 ⇄ 2) driven by `MagnifyGesture`, interactive scale scrub during the gesture, spring commit + haptic detent. Used by Practice landing/lists; Retreats has a bespoke morph. |
-| `Parallax.swift` | `.scrollParallax(...)` via `visualEffect` — imagery drifts counter to scroll |
+| `PinchBrowse.swift` | `.pinchBrowsable(zoomedOut:)` — interactive pinch zoom-out (scrub → spring commit + haptics); pairs with a LazyVGrid column-count morph. Used by Practice; Retreats has a bespoke two-mode version. |
+| `Parallax.swift` | `.listReveal()` row-entrance reveal. (Image parallax inside clipped cards was removed: `visualEffect` offsets escape ancestor clips and the imagery bled outside cards.) |
 
 Min deployment stays **iOS 18**; iOS 26 Liquid Glass (`glassEffect`, `glassEffectID`,
 `GlassEffectContainer`) is adopted behind `if #available(iOS 26.0, *)` inside `SoulGlass`
@@ -66,6 +66,9 @@ only — feature code never branches on OS.
 
 ## Decisions
 
+- **`visualEffect` escapes clips.** Offsets/scales applied via `visualEffect` render
+  outside ancestor `.clipped()`/`clipShape` bounds. Scroll-driven imagery motion is
+  only safe on full-bleed surfaces; clipped cards animate as whole units.
 - **Shader effects never wrap platform-backed views.** `layerEffect`/`colorEffect`/
   `distortionEffect` over a subtree containing `NavigationStack` (UIKit-backed), video
   players, or sheets fails to rasterize and renders the yellow ⃠ placeholder. Keep

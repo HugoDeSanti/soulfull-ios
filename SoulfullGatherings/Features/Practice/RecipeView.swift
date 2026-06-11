@@ -34,13 +34,13 @@ struct RecipeListView: View {
     private func recipeCard(_ recipe: Recipe) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                Image(recipe.imageUrl)
-                    .resizable().scaledToFill()
+                Color.clear
                     .frame(height: 160)
                     .frame(maxWidth: .infinity)
-                    .scaleEffect(1.15)
-                    .scrollParallax(strength: 18)
-                    .frame(height: 160)
+                    .overlay {
+                        Image(recipe.imageUrl)
+                            .resizable().scaledToFill()
+                    }
                     .clipped()
                 LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
                 Text("\(recipe.lead) · \(recipe.minutes) MIN".uppercased())

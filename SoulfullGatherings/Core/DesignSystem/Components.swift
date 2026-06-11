@@ -108,14 +108,22 @@ struct PhotoBackdrop: View {
         ZStack {
             // Solid floor so the blur edges don't bleed transparent.
             Theme.bg
-            Image(imageName)
-                .resizable()
-                .scaledToFill()
-                .blur(radius: blur)
-                .saturation(1.15)
-                .brightness(-0.05)
-                .scaleEffect(pan == 0 ? 1.06 : 1.16)
-                .offset(x: -pan * 22)
+            // The image lives in an overlay of a proposal-sized Color so
+            // `scaledToFill` can only overflow *drawing*, never layout —
+            // otherwise a wide-ish asset inflates the enclosing ZStack and
+            // pushes sibling content past the screen edges.
+            Color.clear
+                .overlay {
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .blur(radius: blur)
+                        .saturation(1.15)
+                        .brightness(-0.05)
+                        .scaleEffect(pan == 0 ? 1.06 : 1.16)
+                        .offset(x: -pan * 22)
+                }
+                .clipped()
             // Top→bottom vignette for legibility.
             LinearGradient(
                 colors: [

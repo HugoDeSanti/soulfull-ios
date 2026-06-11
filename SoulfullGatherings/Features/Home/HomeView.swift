@@ -251,9 +251,6 @@ struct HomeView: View {
                     Image(r.imageUrl)
                         .resizable().scaledToFill()
                         .frame(width: 260, height: 150)
-                        .scaleEffect(1.18)
-                        .scrollParallax(strength: 34, axis: .horizontal)
-                        .frame(width: 260, height: 150)
                         .clipped()
                     LinearGradient(colors: [.clear, .black.opacity(0.55)],
                                    startPoint: .top, endPoint: .bottom)
@@ -311,9 +308,6 @@ struct HomeView: View {
                 ZStack(alignment: .bottomLeading) {
                     Image(p.imageUrl)
                         .resizable().scaledToFill()
-                        .frame(width: 260, height: 200)
-                        .scaleEffect(1.18)
-                        .scrollParallax(strength: 34, axis: .horizontal)
                         .frame(width: 260, height: 200)
                         .clipped()
 
