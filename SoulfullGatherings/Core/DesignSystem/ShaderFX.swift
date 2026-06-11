@@ -194,20 +194,32 @@ private struct BlurRiseModifier: ViewModifier, Animatable {
 }
 
 extension AnyTransition {
-    /// The app's text/content reveal: rises out of a blur. Native CA effects
-    /// only, so it's safe over any subtree.
+    /// The app's text/content reveal: rises out of a blur.
+    /// ⚠️ The blur keeps a Metal filter attached even at radius 0, so this
+    /// (like all blur-carrying transitions) must never wrap UIKit-backed
+    /// views — TextField, NavigationStack, video. Use `editorialPageSoft`
+    /// for those subtrees.
     static var editorialRise: AnyTransition {
         .modifier(active: BlurRiseModifier(progress: 1, lift: 18),
                   identity: BlurRiseModifier(progress: 0, lift: 18))
     }
 
     /// Paired slide handoff: new content rises in while old sinks away.
+    /// Same platform-view caveat as `editorialRise`.
     static var editorialPage: AnyTransition {
         .asymmetric(
             insertion: .modifier(active: BlurRiseModifier(progress: 1, lift: 22),
                                  identity: BlurRiseModifier(progress: 0, lift: 22)),
             removal: .modifier(active: BlurRiseModifier(progress: 1, lift: -14),
                                identity: BlurRiseModifier(progress: 0, lift: -14))
+        )
+    }
+
+    /// Blur-free page handoff — safe over platform-backed views (text fields).
+    static var editorialPageSoft: AnyTransition {
+        .asymmetric(
+            insertion: .offset(y: 22).combined(with: .opacity),
+            removal: .offset(y: -14).combined(with: .opacity)
         )
     }
 }

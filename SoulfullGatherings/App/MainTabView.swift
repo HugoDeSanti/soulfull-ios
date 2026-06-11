@@ -44,14 +44,17 @@ enum MainTab: String, Hashable, CaseIterable {
 
 struct MainTabView: View {
     @State private var tab: MainTab = .home
+    /// True while a tab root has something pushed — the nav bows out so
+    /// detail screens own the full canvas.
+    @State private var navHidden = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab content
             Group {
                 switch tab {
-                case .home:     HomeRoot()
-                case .practice: PracticeRoot()
+                case .home:     HomeRoot(navHidden: $navHidden)
+                case .practice: PracticeRoot(navHidden: $navHidden)
                 case .circle:   CommunityPlaceholder()
                 case .you:      ProfilePlaceholder()
                 }
@@ -61,7 +64,11 @@ struct MainTabView: View {
             // Floating glass nav
             BottomNav(current: $tab)
                 .padding(.bottom, 8)
+                .offset(y: navHidden ? 140 : 0)
+                .opacity(navHidden ? 0 : 1)
+                .animation(.spring(response: 0.45, dampingFraction: 0.8), value: navHidden)
         }
+        .onChange(of: tab) { navHidden = false }
     }
 }
 
@@ -75,6 +82,7 @@ private struct HomeRoot: View {
         /// default slide (the full-bleed photo already carries continuity).
         case retreatDetail(Retreat, zoom: Bool)
     }
+    @Binding var navHidden: Bool
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
@@ -105,6 +113,7 @@ private struct HomeRoot: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .onChange(of: path) { navHidden = !path.isEmpty }
     }
 }
 
@@ -122,6 +131,7 @@ private struct PracticeRoot: View {
         case recipeDetail(Recipe)
         case massageDetail(Massage)
     }
+    @Binding var navHidden: Bool
     @State private var path: [Route] = []
 
     var body: some View {
@@ -133,6 +143,7 @@ private struct PracticeRoot: View {
                 }
                 .toolbar(.hidden, for: .navigationBar)
         }
+        .onChange(of: path) { navHidden = !path.isEmpty }
     }
 
     /// Maps a tapped menu card to its list route.

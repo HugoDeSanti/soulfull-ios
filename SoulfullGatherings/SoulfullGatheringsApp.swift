@@ -14,6 +14,19 @@ import SwiftUI
 struct SoulfullGatheringsApp: App {
     @State private var appState = AppState()
 
+    init() {
+        #if DEBUG
+        // UI-test hooks: deterministic state for the automated tour.
+        if CommandLine.arguments.contains("-uitest-reset") {
+            appState.settings.reset()
+        }
+        if CommandLine.arguments.contains("-uitest-onboarded") {
+            appState.settings.userName = "Mara"
+            appState.settings.hasOnboarded = true
+        }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

@@ -25,8 +25,10 @@ struct RootView: View {
                 WelcomeView()
                     .transition(.soulStage(reduceMotion: reduceMotion))
             case .onboarding:
+                // Native transition: onboarding's TextField is UIKit-backed and
+                // cannot sit under the dissolve's layerEffect (yellow placeholder).
                 OnboardingView()
-                    .transition(.soulStage(reduceMotion: reduceMotion))
+                    .transition(reduceMotion ? .opacity : .editorialPageSoft)
             case .main:
                 // NavigationStack is UIKit-backed and can't be shader-rasterized
                 // (yellow placeholder) — main gets a native blur-scale handoff.

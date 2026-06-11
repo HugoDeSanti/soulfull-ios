@@ -25,7 +25,15 @@ final class RetreatsViewModel {
             // View was dismissed mid-fetch; leave existing data intact.
         } catch {
             print("[RetreatsViewModel] fetchRetreats failed: \(error)")
-            loadError = "Couldn't load retreats. Please try again."
+            // Graceful fallback (same pattern as practice sessions): browse
+            // sample retreats rather than a dead end; reserve still requires
+            // the backend.
+            if retreats.isEmpty {
+                retreats = Retreat.mock
+                activeIndex = 0
+            } else {
+                loadError = "Couldn't load retreats. Please try again."
+            }
         }
     }
 }

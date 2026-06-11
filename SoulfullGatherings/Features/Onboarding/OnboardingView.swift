@@ -31,7 +31,9 @@ struct OnboardingView: View {
                         case .finish:    EmptyView()
                         }
                     }
-                    .transition(.editorialPage)
+                    // Soft (blur-free) variant: the name step's TextField is
+                    // UIKit-backed and can't sit under a Metal filter pass.
+                    .transition(.editorialPageSoft)
                     .id(vm.step)
                 }
                 .transition(.opacity)
@@ -114,20 +116,22 @@ private struct OnboardingShell<StepBody: View>: View {
     }
 
     private var progressBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.16))
+        // Track + leading-anchored scale fill — no GeometryReader, so the bar
+        // can never over-claim width inside the HStack.
+        Capsule()
+            .fill(Color.white.opacity(0.16))
+            .overlay(alignment: .leading) {
                 Capsule()
                     .fill(
                         LinearGradient(colors: [Theme.honey.opacity(0.85), Theme.ink],
                                        startPoint: .leading, endPoint: .trailing)
                     )
-                    .frame(width: max(0, geo.size.width * progress))
+                    .scaleEffect(x: progress, y: 1, anchor: .leading)
                     .animation(.spring(response: 0.55, dampingFraction: 0.75), value: progress)
             }
-        }
-        .frame(height: 4)
+            .clipShape(Capsule())
+            .frame(height: 4)
+            .frame(maxWidth: .infinity)
     }
 
     private var progress: CGFloat {
