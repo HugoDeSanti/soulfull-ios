@@ -31,10 +31,7 @@ struct OnboardingView: View {
                         case .finish:    EmptyView()
                         }
                     }
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
+                    .transition(.editorialPage)
                     .id(vm.step)
                 }
                 .transition(.opacity)
@@ -120,14 +117,17 @@ private struct OnboardingShell<StepBody: View>: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.white.opacity(0.18))
+                    .fill(Color.white.opacity(0.16))
                 Capsule()
-                    .fill(Color.white.opacity(0.85))
+                    .fill(
+                        LinearGradient(colors: [Theme.honey.opacity(0.85), Theme.ink],
+                                       startPoint: .leading, endPoint: .trailing)
+                    )
                     .frame(width: max(0, geo.size.width * progress))
-                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: progress)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.75), value: progress)
             }
         }
-        .frame(height: 6)
+        .frame(height: 4)
     }
 
     private var progress: CGFloat {
@@ -170,8 +170,10 @@ private struct NameStep: View {
             .frame(maxWidth: 260)
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(Color.white.opacity(0.35))
+                    .fill(focused ? Theme.honey.opacity(0.75) : Color.white.opacity(0.35))
                     .frame(height: 1)
+                    .shadow(color: focused ? Theme.honey.opacity(0.5) : .clear, radius: 6, y: 2)
+                    .animation(.easeInOut(duration: 0.35), value: focused)
             }
             Spacer()
             Spacer()
@@ -300,7 +302,6 @@ private struct FrequencyStep: View {
 private struct FinishStepView: View {
     let name: String
     let onEnter: () -> Void
-    @State private var breathing = false
 
     var body: some View {
         ZStack {
@@ -312,10 +313,8 @@ private struct FinishStepView: View {
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
                     .frame(width: 160, height: 160)
-                    .scaleEffect(breathing ? 1.06 : 0.94)
-                    .opacity(breathing ? 1 : 0.85)
                     .shadow(color: .white.opacity(0.18), radius: 24)
-                    .animation(.easeInOut(duration: 5).repeatForever(autoreverses: true), value: breathing)
+                    .breathing(scale: 0.94...1.06, opacity: 0.85...1.0, period: 5)
 
                 Text("WELCOME, \(name.isEmpty ? "friend" : name.uppercased())")
                     .font(Theme.eyebrow(11))
@@ -347,7 +346,6 @@ private struct FinishStepView: View {
                 .padding(.bottom, 32)
             }
         }
-        .onAppear { breathing = true }
     }
 }
 
@@ -368,11 +366,11 @@ private struct OptionCard: View {
                         Text(String(format: "%02d", idx))
                             .font(Theme.body(11))
                             .tracking(1.2)
-                            .foregroundStyle(Color.white.opacity(0.62))
+                            .foregroundStyle(selected ? Theme.honey : Color.white.opacity(0.62))
                             .padding(.bottom, 14)
                     }
                     Text(label)
-                        .font(Theme.body(subtle ? 13 : 15))
+                        .font(Theme.body(subtle ? 13 : 15, weight: selected ? .medium : .regular))
                         .foregroundStyle(Theme.ink.opacity(subtle ? 0.85 : 1))
                         .multilineTextAlignment(subtle ? .center : .leading)
                         .frame(maxWidth: .infinity, alignment: subtle ? .center : .leading)
@@ -398,17 +396,20 @@ private struct OptionCard: View {
                             .blur(radius: 8)
                             .frame(width: 220, height: 220)
                             .offset(x: 60, y: 50)
+                            .transition(.opacity.combined(with: .scale(scale: 0.4, anchor: .bottomTrailing)))
                     }
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
-                    .strokeBorder(Color.white.opacity(selected ? 0.55 : 0.20), lineWidth: 1)
+                    .strokeBorder(selected ? Theme.honey.opacity(0.6) : Color.white.opacity(0.20), lineWidth: 1)
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selected)
+            .shimmer(on: selected)
+            .scaleEffect(selected ? 1.02 : 1.0)
+            .animation(.spring(response: 0.38, dampingFraction: 0.66), value: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.soulPressableQuiet)
     }
 }
 

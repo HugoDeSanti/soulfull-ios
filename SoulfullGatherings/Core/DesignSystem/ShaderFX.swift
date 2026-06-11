@@ -173,6 +173,45 @@ extension AnyTransition {
     }
 }
 
+// MARK: - Editorial rise (blur + lift reveal)
+
+private struct BlurRiseModifier: ViewModifier, Animatable {
+    /// 0 = settled, 1 = fully hidden (blurred, dropped, transparent).
+    var progress: Double
+    var lift: CGFloat
+
+    nonisolated var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(1 - progress)
+            .blur(radius: progress * 9)
+            .offset(y: progress * lift)
+    }
+}
+
+extension AnyTransition {
+    /// The app's text/content reveal: rises out of a blur. Native CA effects
+    /// only, so it's safe over any subtree.
+    static var editorialRise: AnyTransition {
+        .modifier(active: BlurRiseModifier(progress: 1, lift: 18),
+                  identity: BlurRiseModifier(progress: 0, lift: 18))
+    }
+
+    /// Paired slide handoff: new content rises in while old sinks away.
+    static var editorialPage: AnyTransition {
+        .asymmetric(
+            insertion: .modifier(active: BlurRiseModifier(progress: 1, lift: 22),
+                                 identity: BlurRiseModifier(progress: 0, lift: 22)),
+            removal: .modifier(active: BlurRiseModifier(progress: 1, lift: -14),
+                               identity: BlurRiseModifier(progress: 0, lift: -14))
+        )
+    }
+}
+
 // MARK: - Ripple
 
 private struct RippleModifier: ViewModifier, Animatable {

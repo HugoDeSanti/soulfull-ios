@@ -2,8 +2,9 @@
 //  WelcomeView.swift
 //  Soulfull Gatherings
 //
-//  Splash (logo breathing on olive) → 3 explainer slides over a blurred
-//  tropical backdrop → "Begin" routes into onboarding.
+//  Splash (logo breathing over the tropical backdrop) → 3 explainer slides.
+//  The backdrop pans like a slow camera move as slides advance; copy rises
+//  out of a blur; a folio counter + hairline segments replace dots.
 //
 
 import SwiftUI
@@ -13,7 +14,6 @@ struct WelcomeView: View {
 
     /// 0 = splash, 1...3 = explainer slides.
     @State private var step: Int = 0
-    @State private var splashBreathing = false
 
     private struct Slide: Identifiable {
         let id: String
@@ -43,14 +43,15 @@ struct WelcomeView: View {
 
     var body: some View {
         ZStack {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62)
+            PhotoBackdrop(imageName: "welcome-bg", blur: 6, darken: 0.62,
+                          pan: CGFloat(step) / CGFloat(max(slides.count, 1)))
 
             if step == 0 {
                 splash
-                    .transition(.opacity)
+                    .transition(.editorialRise)
             } else {
                 slideStack
-                    .transition(.opacity)
+                    .transition(.editorialRise)
             }
         }
         .contentShape(Rectangle())
@@ -60,10 +61,7 @@ struct WelcomeView: View {
                 step = 1
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: step)
-        .onAppear {
-            splashBreathing = true
-        }
+        .animation(.spring(response: 0.65, dampingFraction: 0.85), value: step)
     }
 
     // MARK: - Splash
@@ -74,41 +72,30 @@ struct WelcomeView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color(white: 0.96).opacity(0.22), .clear],
+                        colors: [Color(white: 0.96).opacity(0.20), .clear],
                         center: .center, startRadius: 30, endRadius: 280
                     )
                 )
                 .frame(width: 520, height: 520)
-                .scaleEffect(splashBreathing ? 1.25 : 0.85)
-                .opacity(splashBreathing ? 0.6 : 0.3)
-                .animation(.easeInOut(duration: 5.5).repeatForever(autoreverses: true), value: splashBreathing)
                 .blur(radius: 24)
+                .breathing(scale: 0.82...1.22, opacity: 0.35...0.65, period: 5.5)
 
             // Wordmark
             Image("soulfull-logo-white")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 220, height: 220)
-                .scaleEffect(splashBreathing ? 1.08 : 0.92)
-                .opacity(splashBreathing ? 1 : 0.82)
-                .animation(.easeInOut(duration: 5.5).repeatForever(autoreverses: true), value: splashBreathing)
+                .breathing(scale: 0.93...1.07, opacity: 0.84...1.0, period: 5.5)
 
             VStack {
                 Spacer()
-                Button {
-                    Haptics.tap()
-                    step = 1
-                } label: {
-                    Text("TAP TO CONTINUE")
-                        .font(Theme.eyebrow(11))
-                        .tracking(3.4)
-                        .foregroundStyle(Color(white: 0.92).opacity(0.62))
-                        .padding(14)
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 32)
-                .opacity(splashBreathing ? 1 : 0)
-                .animation(.easeOut(duration: 1).delay(1.0), value: splashBreathing)
+                Text("TAP TO CONTINUE")
+                    .font(Theme.eyebrow(11))
+                    .tracking(3.4)
+                    .foregroundStyle(Color(white: 0.92).opacity(0.62))
+                    .padding(14)
+                    .breathing(scale: 1.0...1.0, opacity: 0.45...0.9, period: 2.8)
+                    .padding(.bottom, 32)
             }
         }
     }
@@ -122,13 +109,14 @@ struct WelcomeView: View {
         let slide = slides[step - 1]
 
         VStack(alignment: .leading, spacing: 0) {
-            // Top bar
-            HStack {
+            // Top bar: logo + folio
+            HStack(alignment: .top) {
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
                     .frame(width: 56, height: 56)
                     .opacity(0.88)
                 Spacer()
+                folio
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -147,26 +135,15 @@ struct WelcomeView: View {
                     .font(Theme.body(13))
                     .foregroundStyle(Color.white.opacity(0.66))
                     .lineSpacing(3)
-
-                // Dots
-                HStack(spacing: 8) {
-                    ForEach(0..<slides.count, id: \.self) { i in
-                        Capsule()
-                            .fill(i + 1 == step ? Color.white : Color.white.opacity(0.24))
-                            .frame(width: i + 1 == step ? 26 : 8, height: 8)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: step)
-                            .onTapGesture {
-                                Haptics.select()
-                                step = i + 1
-                            }
-                    }
-                }
-                .padding(.top, 6)
-                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 30)
             .id(slide.id)
-            .transition(.opacity)
+            .transition(.editorialPage)
+
+            // Hairline progress segments
+            segments
+                .padding(.horizontal, 30)
+                .padding(.top, 26)
 
             VStack(spacing: 4) {
                 SGPrimaryButton(title: isLast ? "Begin" : "Next") {
@@ -178,7 +155,6 @@ struct WelcomeView: View {
                 }
                 if isLast {
                     Button {
-                        Haptics.tap()
                         app.beginOnboarding()
                     } label: {
                         Text("I already have an account")
@@ -186,11 +162,12 @@ struct WelcomeView: View {
                             .foregroundStyle(Color.white.opacity(0.6))
                             .padding(12)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.soulPressableQuiet)
+                    .transition(.editorialRise)
                 }
             }
             .padding(.horizontal, 30)
-            .padding(.top, 32)
+            .padding(.top, 26)
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -208,6 +185,38 @@ struct WelcomeView: View {
                 }
         )
         } // end if step > 0
+    }
+
+    /// Magazine folio — "02 / 03" with the current number animating.
+    private var folio: some View {
+        HStack(spacing: 3) {
+            Text(String(format: "%02d", step))
+                .contentTransition(.numericText(value: Double(step)))
+                .foregroundStyle(.white)
+            Text("/ \(String(format: "%02d", slides.count))")
+                .foregroundStyle(Color.white.opacity(0.5))
+        }
+        .font(Theme.body(12, weight: .medium))
+        .tracking(1.5)
+        .monospacedDigit()
+        .padding(.top, 6)
+    }
+
+    /// Tappable hairline segments — the filled run grows with a spring.
+    private var segments: some View {
+        HStack(spacing: 6) {
+            ForEach(1...slides.count, id: \.self) { i in
+                Capsule()
+                    .fill(i <= step ? Color.white.opacity(0.92) : Color.white.opacity(0.22))
+                    .frame(height: 2)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle().inset(by: -12))
+                    .onTapGesture {
+                        Haptics.select()
+                        step = i
+                    }
+            }
+        }
     }
 
     private func twoTone(first: String, accent: String) -> some View {

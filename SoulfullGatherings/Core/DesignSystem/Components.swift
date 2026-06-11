@@ -101,6 +101,8 @@ struct PhotoBackdrop: View {
     var darken: Double = 0.5
     /// Film-grain strength; 0 disables.
     var grain: Double = 0.05
+    /// Horizontal camera pan, -1…1. Animate across paged content for parallax.
+    var pan: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -112,7 +114,8 @@ struct PhotoBackdrop: View {
                 .blur(radius: blur)
                 .saturation(1.15)
                 .brightness(-0.05)
-                .scaleEffect(1.06)
+                .scaleEffect(pan == 0 ? 1.06 : 1.16)
+                .offset(x: -pan * 22)
             // Top→bottom vignette for legibility.
             LinearGradient(
                 colors: [
