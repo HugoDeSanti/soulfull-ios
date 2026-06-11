@@ -17,8 +17,6 @@ struct SGPrimaryButton: View {
     var icon: String? = nil
     let action: () -> Void
 
-    @State private var pressed = false
-
     var body: some View {
         Button {
             guard enabled else { return }
@@ -42,16 +40,9 @@ struct SGPrimaryButton: View {
                     )
             )
             .opacity(enabled ? 1 : 0.45)
-            .scaleEffect(pressed ? 0.98 : 1)
-            .animation(.easeOut(duration: 0.12), value: pressed)
             .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in pressed = true }
-                .onEnded { _ in pressed = false }
-        )
+        .buttonStyle(SoulPressableStyle(scale: 0.975, hapticOnPress: false, dim: false))
     }
 }
 
@@ -65,11 +56,7 @@ struct GlassCard<Content: View>: View {
     var body: some View {
         content
             .padding(padding)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
-            )
+            .soulGlassCard(radius: radius)
     }
 }
 
@@ -112,6 +99,8 @@ struct PhotoBackdrop: View {
     /// 0 = sharp, higher = more blur. Default lightly blurred per the prototype.
     var blur: CGFloat = 5
     var darken: Double = 0.5
+    /// Film-grain strength; 0 disables.
+    var grain: Double = 0.05
 
     var body: some View {
         ZStack {
@@ -134,7 +123,21 @@ struct PhotoBackdrop: View {
                 startPoint: .top, endPoint: .bottom
             )
         }
+        .modifier(GrainIfEnabled(intensity: grain))
         .ignoresSafeArea()
+    }
+}
+
+/// Conditionally applies film grain (a no-op when intensity is 0) so
+/// PhotoBackdrop call sites can tune or disable it per screen.
+private struct GrainIfEnabled: ViewModifier {
+    let intensity: Double
+    func body(content: Content) -> some View {
+        if intensity > 0 {
+            content.filmGrain(intensity: intensity)
+        } else {
+            content
+        }
     }
 }
 
@@ -153,10 +156,9 @@ struct CircleIconButton: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .frame(width: size, height: size)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.glassBorderHigh, lineWidth: 1))
+                .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.soulPressableChip)
     }
 }
 
@@ -217,4 +219,32 @@ struct PulseModifier: ViewModifier {
 
 extension View {
     func pulse() -> some View { modifier(PulseModifier()) }
+}
+
+// MARK: - Breathing (slow scale/opacity loop at breath pace)
+
+/// The app's signature idle motion — a 5–6s inhale/exhale. Use for logos,
+/// halos, and the player's breathing circle. Static under Reduce Motion.
+struct BreathingModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var scaleRange: ClosedRange<CGFloat> = 0.94...1.06
+    var opacityRange: ClosedRange<Double> = 0.85...1.0
+    var period: Double = 5.5
+    @State private var inhale = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(reduceMotion ? 1 : (inhale ? scaleRange.upperBound : scaleRange.lowerBound))
+            .opacity(reduceMotion ? 1 : (inhale ? opacityRange.upperBound : opacityRange.lowerBound))
+            .animation(.easeInOut(duration: period).repeatForever(autoreverses: true), value: inhale)
+            .onAppear { inhale = true }
+    }
+}
+
+extension View {
+    func breathing(scale: ClosedRange<CGFloat> = 0.94...1.06,
+                   opacity: ClosedRange<Double> = 0.85...1.0,
+                   period: Double = 5.5) -> some View {
+        modifier(BreathingModifier(scaleRange: scale, opacityRange: opacity, period: period))
+    }
 }

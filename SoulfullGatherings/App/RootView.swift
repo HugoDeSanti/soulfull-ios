@@ -2,15 +2,16 @@
 //  RootView.swift
 //  Soulfull Gatherings
 //
-//  Stage router. Switches between Loading / Welcome / Onboarding / Main
-//  with a soft cross-fade. The loading state lasts only as long as it
-//  takes to establish (or restore) the Supabase auth session.
+//  Stage router. Stages hand off through an organic noise dissolve (plain
+//  fade under Reduce Motion). Loading is a breathing logo over aurora — the
+//  first thing a user sees, so it already speaks the brand.
 //
 
 import SwiftUI
 
 struct RootView: View {
     @Environment(AppState.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -18,21 +19,36 @@ struct RootView: View {
 
             switch app.stage {
             case .loading:
-                ProgressView()
-                    .tint(Theme.inkSoft)
-                    .transition(.opacity)
+                loadingStage
+                    .transition(.soulStage(reduceMotion: reduceMotion))
             case .welcome:
                 WelcomeView()
-                    .transition(.opacity)
+                    .transition(.soulStage(reduceMotion: reduceMotion))
             case .onboarding:
                 OnboardingView()
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .transition(.soulStage(reduceMotion: reduceMotion))
             case .main:
+                // NavigationStack is UIKit-backed and can't be shader-rasterized
+                // (yellow placeholder) — main gets a native blur-scale handoff.
                 MainTabView()
-                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+                    .transition(reduceMotion ? .opacity : .scale(scale: 1.04).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.35), value: app.stage)
+        .animation(.easeInOut(duration: 0.9), value: app.stage)
+    }
+
+    private var loadingStage: some View {
+        ZStack {
+            AuroraBackground(speed: 1.2)
+                .filmGrain()
+                .ignoresSafeArea()
+
+            Image("soulfull-logo-white")
+                .resizable().scaledToFit()
+                .frame(width: 150, height: 150)
+                .breathing(period: 4.5)
+                .shadow(color: .white.opacity(0.15), radius: 30)
+        }
     }
 }
 

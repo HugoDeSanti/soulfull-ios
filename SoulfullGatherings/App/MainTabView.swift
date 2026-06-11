@@ -30,6 +30,16 @@ enum MainTab: String, Hashable, CaseIterable {
         case .you:      return "person.crop.circle"
         }
     }
+
+    /// Filled variant shown while the tab is selected.
+    var activeSystemImage: String {
+        switch self {
+        case .home:     return "house.fill"
+        case .practice: return "sparkles"
+        case .circle:   return "person.2.fill"
+        case .you:      return "person.crop.circle.fill"
+        }
+    }
 }
 
 struct MainTabView: View {
