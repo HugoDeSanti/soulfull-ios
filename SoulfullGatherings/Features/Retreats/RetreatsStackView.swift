@@ -58,7 +58,9 @@ struct RetreatsStackView: View {
             }
         }
         .ignoresSafeArea()
-        .simultaneousGesture(pinchGesture)
+        // High priority so the two-finger pinch never doubles as a tap on
+        // rows/covers underneath; single-finger interactions pass through.
+        .highPriorityGesture(pinchGesture)
         .task { await vm.load() }
         .onChange(of: vm.activeIndex) {
             guard !reduceMotion else { return }

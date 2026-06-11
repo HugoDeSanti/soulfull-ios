@@ -31,11 +31,15 @@ struct PracticeListView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(vm.sessions) { session in
-                        sessionRow(session)
-                            .onTapGesture {
-                                Haptics.tap()
-                                nowPlaying = session
-                            }
+                        PressableCard(action: { nowPlaying = session }) {
+                            sessionRow(session)
+                        }
+                        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+                            let entering = max(phase.value, 0)
+                            return view
+                                .opacity(1 - entering * 0.5)
+                                .offset(y: entering * 18)
+                        }
                     }
                 }
             }
@@ -53,15 +57,15 @@ struct PracticeListView: View {
             ZStack {
                 Image(session.imageUrl)
                     .resizable().scaledToFill()
-                    .frame(width: 56, height: 56)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(width: 68, height: 68)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(Theme.glassBorder, lineWidth: 1)
             )
 
@@ -93,11 +97,8 @@ struct PracticeListView: View {
                 .foregroundStyle(Theme.muted)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity)
+        .soulGlassCard(radius: 18)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 

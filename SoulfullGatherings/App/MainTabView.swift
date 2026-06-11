@@ -133,10 +133,11 @@ private struct PracticeRoot: View {
     }
     @Binding var navHidden: Bool
     @State private var path: [Route] = []
+    @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
-            PracticeView(onSelect: open)
+            PracticeView(onSelect: open, zoomNamespace: zoomNS)
                 .navigationDestination(for: Route.self) { route in
                     destination(route)
                         .toolbar(.hidden, for: .navigationBar)
@@ -158,8 +159,31 @@ private struct PracticeRoot: View {
         }
     }
 
+    /// Zoom-hero source registered by the landing card for each list route;
+    /// detail routes push normally from within their list.
+    private func zoomSourceID(_ route: Route) -> String? {
+        switch route {
+        case .sessions(let category): return category.rawValue
+        case .journalList:            return PracticeMenuItem.journal.rawValue
+        case .exerciseList:           return PracticeMenuItem.exercises.rawValue
+        case .recipeList:             return PracticeMenuItem.recipes.rawValue
+        case .massageList:            return PracticeMenuItem.massages.rawValue
+        default:                      return nil
+        }
+    }
+
     @ViewBuilder
     private func destination(_ route: Route) -> some View {
+        if let sourceID = zoomSourceID(route) {
+            destinationContent(route)
+                .navigationTransition(.zoom(sourceID: sourceID, in: zoomNS))
+        } else {
+            destinationContent(route)
+        }
+    }
+
+    @ViewBuilder
+    private func destinationContent(_ route: Route) -> some View {
         switch route {
         case .sessions(let category):
             PracticeListView(category: category)

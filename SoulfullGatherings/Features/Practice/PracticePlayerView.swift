@@ -2,10 +2,13 @@
 //  PracticePlayerView.swift
 //  Soulfull Gatherings
 //
-//  Resolves a session's media URL and plays it. Absolute http(s) paths play
-//  directly; bucket-relative paths are turned into a time-limited signed URL
-//  via `SupabaseService.signedMediaURL`. Video uses AVKit's `VideoPlayer`;
-//  audio gets a minimal branded transport over an `AVPlayer`.
+//  Resolves a session's media URL and plays it. Audio gets the full
+//  now-playing room: an aurora graded from the artwork, breathing halo and
+//  cover, a custom scrubber with haptic ends, ±15s, and a morphing
+//  play/pause. Video keeps AVKit's transport inside branded chrome.
+//
+//  URL resolution: absolute http(s) paths play directly; bucket-relative
+//  paths are signed via `SupabaseService.signedMediaURL`.
 //
 
 import SwiftUI
@@ -18,6 +21,7 @@ struct PracticePlayerView: View {
     @State private var player: AVPlayer?
     @State private var transport: AudioTransport?
     @State private var loadError: String?
+    @State private var tones: (top: Color, mid: Color, base: Color)?
 
     var body: some View {
         ZStack {
@@ -25,18 +29,19 @@ struct PracticePlayerView: View {
 
             if let player {
                 if media.mediaKind == .video {
-                    VideoPlayer(player: player)
-                        .ignoresSafeArea()
+                    videoStage(player)
                 } else {
                     audioStage
                 }
             } else if let loadError {
                 errorView(loadError)
             } else {
-                ProgressView()
-                    .tint(Theme.ink)
+                AuroraBackground(speed: 1.2)
+                    .ignoresSafeArea()
+                    .overlay(ProgressView().tint(Theme.ink))
             }
 
+            // Close
             VStack {
                 HStack {
                     Spacer()
@@ -44,52 +49,160 @@ struct PracticePlayerView: View {
                         Haptics.tap()
                         dismiss()
                     }
+                    .accessibilityLabel("Close player")
                 }
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.top, 12)
+            .padding(.top, 18)
         }
         .preferredColorScheme(.dark)
         .task { await resolveAndPlay() }
+        .onAppear { tones = ArtworkTones.extract(from: media.imageUrl) }
         .onDisappear {
             player?.pause()
             transport?.stop()
         }
     }
 
-    // MARK: - Audio stage (cover art + title; AVPlayer drives playback)
+    // MARK: - Audio stage
 
     private var audioStage: some View {
-        VStack(spacing: 22) {
-            Spacer()
-            Image(media.imageUrl)
-                .resizable().scaledToFill()
-                .frame(width: 240, height: 240)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .strokeBorder(Theme.glassBorder, lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.4), radius: 24, y: 12)
+        ZStack {
+            AuroraBackground(
+                toneA: tones?.base ?? Color(red: 0.10, green: 0.12, blue: 0.05),
+                toneB: tones?.mid ?? Color(red: 0.24, green: 0.27, blue: 0.10),
+                toneC: tones?.top ?? Color(red: 0.36, green: 0.31, blue: 0.13),
+                speed: 0.9
+            )
+            .filmGrain(intensity: 0.05)
+            .ignoresSafeArea()
 
-            VStack(spacing: 6) {
-                Text(media.title)
-                    .font(Theme.headline(26))
-                    .foregroundStyle(Theme.ink)
-                    .multilineTextAlignment(.center)
-                    .kerning(-0.3)
-                Text("with \(media.lead) · \(media.durationLabel)")
-                    .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
-            }
-            .padding(.horizontal, 28)
+            VStack(spacing: 0) {
+                Spacer()
 
-            if let transport {
-                AudioControls(transport: transport)
+                // Breathing halo + artwork
+                ZStack {
+                    Circle()
+                        .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                        .frame(width: 312, height: 312)
+                        .breathing(scale: 0.92...1.1, opacity: 0.25...0.6, period: 6)
+                    Circle()
+                        .fill(
+                            RadialGradient(colors: [Color.white.opacity(0.10), .clear],
+                                           center: .center, startRadius: 60, endRadius: 220)
+                        )
+                        .frame(width: 430, height: 430)
+                        .breathing(scale: 0.9...1.08, opacity: 0.5...1.0, period: 6)
+
+                    Image(media.imageUrl)
+                        .resizable().scaledToFill()
+                        .frame(width: 248, height: 248)
+                        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.45), radius: 30, y: 16)
+                        .breathing(scale: 0.985...1.015, opacity: 1.0...1.0, period: 6)
+                }
+                .padding(.bottom, 36)
+
+                VStack(spacing: 8) {
+                    Text("NOW PLAYING · \(media.durationLabel)".uppercased())
+                        .font(Theme.eyebrow(10))
+                        .tracking(2.5)
+                        .foregroundStyle(Color.white.opacity(0.6))
+                    Text(media.title)
+                        .font(Theme.headline(28))
+                        .foregroundStyle(Theme.ink)
+                        .multilineTextAlignment(.center)
+                        .kerning(-0.4)
+                    Text("with \(media.lead)")
+                        .font(Theme.body(13))
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                .padding(.horizontal, 28)
+
+                Spacer()
+
+                if let transport {
+                    VStack(spacing: 26) {
+                        SoulScrubber(transport: transport)
+                        transportButtons(transport)
+                    }
+                    .padding(.bottom, 54)
+                }
             }
-            Spacer()
-            Spacer()
+        }
+    }
+
+    private func transportButtons(_ transport: AudioTransport) -> some View {
+        HStack(spacing: 44) {
+            skipButton(icon: "gobackward.15", by: -15, transport: transport)
+
+            Button {
+                Haptics.bump()
+                transport.togglePlay()
+            } label: {
+                Image(systemName: transport.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 26, weight: .bold))
+                    .contentTransition(.symbolEffect(.replace.downUp.byLayer))
+                    .foregroundStyle(.black)
+                    .frame(width: 76, height: 76)
+                    .background(Circle().fill(.white))
+                    .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+            }
+            .buttonStyle(SoulPressableStyle(scale: 0.92, hapticOnPress: false, dim: false))
+            .accessibilityLabel(transport.isPlaying ? "Pause" : "Play")
+
+            skipButton(icon: "goforward.15", by: 15, transport: transport)
+        }
+    }
+
+    private func skipButton(icon: String, by seconds: Double, transport: AudioTransport) -> some View {
+        Button {
+            transport.skip(seconds)
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 52, height: 52)
+        }
+        .buttonStyle(.soulPressableChip)
+        .accessibilityLabel(seconds < 0 ? "Back 15 seconds" : "Forward 15 seconds")
+    }
+
+    // MARK: - Video stage (AVKit transport, branded chrome)
+
+    private func videoStage(_ player: AVPlayer) -> some View {
+        ZStack {
+            VideoPlayer(player: player)
+                .ignoresSafeArea()
+
+            // Title chrome over a soft top gradient; AVKit owns the rest.
+            VStack {
+                LinearGradient(colors: [.black.opacity(0.55), .clear],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 130)
+                    .overlay(alignment: .bottomLeading) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("with \(media.lead)".uppercased())
+                                .font(Theme.eyebrow(9))
+                                .tracking(2)
+                                .foregroundStyle(Color.white.opacity(0.7))
+                            Text(media.title)
+                                .font(Theme.headline(20))
+                                .foregroundStyle(.white)
+                                .kerning(-0.3)
+                        }
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 8)
+                    }
+                    .allowsHitTesting(false)
+                Spacer()
+            }
+            .ignoresSafeArea(edges: .top)
         }
     }
 
@@ -134,35 +247,61 @@ struct PracticePlayerView: View {
     }
 }
 
-// MARK: - Audio transport (scrubber + skip + play/pause)
+// MARK: - Custom scrubber (capsule track, draggable, haptic ends)
 
-private struct AudioControls: View {
+private struct SoulScrubber: View {
     @Bindable var transport: AudioTransport
+    @State private var dragging = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            scrubber
-            buttons
-        }
-    }
+        VStack(spacing: 10) {
+            GeometryReader { geo in
+                let width = geo.size.width
+                let fraction = transport.duration > 0
+                    ? min(1, max(0, transport.currentTime / transport.duration))
+                    : 0
 
-    // Draggable progress bar with elapsed / remaining labels.
-    private var scrubber: some View {
-        VStack(spacing: 8) {
-            Slider(
-                value: $transport.currentTime,
-                in: 0...max(transport.duration, 1),
-                onEditingChanged: { editing in
-                    transport.isScrubbing = editing
-                    if editing {
-                        Haptics.prepare()
-                    } else {
-                        transport.seek(to: transport.currentTime)
-                        Haptics.select()
-                    }
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(height: dragging ? 10 : 5)
+
+                    Capsule()
+                        .fill(Theme.ink)
+                        .frame(width: max(0, width * fraction), height: dragging ? 10 : 5)
+
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: dragging ? 18 : 12, height: dragging ? 18 : 12)
+                        .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
+                        .offset(x: width * fraction - (dragging ? 9 : 6))
                 }
-            )
-            .tint(Theme.ink)
+                .frame(height: 26)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if !dragging {
+                                dragging = true
+                                transport.isScrubbing = true
+                                Haptics.prepare()
+                            }
+                            let f = min(1, max(0, value.location.x / max(width, 1)))
+                            transport.currentTime = f * transport.duration
+                            // Detent at the rails.
+                            if f == 0 || f == 1 { Haptics.select() }
+                        }
+                        .onEnded { _ in
+                            transport.seek(to: transport.currentTime)
+                            transport.isScrubbing = false
+                            dragging = false
+                            Haptics.select()
+                        }
+                )
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: dragging)
+            }
+            .frame(height: 26)
 
             HStack {
                 Text(Self.time(transport.currentTime))
@@ -171,45 +310,9 @@ private struct AudioControls: View {
             }
             .font(Theme.body(11))
             .monospacedDigit()
-            .foregroundStyle(Theme.muted)
+            .foregroundStyle(Color.white.opacity(0.55))
         }
-        .padding(.horizontal, 28)
-    }
-
-    private var buttons: some View {
-        HStack(spacing: 40) {
-            skip(icon: "gobackward.15", by: -15)
-            playPause
-            skip(icon: "goforward.15", by: 15)
-        }
-    }
-
-    private var playPause: some View {
-        Button {
-            Haptics.bump()
-            transport.togglePlay()
-        } label: {
-            Image(systemName: transport.isPlaying ? "pause.fill" : "play.fill")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(.black)
-                .frame(width: 72, height: 72)
-                .background(Circle().fill(.white))
-                .shadow(color: .black.opacity(0.2), radius: 18, y: 6)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func skip(icon: String, by seconds: Double) -> some View {
-        Button {
-            Haptics.tap()
-            transport.skip(seconds)
-        } label: {
-            Image(systemName: icon)
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 52, height: 52)
-        }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 30)
     }
 
     /// `mm:ss` from a seconds value, defensively clamping non-finite input.
@@ -225,12 +328,12 @@ private struct AudioControls: View {
 /// observer fires on the main queue, so `MainActor.assumeIsolated` lets it touch
 /// this `@MainActor` state without an extra hop.
 @Observable @MainActor
-private final class AudioTransport {
+final class AudioTransport {
     var currentTime: Double = 0
     var duration: Double
     var isPlaying = true
-    /// While the user drags the slider, suppress observer-driven updates so the
-    /// thumb doesn't fight the finger.
+    /// While the user drags the scrubber, suppress observer-driven updates so
+    /// the thumb doesn't fight the finger.
     var isScrubbing = false
 
     private let player: AVPlayer

@@ -134,18 +134,43 @@ final class SoulfullTourUITests: XCTestCase {
         app.buttons["Close"].tap()
         sleep(1)
 
-        // ── Other tabs ─────────────────────────────────────────────────────
+        // ── Practice: feature spread → pinch to contact sheet ─────────────
         app.buttons["Practice"].tap()
+        XCTAssertTrue(app.staticTexts["Practices"].waitForExistence(timeout: 8))
         sleep(1)
-        snap(app, "20-practice")
+        snap(app, "20-practice-feature")
 
+        app.pinch(withScale: 0.5, velocity: -0.8)
+        sleep(2) // let the column morph settle
+        snap(app, "21-practice-sheet")
+
+        // Back to feature via the toggle, then into a category (zoom hero).
+        app.buttons["Feature view"].tap()
+        sleep(1)
+        tapAny(app, "BREATHWORK")
+        XCTAssertTrue(app.staticTexts["Breathwork"].waitForExistence(timeout: 8))
+        // Wait out the network fallback so rows are on screen.
+        _ = element(app, containing: "Box Breathing Basics").waitForExistence(timeout: 20)
+        snap(app, "22-practice-list")
+
+        // Open a session → custom audio player.
+        tapAny(app, "Box Breathing Basics")
+        sleep(3) // player resolves + begins
+        snap(app, "23-player-audio")
+
+        app.buttons["Close player"].tap()
+        sleep(1)
+        app.buttons["Practices"].firstMatch.tap() // back bar
+        sleep(1)
+
+        // ── Other tabs ─────────────────────────────────────────────────────
         app.buttons["Circle"].tap()
         sleep(1)
-        snap(app, "21-circle")
+        snap(app, "24-circle")
 
         app.buttons["You"].tap()
         sleep(1)
-        snap(app, "22-you")
+        snap(app, "25-you")
     }
 
     // MARK: - Helpers
