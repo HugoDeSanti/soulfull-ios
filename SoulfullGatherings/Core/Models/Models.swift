@@ -60,6 +60,14 @@ struct Retreat: Identifiable, Hashable {
     let toneTop: Color
     let toneMid: Color
     let toneBase: Color
+    /// Optional long-form editorial content for the detail screen. When set,
+    /// `RetreatDetailView` renders the full spread (invitation, who it's for,
+    /// the four elements, a member's word, guides, stay & inclusions); when
+    /// nil it falls back to the concise tag-based layout. Mock-only for now —
+    /// not yet sourced from Supabase, so `RetreatRow` leaves it at the default.
+    /// Must stay a defaulted `var` so the synthesized memberwise init keeps it
+    /// optional for the DB call site.
+    var experience: RetreatExperience? = nil
 
     var tone: (top: Color, mid: Color, base: Color) { (toneTop, toneMid, toneBase) }
 
@@ -91,6 +99,68 @@ struct Retreat: Identifiable, Hashable {
     static func == (lhs: Retreat, rhs: Retreat) -> Bool { lhs.id == rhs.id }
 }
 
+// MARK: - Rich retreat experience (editorial detail content)
+
+/// Long-form content that turns a retreat's detail screen into a full
+/// editorial spread. All copy is curated from the retreat's own brochure;
+/// the goal is to inspire, not to exhaustively list. Value type, `Hashable`
+/// so it slots cleanly into the `Retreat` value (whose own `==`/`hash` stay
+/// id-only).
+struct RetreatExperience: Hashable {
+    /// Kind line above the title on the cover (e.g. "A Wellness & Fitness Retreat").
+    let kind: String
+    /// Short, brochure-accurate date range for the cover (e.g. "July 21–26").
+    /// Prefer this over the (possibly stale) DB date when an experience exists.
+    let dateRange: String
+    /// One-line invitation shown under the cover title.
+    let coverLine: String
+    /// The opening invitation — one short stanza per paragraph.
+    let invitation: [String]
+    /// "Who this is for" lines.
+    let whoFor: [String]
+    /// The closing welcome under "who this is for".
+    let welcome: String
+    /// The four elements every day is built from.
+    let elements: [Element]
+    /// A member's testimonial, if any.
+    let testimonial: Testimonial?
+    /// The small team leading the week.
+    let guides: [Guide]
+    /// Stay description (villa, room options).
+    let stay: String
+    /// What's included.
+    let inclusions: [String]
+    /// Fine print (e.g. what isn't included).
+    let inclusionsNote: String?
+
+    /// Move / Explore / Recover / Connect — title, icon, a line, a few specifics.
+    struct Element: Hashable, Identifiable {
+        var id: String { title }
+        let title: String
+        let systemImage: String
+        let summary: String
+        let highlights: [String]
+    }
+
+    struct Testimonial: Hashable {
+        let quote: String
+        let author: String
+        /// e.g. "Entrepreneur, 29 · Member since 2023".
+        let attribution: String
+    }
+
+    struct Guide: Hashable, Identifiable {
+        var id: String { name }
+        let name: String
+        let role: String
+
+        /// Up to two initials for the avatar.
+        var initials: String {
+            name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
+        }
+    }
+}
+
 extension Retreat {
     private static func day(_ y: Int, _ m: Int, _ d: Int) -> Date {
         Calendar.current.date(from: DateComponents(year: y, month: m, day: d))!
@@ -101,12 +171,13 @@ extension Retreat {
     /// `PracticeSession.mock`).
     static let mock: [Retreat] = [
         Retreat(id: 1, name: "Mallorca", country: "Spain",
-                startDate: day(2026, 7, 18), endDate: day(2026, 7, 23),
+                startDate: day(2026, 7, 21), endDate: day(2026, 7, 26),
                 maxGuests: 14, priceUsd: 4400,
-                tags: ["Hyrox", "Recovery", "Wellness"],
-                blurb: "Cliffside training mornings, cove swims, recovery rituals on the sand. Push and return.",
+                tags: ["Wellness", "Fitness", "Recovery"],
+                blurb: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
                 imageUrl: "retreat-mallorca",
-                toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24")),
+                toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24"),
+                experience: .mallorca),
         Retreat(id: 2, name: "Bali", country: "Indonesia",
                 startDate: day(2026, 8, 9), endDate: day(2026, 8, 16),
                 maxGuests: 16, priceUsd: 3900,
@@ -150,6 +221,78 @@ extension Retreat {
                 imageUrl: "retreat-lapland",
                 toneTop: Color(hex: "#6FA08F"), toneMid: Color(hex: "#2E5247"), toneBase: Color(hex: "#0C1714")),
     ]
+}
+
+// MARK: - Mallorca experience content (curated from the 2026 retreat brochure)
+
+extension RetreatExperience {
+    /// The curated long-form content for a retreat, matched by name. This
+    /// brochure copy lives in the app (not yet in Supabase), so it attaches to
+    /// whichever `Retreat` the screen receives — a DB row or the mock — instead
+    /// of relying on the mock's inline `experience`.
+    static func curated(for retreat: Retreat) -> RetreatExperience? {
+        switch retreat.name.lowercased() {
+        case "mallorca": return .mallorca
+        default:         return nil
+        }
+    }
+
+    static let mallorca = RetreatExperience(
+        kind: "A Wellness & Fitness Retreat",
+        dateRange: "July 21–26",
+        coverLine: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
+        invitation: [
+            "A private Spanish villa, a curated group of like-minded humans, and the coast of the Mediterranean Sea.",
+            "All brought together by a desire for movement and an optimistic purpose that will refresh and refuel you.",
+            "Arrive by yourself. Leave with a blissful view of life — and a forever community.",
+        ],
+        whoFor: [
+            "Perhaps you've always been a traveler, but now you're ready to become an adventurer.",
+            "Maybe you've been enjoying life and new places, but you're seeking refreshing company.",
+            "You value quality over quantity, choose optimism, and treasure the hours you forget to reach for your phone.",
+        ],
+        welcome: "If this is you — welcome home. You belong here.",
+        elements: [
+            .init(title: "Move",
+                  systemImage: "bicycle",
+                  summary: "Ride the island, build strength, and move every day until you feel your best.",
+                  highlights: ["Two riding days on curated routes", "Daily functional strength training", "Hillside hikes", "Restorative stretch sessions"]),
+            .init(title: "Explore",
+                  systemImage: "sailboat.fill",
+                  summary: "Discover Mallorca, from its coast and waters to its mountains and villages.",
+                  highlights: ["Buggy tour across the island", "A day in the village of Deià", "A winery experience", "Beach time", "A catamaran day along the coast"]),
+            .init(title: "Recover",
+                  systemImage: "leaf.fill",
+                  summary: "Relearn how to slow down — resting the body and quieting the mind.",
+                  highlights: ["Cold plunge & sauna", "Breathwork & daily meditation", "Somatic & nervous-system workshops", "Compression boots & custom massage"]),
+            .init(title: "Connect",
+                  systemImage: "sparkles",
+                  summary: "Real connection grows naturally — around good food, honest talk, and shared creativity.",
+                  highlights: ["Shared meals", "Creativity workshops", "Curated conversation", "Dinners that become dance parties"]),
+        ],
+        testimonial: .init(
+            quote: "I almost backed off my first retreat, just because I'd be traveling with \u{201C}strangers.\u{201D} Oh, how much joy and feeling alive I would have missed. I've made twelve forever friends here — I'd only give Soulfull 4.8 stars, because they've made going home the hard part.",
+            author: "G. Martínez",
+            attribution: "Entrepreneur, 29 · Member since 2023"
+        ),
+        guides: [
+            .init(name: "Alejandra Campos", role: "Head Retreat Leader"),
+            .init(name: "Michelle Campos", role: "Retreat Guide & Psychotherapist"),
+            .init(name: "Ana Lucía Chávez", role: "Retreat Guide & Fitness Trainer"),
+            .init(name: "Regina Mendoza", role: "Assistant & Physical Therapist"),
+            .init(name: "Sabina González", role: "Numerologist & Business Guide"),
+        ],
+        stay: "A private villa on the island of Mallorca, with your choice of a shared stay or a private suite. Settle in, and let time slow down.",
+        inclusions: [
+            "Every meal, from check-in to check-out",
+            "In-room amenities & a welcome gift box (€250+ value)",
+            "A 50-minute custom restorative massage (€259+ value)",
+            "Airport transfers & transport to every activity",
+            "All workshop materials, bikes & gear, buggies, and boat rides",
+            "Every session across Move, Explore, Recover & Connect",
+        ],
+        inclusionsNote: "Flights, travel insurance, and personal expenses are not included."
+    )
 }
 
 // MARK: - Digital programs (for home carousel)

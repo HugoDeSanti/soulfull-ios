@@ -3,11 +3,13 @@
 //  Soulfull Gatherings
 //
 //  Editorial spread. At rest it's the full-bleed cover — centered title,
-//  white reserve pill, glass meta. Scrolling reveals the story: pull-quote,
-//  numbered focus list, details grid, closing CTA. The cover photo answers
-//  the scroll — stretching on pull-down, blurring and darkening as the
-//  story comes up — and a glass reserve bar slides in once the hero CTA
-//  has scrolled away.
+//  white reserve pill, glass meta. Scrolling reveals the story. A retreat
+//  carrying a `RetreatExperience` (e.g. Mallorca) gets the full spread —
+//  invitation, who it's for, the four elements, a member's word, guides,
+//  stay & inclusions; one without falls back to the concise pull-quote /
+//  numbered focus / details layout. The cover photo answers the scroll —
+//  stretching on pull-down, blurring and darkening as the story comes up —
+//  and a glass reserve bar slides in once the hero CTA has scrolled away.
 //
 
 import SwiftUI
@@ -26,6 +28,17 @@ struct RetreatDetailView: View {
         self.retreat = retreat
         _vm = State(initialValue: RetreatDetailViewModel(retreat: retreat))
     }
+
+    /// Rich content for this retreat — the inline `experience` if the model
+    /// carried one (mock), otherwise the curated copy matched by name. This is
+    /// what lets the Mallorca brochure render even when the retreat arrives
+    /// from Supabase (which doesn't carry the long-form content yet).
+    private var exp: RetreatExperience? {
+        retreat.experience ?? RetreatExperience.curated(for: retreat)
+    }
+
+    /// Brochure date when an experience exists, else the model's own range.
+    private var whenLabel: String { exp?.dateRange ?? retreat.when }
 
     var body: some View {
         ZStack {
@@ -100,9 +113,12 @@ struct RetreatDetailView: View {
             Spacer()
 
             VStack(spacing: 18) {
-                Text("Gathering")
+                Text(exp?.kind ?? "Gathering")
                     .font(Theme.body(15))
                     .foregroundStyle(Color.white.opacity(0.85))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(retreat.name)
                     .font(Theme.headline(64, weight: .semibold))
                     .kerning(-2.4)
@@ -128,11 +144,11 @@ struct RetreatDetailView: View {
 
             VStack(spacing: 12) {
                 HStack(spacing: 12) {
-                    MetaPill(text: retreat.when)
+                    MetaPill(text: whenLabel)
                     MetaPill(text: "\(retreat.maxGuests) guests")
                     MetaPill(text: retreat.priceFormatted)
                 }
-                Text(retreat.blurb)
+                Text(exp?.coverLine ?? retreat.blurb)
                     .font(Theme.body(12))
                     .foregroundStyle(Color.white.opacity(0.78))
                     .multilineTextAlignment(.center)
@@ -192,7 +208,259 @@ struct RetreatDetailView: View {
 
     // MARK: - Story sections
 
+    @ViewBuilder
     private var storySections: some View {
+        if let exp {
+            richStory(exp)
+        } else {
+            basicStory
+        }
+    }
+
+    // MARK: Rich story (retreats carrying a RetreatExperience)
+
+    private func richStory(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 46) {
+            invitationSection(exp)
+            whoForSection(exp)
+            elementsSection(exp)
+            if let testimonial = exp.testimonial {
+                testimonialSection(testimonial)
+            }
+            guidesSection(exp)
+            staySection(exp)
+            closingCTA
+        }
+        .padding(.horizontal, 26)
+        .padding(.top, 34)
+    }
+
+    private func invitationSection(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionEyebrow("The Experience")
+            ForEach(Array(exp.invitation.enumerated()), id: \.offset) { idx, stanza in
+                if idx == 0 {
+                    Text(stanza)
+                        .font(Theme.headline(27, weight: .light))
+                        .kerning(-0.4)
+                        .foregroundStyle(Theme.ink)
+                        .lineSpacing(6)
+                } else {
+                    Text(stanza)
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineSpacing(5)
+                }
+            }
+        }
+    }
+
+    private func whoForSection(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionEyebrow("Who This Is For")
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(exp.whoFor, id: \.self) { line in
+                    Text(line)
+                        .font(Theme.body(15))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            // Welcome line as a honey-ruled pull-quote.
+            HStack(alignment: .top, spacing: 14) {
+                Rectangle()
+                    .fill(Theme.honey.opacity(0.7))
+                    .frame(width: 2)
+                Text(exp.welcome)
+                    .font(Theme.headline(21, weight: .medium))
+                    .kerning(-0.3)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func elementsSection(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                sectionEyebrow("The Rhythm of Each Day")
+                Text("Every day is built from four elements.")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkSoft)
+            }
+            VStack(spacing: 12) {
+                ForEach(Array(exp.elements.enumerated()), id: \.element.id) { idx, el in
+                    elementCard(el, folio: idx + 1)
+                }
+            }
+        }
+    }
+
+    private func elementCard(_ el: RetreatExperience.Element, folio: Int) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 13) {
+                Image(systemName: el.systemImage)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.honey)
+                    .frame(width: 40, height: 40)
+                    .soulGlass(in: Circle())
+                Text(el.title)
+                    .font(Theme.headline(25, weight: .semibold))
+                    .kerning(-0.4)
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Text(String(format: "%02d", folio))
+                    .font(Theme.body(12, weight: .medium))
+                    .tracking(1)
+                    .foregroundStyle(Theme.muted)
+            }
+            Text(el.summary)
+                .font(Theme.body(15))
+                .foregroundStyle(Theme.inkSoft)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(el.highlights, id: \.self) { highlight in
+                    HStack(alignment: .top, spacing: 11) {
+                        Circle()
+                            .fill(Theme.honey.opacity(0.8))
+                            .frame(width: 4, height: 4)
+                            .padding(.top, 7)
+                        Text(highlight)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .soulGlassCard(radius: 20)
+    }
+
+    private func testimonialSection(_ t: RetreatExperience.Testimonial) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionEyebrow("A Member's Word")
+            VStack(alignment: .leading, spacing: 16) {
+                Text("\u{201C}")
+                    .font(Theme.headline(64, weight: .semibold))
+                    .foregroundStyle(Theme.honey.opacity(0.5))
+                    .frame(height: 26, alignment: .top)
+                Text(t.quote)
+                    .font(Theme.headline(20, weight: .light))
+                    .kerning(-0.2)
+                    .foregroundStyle(Theme.ink)
+                    .lineSpacing(6)
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(t.author)
+                        .font(Theme.body(14, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                    Text(t.attribution)
+                        .font(Theme.eyebrow(10))
+                        .tracking(1.5)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .soulGlassCard(radius: 20)
+        }
+    }
+
+    private func guidesSection(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                sectionEyebrow("Your Guides")
+                Text("A small team leads the week — you're in attentive hands from the first morning to the last.")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            VStack(spacing: 0) {
+                ForEach(Array(exp.guides.enumerated()), id: \.element.id) { idx, guide in
+                    HStack(spacing: 14) {
+                        Text(guide.initials)
+                            .font(Theme.body(13, weight: .medium))
+                            .foregroundStyle(Theme.ink)
+                            .frame(width: 42, height: 42)
+                            .soulGlass(in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(guide.name)
+                                .font(Theme.body(15, weight: .medium))
+                                .foregroundStyle(Theme.ink)
+                            Text(guide.role)
+                                .font(Theme.eyebrow(10))
+                                .tracking(1.5)
+                                .textCase(.uppercase)
+                                .foregroundStyle(Theme.muted)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .overlay(alignment: .bottom) {
+                        if idx < exp.guides.count - 1 {
+                            Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func staySection(_ exp: RetreatExperience) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionEyebrow("Your Stay")
+                Text(exp.stay)
+                    .font(Theme.body(15))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            VStack(alignment: .leading, spacing: 14) {
+                Text("WHAT'S INCLUDED")
+                    .font(Theme.eyebrow(10))
+                    .tracking(2)
+                    .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 11) {
+                    ForEach(exp.inclusions, id: \.self) { item in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Theme.honey)
+                                .padding(.top, 2)
+                            Text(item)
+                                .font(Theme.body(14))
+                                .foregroundStyle(Theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .soulGlassCard(radius: 20)
+
+            if let note = exp.inclusionsNote {
+                Text(note)
+                    .font(Theme.body(11))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: Basic story (retreats without rich content)
+
+    private var basicStory: some View {
         VStack(alignment: .leading, spacing: 44) {
             // Pull-quote
             VStack(alignment: .leading, spacing: 14) {
@@ -240,26 +508,32 @@ struct RetreatDetailView: View {
                 }
             }
 
-            // Closing CTA
-            VStack(spacing: 16) {
-                Text("\(retreat.maxGuests) places. One table.")
-                    .font(Theme.headline(22))
-                    .kerning(-0.3)
-                    .foregroundStyle(Theme.ink)
-                    .frame(maxWidth: .infinity)
-                reserveButton
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 6)
-            .padding(.bottom, 140)
+            closingCTA
         }
         .padding(.horizontal, 26)
         .padding(.top, 30)
     }
 
+    // MARK: Shared closing CTA
+
+    private var closingCTA: some View {
+        VStack(spacing: 16) {
+            Text("\(retreat.maxGuests) places. One table.")
+                .font(Theme.headline(22))
+                .kerning(-0.3)
+                .foregroundStyle(Theme.ink)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+            reserveButton
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .padding(.bottom, 140)
+    }
+
     private var detailWhen: String {
         let year = Calendar.current.component(.year, from: retreat.startDate)
-        return "\(retreat.when), \(year)"
+        return "\(whenLabel), \(year)"
     }
 
     private func sectionEyebrow(_ text: String) -> some View {

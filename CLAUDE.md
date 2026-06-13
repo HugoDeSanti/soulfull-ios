@@ -63,7 +63,7 @@ SoulfullGatherings/
 │
 ├── Core/                              # Shared foundational code
 │   ├── Models/
-│   │   └── Models.swift               # All domain models + mock data (Profile, Retreat, Program, CommunityCircle, PracticeCategory, MediaKind, MediaItem, PracticeSession, PracticeMenuItem, JournalPrompt, ExerciseStep, Exercise, Recipe, Massage, IntentionOption, BodyStateOption, FrequencyOption, MoodChip)
+│   │   └── Models.swift               # All domain models + mock data (Profile, Retreat, RetreatExperience [optional long-form detail content; .curated(for:) matches by name; .mallorca holds the curated brochure copy], Program, CommunityCircle, PracticeCategory, MediaKind, MediaItem, PracticeSession, PracticeMenuItem, JournalPrompt, ExerciseStep, Exercise, Recipe, Massage, IntentionOption, BodyStateOption, FrequencyOption, MoodChip)
 │   ├── DesignSystem/
 │   │   ├── Theme.swift                # Brand colors, gradients, Geist typography helpers, shape constants + Color(hex:)
 │   │   ├── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop (blur/darken/pan; image contained in a Color overlay so scaledToFill can't inflate layout; no grain — grain over photography was pulled as too busy), CircleIconButton, TabPlaceholder, PulseModifier, BreathingModifier (.breathing — 5–6s idle loop)
@@ -97,7 +97,7 @@ SoulfullGatherings/
     ├── Retreats/
     │   ├── RetreatsStackView.swift    # Viewport-aligned scrolling name stack with crossfading photo backdrop; loadError retry
     │   ├── RetreatsViewModel.swift    # Retreat array + active index, loading/error state, fetches from Supabase
-    │   ├── RetreatDetailView.swift    # Editorial full-bleed detail; Reserve gated on auth.hasAccount → AccountView sheet, else Stripe PaymentSheet via the VM
+    │   ├── RetreatDetailView.swift    # Scroll-graded editorial spread. If the retreat resolves a RetreatExperience (inline mock, or RetreatExperience.curated(for:) matched by name) it renders the full brochure story (invitation, who-it's-for, the four elements, member's word, guides, stay & inclusions) and prefers the experience's brochure date/cover line; else the concise pull-quote/days/details fallback. Reserve gated on auth.hasAccount → AccountView sheet, else Stripe PaymentSheet via the VM
     │   └── RetreatDetailViewModel.swift # @Observable; loadExistingBooking (reflect a paid booking) + reserve() (PaymentIntent → PaymentSheet → phase)
     ├── Practice/
     │   ├── PracticeView.swift         # Landing: scrolling cards for media categories (Somatic/Breathwork/Meditation) + menu items; onSelect callback
