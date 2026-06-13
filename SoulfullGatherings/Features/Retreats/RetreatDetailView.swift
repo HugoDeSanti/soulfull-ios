@@ -80,7 +80,6 @@ struct RetreatDetailView: View {
                     .clipped()
                     .scaleEffect(1 + max(0, -scrollY) / 700)          // stretch on pull-down
                     .blur(radius: min(14, max(0, scrollY) / 26))       // soften under the story
-                    .filmGrain(intensity: 0.04)
 
                 LinearGradient(
                     colors: [.black.opacity(0.42), .black.opacity(0.10), .black.opacity(0.08), .black.opacity(0.62)],

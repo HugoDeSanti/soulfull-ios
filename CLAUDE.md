@@ -66,7 +66,7 @@ SoulfullGatherings/
 │   │   └── Models.swift               # All domain models + mock data (Profile, Retreat, Program, CommunityCircle, PracticeCategory, MediaKind, MediaItem, PracticeSession, PracticeMenuItem, JournalPrompt, ExerciseStep, Exercise, Recipe, Massage, IntentionOption, BodyStateOption, FrequencyOption, MoodChip)
 │   ├── DesignSystem/
 │   │   ├── Theme.swift                # Brand colors, gradients, Geist typography helpers, shape constants + Color(hex:)
-│   │   ├── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop (film grain + pan; image contained in a Color overlay so scaledToFill can't inflate layout), CircleIconButton, TabPlaceholder, PulseModifier, BreathingModifier (.breathing — 5–6s idle loop)
+│   │   ├── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop (blur/darken/pan; image contained in a Color overlay so scaledToFill can't inflate layout; no grain — grain over photography was pulled as too busy), CircleIconButton, TabPlaceholder, PulseModifier, BreathingModifier (.breathing — 5–6s idle loop)
 │   │   ├── Shaders.metal              # Stitchable shader suite: filmGrain, aurora, shimmer, noiseDissolve, ripple
 │   │   ├── ShaderFX.swift             # Wrappers for Shaders.metal (feature code never touches ShaderLibrary): .filmGrain, AuroraBackground, .shimmer(on:), NoiseDissolve Transition (+ .soulStage), .ripple, editorialRise/Page(/Soft) transitions. All Reduce Motion-aware.
 │   │   ├── SoulGlass.swift            # .soulGlass(in:)/.soulGlassCapsule/.soulGlassCard — real Liquid Glass on iOS 26+, material+hairline on 18–25. The only place that branches on OS.

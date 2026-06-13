@@ -9,9 +9,11 @@ The app already speaks dark/olive/cream Geist. The overhaul keeps that voice and
 **atmosphere and physics**: everything breathes, responds to touch with weight, and moves
 with intent. Three pillars:
 
-1. **Atmosphere** — custom Metal shaders give every surface life: film grain over photos,
-   slow aurora drift behind hero moments, specular shimmer on glass, noise-dissolve for
-   stage changes. Nothing strobes; everything drifts at breath pace (4–6s cycles).
+1. **Atmosphere** — custom Metal shaders give surfaces life: slow aurora drift behind hero
+   moments (loading, player), specular shimmer on glass, noise-dissolve for stage changes,
+   subtle film grain over the aurora. Nothing strobes; everything drifts at breath pace
+   (4–6s cycles). (Grain over *photography* was tried and pulled — it read as too busy over
+   the photo backdrops; grain now lives only over the darker aurora surfaces.)
 2. **Physics** — every tap squishes (springs, scale ~0.96, haptic on touch-down), every push
    is a zoom hero (`navigationTransition(.zoom)`), pinch-out zooms scrolling views into a
    magazine "catalog" contact sheet.
@@ -50,8 +52,8 @@ only — feature code never branches on OS.
   aurora rim.
 - **Retreats stack** — keep the typographic stack (it's the signature); add pinch-out →
   magazine-cover grid (each retreat a cover with name/dates/folio), tap a cover to refocus
-  the stack; backdrop crossfade gains a ripple; detail push is a zoom hero from the
-  bottom card.
+  the stack; the backdrop simply crossfades between retreats; detail push is a zoom hero
+  from the bottom card.
 - **Retreat detail** — becomes scrollable editorial: stretchy full-bleed hero at rest
   identical to today's layout, scroll reveals story sections (blurb, tags as "the days",
   meta), liquid-glass reserve bar pinned at bottom.
@@ -79,7 +81,9 @@ only — feature code never branches on OS.
   shader grading carries the look. (If keys appear later, recipes/journals deserve bespoke art.)
 - Reduce Motion: heavy motion (aurora drift, parallax, dissolves) checks
   `accessibilityReduceMotion` and falls back to crossfades/static gradients.
-- Grain is applied per-backdrop (not globally) so sheets/system UI stay clean.
+- Film grain is reserved for the aurora surfaces (loading stage, audio player); it is
+  deliberately *not* applied over photography — over the photo backdrops it read as too
+  much going on.
 
 ## Verification
 

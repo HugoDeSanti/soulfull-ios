@@ -5,7 +5,7 @@
 //  Two ways to browse the gatherings:
 //
 //  STACK — the signature typographic scroller: retreat names snap to center
-//  over a crossfading full-bleed photo (now with a settling ripple).
+//  over a crossfading full-bleed photo.
 //
 //  CATALOG — pinch out (or tap the grid button) and the stack recedes into a
 //  magazine contact sheet of covers. Tap a cover to fly back into the stack
@@ -19,7 +19,6 @@ import SwiftUI
 
 struct RetreatsStackView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = RetreatsViewModel()
     @State private var scrollerHeight: CGFloat = 0
 
@@ -27,9 +26,6 @@ struct RetreatsStackView: View {
     private enum Mode { case stack, catalog }
     @State private var mode: Mode = .stack
     @State private var pinch: CGFloat = 1
-
-    // Backdrop ripple (settles at 1).
-    @State private var rippleT: Double = 1
 
     let onSelect: (Retreat) -> Void
 
@@ -62,11 +58,6 @@ struct RetreatsStackView: View {
         // rows/covers underneath; single-finger interactions pass through.
         .highPriorityGesture(pinchGesture)
         .task { await vm.load() }
-        .onChange(of: vm.activeIndex) {
-            guard !reduceMotion else { return }
-            rippleT = 0
-            withAnimation(.easeOut(duration: 1.0)) { rippleT = 1 }
-        }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
     }
@@ -401,13 +392,12 @@ struct RetreatsStackView: View {
         }
     }
 
-    // MARK: - Backdrop (crossfade + settling ripple)
+    // MARK: - Backdrop (crossfade)
 
     private var backdrop: some View {
         // All retreat photos are stacked full-bleed; only the active one is
-        // opaque, so changing `activeIndex` crossfades between them while a
-        // radial ripple settles across the new image. The tone-tinted floor
-        // prevents a black flash while images load.
+        // opaque, so changing `activeIndex` simply crossfades between them.
+        // The tone-tinted floor prevents a black flash while images load.
         GeometryReader { proxy in
             ZStack {
                 (vm.active?.tone.base ?? Theme.bg)
@@ -420,11 +410,6 @@ struct RetreatsStackView: View {
                             .opacity(idx == vm.activeIndex ? 1 : 0)
                     }
                 }
-                .ripple(
-                    progress: rippleT,
-                    origin: CGPoint(x: proxy.size.width / 2, y: proxy.size.height * 0.42),
-                    amplitude: 12
-                )
                 .blur(radius: mode == .catalog ? 16 : 0)
 
                 LinearGradient(

@@ -99,8 +99,6 @@ struct PhotoBackdrop: View {
     /// 0 = sharp, higher = more blur. Default lightly blurred per the prototype.
     var blur: CGFloat = 5
     var darken: Double = 0.5
-    /// Film-grain strength; 0 disables.
-    var grain: Double = 0.05
     /// Horizontal camera pan, -1…1. Animate across paged content for parallax.
     var pan: CGFloat = 0
 
@@ -134,21 +132,7 @@ struct PhotoBackdrop: View {
                 startPoint: .top, endPoint: .bottom
             )
         }
-        .modifier(GrainIfEnabled(intensity: grain))
         .ignoresSafeArea()
-    }
-}
-
-/// Conditionally applies film grain (a no-op when intensity is 0) so
-/// PhotoBackdrop call sites can tune or disable it per screen.
-private struct GrainIfEnabled: ViewModifier {
-    let intensity: Double
-    func body(content: Content) -> some View {
-        if intensity > 0 {
-            content.filmGrain(intensity: intensity)
-        } else {
-            content
-        }
     }
 }
 
