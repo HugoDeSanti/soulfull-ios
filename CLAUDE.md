@@ -195,6 +195,18 @@ See `docs/DESIGN.md` for the full direction ("quiet luxury, editorial"). The sho
 3. **`scaledToFill` grows layout, not just drawing** — an unconstrained fill image inflates its ZStack and pushes siblings offscreen (capsules render as full-width bands, buttons land past the screen edge). Contain fill images in a `Color.clear.overlay { … }.clipped()` (as `PhotoBackdrop` does).
 4. GeometryReader inside an HStack over-claims width; prefer leading-anchored `scaleEffect` fills (see onboarding progress bar).
 
+## Design ↔ Code Sync (Claude Design mirror)
+
+`design-system/` (repo root) is an HTML/CSS **mirror** of the app's UI, pushed to a **Claude Design** project where the UX team edits the design visually. It is **not** part of the Xcode build (`project.yml` only sources `SoulfullGatherings/` + `Resources/Fonts`). `design-system/README.md` holds the full Swift↔CSS token/component map; the Claude Design **projectId is `76dcee6b-dc46-486b-abb7-a0c06852f1fb`**.
+
+**`design-system/` is the single reconciliation point** between code and Claude Design. There are three flows, and only the first is automatic:
+
+1. **Code → local mirror (do this in the same change).** When you change *design-relevant* code, update the matching `design-system/` file(s) in the **same edit/commit** so the local mirror never drifts. Design-relevant = `Theme.swift` (tokens → `shared/tokens.css`), `Components.swift`/`BottomNav`/`SoulGlass`/onboarding `OptionCard`/`PracticeShared` (→ `shared/app.css`), or a screen's layout/copy/structure in `Features/**` (→ the matching `screens/*.html`). Pure logic/backend/auth/payment changes with **no visual effect are exempt** — don't touch the mirror for those. Keep the 1:1 mapping in `README.md` intact; if you add a new screen, add a new `@dsCard` HTML card for it.
+2. **Local mirror → Claude Design (deliberate, never automatic).** Push with `/sync-design push` (see `.claude/commands/sync-design.md`). Push is **incremental — only the changed cards — never a wholesale re-push**, because the UX team edits these cards and a blanket push clobbers their work. Pushing is outward-facing (writes to claude.ai): **pull/check first and confirm before pushing.** Hooks/scripts cannot push — the `DesignSync` tool needs a live session.
+3. **Claude Design → code (deliberate).** `/sync-design pull` reads the team's edits back into `design-system/`, surfaces them as a diff, then ports the deltas to Swift via the `README.md` token map (e.g. a changed `--honey` hex → recompute `Theme.honey`'s RGB 0–1).
+
+After a design-relevant code change, update the local mirror automatically (flow 1), then **remind the user** that `/sync-design push` is needed to publish to Claude Design — don't push unprompted.
+
 ## Key Conventions
 
 - `@Observable @MainActor` on all ViewModels and app-level singletons (`AppState`, `AppSettings`, `AuthManager`). No `ObservableObject`/`@Published`.
