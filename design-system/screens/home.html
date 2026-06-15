@@ -1,0 +1,136 @@
+<!-- @dsCard group="Screens · Home" name="Home — dashboard" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .scr { padding-top: 50px; padding-bottom: 130px; }
+  .hdr { text-align: center; padding: 10px 24px 2px; }
+  .hdr img { width: 84px; }
+  .greet { padding: 6px 24px 0; }
+  .greet .eb { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 0; }
+  .greet h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .greet p { font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+  .sec { margin-top: 28px; }
+  .moods { display: flex; gap: 10px; overflow-x: auto; padding: 0 24px; scrollbar-width: none; }
+  .moods::-webkit-scrollbar { display: none; }
+
+  .ritual { margin: 0 20px; position: relative; border-radius: 22px; overflow: hidden; padding: 18px; border: 1px solid var(--glass-border); }
+  .ritual .aurora { opacity: .55; }
+  .ritual .body { position: relative; }
+  .ritual .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin: 0; }
+  .ritual h3 { font-size: 22px; letter-spacing: -0.2px; color: var(--ink); margin: 6px 0 0; }
+  .ritual .meta { font-size: 11.5px; font-weight: 500; color: #fff; opacity: .85; margin: 6px 0 0; }
+  .ritual .begin { display: inline-flex; margin-top: 12px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; font-size: 14px; color: #fff; }
+
+  .journey { margin: 0 20px; display: flex; gap: 14px; align-items: center; }
+  .journey .num { width: 84px; height: 84px; border-radius: 16px; display: grid; place-items: center; font-size: 38px; font-weight: 200; color: var(--ink); flex: none; }
+  .journey .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin: 0; }
+  .journey h4 { font-size: 20px; letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
+  .journey .with { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .journey .bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,0.14); margin-top: 10px; overflow: hidden; }
+  .journey .bar i { display: block; width: 43%; height: 100%; background: linear-gradient(90deg, var(--honey), var(--ink)); }
+
+  .rcard { width: 260px; flex: none; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); }
+  .rcard .hero { height: 150px; position: relative; background-size: cover; background-position: center; }
+  .rcard .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.55)); }
+  .rcard .hero .m { position: absolute; left: 14px; bottom: 12px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+  .rcard .t { padding: 14px 16px; }
+  .rcard .t .name { font-size: 22px; letter-spacing: -0.2px; color: var(--ink); }
+  .rcard .t .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .circle-row { margin: 0 20px 10px; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border); }
+  .circle-row .av { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-size: 18px; color: var(--ink); flex: none; }
+  .circle-row .live { display: flex; align-items: center; gap: 6px; }
+  .circle-row .live .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+  .circle-row h5 { font-size: 17px; letter-spacing: -0.3px; color: var(--ink); margin: 3px 0 0; }
+  .circle-row .sub { font-size: 11px; color: var(--muted); margin: 2px 0 0; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="hdr"><img class="breathing" src="../assets/logo.png" alt=""></div>
+    <div class="greet">
+      <p class="eb">Good morning</p>
+      <h1>Hugo.</h1>
+      <p>Take your time. We're here with you.</p>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">How do you feel?</span></div>
+      <div class="moods">
+        <span class="mood-chip is-active">Tender</span>
+        <span class="mood-chip">Restless</span>
+        <span class="mood-chip">Open</span>
+        <span class="mood-chip">Heavy</span>
+        <span class="mood-chip">Hopeful</span>
+      </div>
+    </div>
+
+    <div class="sec ritual glass">
+      <div class="aurora"></div>
+      <div class="body">
+        <p class="eb">Today's Ritual</p>
+        <h3>Nervous System Reset</h3>
+        <p class="meta">4 minutes · guided breath</p>
+        <span class="begin">Begin now</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">Continue your journey</span><span class="action">View</span></div>
+      <div class="glass-card journey">
+        <div class="num glass">3</div>
+        <div style="flex:1">
+          <p class="eb">Day 3 of 7</p>
+          <h4>Nervous System Healing</h4>
+          <p class="with">with Dr. Anya Iyer</p>
+          <div class="bar"><i></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">Upcoming gatherings</span><span class="action">All</span></div>
+      <div class="hscroll">
+        <div class="rcard">
+          <div class="hero" style="background-image:url('../assets/retreat-mallorca.jpg')"><div class="ov"></div><div class="m">Spain · Sep 2026</div></div>
+          <div class="t"><div class="name">Mallorca</div><div class="sub">7 days · 12 guests</div></div>
+        </div>
+        <div class="rcard">
+          <div class="hero" style="background-image:url('../assets/retreat-kyoto.jpg')"><div class="ov"></div><div class="m">Japan · Nov 2026</div></div>
+          <div class="t"><div class="name">Kyoto</div><div class="sub">6 days · 10 guests</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">Circles meeting now</span><span class="action">All</span></div>
+      <div class="circle-row glass">
+        <div class="av glass">G</div>
+        <div style="flex:1">
+          <div class="live"><span class="pulse-dot"></span><span class="eb">Now</span></div>
+          <h5>Grief &amp; Grace</h5>
+          <p class="sub">Maya Okonkwo · 8 attending</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14c2.6 0 4.5 1.8 4.5 4.5"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
+  </nav>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

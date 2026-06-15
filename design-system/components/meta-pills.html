@@ -1,0 +1,43 @@
+<!-- @dsCard group="Components" name="Meta pills & chips" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull — Meta pills</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .row3 { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 22px; }
+  .cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .swiftnote { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  code { color: var(--ink-soft); }
+</style>
+</head><body>
+<div class="stage"><div class="canvas">
+  <p class="canvas-title">Components</p>
+  <h1 class="canvas-headline">Meta pills · chips · live dot</h1>
+
+  <p class="cap">Retreat-detail meta pills</p>
+  <div class="row3">
+    <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Sep 12–18, 2026</span>
+    <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>12 guests</span>
+    <span class="meta-pill">$4,800</span>
+  </div>
+
+  <p class="cap">Intention chips (You tab)</p>
+  <div class="row3">
+    <span class="chip">Rest &amp; repair</span>
+    <span class="chip">Connection</span>
+    <span class="chip">Adventure</span>
+  </div>
+
+  <p class="cap">Live indicator — PulseModifier</p>
+  <div class="row3">
+    <span class="pulse-dot"></span>
+    <span class="eyebrow" style="letter-spacing:2px;color:#fff">Now</span>
+  </div>
+  <p class="swiftnote">
+    Glass capsule, <code>Theme.body(11, medium)</code>. The pulsing white dot is <code>PulseModifier</code> (1s loop, autoreverses) — reserved for live state only.
+  </p>
+</div></div>
+</body></html>

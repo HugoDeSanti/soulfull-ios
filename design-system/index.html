@@ -1,0 +1,48 @@
+<!-- @dsCard group="Overview" name="Soulfull — design system" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull Gatherings — Design System</title>
+<link rel="stylesheet" href="shared/tokens.css">
+<link rel="stylesheet" href="shared/frame.css">
+<link rel="stylesheet" href="shared/app.css">
+<style>
+  .cover { width: 920px; max-width: 100%; border-radius: 28px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+  .cover .bg { position: absolute; inset: 0; background: url('assets/retreat-mallorca.jpg') center/cover; filter: brightness(.5) saturate(1.1); }
+  .cover .au { position: absolute; inset: 0; }
+  .cover .inner { position: relative; padding: 64px 56px; }
+  .cover img { width: 96px; }
+  .cover .eb { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,.75); margin: 24px 0 0; }
+  .cover h1 { font-size: 52px; font-weight: 500; letter-spacing: -1px; color: #fff; margin: 10px 0 0; }
+  .cover p { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.82); margin: 16px 0 0; max-width: 540px; }
+  .groups { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .grp { font-size: 12px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border); color: #fff; }
+  .note { margin-top: 26px; font-size: 12px; color: rgba(255,255,255,.6); max-width: 560px; line-height: 1.6; }
+  .note code { color: var(--honey); }
+</style>
+</head><body>
+<div class="stage">
+  <div class="cover">
+    <div class="bg"></div>
+    <div class="au aurora" style="opacity:.5"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="inner">
+      <img src="assets/logo.png" alt="Soulfull">
+      <p class="eb">Design System · iOS</p>
+      <h1>Soulfull Gatherings</h1>
+      <p>A faithful HTML mirror of the SwiftUI app — dark, editorial, all-Geist. Every token, component, and screen maps 1:1 to the codebase so edits here translate straight back to Swift.</p>
+      <div class="groups">
+        <span class="grp">Foundations</span>
+        <span class="grp">Components</span>
+        <span class="grp">Welcome</span>
+        <span class="grp">Onboarding</span>
+        <span class="grp">Home</span>
+        <span class="grp">Retreats</span>
+        <span class="grp">Practice</span>
+        <span class="grp">Tabs</span>
+      </div>
+      <p class="note">Edit shared tokens in <code>shared/tokens.css</code> (maps to <code>Theme.swift</code>) and component styles in <code>shared/app.css</code>. Screen cards compose those classes — change a token once and every screen updates. See <code>README.md</code> for the full round-trip workflow.</p>
+    </div>
+  </div>
+</div>
+</body></html>

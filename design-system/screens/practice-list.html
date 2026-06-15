@@ -1,0 +1,64 @@
+<!-- @dsCard group="Screens · Practice" name="Practice — session list" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice — list</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .scr { padding-top: 50px; padding-bottom: 40px; }
+  .backbar { padding: 8px 24px 0; }
+  .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .hdr { padding: 18px 20px 0; }
+  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0; }
+  .hdr h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 8px; }
+  .hdr p { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 0; max-width: 280px; }
+  .list { padding: 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; }
+  .row .thumb { width: 68px; height: 68px; border-radius: 14px; position: relative; overflow: hidden; flex: none; background-size: cover; background-position: center; }
+  .row .thumb .pl { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.25); color: #fff; }
+  .row .ti { font-size: 17px; letter-spacing: -0.2px; color: var(--ink); }
+  .row .with { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .row .meta { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #fff; opacity: .85; margin-top: 6px; }
+  .row .chev { color: var(--muted); margin-left: auto; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/practice-breathwork.jpg');filter:saturate(1.1) brightness(.8) blur(22px);transform:scale(1.2)"></div>
+    <div class="vignette vignette--deep"></div>
+
+    <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Practices</a></div>
+    <div class="hdr">
+      <p class="eb">Breathwork</p>
+      <h1>Breathwork</h1>
+      <p>Patterned breath to settle, energize, or open.</p>
+    </div>
+
+    <div class="list">
+      <div class="row glass">
+        <div class="thumb" style="background-image:url('../assets/practice-breathwork.jpg')"><div class="pl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h3l2-6 4 14 2-8h7"/></svg></div></div>
+        <div style="flex:1"><div class="ti">Coherent Breath</div><div class="with">with Dr. Anya Iyer</div><div class="meta">Audio · 12 min</div></div>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="row glass">
+        <div class="thumb" style="background-image:url('../assets/practice-meditation.jpg')"><div class="pl"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div></div>
+        <div style="flex:1"><div class="ti">Box Breath for Sleep</div><div class="with">with Leo Vance</div><div class="meta">Video · 18 min</div></div>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="row glass">
+        <div class="thumb" style="background-image:url('../assets/practice-somatic.jpg')"><div class="pl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h3l2-6 4 14 2-8h7"/></svg></div></div>
+        <div style="flex:1"><div class="ti">Energizing Breath of Fire</div><div class="with">with Maya Okonkwo</div><div class="meta">Audio · 9 min</div></div>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

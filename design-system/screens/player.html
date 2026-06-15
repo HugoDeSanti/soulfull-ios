@@ -1,0 +1,63 @@
+<!-- @dsCard group="Screens · Practice" name="Now-playing player" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Now playing</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
+  .stagewrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 30px; }
+  .halo { position: absolute; top: 30%; left: 50%; width: 430px; height: 430px; transform: translate(-50%,-50%);
+    background: radial-gradient(circle, rgba(229,199,102,0.25), transparent 60%); filter: blur(30px);
+    animation: halo-breathe 5.5s ease-in-out infinite alternate; }
+  .art { position: relative; width: 248px; height: 248px; border-radius: 30px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
+    background: url('../assets/practice-meditation.jpg') center/cover; animation: breathe 5.5s ease-in-out infinite alternate; }
+  .meta { text-align: center; margin-top: 40px; }
+  .meta .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin: 0; }
+  .meta h2 { font-size: 28px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 8px 0 0; }
+  .meta .with { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; }
+  .scrub { width: 100%; margin-top: 34px; }
+  .scrub .track { height: 5px; border-radius: 999px; background: rgba(255,255,255,0.18); position: relative; }
+  .scrub .track .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 32%; background: var(--ink); border-radius: 999px; }
+  .scrub .track .thumb { position: absolute; left: 32%; top: 50%; width: 12px; height: 12px; border-radius: 999px; background: #fff; transform: translate(-50%,-50%); box-shadow: 0 0 5px rgba(0,0,0,.3); }
+  .scrub .times { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.55); }
+  .controls { display: flex; align-items: center; gap: 44px; margin-top: 38px; }
+  .controls .skip { width: 52px; height: 52px; }
+  .controls .play { width: 76px; height: 76px; border-radius: 999px; background: #fff; display: grid; place-items: center; color: #000; box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+
+  <div class="screen">
+    <div class="fill" style="background:var(--bg)"></div>
+    <div class="aurora" style="opacity:.8"></div>
+    <div class="stagewrap">
+      <div class="halo"></div>
+      <div class="art"></div>
+      <div class="meta">
+        <p class="eb">Now Playing · 4 min 32 sec</p>
+        <h2>Coherent Breath</h2>
+        <p class="with">with Dr. Anya Iyer</p>
+      </div>
+      <div class="scrub">
+        <div class="track"><div class="fill"></div><div class="thumb"></div></div>
+        <div class="times"><span>1:27</span><span>-3:05</span></div>
+      </div>
+      <div class="controls">
+        <span class="skip circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 8 5 12l6 4V8zM19 8l-6 4 6 4V8z"/></svg></span>
+        <span class="play"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></span>
+        <span class="skip circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 8l6 4-6 4V8zM5 8l6 4-6 4V8z"/></svg></span>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

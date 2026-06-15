@@ -1,0 +1,47 @@
+<!-- @dsCard group="Screens · Onboarding" name="Onboarding — intention" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding — intention</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .eb { font-size: 12px; letter-spacing: 0.2px; color: rgba(255,255,255,0.62); margin: 0 0 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .full { grid-column: 1 / -1; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+  <div class="screen safe-top">
+    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
+    <div class="vignette vignette--deep"></div>
+
+    <div class="onb-top">
+      <div class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+      <div class="onb-progress"><div class="onb-track"><div class="onb-fill" style="width:50%"></div></div></div>
+      <span class="onb-counter">2/4</span>
+      <button class="onb-skip">skip</button>
+    </div>
+
+    <div class="onb-body">
+      <p class="eb">Select all that apply</p>
+      <h2 class="onb-q">Hugo, what's calling you here?</h2>
+      <div class="grid2">
+        <div class="option-card is-selected"><div class="idx">01</div><div class="lbl">Rest &amp; nervous-system repair</div></div>
+        <div class="option-card"><div class="idx">02</div><div class="lbl">Connection &amp; community</div></div>
+        <div class="option-card is-selected"><div class="idx">03</div><div class="lbl">Grief &amp; emotional release</div></div>
+        <div class="option-card"><div class="idx">04</div><div class="lbl">Adventure &amp; awe</div></div>
+        <div class="option-card option-card--subtle full"><div class="lbl">I'm still finding out</div></div>
+      </div>
+    </div>
+
+    <div class="onb-bottom"><button class="sg-btn">Next</button></div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

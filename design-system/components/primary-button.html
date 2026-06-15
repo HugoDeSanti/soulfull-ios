@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" name="SGPrimaryButton" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull — SGPrimaryButton</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; max-width: 620px; }
+  .demo .cell .cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .swiftnote { margin-top: 30px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  code { color: var(--ink-soft); }
+</style>
+</head><body>
+<div class="stage"><div class="canvas">
+  <p class="canvas-title">Components</p>
+  <h1 class="canvas-headline">SGPrimaryButton</h1>
+  <div class="demo">
+    <div class="cell"><div class="cap">Ghost (default)</div><button class="sg-btn">Next</button></div>
+    <div class="cell"><div class="cap">Filled</div><button class="sg-btn sg-btn--filled">I'm ready</button></div>
+    <div class="cell"><div class="cap">With icon</div><button class="sg-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Begin now</button></div>
+    <div class="cell"><div class="cap">Disabled</div><button class="sg-btn is-disabled">Continue</button></div>
+  </div>
+  <p class="swiftnote">
+    Ghost = cream <code>Theme.ink</code> stroke + ink text on clear. Filled = white fill + black text.<br>
+    Capsule (<code>--pill-radius</code>), 18px vertical padding, <code>Theme.body(15, medium)</code>, 0.4 tracking.
+    Disabled drops to 0.45 opacity. Press squishes to 0.975 (<code>SoulPressableStyle</code>) and fires <code>Haptics.bump()</code>.
+  </p>
+</div></div>
+</body></html>

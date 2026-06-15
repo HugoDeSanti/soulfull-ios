@@ -1,0 +1,287 @@
+/* ============================================================================
+   Soulfull Gatherings — Components & screen styles
+   Each block mirrors a Swift view. The header comment names the Swift source so
+   a change here maps to a known file.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Typography helpers  (Theme.headline / Theme.body / Theme.eyebrow)
+   --------------------------------------------------------------------------- */
+.eyebrow {
+  font-family: var(--font);
+  font-weight: var(--w-regular);
+  font-size: 11px;
+  letter-spacing: 2px;          /* tracking; override inline for 2.5/3/4 */
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.headline { font-family: var(--font); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+.body     { font-family: var(--font); color: var(--ink-soft); margin: 0; line-height: 1.45; }
+.ink { color: var(--ink); } .ink-soft { color: var(--ink-soft); }
+.muted { color: var(--muted); } .honey { color: var(--honey); }
+
+/* ---------------------------------------------------------------------------
+   Glass surfaces  (SoulGlass.swift — material + hairline; Liquid Glass on iOS26)
+   --------------------------------------------------------------------------- */
+.glass {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+}
+.glass-strong { border-color: var(--glass-border-high); background: rgba(255,255,255,0.09); }
+/* GlassCard (Components.swift) */
+.glass-card {
+  border-radius: var(--card-radius);
+  padding: 16px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+}
+
+/* ---------------------------------------------------------------------------
+   SGPrimaryButton  (Components.swift) — ghost pill / filled pill
+   --------------------------------------------------------------------------- */
+.sg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 18px 24px;
+  border-radius: var(--pill-radius);
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: var(--w-medium);
+  font-size: 15px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.2,.7,.3,1);
+}
+.sg-btn:active { transform: scale(.975); }
+.sg-btn--filled { background: #ffffff; border-color: #ffffff; color: #000; }
+.sg-btn--auto { width: auto; padding-left: 36px; padding-right: 36px; }
+.sg-btn[disabled], .sg-btn.is-disabled { opacity: .45; pointer-events: none; }
+
+/* Quiet secondary text button */
+.quiet-btn {
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--font); font-size: 13px; color: rgba(255,255,255,.6);
+}
+
+/* ---------------------------------------------------------------------------
+   Chips  (capsule glass)  — used for meta pills, intentions
+   --------------------------------------------------------------------------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--pill-radius);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 11px; font-weight: var(--w-medium); color: var(--ink);
+}
+
+/* Mood chips (HomeView) */
+.mood-chip {
+  display: inline-flex; align-items: center;
+  padding: 10px 16px;
+  border-radius: var(--pill-radius);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  font-size: 13px; color: var(--ink);
+  white-space: nowrap; cursor: pointer;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1);
+}
+.mood-chip.is-active {
+  background: var(--ink); color: #000; border-color: var(--ink);
+  transform: scale(1.06);
+  box-shadow: 0 2px 12px rgba(229,199,102,0.35);
+}
+
+/* ---------------------------------------------------------------------------
+   OptionCard  (OnboardingView) — glass tile, honey bloom on select
+   --------------------------------------------------------------------------- */
+.option-card {
+  position: relative;
+  min-height: 108px;
+  padding: 16px;
+  border-radius: var(--card-radius);
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.20);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  cursor: pointer;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s, background .3s;
+}
+.option-card .idx { font-size: 11px; color: rgba(255,255,255,0.62); margin-bottom: 14px; }
+.option-card .lbl { font-size: 15px; color: var(--ink); }
+.option-card.is-selected {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(229,199,102,0.6);
+  transform: scale(1.02);
+}
+.option-card.is-selected .idx { color: var(--honey); }
+.option-card.is-selected .lbl { font-weight: var(--w-medium); }
+/* honey bloom bottom-right */
+.option-card.is-selected::after {
+  content: ""; position: absolute; width: 220px; height: 220px;
+  right: -60px; bottom: -50px;
+  background: radial-gradient(circle, rgba(229,199,102,0.55) 0%, rgba(229,199,102,0.18) 40%, transparent 70%);
+  pointer-events: none;
+}
+.option-card--subtle { min-height: 64px; padding: 18px; align-items: center; justify-content: center; }
+.option-card--subtle .lbl { font-size: 13px; }
+
+/* ---------------------------------------------------------------------------
+   CircleIconButton  (Components.swift)
+   --------------------------------------------------------------------------- */
+.circle-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border-high);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  color: var(--ink); cursor: pointer; flex: none;
+}
+.circle-btn svg { width: 15px; height: 15px; }
+.circle-btn--lg { width: 42px; height: 42px; }
+
+/* ---------------------------------------------------------------------------
+   SectionLabel  (Components.swift)
+   --------------------------------------------------------------------------- */
+.section-label {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 0 24px; margin-bottom: 14px;
+}
+.section-label .title { font-size: 22px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); }
+.section-label .action { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+
+/* ---------------------------------------------------------------------------
+   BottomNav  (App/BottomNav.swift) — floating glass capsule
+   --------------------------------------------------------------------------- */
+.bottom-nav {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  display: flex; gap: 4px; padding: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--glass-border-high);
+  backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+  z-index: 50;
+}
+.nav-item {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 46px; padding: 0 13px; border-radius: 999px;
+  color: rgba(255,255,255,0.85); cursor: pointer;
+  border: 0; background: transparent;
+}
+.nav-item svg { width: 19px; height: 19px; }
+.nav-item .nav-label { display: none; font-size: 13px; font-weight: var(--w-medium); letter-spacing: 0.3px; }
+.nav-item.is-active {
+  background: var(--ink); color: #000; padding: 0 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+.nav-item.is-active .nav-label { display: inline; }
+
+/* ---------------------------------------------------------------------------
+   Photo backdrop  (PhotoBackdrop in Components.swift)
+   --------------------------------------------------------------------------- */
+.photo {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: saturate(1.15) brightness(0.95);
+}
+.photo--blur5  { filter: saturate(1.15) brightness(0.95) blur(5px);  transform: scale(1.08); }
+.photo--blur8  { filter: saturate(1.15) brightness(0.95) blur(8px);  transform: scale(1.10); }
+.photo--blur22 { filter: saturate(1.15) brightness(0.9)  blur(22px); transform: scale(1.18); }
+.vignette { position: absolute; inset: 0; pointer-events: none; }
+.vignette--soft { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.30), rgba(0,0,0,0.55)); }
+.vignette--deep { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.40), rgba(0,0,0,0.75)); }
+.vignette--hero { background: linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.10) 30%, rgba(0,0,0,0.08) 62%, rgba(0,0,0,0.62) 100%); }
+
+/* ---------------------------------------------------------------------------
+   Aurora background  (ShaderFX.AuroraBackground) — CSS approximation
+   --------------------------------------------------------------------------- */
+.aurora {
+  position: absolute; inset: -20%;
+  background:
+    radial-gradient(40% 50% at 25% 30%, rgba(119,128,59,0.55), transparent 70%),
+    radial-gradient(45% 55% at 75% 35%, rgba(229,199,102,0.30), transparent 70%),
+    radial-gradient(50% 60% at 55% 75%, rgba(62,67,21,0.55), transparent 72%);
+  filter: blur(30px);
+  animation: aurora-drift 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes aurora-drift {
+  0%   { transform: translate3d(-3%,-2%,0) scale(1.05) rotate(0deg); }
+  100% { transform: translate3d(4%,3%,0)  scale(1.18) rotate(8deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   Signature motion  (BreathingModifier / PulseModifier)
+   --------------------------------------------------------------------------- */
+.breathing { animation: breathe 5.5s ease-in-out infinite alternate; }
+@keyframes breathe {
+  0%   { transform: scale(0.94); opacity: 0.85; }
+  100% { transform: scale(1.06); opacity: 1; }
+}
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 999px; background: #fff;
+  display: inline-block; animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse { 0% { transform: scale(.85); opacity:.4; } 100% { transform: scale(1); opacity:1; } }
+@keyframes halo-breathe {
+  0% { transform: scale(0.85); opacity: .35; } 100% { transform: scale(1.15); opacity: .6; }
+}
+
+/* ---------------------------------------------------------------------------
+   Misc layout helpers used across screens
+   --------------------------------------------------------------------------- */
+.col { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.between { justify-content: space-between; }
+.center { align-items: center; }
+.gap6 { gap: 6px; } .gap8 { gap: 8px; } .gap10 { gap: 10px; } .gap12 { gap: 12px; } .gap14 { gap: 14px; }
+.hscroll { display: flex; gap: 14px; overflow-x: auto; padding: 0 24px 4px; scrollbar-width: none; }
+.hscroll::-webkit-scrollbar { display: none; }
+.fill { position: absolute; inset: 0; }
+.divider { height: 1px; background: rgba(255,255,255,0.10); }
+.meta-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-size: 11px; font-weight: var(--w-medium); color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Onboarding shell  (OnboardingView)
+   --------------------------------------------------------------------------- */
+.onb-top { position: relative; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 16px 22px 0; }
+.onb-progress { flex: 1; }
+.onb-track { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.16); overflow: hidden; }
+.onb-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(229,199,102,0.85), var(--ink)); transform-origin: left; }
+.onb-counter { font-size: 13px; color: rgba(255,255,255,0.62); }
+.onb-skip { background: none; border: 0; font-family: var(--font); font-size: 14px; color: rgba(255,255,255,0.62); cursor: pointer; }
+.onb-body { position: relative; z-index: 5; padding: 30px 22px 0; }
+.onb-q { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.4px; line-height: 1.1; color: var(--ink); margin: 0 0 22px; }
+.onb-bottom { position: absolute; left: 0; right: 0; bottom: 36px; padding: 0 22px; z-index: 5; }
+
+/* ---------------------------------------------------------------------------
+   NumberedStepRow  (PracticeShared.swift) — used by Exercise / Recipe / Massage
+   --------------------------------------------------------------------------- */
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.num-step { display: flex; gap: 14px; align-items: flex-start; }
+.num-step .n { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; flex: none;
+  font-size: 13px; color: var(--ink); background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); }
+.num-step .t { font-size: 15px; line-height: 1.45; color: var(--ink); }
+.num-step .d { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
+.practice-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

@@ -1,0 +1,34 @@
+<!-- @dsCard group="Components" name="CircleIconButton" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull — CircleIconButton</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .preview { position: relative; height: 200px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; gap: 22px; }
+  .preview .bgimg { position: absolute; inset: 0; background: url('../assets/retreat-kyoto.jpg') center/cover; filter: brightness(.7); }
+  .row2 { position: relative; display: flex; gap: 18px; align-items: center; }
+  .swiftnote { margin-top: 24px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  code { color: var(--ink-soft); }
+</style>
+</head><body>
+<div class="stage"><div class="canvas">
+  <p class="canvas-title">Components</p>
+  <h1 class="canvas-headline">CircleIconButton</h1>
+  <div class="preview">
+    <div class="bgimg"></div>
+    <div class="row2">
+      <span class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+      <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+      <span class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
+    </div>
+  </div>
+  <p class="swiftnote">
+    Small glass chrome button — back / close / grid / share. 40×40 (or 42), <code>.soulGlass(in: Circle())</code> with a
+    <code>glassBorderHigh</code> stroke, <code>.soulPressableChip</code> physics (0.92 squish).
+  </p>
+</div></div>
+</body></html>

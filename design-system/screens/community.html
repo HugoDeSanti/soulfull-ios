@@ -1,0 +1,43 @@
+<!-- @dsCard group="Screens · Tabs" name="Circle — community placeholder" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circle — placeholder</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .wrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 28px 100px; }
+  .wrap img { width: 72px; }
+  .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 18px 0 0; }
+  h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 14px 0 0; max-width: 320px; }
+  p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 16px 0 0; max-width: 320px; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen">
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.7) blur(4px);transform:scale(1.06)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="aurora" style="opacity:.4;mix-blend-mode:plus-lighter"></div>
+    <div class="wrap">
+      <img class="breathing" src="../assets/logo.png" alt="">
+      <p class="eb">Community</p>
+      <h1>Your circles, your people.</h1>
+      <p>Live circles, member directory, and DMs land here next.</p>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V10z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
+    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Circle</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
+  </nav>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

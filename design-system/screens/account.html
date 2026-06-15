@@ -1,0 +1,65 @@
+<!-- @dsCard group="Screens · Tabs" name="Account — create / sign in" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
+  .scr { padding: 80px 26px 40px; }
+  .head { text-align: center; }
+  .head img { width: 64px; opacity: .9; }
+  .head h1 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 14px 0 0; }
+  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 8px auto 0; max-width: 290px; }
+  .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 26px; }
+  .field { display: flex; align-items: center; gap: 10px; padding: 16px 14px; border-radius: 16px; }
+  .field.focus { border-color: var(--glass-border-high); }
+  .field svg { color: var(--ink-soft); flex: none; }
+  .field input { flex: 1; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
+  .field input::placeholder { color: var(--muted); }
+  .submit { margin-top: 18px; }
+  .toggle { text-align: center; margin-top: 22px; font-size: 13px; color: var(--muted); }
+  .toggle b { color: var(--ink); font-weight: 500; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+
+  <div class="screen screen--scroll">
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.65) blur(8px);transform:scale(1.1)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
+
+    <div class="scr" style="position:relative;z-index:3">
+      <div class="head">
+        <img src="../assets/logo.png" alt="">
+        <h1>Create account</h1>
+        <p>Keep your reflections, retreats, and circles across every device.</p>
+      </div>
+      <div class="fields">
+        <div class="field glass">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <input value="Hugo" />
+        </div>
+        <div class="field glass focus">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <input value="hugo@soulfullgatherings.com" />
+        </div>
+        <div class="field glass">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <input type="password" value="········" />
+        </div>
+      </div>
+      <div class="submit"><button class="sg-btn sg-btn--filled">Create account</button></div>
+      <p class="toggle">Already have an account? <b>Sign in</b></p>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

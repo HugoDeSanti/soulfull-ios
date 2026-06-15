@@ -1,0 +1,43 @@
+<!-- @dsCard group="Foundations" name="Gradients & shape" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull — Gradients & shape</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .tile { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); }
+  .tile .fillbox { height: 150px; }
+  .tile .meta { padding: 12px 14px; background: var(--bg-deep); }
+  .tile .name { font-size: 14px; font-weight: var(--w-medium); color: var(--ink); }
+  .tile .swift { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .group-h { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 26px 0 12px; }
+  .shapes { display: flex; gap: 24px; align-items: flex-end; }
+  .shapes .s { background: var(--surface); border: 1px solid var(--glass-border); }
+  .shapes .label { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; }
+</style>
+</head><body>
+<div class="stage"><div class="canvas">
+  <p class="canvas-title">Foundations</p>
+  <h1 class="canvas-headline">Gradients & shape</h1>
+
+  <div class="grid">
+    <div class="tile"><div class="fillbox" style="background:var(--grad-splash)"></div><div class="meta"><div class="name">splash</div><div class="swift">Theme.splash — amber→sage→coal, 135°</div></div></div>
+    <div class="tile"><div class="fillbox" style="background:#3a3520"></div><div class="fillbox" style="margin-top:-150px;background:var(--grad-photo-vignette)"></div><div class="meta"><div class="name">photoVignette</div><div class="swift">Theme.photoVignette — over photography</div></div></div>
+  </div>
+
+  <div class="group-h">Shape constants</div>
+  <div class="shapes">
+    <div>
+      <div class="s" style="width:160px;height:96px;border-radius:22px"></div>
+      <div class="label">cardRadius · 22</div>
+    </div>
+    <div>
+      <div class="s" style="width:200px;height:52px;border-radius:999px"></div>
+      <div class="label">pillRadius · 999 (Capsule)</div>
+    </div>
+  </div>
+</div></div>
+</body></html>

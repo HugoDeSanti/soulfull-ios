@@ -1,0 +1,46 @@
+<!-- @dsCard group="Screens · Onboarding" name="Onboarding — name" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding — name</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .center-q { text-align: center; padding-top: 60px; }
+  .center-q h2 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); max-width: 320px; margin: 0 auto 46px; line-height: 1.15; }
+  .field { max-width: 280px; margin: 0 auto; }
+  .field input { width: 100%; text-align: center; font-family: var(--font); font-style: italic; font-size: 22px;
+    color: var(--ink); background: transparent; border: 0; outline: none; padding-bottom: 12px; }
+  .field .ul { height: 1.5px; background: rgba(229,199,102,0.75); box-shadow: 0 0 8px rgba(229,199,102,0.5); }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+  <div class="screen safe-top">
+    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
+    <div class="vignette vignette--deep"></div>
+
+    <div class="onb-top">
+      <div class="circle-btn" style="opacity:.0;pointer-events:none"></div>
+      <div class="onb-progress"><div class="onb-track"><div class="onb-fill" style="width:25%"></div></div></div>
+      <span class="onb-counter">1/4</span>
+      <button class="onb-skip">skip</button>
+    </div>
+
+    <div class="onb-body center-q">
+      <h2>What should we call you?</h2>
+      <div class="field">
+        <input value="Hugo" />
+        <div class="ul"></div>
+      </div>
+    </div>
+
+    <div class="onb-bottom"><button class="sg-btn">Next</button></div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

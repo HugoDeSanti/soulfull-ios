@@ -1,0 +1,79 @@
+/* ============================================================================
+   Soulfull Gatherings — Design Tokens
+   1:1 mirror of SoulfullGatherings/Core/DesignSystem/Theme.swift
+
+   Every variable here maps to a single Swift constant. When the UX team edits a
+   value, change the matching `Theme.*` token in Theme.swift. The Swift source of
+   truth stores colors as RGB 0–1; the hex values below are the exact sRGB
+   conversions (round to nearest 8-bit channel).
+
+   Theme.swift            ->  CSS variable
+   --------------------------------------------------------------------------
+   Theme.bg               ->  --bg
+   Theme.bgDeep           ->  --bg-deep
+   Theme.surface          ->  --surface
+   Theme.line             ->  --line              (white @ 0.10)
+   Theme.glassBorder      ->  --glass-border      (white @ 0.14)
+   Theme.glassBorderHigh  ->  --glass-border-high (white @ 0.18)
+   Theme.accent           ->  --accent
+   Theme.accentSoft       ->  --accent-soft
+   Theme.ink              ->  --ink
+   Theme.inkSoft          ->  --ink-soft
+   Theme.muted            ->  --muted
+   Theme.honey            ->  --honey
+   Theme.cardRadius       ->  --card-radius       (22)
+   Theme.pillRadius       ->  --pill-radius       (999)
+   Theme.splash           ->  --grad-splash
+   Theme.photoVignette    ->  --grad-photo-vignette
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;500;600;700&display=swap');
+
+:root {
+  /* ---- Canvas ---- */
+  --bg:        #0b0c07;   /* rgb(0.043, 0.047, 0.027) */
+  --bg-deep:   #10120a;   /* rgb(0.063, 0.069, 0.039) */
+  --surface:   #15170d;   /* rgb(0.082, 0.090, 0.051) */
+
+  /* ---- Hairlines & glass strokes (white at alpha) ---- */
+  --line:              rgba(255,255,255,0.10);
+  --glass-border:      rgba(255,255,255,0.14);
+  --glass-border-high: rgba(255,255,255,0.18);
+
+  /* ---- Brand accents ---- */
+  --accent:      #3e4315; /* rgb(0.244, 0.263, 0.082)  olive-green logo */
+  --accent-soft: #77803b; /* rgb(0.467, 0.502, 0.231)  lifted sage */
+
+  /* ---- Text ---- */
+  --ink:      #f5f3e8;    /* rgb(0.961, 0.953, 0.910)  warm cream */
+  --ink-soft: #c9c5b0;    /* rgb(0.788, 0.773, 0.690)  muted cream */
+  --muted:    #7a7663;    /* rgb(0.478, 0.463, 0.388)  tertiary/metadata */
+  --honey:    #e5c766;    /* rgb(0.898, 0.780, 0.400)  amber glow / selected */
+
+  /* ---- Gradients ---- */
+  /* Theme.splash — amber→sage→coal, topLeading→bottomTrailing */
+  --grad-splash: linear-gradient(135deg, #4d531c 0%, #3e4315 50%, #2c3010 100%);
+  /* Theme.photoVignette — black 0.22 → 0.46 → 0.66, top→bottom */
+  --grad-photo-vignette: linear-gradient(180deg,
+      rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.46) 55%, rgba(0,0,0,0.66) 100%);
+
+  /* ---- Shape ---- */
+  --card-radius: 22px;    /* Theme.cardRadius */
+  --pill-radius: 999px;   /* Theme.pillRadius */
+
+  /* ---- Type ---- */
+  /* The app is ALL Geist — no serif / SF Pro split. Headlines use negative
+     letter-spacing (kerning); body/eyebrow use positive (tracking). */
+  --font: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Weight helpers mirroring Theme.geistName(for:) — Thin/Light/Regular/Medium/
+   SemiBold/Bold are the only shipped weights. */
+:root {
+  --w-thin: 100;
+  --w-light: 300;
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+}
