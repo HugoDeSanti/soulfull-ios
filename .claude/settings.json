@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "stripe@claude-plugins-official": true
-  },
   "hooks": {
     "PostToolUse": [
       {
@@ -14,5 +11,9 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "stripe@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true
   }
 }
