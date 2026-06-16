@@ -26,24 +26,9 @@ packages:
     maxVersion: 100.0.0
 
 targets:
-  SoulfullUITests:
-    type: bundle.ui-testing
-    platform: iOS
-    sources:
-      - path: SoulfullUITests
-    dependencies:
-      - target: SoulfullGatherings
-    settings:
-      base:
-        TEST_TARGET_NAME: SoulfullGatherings
-        GENERATE_INFOPLIST_FILE: YES
-
   SoulfullGatherings:
     type: application
     platform: iOS
-    scheme:
-      testTargets:
-        - SoulfullUITests
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
