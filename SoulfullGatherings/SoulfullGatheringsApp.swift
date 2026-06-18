@@ -29,7 +29,7 @@ struct SoulfullGatheringsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            rootContent
                 .environment(appState)
                 .environment(appState.settings)
                 .environment(appState.auth)
@@ -41,5 +41,42 @@ struct SoulfullGatheringsApp: App {
                     Task { await appState.auth.handleDeepLink(url) }
                 }
         }
+    }
+
+    /// The app root, or a DEBUG screen override for visual passes without
+    /// driving the full app to it (`-preview-checkout` / `-preview-experience`
+    /// launch args). Release builds always show `RootView`.
+    @ViewBuilder private var rootContent: some View {
+        #if DEBUG
+        if CommandLine.arguments.contains("-preview-checkout") {
+            NavigationStack {
+                RetreatCheckoutView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-experience") {
+            NavigationStack {
+                RetreatExperienceHubView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-todos") {
+            NavigationStack {
+                RetreatTodosView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-packing") {
+            NavigationStack {
+                PackingListView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-guides") {
+            NavigationStack {
+                RetreatGuidesView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-chat") {
+            NavigationStack {
+                RetreatAssistantView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else {
+            RootView()
+        }
+        #else
+        RootView()
+        #endif
     }
 }

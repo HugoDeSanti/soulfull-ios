@@ -81,6 +81,13 @@ private struct HomeRoot: View {
         /// matched zoom-hero source; pushes from the retreats stack use the
         /// default slide (the full-bleed photo already carries continuity).
         case retreatDetail(Retreat, zoom: Bool)
+        // Post-purchase flow (reserve → experience hub → trip screens).
+        case retreatCheckout(Retreat)
+        case retreatExperience(Retreat)
+        case retreatTodos(Retreat)
+        case retreatGuides(Retreat)
+        case retreatPacking(Retreat)
+        case retreatChat(Retreat)
     }
     @Binding var navHidden: Bool
     @State private var path: [Route] = []
@@ -100,20 +107,59 @@ private struct HomeRoot: View {
                         onSelect: { r in path.append(.retreatDetail(r, zoom: false)) }
                     )
                     .toolbar(.hidden, for: .navigationBar)
+
                 case .retreatDetail(let r, let zoom):
-                    if zoom {
-                        RetreatDetailView(retreat: r)
-                            .toolbar(.hidden, for: .navigationBar)
-                            .navigationTransition(.zoom(sourceID: "home-retreat-\(r.id)", in: zoomNS))
-                    } else {
-                        RetreatDetailView(retreat: r)
-                            .toolbar(.hidden, for: .navigationBar)
+                    Group {
+                        if zoom {
+                            retreatDetail(r)
+                                .navigationTransition(.zoom(sourceID: "home-retreat-\(r.id)", in: zoomNS))
+                        } else {
+                            retreatDetail(r)
+                        }
                     }
+                    .toolbar(.hidden, for: .navigationBar)
+
+                case .retreatCheckout(let r):
+                    RetreatCheckoutView(retreat: r, onReserved: { path = [.retreatExperience(r)] })
+                        .toolbar(.hidden, for: .navigationBar)
+
+                case .retreatExperience(let r):
+                    RetreatExperienceHubView(
+                        retreat: r,
+                        onOpenTodos:   { path.append(.retreatTodos(r)) },
+                        onOpenGuides:  { path.append(.retreatGuides(r)) },
+                        onOpenPacking: { path.append(.retreatPacking(r)) },
+                        onOpenChat:    { path.append(.retreatChat(r)) },
+                        onOpenDetail:  { path.append(.retreatDetail(r, zoom: false)) }
+                    )
+                    .toolbar(.hidden, for: .navigationBar)
+
+                case .retreatTodos(let r):
+                    RetreatTodosView(retreat: r, onGoHome: { path = [] })
+                        .toolbar(.hidden, for: .navigationBar)
+                case .retreatGuides(let r):
+                    RetreatGuidesView(retreat: r)
+                        .toolbar(.hidden, for: .navigationBar)
+                case .retreatPacking(let r):
+                    PackingListView(retreat: r)
+                        .toolbar(.hidden, for: .navigationBar)
+                case .retreatChat(let r):
+                    RetreatAssistantView(retreat: r)
+                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
         }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    /// Detail screen wired to push the post-purchase flow (checkout / hub).
+    private func retreatDetail(_ r: Retreat) -> some View {
+        RetreatDetailView(
+            retreat: r,
+            onCheckout: { path.append(.retreatCheckout($0)) },
+            onOpenExperience: { path.append(.retreatExperience($0)) }
+        )
     }
 }
 

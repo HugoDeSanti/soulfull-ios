@@ -264,17 +264,19 @@ private struct RetreatRow: Codable {
     let toneTop: String
     let toneMid: String
     let toneBase: String
+    let groupChatUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, country, tags, blurb
-        case imageUrl  = "image_url"
-        case startDate = "start_date"
-        case endDate   = "end_date"
-        case maxGuests = "max_guests"
-        case priceUsd  = "price_usd"
-        case toneTop   = "tone_top"
-        case toneMid   = "tone_mid"
-        case toneBase  = "tone_base"
+        case imageUrl      = "image_url"
+        case startDate     = "start_date"
+        case endDate       = "end_date"
+        case maxGuests     = "max_guests"
+        case priceUsd      = "price_usd"
+        case toneTop       = "tone_top"
+        case toneMid       = "tone_mid"
+        case toneBase      = "tone_base"
+        case groupChatUrl  = "group_chat_url"
     }
 
     var retreat: Retreat {
@@ -291,7 +293,8 @@ private struct RetreatRow: Codable {
             tags: tags ?? [], blurb: blurb, imageUrl: imageUrl,
             toneTop:  Color(hex: toneTop),
             toneMid:  Color(hex: toneMid),
-            toneBase: Color(hex: toneBase)
+            toneBase: Color(hex: toneBase),
+            groupChatURL: groupChatUrl.flatMap { URL(string: $0) }
         )
     }
 }

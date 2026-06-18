@@ -1,0 +1,204 @@
+<!-- @dsCard group="Screens · Retreats" name="Your guides — book 1:1 sessions" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Guides — Mallorca</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .brochure {
+    --sand:#ece2d0; --sand-deep:#e3d6bf; --cream:#f6efe1; --espresso:#2c2218;
+    --espresso-soft:#5d5142; --stone:#8c7f69; --terracotta:#b06a40; --olive:#6f7339;
+    --gold:#c0934a; --hair:rgba(44,34,24,0.16);
+    --serif:'Cormorant Garamond', Georgia, serif;
+    background:var(--cream); color:var(--espresso);
+  }
+  .brochure-device .statusbar { color:#fbf6ec; }
+  .brochure-device .statusbar .batt { border-color:rgba(251,246,236,0.55); }
+  .brochure-device .home-indicator { background:rgba(44,34,24,0.4); }
+
+  .topbar { position:absolute; top:44px; left:0; right:0; z-index:40; display:flex; padding:8px 20px; }
+  .top-btn { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px; border-radius:999px;
+    background:rgba(255,250,242,0.16); border:1px solid rgba(255,250,242,0.42); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    color:#fbf6ec; font-size:12px; letter-spacing:0.4px; text-decoration:none; }
+  .top-btn svg { width:12px; height:12px; }
+
+  .hero { position:relative; padding:74px 26px 32px; overflow:hidden; }
+  .hero .img { position:absolute; inset:0; background:url('../assets/mb-massage.jpg') center 60%/cover; }
+  .hero .img::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,26,32,0.5) 0%, rgba(28,22,15,0.42) 55%, var(--cream) 100%); }
+  .hero .c { position:relative; z-index:2; }
+  .hero .eyebrow { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:#e8cba2; margin:0; }
+  .hero h1 { font-family:var(--font); font-weight:300; font-size:32px; line-height:1.05; letter-spacing:-0.4px; color:#fdf9f0; margin:8px 0 0; text-shadow:0 1px 16px rgba(20,16,10,0.4); }
+  .hero p { font-size:12.5px; line-height:1.5; color:rgba(251,243,230,0.92); margin:12px 0 0; max-width:280px; }
+
+  .body { padding:8px 22px 130px; }
+
+  .guide { background:#fff; border:1px solid var(--hair); border-radius:12px; padding:18px; margin-bottom:14px; }
+  .guide .top { display:flex; align-items:center; gap:14px; }
+  .guide .av { width:50px; height:50px; border-radius:999px; flex:none; display:grid; place-items:center;
+    font-family:var(--serif); font-size:19px; letter-spacing:0.5px; color:var(--cream); background:var(--olive); }
+  .guide .av.t { background:var(--terracotta); } .guide .av.s { background:#8a7a52; } .guide .av.g { background:var(--gold); }
+  .guide .info { flex:1; min-width:0; }
+  .guide .nm { font-family:var(--font); font-size:13.5px; font-weight:400; line-height:1.25; letter-spacing:0.8px; text-transform:uppercase; color:var(--espresso); }
+  .guide .role { font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--stone); margin-top:3px; }
+
+  .offer { display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--hair); }
+  .offer .ot { flex:1; }
+  .offer .os { font-size:13.5px; color:var(--espresso); }
+  .offer .od { font-size:11px; letter-spacing:0.5px; color:var(--stone); margin-top:2px; }
+  .book-btn { flex:none; height:38px; padding:0 18px; border-radius:999px; border:1px solid var(--espresso); background:transparent;
+    color:var(--espresso); font-family:var(--font); font-weight:500; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:background .2s, color .2s; }
+  .book-btn:active { transform:scale(.97); }
+
+  .slots { display:none; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .slots.open { display:flex; }
+  .slots .lbl { width:100%; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--terracotta); margin-bottom:2px; }
+  .slot { font-size:12.5px; padding:9px 13px; border-radius:8px; border:1px solid var(--hair); background:var(--cream); color:var(--espresso); cursor:pointer; transition:background .2s, border-color .2s; }
+  .slot:active { transform:scale(.97); }
+  .slot:hover { border-color:var(--terracotta); }
+
+  .confirmed { display:none; align-items:center; gap:10px; margin-top:14px; padding:13px 15px; border-radius:10px; background:var(--sand); }
+  .confirmed.show { display:flex; }
+  .confirmed .ck { width:26px; height:26px; border-radius:999px; flex:none; display:grid; place-items:center; background:var(--olive); }
+  .confirmed .ck svg { width:14px; height:14px; color:#fff; }
+  .confirmed .ct { flex:1; font-size:13px; color:var(--espresso); }
+  .confirmed .ct b { font-weight:600; }
+  .confirmed .cancel { background:none; border:0; font-family:var(--font); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:var(--stone); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  .guide.booked .book-btn { background:var(--olive); border-color:var(--olive); color:#fbf3e6; }
+  .note { font-size:11px; color:var(--stone); text-align:center; margin-top:18px; line-height:1.5; }
+</style>
+</head><body>
+<div class="stage"><div class="device brochure-device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="topbar">
+    <a class="top-btn" href="mallorca-welcome.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>Experience</a>
+  </div>
+
+  <div class="screen screen--scroll brochure">
+    <div class="hero">
+      <div class="img"></div>
+      <div class="c">
+        <p class="eyebrow">Your Guides</p>
+        <h1>Book a 1:1 session</h1>
+        <p>Each guide opens private sessions across the week. Reserve time with whoever you'd like to go deeper with.</p>
+      </div>
+    </div>
+
+    <div class="body" id="guides">
+      <div class="guide" data-id="alejandra">
+        <div class="top">
+          <span class="av">AC</span>
+          <div class="info"><div class="nm">Alejandra Campos</div><div class="role">Head Retreat Leader</div></div>
+          <button class="book-btn">Book 1:1</button>
+        </div>
+        <div class="offer"><div class="ot"><div class="os">Intention-setting session</div><div class="od">45 min · private</div></div></div>
+        <div class="slots"><span class="lbl">Choose a time</span><button class="slot">Mon · 09:00</button><button class="slot">Tue · 16:30</button><button class="slot">Thu · 11:00</button></div>
+        <div class="confirmed"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg></span><div class="ct"></div><button class="cancel">Cancel</button></div>
+      </div>
+
+      <div class="guide" data-id="michelle">
+        <div class="top">
+          <span class="av t">MC</span>
+          <div class="info"><div class="nm">Michelle Campos</div><div class="role">Retreat Guide &amp; Psychotherapist</div></div>
+          <button class="book-btn">Book 1:1</button>
+        </div>
+        <div class="offer"><div class="ot"><div class="os">Private therapy session</div><div class="od">50 min · confidential</div></div></div>
+        <div class="slots"><span class="lbl">Choose a time</span><button class="slot">Mon · 14:00</button><button class="slot">Wed · 10:00</button><button class="slot">Fri · 15:30</button></div>
+        <div class="confirmed"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg></span><div class="ct"></div><button class="cancel">Cancel</button></div>
+      </div>
+
+      <div class="guide" data-id="sabina">
+        <div class="top">
+          <span class="av s">SG</span>
+          <div class="info"><div class="nm">Sabina Gonzalez</div><div class="role">Numerologist &amp; Business Guide</div></div>
+          <button class="book-btn">Book 1:1</button>
+        </div>
+        <div class="offer"><div class="ot"><div class="os">Numerology &amp; business reading</div><div class="od">45 min · private</div></div></div>
+        <div class="slots"><span class="lbl">Choose a time</span><button class="slot">Tue · 10:30</button><button class="slot">Wed · 17:00</button><button class="slot">Thu · 14:30</button></div>
+        <div class="confirmed"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg></span><div class="ct"></div><button class="cancel">Cancel</button></div>
+      </div>
+
+      <div class="guide" data-id="ana">
+        <div class="top">
+          <span class="av">AL</span>
+          <div class="info"><div class="nm">Ana Lucía Chavez</div><div class="role">Retreat Guide &amp; Fitness Trainer</div></div>
+          <button class="book-btn">Book 1:1</button>
+        </div>
+        <div class="offer"><div class="ot"><div class="os">Personal training session</div><div class="od">60 min · 1:1 coaching</div></div></div>
+        <div class="slots"><span class="lbl">Choose a time</span><button class="slot">Mon · 07:30</button><button class="slot">Wed · 07:30</button><button class="slot">Fri · 08:00</button></div>
+        <div class="confirmed"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg></span><div class="ct"></div><button class="cancel">Cancel</button></div>
+      </div>
+
+      <div class="guide" data-id="regina">
+        <div class="top">
+          <span class="av t">RM</span>
+          <div class="info"><div class="nm">Regina Mendoza</div><div class="role">Retreat Assistant &amp; Physical Therapist</div></div>
+          <button class="book-btn">Book 1:1</button>
+        </div>
+        <div class="offer"><div class="ot"><div class="os">Recovery &amp; physical therapy</div><div class="od">50 min · bodywork</div></div></div>
+        <div class="slots"><span class="lbl">Choose a time</span><button class="slot">Tue · 13:00</button><button class="slot">Thu · 16:00</button><button class="slot">Fri · 11:30</button></div>
+        <div class="confirmed"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12.5l5 5L20 6.5"/></svg></span><div class="ct"></div><button class="cancel">Cancel</button></div>
+      </div>
+
+      <p class="note">Sessions take place at the villa during the retreat week. Times can be rescheduled with your guide on arrival.</p>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+
+<script>
+(function(){
+  var KEY = 'sf_mallorca_1on1_v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ saved = {}; }
+  function persist(){ try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){} }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.guide'), function(g){
+    var id = g.dataset.id;
+    var btn = g.querySelector('.book-btn');
+    var slots = g.querySelector('.slots');
+    var confirmed = g.querySelector('.confirmed');
+    var ct = confirmed.querySelector('.ct');
+    var cancel = confirmed.querySelector('.cancel');
+    var name = g.querySelector('.nm').textContent;
+
+    function showBooked(time){
+      slots.classList.remove('open');
+      g.classList.add('booked');
+      btn.textContent = 'Booked';
+      ct.innerHTML = 'Booked · <b>' + time + '</b>';
+      confirmed.classList.add('show');
+    }
+    function clearBooked(){
+      g.classList.remove('booked');
+      btn.textContent = 'Book 1:1';
+      confirmed.classList.remove('show');
+    }
+
+    if (saved[id]) showBooked(saved[id]);
+
+    btn.addEventListener('click', function(){
+      if (g.classList.contains('booked')){ slots.classList.toggle('open'); return; }
+      slots.classList.toggle('open');
+    });
+    Array.prototype.forEach.call(slots.querySelectorAll('.slot'), function(s){
+      s.addEventListener('click', function(){
+        saved[id] = s.textContent; persist(); showBooked(s.textContent);
+      });
+    });
+    cancel.addEventListener('click', function(){
+      delete saved[id]; persist(); clearBooked();
+    });
+  });
+})();
+</script>
+</body></html>

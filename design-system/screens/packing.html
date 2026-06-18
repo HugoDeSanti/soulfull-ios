@@ -1,0 +1,154 @@
+<!-- @dsCard group="Screens · Retreats" name="Packing list — what to bring" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packing list — Mallorca Experience</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  /* Warm-espresso palette — scoped to .mb (matches the Mallorca cards) */
+  .mb {
+    --espresso:#1a130c; --espresso-2:#22180e; --coffee:#3a2a1c;
+    --cream:#f3ead9; --cream-soft:#cbbca2; --muted:#94856c;
+    --terracotta:#c47c4c; --olive:#8d8a4c; --gold:#e5c766;
+    --glass:rgba(243,234,217,0.05); --glass-line:rgba(243,234,217,0.12); --glass-line-soft:rgba(243,234,217,0.08);
+    --serif:var(--font);
+    background:var(--espresso); color:var(--cream);
+  }
+  /* Warm device shell + cream chrome */
+  .mb-device { box-shadow:0 2px 0 1px rgba(255,255,255,0.04) inset, 0 0 0 11px #100b06, 0 0 0 13px #2a1f15, 0 50px 90px -30px rgba(0,0,0,0.85); }
+  .mb-device .statusbar { color:#f3ead9; }
+  .mb-device .statusbar .batt { border-color:rgba(243,234,217,0.55); }
+  .mb-device .home-indicator { background:rgba(243,234,217,0.5); }
+
+  /* Atmospheric blurred glow behind the body */
+  .mb .ambient { position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:url('../assets/mb-villa.jpg') center 30%/cover; filter:blur(60px) saturate(1.1) brightness(.5); opacity:.28; transform:scale(1.25); }
+  .mb .ambient::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(26,19,12,0.45) 0%, var(--espresso) 60%); }
+
+  /* Top-left warm-glass back chevron (topBar — PackingListView) */
+  .topbar { position:absolute; top:44px; left:0; right:0; z-index:20; display:flex; padding:8px 20px; }
+  .back-chip {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:38px; height:38px; border-radius:999px;
+    background:rgba(243,234,217,0.08);
+    border:1px solid var(--glass-line);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    color:var(--cream); cursor:pointer; flex:none; text-decoration:none;
+    transition:transform .18s cubic-bezier(.2,.7,.3,1);
+  }
+  .back-chip:active { transform:scale(.94); }
+  .back-chip svg { width:14px; height:14px; }
+
+  /* Full-bleed photo hero, warm gradient → var(--espresso) (hero — PackingListView) */
+  .hero { position:relative; height:240px; z-index:1; }
+  .hero .img { position:absolute; inset:0; background:url('../assets/mb-villa.jpg') center/cover; filter:saturate(.95) brightness(.86); }
+  .hero .v {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,
+      rgba(20,14,8,0.5) 0%, rgba(24,17,10,0.16) 30%,
+      rgba(26,19,12,0.0) 62%, var(--espresso) 100%);
+  }
+  .hero .cap { position:absolute; left:24px; bottom:18px; right:24px; }
+  .hero .eb { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); margin:0 0 8px; }
+  .hero h1 { font-family:var(--serif); font-size:32px; font-weight:var(--w-semibold); letter-spacing:-0.5px; color:#fbf4e7; margin:0; text-shadow:0 2px 22px rgba(15,10,5,0.5); }
+
+  /* List body (list — PackingListView) */
+  .list { position:relative; z-index:1; padding:22px 24px 60px; }
+  .intro { font-size:13px; line-height:1.55; color:var(--cream-soft); margin:0 0 18px; }
+
+  /* Checkable warm-glass rows (row — PackingListView) */
+  .pack { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+  .pack-row {
+    display:flex; align-items:center; gap:14px;
+    padding:16px; border-radius:14px;
+    background:var(--glass);
+    backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4);
+    border:1px solid var(--glass-line);
+    cursor:pointer; text-align:left; width:100%;
+    font-family:var(--font);
+    transition:transform .18s cubic-bezier(.2,.7,.3,1);
+  }
+  .pack-row:active { transform:scale(.985); }
+  .pack-row .box {
+    width:26px; height:26px; border-radius:999px; flex:none;
+    display:grid; place-items:center;
+    background:transparent;
+    border:1.5px solid var(--muted);
+    color:transparent;
+    transition:background .2s, border-color .2s, color .2s;
+  }
+  .pack-row .box svg { width:13px; height:13px; }
+  .pack-row .label {
+    font-size:15px; line-height:1.4; color:var(--cream);
+    transition:color .2s;
+  }
+  /* Done state — olive checkbox + dark check, strikethrough muted text */
+  .pack-row.is-done .box {
+    background:var(--olive);
+    border-color:var(--olive);
+    color:var(--espresso);
+  }
+  .pack-row.is-done .label {
+    color:var(--muted);
+    text-decoration:line-through;
+    text-decoration-color:var(--muted);
+  }
+</style>
+</head><body>
+<div class="stage"><div class="device mb-device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="topbar">
+    <a class="back-chip" href="mallorca-welcome.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></a>
+  </div>
+
+  <div class="screen screen--scroll mb">
+    <div class="ambient"></div>
+    <div class="hero">
+      <div class="img"></div><div class="v"></div>
+      <div class="cap">
+        <p class="eb">Before You Go</p>
+        <h1>Packing list</h1>
+      </div>
+    </div>
+
+    <div class="list">
+      <p class="intro">From riding gear to evening dinners — everything you'll want with you. Tap to tick items off as you pack.</p>
+
+      <ul class="pack" id="pack">
+        <li><button class="pack-row" data-i="0"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">Activewear and trainers</span></button></li>
+        <li><button class="pack-row" data-i="1"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">Swimwear</span></button></li>
+        <li><button class="pack-row" data-i="2"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">A light layer for evenings</span></button></li>
+        <li><button class="pack-row" data-i="3"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">Comfortable walking shoes</span></button></li>
+        <li><button class="pack-row" data-i="4"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">Sunscreen and a reusable water bottle</span></button></li>
+        <li><button class="pack-row" data-i="5"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2"><path d="M5 12l5 5L20 7"/></svg></span><span class="label">One nicer outfit for group dinners</span></button></li>
+      </ul>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+
+<script>
+  // Persist checked state device-locally (mirrors RetreatTripStore pack- ids).
+  (function () {
+    var KEY = 'sg.packing.mb-villa';
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+    var rows = document.querySelectorAll('.pack-row');
+    rows.forEach(function (row) {
+      var i = row.getAttribute('data-i');
+      if (saved[i]) row.classList.add('is-done');
+      row.addEventListener('click', function () {
+        var done = row.classList.toggle('is-done');
+        saved[i] = done;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      });
+    });
+  })();
+</script>
+</body></html>

@@ -1,0 +1,175 @@
+<!-- @dsCard group="Screens · Retreats" name="Soulfull Gatherings chatbot — pre-retreat concierge" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulfull Gatherings — Chat</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .brochure {
+    --sand:#ece2d0; --sand-deep:#e3d6bf; --cream:#f6efe1; --espresso:#2c2218;
+    --espresso-soft:#5d5142; --stone:#8c7f69; --terracotta:#b06a40; --olive:#6f7339;
+    --gold:#c0934a; --hair:rgba(44,34,24,0.16);
+    --serif:'Cormorant Garamond', Georgia, serif;
+    background:var(--cream); color:var(--espresso);
+    display:flex; flex-direction:column;
+  }
+  .brochure-device .statusbar { color:#2c2218; }
+  .brochure-device .statusbar .batt { border-color:rgba(44,34,24,0.45); }
+  .brochure-device .home-indicator { background:rgba(44,34,24,0.4); }
+
+  /* header */
+  .chead { position:relative; z-index:5; padding:58px 18px 14px; background:var(--cream); border-bottom:1px solid var(--hair); }
+  .chead .row { display:flex; align-items:center; gap:12px; }
+  .chead .back { width:36px; height:36px; border-radius:999px; flex:none; display:grid; place-items:center; border:1px solid var(--hair); background:#fff; color:var(--espresso); text-decoration:none; }
+  .chead .back svg { width:13px; height:13px; }
+  .chead .av { width:42px; height:42px; border-radius:999px; flex:none; display:grid; place-items:center; background:var(--olive); }
+  .chead .av img { width:26px; height:26px; }
+  .chead .who .nm { font-family:var(--serif); font-size:20px; line-height:1; color:var(--espresso); }
+  .chead .who .st { font-size:11px; color:var(--olive); margin-top:3px; display:flex; align-items:center; gap:6px; }
+  .chead .who .st i { width:6px; height:6px; border-radius:999px; background:var(--olive); display:inline-block; }
+
+  /* messages */
+  .msgs { flex:1; overflow-y:auto; padding:20px 18px 12px; display:flex; flex-direction:column; gap:12px; }
+  .msgs::-webkit-scrollbar { width:0; }
+  .intro-note { text-align:center; font-size:11px; color:var(--stone); letter-spacing:0.3px; margin:4px 0 8px; }
+  .bubble { max-width:80%; padding:13px 15px; font-size:14px; line-height:1.5; border-radius:16px; }
+  .bot { align-self:flex-start; background:#fff; border:1px solid var(--hair); color:var(--espresso); border-bottom-left-radius:5px; }
+  .me { align-self:flex-end; background:var(--espresso); color:#fbf3e6; border-bottom-right-radius:5px; }
+  .bubble.bot b { color:var(--terracotta); font-weight:600; }
+
+  .typing { align-self:flex-start; background:#fff; border:1px solid var(--hair); border-bottom-left-radius:5px; padding:15px 16px; border-radius:16px; display:none; }
+  .typing.show { display:flex; gap:5px; }
+  .typing i { width:7px; height:7px; border-radius:999px; background:var(--stone); animation:bob 1s infinite ease-in-out; }
+  .typing i:nth-child(2){ animation-delay:.15s; } .typing i:nth-child(3){ animation-delay:.3s; }
+  @keyframes bob { 0%,60%,100%{ transform:translateY(0); opacity:.45; } 30%{ transform:translateY(-5px); opacity:1; } }
+
+  /* suggestion chips */
+  .chips { display:flex; flex-wrap:wrap; gap:8px; padding:0 18px 10px; }
+  .chip-q { font-size:12px; padding:9px 13px; border-radius:999px; background:#fff; border:1px solid var(--hair); color:var(--espresso-soft); cursor:pointer; transition:background .2s; }
+  .chip-q:active { background:var(--sand); }
+
+  /* composer */
+  .composer { position:relative; z-index:5; padding:12px 16px 28px; background:var(--cream); border-top:1px solid var(--hair); display:flex; gap:10px; align-items:flex-end; }
+  .composer textarea { flex:1; resize:none; height:46px; max-height:110px; padding:13px 16px; border:1px solid var(--hair); border-radius:23px; background:#fff;
+    font-family:var(--font); font-size:14px; color:var(--espresso); outline:none; line-height:1.3; }
+  .composer textarea::placeholder { color:#bcae97; }
+  .composer textarea:focus { border-color:var(--terracotta); }
+  .send { width:46px; height:46px; border-radius:999px; flex:none; border:0; background:var(--espresso); color:#fbf3e6; cursor:pointer; display:grid; place-items:center; transition:transform .15s, opacity .2s; }
+  .send:active { transform:scale(.94); }
+  .send svg { width:18px; height:18px; }
+  .send[disabled] { opacity:.4; pointer-events:none; }
+</style>
+</head><body>
+<div class="stage"><div class="device brochure-device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen brochure">
+    <div class="chead">
+      <div class="row">
+        <a class="back" href="mallorca-welcome.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></a>
+        <div class="av"><img src="../assets/logo.png" alt="Soulfull"></div>
+        <div class="who">
+          <div class="nm">Soulfull Gatherings</div>
+          <div class="st"><i></i>Concierge · replies instantly</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="msgs" id="msgs">
+      <div class="intro-note">Your Mallorca retreat assistant — ask anything before you go</div>
+      <div class="bubble bot">Welcome — you're all set for <b>Mallorca</b> this July. I'm here for anything before you arrive: flights, packing, the daily rhythm, payments, or what's included. What's on your mind?</div>
+      <div class="typing" id="typing"><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="chips" id="chips">
+      <button class="chip-q">What should I pack?</button>
+      <button class="chip-q">What's a typical day like?</button>
+      <button class="chip-q">When are my next payments?</button>
+    </div>
+
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Message Soulfull Gatherings…"></textarea>
+      <button class="send" id="send" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+
+<script>
+(function(){
+  var PERSONA = "You are the Soulfull Gatherings concierge chatbot, helping a member who has just reserved a place on the Mallorca Wellness & Fitness Retreat (July 21 to 26, 2026). Voice: warm, calm, optimistic, grounded and welcoming. Keep replies short — 2 to 4 sentences, no markdown headers or bullet dumps. Facts you may use: Private stone villa in Mallorca, Spain; shared twin suite included, private suite available. Arrive before 3pm on July 21, depart anytime July 26; fly into Palma de Mallorca (PMI); airport transfers included. Price 5,678 euros all-inclusive: 800 euro deposit (already paid) then two payments of 2,439 euros, billed monthly. The week is built from four elements — Move (island rides, functional strength, hillside hikes), Explore (buggy tour, a day in Deia, catamaran day), Recover (cold plunge & sauna, breathwork, somatic workshops, restorative massages), Connect (shared dinners, creativity workshops). Included: every meal, a 50-minute restorative massage, all sessions, workshop materials, bike/buggy/boat rentals, all transfers, and a welcome gift box worth 250+ euros. Not included: flights, travel insurance, personal expenses. Packing: activewear and trainers, swimwear, a light layer for evenings, comfortable walking shoes, sunscreen and a reusable bottle; one nicer outfit for group dinners. Pre-retreat to-do's: book the enrollment call, complete the health & dietary form, book flights, share arrival details, set installment dates, join the group chat, review the packing list. The group is small and curated. For anything you are unsure about, warmly suggest emailing info@soulfullgatherings.com. Never invent prices, dates or policies beyond these facts.";
+
+  var msgs = document.getElementById('msgs');
+  var typing = document.getElementById('typing');
+  var input = document.getElementById('input');
+  var send = document.getElementById('send');
+  var chips = document.getElementById('chips');
+  var turns = [];  // {role, content} real conversation only
+  var busy = false;
+
+  function scrollDown(){ msgs.scrollTop = msgs.scrollHeight; }
+
+  function addBubble(role, text){
+    var b = document.createElement('div');
+    b.className = 'bubble ' + (role === 'user' ? 'me' : 'bot');
+    b.textContent = text;
+    msgs.insertBefore(b, typing);
+    scrollDown();
+    return b;
+  }
+
+  function setBusy(on){
+    busy = on;
+    typing.classList.toggle('show', on);
+    send.disabled = on || input.value.trim() === '';
+    if (on) scrollDown();
+  }
+
+  async function ask(text){
+    if (busy || !text.trim()) return;
+    if (chips) { chips.style.display = 'none'; }
+    addBubble('user', text);
+    turns.push({ role:'user', content:text });
+    input.value = ''; autosize(); setBusy(true);
+
+    var apiMessages = [
+      { role:'user', content: PERSONA },
+      { role:'assistant', content: "Understood — I'm the Soulfull Gatherings concierge for the Mallorca retreat, ready to help warmly and briefly." }
+    ].concat(turns);
+
+    try {
+      var reply = await window.claude.complete({ messages: apiMessages });
+      setBusy(false);
+      reply = (reply || '').trim() || "I'm not quite sure on that one — the team can help at info@soulfullgatherings.com.";
+      addBubble('assistant', reply);
+      turns.push({ role:'assistant', content: reply });
+    } catch (e) {
+      setBusy(false);
+      addBubble('assistant', "I couldn't reach our team just now. Please try again, or email info@soulfullgatherings.com and we'll take care of you.");
+    }
+  }
+
+  function autosize(){
+    input.style.height = '46px';
+    input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+  }
+
+  input.addEventListener('input', function(){ autosize(); send.disabled = busy || input.value.trim() === ''; });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); ask(input.value); }
+  });
+  send.addEventListener('click', function(){ ask(input.value); });
+  Array.prototype.forEach.call(chips.querySelectorAll('.chip-q'), function(c){
+    c.addEventListener('click', function(){ ask(c.textContent); });
+  });
+})();
+</script>
+</body></html>

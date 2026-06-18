@@ -18,14 +18,23 @@ struct RetreatDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var auth
     let retreat: Retreat
+    /// Push the checkout review screen (Reserve, when signed in and not yet
+    /// reserved). Payment itself runs on the checkout screen.
+    var onCheckout: (Retreat) -> Void = { _ in }
+    /// Open the post-purchase experience hub (once the retreat is reserved).
+    var onOpenExperience: (Retreat) -> Void = { _ in }
 
     @State private var vm: RetreatDetailViewModel
     @State private var showAccount = false
     /// Normalized scroll offset: 0 at rest, negative when pulled down.
     @State private var scrollY: CGFloat = 0
 
-    init(retreat: Retreat) {
+    init(retreat: Retreat,
+         onCheckout: @escaping (Retreat) -> Void = { _ in },
+         onOpenExperience: @escaping (Retreat) -> Void = { _ in }) {
         self.retreat = retreat
+        self.onCheckout = onCheckout
+        self.onOpenExperience = onOpenExperience
         _vm = State(initialValue: RetreatDetailViewModel(retreat: retreat))
     }
 
@@ -170,16 +179,11 @@ struct RetreatDetailView: View {
 
     private var reserveButton: some View {
         Button {
-            Haptics.bump()
-            if auth.hasAccount {
-                Task { await vm.reserve() }
-            } else {
-                showAccount = true
-            }
+            routeReserve()
         } label: {
             HStack(spacing: 8) {
                 if vm.isReserved {
-                    Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold))
                 } else if vm.isBusy {
                     ProgressView()
                         .controlSize(.small)
@@ -196,12 +200,26 @@ struct RetreatDetailView: View {
             .opacity(vm.isBusy ? 0.7 : 1)
         }
         .buttonStyle(SoulPressableStyle(scale: 0.96, hapticOnPress: false, dim: false))
-        .disabled(vm.isBusy || vm.isReserved)
+        .disabled(vm.isBusy)
         .padding(.top, 4)
     }
 
+    /// Reserve-CTA routing: gate on account, then push the checkout review
+    /// (the Stripe charge happens there) or open the experience hub once the
+    /// retreat is already reserved.
+    private func routeReserve() {
+        Haptics.bump()
+        if !auth.hasAccount {
+            showAccount = true
+        } else if vm.isReserved {
+            onOpenExperience(retreat)
+        } else {
+            onCheckout(retreat)
+        }
+    }
+
     private var reserveTitle: String {
-        if vm.isReserved { return "Reserved" }
+        if vm.isReserved { return "View your experience" }
         if vm.isBusy { return "Processing…" }
         return auth.hasAccount ? "Reserve" : "Sign in to reserve"
     }
@@ -574,14 +592,9 @@ struct RetreatDetailView: View {
             }
             Spacer()
             Button {
-                Haptics.bump()
-                if auth.hasAccount {
-                    Task { await vm.reserve() }
-                } else {
-                    showAccount = true
-                }
+                routeReserve()
             } label: {
-                Text(vm.isReserved ? "Reserved" : "Reserve")
+                Text(vm.isReserved ? "Your experience" : "Reserve")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 20)
@@ -589,7 +602,7 @@ struct RetreatDetailView: View {
                     .background(Capsule().fill(.white))
             }
             .buttonStyle(SoulPressableStyle(scale: 0.95, hapticOnPress: false, dim: false))
-            .disabled(vm.isBusy || vm.isReserved)
+            .disabled(vm.isBusy)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)

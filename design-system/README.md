@@ -74,6 +74,20 @@ constant in `Theme.swift`:
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.
 
+### Mallorca post-purchase set (warm-espresso)
+
+`Screens · Retreats` includes the reserved-retreat flow: `retreat-checkout`,
+`mallorca-welcome` (hub), `retreat-todos`, `packing`, `mallorca-guides`, and
+`mallorca-chatbot`. These use the UX team's **warm-espresso** dark direction —
+terracotta / olive / gold on an espresso canvas, all-Geist — defined inline as a
+per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
+Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
+The original **brochure-light** versions (cream / Cormorant / Pinyon) are kept
+outside this tree in `docs/design-brochure-backup/`. The `mallorca-chatbot` card
+stays a **live** prototype (uses `window.claude.complete`); the native app mocks
+its replies. When porting back to Swift, map the `.mb` tokens to `RetreatPalette`
+— don't reintroduce the light palette or fold these into the global `Theme`.
+
 ## Run it locally
 
 Any static server (relative paths to `shared/` and `assets/` must resolve):

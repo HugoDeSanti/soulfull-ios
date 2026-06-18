@@ -60,6 +60,12 @@ struct Retreat: Identifiable, Hashable {
     let toneTop: Color
     let toneMid: Color
     let toneBase: Color
+    /// External cohort group-chat link (a WhatsApp invite), sourced from the DB
+    /// `retreats.group_chat_url` column and surfaced in the post-purchase hub —
+    /// so adding a retreat's chat link is a data change, not an app release.
+    /// `nil` → no group-chat tile. Defaulted `var` so the memberwise init stays
+    /// compatible with the DB row mapper and the mock.
+    var groupChatURL: URL? = nil
     /// Optional long-form editorial content for the detail screen. When set,
     /// `RetreatDetailView` renders the full spread (invitation, who it's for,
     /// the four elements, a member's word, guides, stay & inclusions); when
@@ -132,6 +138,13 @@ struct RetreatExperience: Hashable {
     let inclusions: [String]
     /// Fine print (e.g. what isn't included).
     let inclusionsNote: String?
+    /// Content unlocked once the retreat is reserved — the post-purchase
+    /// experience (welcome hub, to-do's, packing, 1:1 guide sessions, mocked
+    /// concierge). Mirrors the Claude Design `mallorca-*` / `retreat-*` screens.
+    /// `nil` for retreats without a curated trip. Must stay a defaulted `var`
+    /// (not `let`) so the synthesized memberwise init still accepts it — a
+    /// `let` with a default is omitted from the memberwise initializer.
+    var postBooking: PostBooking? = nil
 
     /// Move / Explore / Recover / Connect — title, icon, a line, a few specifics.
     struct Element: Hashable, Identifiable {
@@ -159,6 +172,72 @@ struct RetreatExperience: Hashable {
             name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
         }
     }
+
+    /// The post-purchase trip: everything unlocked after a retreat is reserved.
+    /// All copy is curated brochure content; bookable/checkable state is kept
+    /// device-locally by `RetreatTripStore` (no backend yet).
+    struct PostBooking: Hashable {
+        /// Member display name used in greetings — a mock fallback; views should
+        /// prefer the signed-in profile/`AppSettings` name when available.
+        let memberName: String
+        /// Reserve / checkout review content (presentational; the live charge
+        /// still goes through the single-payment Stripe flow).
+        let checkout: Checkout
+        /// Pre-retreat checklist (completion persisted by `RetreatTripStore`).
+        let todos: [TodoItem]
+        /// Packing-list lines.
+        let packing: [String]
+        /// Bookable 1:1 sessions, each tied to a `guides` entry by name.
+        let offers: [GuideOffer]
+        /// Mocked concierge — opening line, suggestion chips, canned replies.
+        let assistantIntro: String
+        let assistantSuggestions: [String]
+        let assistantReplies: [CannedReply]
+        /// Reply when no canned keyword matches.
+        let assistantFallback: String
+
+        struct Checkout: Hashable {
+            let lineItems: [LineItem]
+            let total: String
+            /// Amount due at reserve (e.g. the deposit) and a one-line note.
+            let dueToday: String
+            let dueTodayNote: String
+            let receiptNumber: String
+            let fineprint: String
+
+            struct LineItem: Hashable, Identifiable {
+                var id: String { title }
+                let title: String
+                let detail: String
+                let value: String
+            }
+        }
+
+        struct TodoItem: Hashable, Identifiable {
+            let id: String
+            let title: String
+            let detail: String
+            /// Small tag pill ("Do this first" / "Required"); `nil` for none.
+            let tag: String?
+            /// Whether the tag renders as a filled "must-do" pill.
+            let isMust: Bool
+        }
+
+        struct GuideOffer: Hashable, Identifiable {
+            /// Matches the guide's `name` in `RetreatExperience.guides`.
+            var id: String { guideName }
+            let guideName: String
+            let session: String
+            let duration: String
+            let slots: [String]
+        }
+
+        struct CannedReply: Hashable {
+            /// Lowercased substrings that route a user message to this reply.
+            let keywords: [String]
+            let reply: String
+        }
+    }
 }
 
 extension Retreat {
@@ -177,6 +256,8 @@ extension Retreat {
                 blurb: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
                 imageUrl: "retreat-mallorca",
                 toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24"),
+                // Offline fallback only — production reads retreats.group_chat_url from the DB.
+                groupChatURL: URL(string: "https://chat.whatsapp.com/REPLACE-WITH-MALLORCA-INVITE"),
                 experience: .mallorca),
         Retreat(id: 2, name: "Bali", country: "Indonesia",
                 startDate: day(2026, 8, 9), endDate: day(2026, 8, 16),
@@ -291,7 +372,85 @@ extension RetreatExperience {
             "All workshop materials, bikes & gear, buggies, and boat rides",
             "Every session across Move, Explore, Recover & Connect",
         ],
-        inclusionsNote: "Flights, travel insurance, and personal expenses are not included."
+        inclusionsNote: "Flights, travel insurance, and personal expenses are not included.",
+        postBooking: mallorcaPostBooking
+    )
+
+    /// The post-purchase trip content for Mallorca — curated from the brochure
+    /// and the Claude Design `mallorca-*` / `retreat-*` screens. Bookable state
+    /// lives device-locally in `RetreatTripStore`; the copy here is static.
+    static let mallorcaPostBooking = PostBooking(
+        memberName: "G. Martinez",
+        checkout: .init(
+            lineItems: [
+                .init(title: "Mallorca Wellness Experience", detail: "6 days · all-inclusive", value: "€5,678"),
+                .init(title: "Shared suite", detail: "Private villa · twin occupancy", value: "Included"),
+                .init(title: "Welcome gift box", detail: "On arrival", value: "Included"),
+            ],
+            total: "€5,678",
+            dueToday: "€800",
+            dueTodayNote: "Then 2 × €2,439, billed monthly",
+            receiptNumber: "SF-26-0412",
+            fineprint: "By reserving you agree to the enrollment terms and cancellation policy."
+        ),
+        todos: [
+            .init(id: "call", title: "Book your enrollment call",
+                  detail: "A 15-minute welcome call with your retreat guide to confirm the fit.",
+                  tag: "Do this first", isMust: true),
+            .init(id: "health", title: "Complete your health & dietary form",
+                  detail: "Allergies, injuries, and anything we should plan around.",
+                  tag: "Required", isMust: true),
+            .init(id: "flights", title: "Book your flights to Palma (PMI)",
+                  detail: "Arrive before 3pm on July 21; depart anytime July 26.",
+                  tag: nil, isMust: false),
+            .init(id: "transfer", title: "Share your arrival details",
+                  detail: "Flight number & landing time so we can arrange your airport transfer.",
+                  tag: nil, isMust: false),
+            .init(id: "installments", title: "Set your installment dates",
+                  detail: "Two payments of €2,439 — choose the dates that suit you.",
+                  tag: nil, isMust: false),
+            .init(id: "chat", title: "Join the member group chat",
+                  detail: "Meet your group and the guides before you arrive.",
+                  tag: nil, isMust: false),
+            .init(id: "pack", title: "Review the packing list",
+                  detail: "From riding gear to evening dinners — everything you'll want with you.",
+                  tag: nil, isMust: false),
+        ],
+        packing: [
+            "Activewear and trainers",
+            "Swimwear",
+            "A light layer for evenings",
+            "Comfortable walking shoes",
+            "Sunscreen and a reusable water bottle",
+            "One nicer outfit for group dinners",
+        ],
+        offers: [
+            .init(guideName: "Alejandra Campos", session: "Intention-setting session",
+                  duration: "45 min · private", slots: ["Mon · 09:00", "Tue · 16:30", "Thu · 11:00"]),
+            .init(guideName: "Michelle Campos", session: "Private therapy session",
+                  duration: "50 min · confidential", slots: ["Mon · 14:00", "Wed · 10:00", "Fri · 15:30"]),
+            .init(guideName: "Ana Lucía Chávez", session: "Personal training session",
+                  duration: "60 min · 1:1 coaching", slots: ["Mon · 07:30", "Wed · 07:30", "Fri · 08:00"]),
+            .init(guideName: "Regina Mendoza", session: "Recovery & physical therapy",
+                  duration: "50 min · bodywork", slots: ["Tue · 13:00", "Thu · 16:00", "Fri · 11:30"]),
+            .init(guideName: "Sabina González", session: "Numerology & business reading",
+                  duration: "45 min · private", slots: ["Tue · 10:30", "Wed · 17:00", "Thu · 14:30"]),
+        ],
+        assistantIntro: "Welcome — you're all set for Mallorca this July. I'm here for anything before you arrive: flights, packing, the daily rhythm, payments, or what's included. What's on your mind?",
+        assistantSuggestions: [
+            "What should I pack?",
+            "What's a typical day like?",
+            "When are my next payments?",
+        ],
+        assistantReplies: [
+            .init(keywords: ["pack", "packing", "bring", "wear", "clothes"],
+                  reply: "Pack light and practical: activewear and trainers, swimwear, a light layer for evenings, comfortable walking shoes, sunscreen and a reusable bottle — plus one nicer outfit for our group dinners. Everything else is taken care of."),
+            .init(keywords: ["day", "typical", "rhythm", "schedule", "itinerary"],
+                  reply: "Every day flows through four elements — Move (island rides, strength, hikes), Explore (buggy tours, a day in Deià, a catamaran day), Recover (cold plunge, sauna, breathwork, massage), and Connect (shared dinners and creativity). Mornings move, afternoons explore, evenings slow down together."),
+            .init(keywords: ["pay", "payment", "installment", "deposit", "balance", "cost", "price"],
+                  reply: "Your €800 deposit is already paid. The balance is two payments of €2,439, billed monthly — you'll set the dates from your to-do list. The €5,678 covers everything except flights, insurance, and personal expenses."),
+        ],
+        assistantFallback: "I'm not quite sure on that one — our team can help any time at info@soulfullgatherings.com."
     )
 }
 
