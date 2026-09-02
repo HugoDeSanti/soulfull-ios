@@ -257,7 +257,11 @@ extension Retreat {
                 imageUrl: "retreat-mallorca",
                 toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24"),
                 // Offline fallback only — production reads retreats.group_chat_url from the DB.
-                groupChatURL: URL(string: "https://chat.whatsapp.com/REPLACE-WITH-MALLORCA-INVITE"),
+                // No placeholder invite here: a dead chat.whatsapp.com link in
+                // the offline fallback is worse than no tile, and the hub only
+                // renders the tile when this is non-nil. Real invites come from
+                // `retreats.group_chat_url`, so adding one is a data change.
+                groupChatURL: nil,
                 experience: .mallorca),
         Retreat(id: 2, name: "Bali", country: "Indonesia",
                 startDate: day(2026, 8, 9), endDate: day(2026, 8, 16),
@@ -575,27 +579,31 @@ struct PracticeSession: Identifiable, Hashable {
 }
 
 extension PracticeSession {
-    /// Public sample media so the player works end-to-end before the
-    /// `practice_sessions` table / Storage bucket are seeded. Real rows carry a
-    /// bucket-relative `storagePath` instead and resolve via a signed URL.
-    private static let sampleAudio = "https://download.samplelib.com/mp3/sample-15s.mp3"
-    private static let sampleVideo = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-
+    /// Shape-only fixtures for SwiftUI previews.
+    ///
+    /// These used to carry public sample media (a stock MP3 and Big Buck Bunny)
+    /// and were the runtime fallback whenever `practice_sessions` was unseeded —
+    /// which meant a shipping build played a cartoon rabbit as a guided
+    /// meditation. `storagePath` is now empty and nothing in the app reads these
+    /// at runtime: `PracticeViewModel` reports an unseeded track as empty and
+    /// `PracticeView` renders it as "Coming soon".
+    ///
+    /// Real rows carry a bucket-relative `storagePath` resolved via a signed URL.
     static let mock: [PracticeSession] = [
         // Somatic Therapy
-        .init(id: 1, category: .somatic, title: "Grounding Body Scan", lead: "Dr. Anya Iyer", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 720, imageUrl: "retreat-sedona", blurb: "A slow head-to-toe scan to settle the nervous system."),
-        .init(id: 2, category: .somatic, title: "Shake & Release", lead: "Mara Solé", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 480, imageUrl: "retreat-mallorca", blurb: "Discharge held tension through gentle, guided movement."),
-        .init(id: 3, category: .somatic, title: "Orienting to Safety", lead: "Theo Park", mediaKind: .video, storagePath: sampleVideo, durationSeconds: 900, imageUrl: "retreat-dolomites", blurb: "A trauma-informed practice for re-establishing felt safety."),
+        .init(id: 1, category: .somatic, title: "Grounding Body Scan", lead: "Dr. Anya Iyer", mediaKind: .audio, storagePath: "", durationSeconds: 720, imageUrl: "retreat-sedona", blurb: "A slow head-to-toe scan to settle the nervous system."),
+        .init(id: 2, category: .somatic, title: "Shake & Release", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 480, imageUrl: "retreat-mallorca", blurb: "Discharge held tension through gentle, guided movement."),
+        .init(id: 3, category: .somatic, title: "Orienting to Safety", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 900, imageUrl: "retreat-dolomites", blurb: "A trauma-informed practice for re-establishing felt safety."),
 
         // Breathwork
-        .init(id: 4, category: .breathwork, title: "Box Breathing Basics", lead: "Rodrigo Peán", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 360, imageUrl: "retreat-bali", blurb: "Four-count breathing to steady a racing mind."),
-        .init(id: 5, category: .breathwork, title: "Coherent Breathing", lead: "Valentina Velasco", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 600, imageUrl: "retreat-mallorca", blurb: "Five breaths a minute to balance the autonomic system."),
-        .init(id: 6, category: .breathwork, title: "Breath of Fire", lead: "Alma Guerra", mediaKind: .video, storagePath: sampleVideo, durationSeconds: 540, imageUrl: "retreat-kyoto", blurb: "An energizing kundalini practice to wake the body."),
+        .init(id: 4, category: .breathwork, title: "Box Breathing Basics", lead: "Rodrigo Peán", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-bali", blurb: "Four-count breathing to steady a racing mind."),
+        .init(id: 5, category: .breathwork, title: "Coherent Breathing", lead: "Valentina Velasco", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-mallorca", blurb: "Five breaths a minute to balance the autonomic system."),
+        .init(id: 6, category: .breathwork, title: "Breath of Fire", lead: "Alma Guerra", mediaKind: .video, storagePath: "", durationSeconds: 540, imageUrl: "retreat-kyoto", blurb: "An energizing kundalini practice to wake the body."),
 
         // Meditation
-        .init(id: 7, category: .meditation, title: "Morning Stillness", lead: "Michelle Campos", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Begin the day with ten minutes of open awareness."),
-        .init(id: 8, category: .meditation, title: "Sleep Descent", lead: "Analu Chavez", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 1200, imageUrl: "retreat-dolomites", blurb: "A long, drifting body relaxation for falling asleep."),
-        .init(id: 9, category: .meditation, title: "Loving-Kindness", lead: "Mara Solé", mediaKind: .audio, storagePath: sampleAudio, durationSeconds: 840, imageUrl: "retreat-sedona", blurb: "Cultivate warmth toward yourself and others."),
+        .init(id: 7, category: .meditation, title: "Morning Stillness", lead: "Michelle Campos", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Begin the day with ten minutes of open awareness."),
+        .init(id: 8, category: .meditation, title: "Sleep Descent", lead: "Analu Chavez", mediaKind: .audio, storagePath: "", durationSeconds: 1200, imageUrl: "retreat-dolomites", blurb: "A long, drifting body relaxation for falling asleep."),
+        .init(id: 9, category: .meditation, title: "Loving-Kindness", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 840, imageUrl: "retreat-sedona", blurb: "Cultivate warmth toward yourself and others."),
     ]
 
     static func mock(for category: PracticeCategory) -> [PracticeSession] {
@@ -790,9 +798,13 @@ struct Massage: Identifiable, Hashable {
         return minutes == 0 ? "\(durationSeconds) sec" : "\(minutes) min"
     }
 
-    var media: MediaItem {
-        MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
-                  mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds)
+    /// The playable guide, or `nil` when no media has been uploaded for this
+    /// technique yet. The written `steps` stand on their own, so the detail
+    /// screen simply omits the player rather than offering a dead button.
+    var media: MediaItem? {
+        guard !storagePath.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        return MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
+                         mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds)
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -801,9 +813,9 @@ struct Massage: Identifiable, Hashable {
 
 extension Massage {
     static let all: [Massage] = [
-        .init(id: 1, title: "Neck & Shoulder Release", lead: "Lena Brooks", mediaKind: .video, storagePath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Melt the tension that gathers between the shoulder blades and the base of the skull.", steps: ["Warm the area with flat palms for 30 seconds.", "Knead the upper traps with thumb and fingers.", "Make small circles at the base of the skull.", "Finish with long downward strokes along the neck."]),
-        .init(id: 2, title: "Foot Reflexology Basics", lead: "Theo Park", mediaKind: .video, storagePath: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", durationSeconds: 480, imageUrl: "retreat-bali", blurb: "Ground the whole nervous system through the soles of the feet.", steps: ["Press and roll the arch with both thumbs.", "Walk the thumbs across the ball of the foot.", "Rotate each toe gently.", "Sweep firmly from heel to toe to close."]),
-        .init(id: 3, title: "Jaw & Face Unwind", lead: "Mara Solé", mediaKind: .audio, storagePath: "https://download.samplelib.com/mp3/sample-15s.mp3", durationSeconds: 360, imageUrl: "retreat-sedona", blurb: "Release the clench we hold without noticing.", steps: ["Place fingertips on the jaw hinge.", "Make slow circles as the mouth softens open.", "Sweep along the cheekbones to the temples.", "Rest palms over the eyes and breathe."]),
+        .init(id: 1, title: "Neck & Shoulder Release", lead: "Lena Brooks", mediaKind: .video, storagePath: "", durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Melt the tension that gathers between the shoulder blades and the base of the skull.", steps: ["Warm the area with flat palms for 30 seconds.", "Knead the upper traps with thumb and fingers.", "Make small circles at the base of the skull.", "Finish with long downward strokes along the neck."]),
+        .init(id: 2, title: "Foot Reflexology Basics", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 480, imageUrl: "retreat-bali", blurb: "Ground the whole nervous system through the soles of the feet.", steps: ["Press and roll the arch with both thumbs.", "Walk the thumbs across the ball of the foot.", "Rotate each toe gently.", "Sweep firmly from heel to toe to close."]),
+        .init(id: 3, title: "Jaw & Face Unwind", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-sedona", blurb: "Release the clench we hold without noticing.", steps: ["Place fingertips on the jaw hinge.", "Make slow circles as the mouth softens open.", "Sweep along the cheekbones to the temples.", "Rest palms over the eyes and breathe."]),
     ]
 }
 
@@ -880,21 +892,53 @@ extension FrequencyOption {
 struct MoodChip: Identifiable, Hashable {
     let id: String
     let label: String
+    /// Where this feeling points in the library. Selecting a chip rewrites
+    /// Home's ritual card and sends "Begin now" here — the chips used to set
+    /// state nothing read, which made the first interactive control on the
+    /// main screen a no-op.
+    let suggests: PracticeMenuItem
+    /// Ritual-card headline for this mood.
+    let ritual: String
+    /// One line under the headline.
+    let ritualLead: String
 }
 
 extension MoodChip {
+    /// Shown when no mood is selected.
+    static let defaultRitual = (
+        title: "Begin where you are",
+        lead: "A short practice for whatever today is",
+        destination: PracticeMenuItem.journal
+    )
+
+    // Every mood points at a section that actually has content in v1
+    // (journal / exercises / recipes / massages). The three media tracks are
+    // deliberately absent — they read "Coming soon" until `practice_sessions`
+    // is seeded, and a suggestion that lands on a locked card is a dead end.
     static let all: [MoodChip] = [
-        .init(id: "anxious",   label: "Anxious"),
-        .init(id: "grateful",  label: "Grateful"),
-        .init(id: "tired",     label: "Tired"),
-        .init(id: "joyful",    label: "Joyful"),
-        .init(id: "tender",    label: "Tender"),
-        .init(id: "calm",      label: "Calm"),
-        .init(id: "lost",      label: "Lost"),
-        .init(id: "hopeful",   label: "Hopeful"),
-        .init(id: "sad",       label: "Sad"),
-        .init(id: "peaceful",  label: "Peaceful"),
-        .init(id: "angry",     label: "Angry"),
-        .init(id: "inspired",  label: "Inspired"),
+        .init(id: "anxious",  label: "Anxious",  suggests: .massages,
+              ritual: "Unwind the jaw",        ritualLead: "Release the clench we hold without noticing"),
+        .init(id: "grateful", label: "Grateful", suggests: .journal,
+              ritual: "Name it while it's here", ritualLead: "A prompt for what's already good"),
+        .init(id: "tired",    label: "Tired",    suggests: .recipes,
+              ritual: "Eat something warm",    ritualLead: "Nourishment that asks nothing of you"),
+        .init(id: "joyful",   label: "Joyful",   suggests: .exercises,
+              ritual: "Move with it",          ritualLead: "Let the body spend some of that"),
+        .init(id: "tender",   label: "Tender",   suggests: .massages,
+              ritual: "A gentler touch",       ritualLead: "Self-massage for a soft day"),
+        .init(id: "calm",     label: "Calm",     suggests: .journal,
+              ritual: "Stay a while",          ritualLead: "A prompt to sit with the quiet"),
+        .init(id: "lost",     label: "Lost",     suggests: .journal,
+              ritual: "Find one true thing",   ritualLead: "Short questions for when the map is gone"),
+        .init(id: "hopeful",  label: "Hopeful",  suggests: .exercises,
+              ritual: "Build on it",           ritualLead: "A sequence for strength and momentum"),
+        .init(id: "sad",      label: "Sad",      suggests: .journal,
+              ritual: "Let it have room",      ritualLead: "A prompt that doesn't rush you"),
+        .init(id: "peaceful", label: "Peaceful", suggests: .recipes,
+              ritual: "Make something slow",   ritualLead: "Cooking as the practice"),
+        .init(id: "angry",    label: "Angry",    suggests: .exercises,
+              ritual: "Put it somewhere",      ritualLead: "Move the heat out through the body"),
+        .init(id: "inspired", label: "Inspired", suggests: .journal,
+              ritual: "Catch it in writing",   ritualLead: "Before the thought moves on"),
     ]
 }

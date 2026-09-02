@@ -47,6 +47,27 @@ final class AuthManager {
         supabase = SupabaseService.shared.client
     }
 
+    /// True when launch-time auth failed and nothing has recovered it. The UI
+    /// surfaces this as a retry banner — before, a failed anonymous sign-in was
+    /// completely silent and the user only discovered it when an action that
+    /// needed a session threw a raw error at them.
+    var needsRetry: Bool {
+        if case .failed = state { return true }
+        return false
+    }
+
+    /// User-facing reason for the current failure, if any.
+    var failureMessage: String? {
+        if case .failed(let message) = state { return message }
+        return nil
+    }
+
+    /// Re-attempt a session after a failed launch. Safe to call repeatedly.
+    func retry() async {
+        state = .initializing
+        await initialize()
+    }
+
     /// Restores an existing session or creates an anonymous one.
     /// Called once from `AppState.initializeAuth()` at launch.
     func initialize() async {
@@ -104,7 +125,7 @@ final class AuthManager {
             apply(session.user)
             return true
         } catch {
-            print("[AuthManager] Auth deep link failed: \(error)")
+            Log.auth.error("Auth deep link failed: \(error.localizedDescription)")
             state = .failed(AppError.authFailure(error).localizedDescription)
             return false
         }
@@ -116,7 +137,7 @@ final class AuthManager {
         do {
             try await supabase.auth.signOut()
         } catch {
-            print("[AuthManager] Sign-out failed: \(error)")
+            Log.auth.error("Sign-out failed: \(error.localizedDescription)")
         }
         await SupabaseService.shared.invalidateCache()
         await signInAnonymously()
@@ -146,7 +167,7 @@ final class AuthManager {
         } catch {
             let msg = AppError.authFailure(error).localizedDescription
             state = .failed(msg)
-            print("[AuthManager] Anonymous sign-in failed: \(error)")
+            Log.auth.error("Anonymous sign-in failed: \(error.localizedDescription)")
         }
     }
 

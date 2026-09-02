@@ -65,11 +65,24 @@ constant in `Theme.swift`:
   `Resources/Fonts/`.
 - **Images:** downscaled copies of the real asset-catalog photos live in `assets/`.
 
+## v1 App Store scope (affects several cards)
+
+The 1.0 submission ships a narrower app than this mirror once showed. Keep the
+mirror matching the **shipping** app; parked work stays under
+`Screens · Parked (post-v1)`.
+
+| Change | Mirror effect |
+|---|---|
+| **Circle tab cut** (Guideline 4.2 — a primary tab advertising unbuilt features) | `bottom-nav` is **three** items everywhere: Home · Practice · You. `community.html` moved to `Screens · Parked (post-v1)`. |
+| **Reservations off** (`AppFeatures.paymentsEnabled = false`) | `retreat-detail` CTA reads **"Request a place"** (opens a support email), not "Reserve". The checkout and Mallorca post-purchase cards are unreachable in v1 but stay accurate for 1.1. |
+| **Practice media tracks gated** | Somatic / Breathwork / Meditation carry a `SOON` badge, read "Coming soon", and are dimmed (`.pcard--soon`) until the `practice_sessions` table is seeded. |
+| **Legal links added** | `profile` gains a Privacy · Terms · Support row; `retreat-checkout` fineprint now links the terms it names. |
+
 ## Card groups in Claude Design
 
 `Overview` · `Foundations` · `Components` · `Screens · Welcome` ·
 `Screens · Onboarding` · `Screens · Home` · `Screens · Retreats` ·
-`Screens · Practice` · `Screens · Tabs`
+`Screens · Practice` · `Screens · Tabs` · `Screens · Parked (post-v1)`
 
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.

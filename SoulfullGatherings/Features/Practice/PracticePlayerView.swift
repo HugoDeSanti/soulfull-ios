@@ -241,7 +241,7 @@ struct PracticePlayerView: View {
             player = avPlayer
             avPlayer.play()
         } catch {
-            print("[PracticePlayerView] couldn't resolve media: \(error)")
+            Log.media.error("Couldn't resolve media: \(error.localizedDescription)")
             loadError = "Couldn't load this session. Please try again."
         }
     }
@@ -394,5 +394,11 @@ final class AudioTransport {
 }
 
 #Preview {
-    PracticePlayerView(media: PracticeSession.mock(for: .somatic).first!.media)
+    // Shape-only: `storagePath` is empty, so the player renders its load-error
+    // state. Point this at a real Storage path to preview playback.
+    PracticePlayerView(media: MediaItem(
+        id: 1, title: "Grounding Body Scan", lead: "Dr. Anya Iyer",
+        imageUrl: "retreat-sedona", mediaKind: .audio,
+        storagePath: "", durationSeconds: 720
+    ))
 }

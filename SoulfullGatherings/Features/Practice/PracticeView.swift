@@ -19,6 +19,19 @@ struct PracticeView: View {
     /// True = contact sheet (2-up covers), false = feature spread.
     @State private var sheet = false
 
+    /// Media tracks that actually have sessions behind them. Empty until the
+    /// check completes, and empty forever while `practice_sessions` is unseeded
+    /// — the three audio/video cards then render as "Coming soon" instead of
+    /// opening an empty list. Seeding the table lights them up with no release.
+    @State private var availableCategories: Set<PracticeCategory> = []
+
+    /// A media card is live only once its category is known to have sessions.
+    /// Bespoke sections (journal, exercises, recipes, massages) are always live.
+    private func isAvailable(_ item: PracticeMenuItem) -> Bool {
+        guard let category = item.mediaCategory else { return true }
+        return availableCategories.contains(category)
+    }
+
     private var columns: [GridItem] {
         sheet
         ? [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -44,6 +57,9 @@ struct PracticeView: View {
         .background {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.76)
         }
+        .task {
+            availableCategories = await SupabaseService.shared.availablePracticeCategories()
+        }
     }
 
     // MARK: - Header
@@ -59,9 +75,14 @@ struct PracticeView: View {
                     .font(Theme.headline(38))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
+                // Don't promise audio and video while the media tracks are
+                // still "Coming soon"; the line corrects itself once
+                // `practice_sessions` is seeded.
                 Text(sheet
                      ? "The whole library, side by side."
-                     : "Choose a way in. Sessions for every state — listen or watch, anytime.")
+                     : availableCategories.isEmpty
+                       ? "Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way."
+                       : "Choose a way in. Sessions for every state — listen or watch, anytime.")
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(3)
@@ -81,7 +102,8 @@ struct PracticeView: View {
 
     private func card(_ item: PracticeMenuItem, folio: Int) -> some View {
         let height: CGFloat = sheet ? 168 : 210
-        return PressableCard(action: { onSelect(item) }) {
+        let live = isAvailable(item)
+        return PressableCard(action: { if live { onSelect(item) } }) {
             ZStack(alignment: .bottomLeading) {
                 // No image parallax here: visualEffect offsets escape
                 // ancestor clips, so clipped cards must keep imagery static.
@@ -99,16 +121,27 @@ struct PracticeView: View {
                     startPoint: .top, endPoint: .bottom
                 )
 
-                // Folio number
+                // Folio number, and — in both layouts, since the contact sheet
+                // hides the blurb — a badge when the track has no content yet.
                 VStack {
-                    HStack {
+                    HStack(spacing: 8) {
+                        if !live {
+                            Text("SOON")
+                                .font(Theme.eyebrow(9))
+                                .tracking(1.4)
+                                .foregroundStyle(Color.white.opacity(0.9))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(.black.opacity(0.45)))
+                                .overlay(Capsule().strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+                        }
                         Spacer()
                         Text(String(format: "%02d", folio))
                             .font(Theme.body(11, weight: .medium))
                             .tracking(1.5)
                             .foregroundStyle(Color.white.opacity(0.8))
-                            .padding(12)
                     }
+                    .padding(12)
                     Spacer()
                 }
 
@@ -133,13 +166,19 @@ struct PracticeView: View {
                             .transition(.opacity)
 
                         HStack(spacing: 6) {
-                            Text("Explore")
-                                .font(Theme.body(12, weight: .semibold))
-                                .tracking(0.4)
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 11, weight: .semibold))
+                            if live {
+                                Text("Explore")
+                                    .font(Theme.body(12, weight: .semibold))
+                                    .tracking(0.4)
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 11, weight: .semibold))
+                            } else {
+                                Text("Coming soon")
+                                    .font(Theme.body(12, weight: .semibold))
+                                    .tracking(0.4)
+                            }
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(live ? .white : Color.white.opacity(0.6))
                         .padding(.top, 2)
                         .transition(.opacity)
                     }
@@ -153,8 +192,15 @@ struct PracticeView: View {
             // Clip the hit-test region to the card bounds — `scaledToFill`
             // overflow would otherwise steal taps from neighbors.
             .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            // Quietly recede rather than grey out — the card is still a
+            // legible piece of the library, just not open yet.
+            .opacity(live ? 1 : 0.62)
         }
-        .modifier(PracticeZoomSource(id: item.rawValue, namespace: zoomNamespace))
+        .disabled(!live)
+        .accessibilityLabel(live ? item.title : "\(item.title), coming soon")
+        .accessibilityHint(live ? "Opens \(item.title)" : "This track has no sessions yet")
+        // Only a card that can actually push registers a zoom-hero source.
+        .modifier(PracticeZoomSource(id: item.rawValue, namespace: live ? zoomNamespace : nil))
         .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
             let entering = max(phase.value, 0)
             return view

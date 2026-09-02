@@ -26,6 +26,8 @@ struct PracticeListView: View {
                     .tint(Theme.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
+            } else if let error = vm.loadError {
+                errorState(error)
             } else if vm.sessions.isEmpty {
                 emptyState
             } else {
@@ -116,6 +118,38 @@ struct PracticeListView: View {
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+    }
+
+    /// The fetch itself failed — say so and offer a way back, rather than
+    /// implying the library is empty.
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 30, weight: .light))
+                .foregroundStyle(Theme.muted)
+            Text("Couldn't load")
+                .font(Theme.headline(20))
+                .foregroundStyle(Theme.ink)
+            Text(message)
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+            Button {
+                Haptics.tap()
+                Task { await vm.load(category: category) }
+            } label: {
+                Text("Try again")
+                    .font(Theme.body(13, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .soulGlassCapsule()
+            }
+            .buttonStyle(.soulPressableQuiet)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)

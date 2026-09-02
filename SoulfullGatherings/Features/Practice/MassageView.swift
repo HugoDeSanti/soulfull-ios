@@ -116,22 +116,26 @@ struct MassageDetailView: View {
                         .padding(.top, 4)
                 }
 
-                Button {
-                    Haptics.bump()
-                    isPlaying = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill").font(.system(size: 14, weight: .semibold))
-                        Text("Play guided session")
-                            .font(Theme.body(15, weight: .medium))
-                            .tracking(0.4)
+                // Only offered when real media exists for this technique. The
+                // written steps below are the substance either way.
+                if massage.media != nil {
+                    Button {
+                        Haptics.bump()
+                        isPlaying = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "play.fill").font(.system(size: 14, weight: .semibold))
+                            Text("Play guided session")
+                                .font(Theme.body(15, weight: .medium))
+                                .tracking(0.4)
+                        }
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Capsule().fill(.white))
                     }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Capsule().fill(.white))
+                    .buttonStyle(SoulPressableStyle(scale: 0.97, hapticOnPress: false, dim: false))
                 }
-                .buttonStyle(SoulPressableStyle(scale: 0.97, hapticOnPress: false, dim: false))
 
                 Text("THE TECHNIQUE")
                     .font(Theme.eyebrow(11))
@@ -158,7 +162,9 @@ struct MassageDetailView: View {
             PhotoBackdrop(imageName: massage.imageUrl, blur: 24, darken: 0.8)
         }
         .sheet(isPresented: $isPlaying) {
-            PracticePlayerView(media: massage.media)
+            if let media = massage.media {
+                PracticePlayerView(media: media)
+            }
         }
     }
 }

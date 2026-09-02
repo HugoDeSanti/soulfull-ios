@@ -129,7 +129,7 @@ final class AccountViewModel {
             if !profile.frequency.isEmpty { settings.frequency = profile.frequency }
             if !profile.intentions.isEmpty { settings.intentions = Set(profile.intentions) }
         } catch {
-            print("[AccountViewModel] Profile hydrate failed: \(error)")
+            Log.auth.error("Profile hydrate failed: \(error.localizedDescription)")
         }
     }
 }

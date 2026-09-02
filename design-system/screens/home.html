@@ -45,6 +45,8 @@
   .circle-row { margin: 0 20px 10px; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border); }
   .circle-row .av { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-size: 18px; color: var(--ink); flex: none; }
   .circle-row .live { display: flex; align-items: center; gap: 6px; }
+  /* Static live dot — Home's dots don't animate (matches HomeView). */
+  .circle-row .live .dot { width: 6px; height: 6px; border-radius: 999px; background: #fff; display: inline-block; }
   .circle-row .live .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
   .circle-row h5 { font-size: 17px; letter-spacing: -0.3px; color: var(--ink); margin: 3px 0 0; }
   .circle-row .sub { font-size: 11px; color: var(--muted); margin: 2px 0 0; }
@@ -57,7 +59,7 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="hdr"><img class="breathing" src="../assets/logo.png" alt=""></div>
+    <div class="hdr"><img src="../assets/logo.png" alt=""></div>
     <div class="greet">
       <p class="eb">Good morning</p>
       <h1>Hugo.</h1>
@@ -78,57 +80,38 @@
     <div class="sec ritual glass">
       <div class="aurora"></div>
       <div class="body">
-        <p class="eb">Today's Ritual</p>
-        <h3>Nervous System Reset</h3>
-        <p class="meta">4 minutes · guided breath</p>
+        <!-- Eyebrow, headline and lead all follow the selected mood chip
+             (MoodChip.ritual / .ritualLead / .suggests). With no chip selected
+             this reads "Today's Ritual" / "Begin where you are". "Begin now"
+             switches to the Practice tab and opens the suggested section. -->
+        <p class="eb">Because you feel anxious</p>
+        <h3>Unwind the jaw</h3>
+        <p class="meta">Release the clench we hold without noticing</p>
         <span class="begin">Begin now</span>
       </div>
     </div>
 
-    <div class="sec">
-      <div class="section-label"><span class="title">Continue your journey</span><span class="action">View</span></div>
-      <div class="glass-card journey">
-        <div class="num glass">3</div>
-        <div style="flex:1">
-          <p class="eb">Day 3 of 7</p>
-          <h4>Nervous System Healing</h4>
-          <p class="with">with Dr. Anya Iyer</p>
-          <div class="bar"><i></i></div>
-        </div>
-      </div>
-    </div>
 
     <div class="sec">
       <div class="section-label"><span class="title">Upcoming gatherings</span><span class="action">All</span></div>
       <div class="hscroll">
+        <!-- Only upcoming retreats: fetchRetreats() filters end_date >= today. -->
         <div class="rcard">
-          <div class="hero" style="background-image:url('../assets/retreat-mallorca.jpg')"><div class="ov"></div><div class="m">Spain · Sep 2026</div></div>
-          <div class="t"><div class="name">Mallorca</div><div class="sub">7 days · 12 guests</div></div>
+          <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><div class="m">Italy · Sep 2026</div></div>
+          <div class="t"><div class="name">Dolomites</div><div class="sub">5 days · 12 guests</div></div>
         </div>
         <div class="rcard">
-          <div class="hero" style="background-image:url('../assets/retreat-kyoto.jpg')"><div class="ov"></div><div class="m">Japan · Nov 2026</div></div>
-          <div class="t"><div class="name">Kyoto</div><div class="sub">6 days · 10 guests</div></div>
+          <div class="hero" style="background-image:url('../assets/retreat-lapland.jpg')"><div class="ov"></div><div class="m">Finland · Jan 2027</div></div>
+          <div class="t"><div class="name">Lapland</div><div class="sub">5 days · 10 guests</div></div>
         </div>
       </div>
     </div>
 
-    <div class="sec">
-      <div class="section-label"><span class="title">Circles meeting now</span><span class="action">All</span></div>
-      <div class="circle-row glass">
-        <div class="av glass">G</div>
-        <div style="flex:1">
-          <div class="live"><span class="pulse-dot"></span><span class="eb">Now</span></div>
-          <h5>Grief &amp; Grace</h5>
-          <p class="sub">Maya Okonkwo · 8 attending</p>
-        </div>
-      </div>
-    </div>
   </div>
 
   <nav class="bottom-nav">
     <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
-    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14c2.6 0 4.5 1.8 4.5 4.5"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
   </nav>
   <div class="home-indicator"></div>

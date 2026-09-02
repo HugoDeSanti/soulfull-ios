@@ -79,6 +79,45 @@ Deno.serve(async (req) => {
       return json({ error: "Retreat has no valid price" }, 422);
     }
 
+    // ---- Guards. Both MUST live here, not in the app: the client can't be
+    // trusted with entitlement decisions, and both failure modes cost real
+    // money (a second charge to the same person, or a sold-out retreat).
+
+    // 1. Already paid? Don't let the same person buy the same retreat twice.
+    //    `bookings` has no unique constraint on (user_id, retreat_id) because
+    //    a failed attempt legitimately produces another row.
+    const { data: existing } = await admin
+      .from("bookings")
+      .select("id, status")
+      .eq("user_id", user.id)
+      .eq("retreat_id", retreat.id)
+      .eq("status", "paid")
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return json({ error: "You already have a place on this retreat.", code: "already_booked" }, 409);
+    }
+
+    // 2. Sold out? Count paid bookings against the retreat's capacity.
+    //    Not airtight against two simultaneous checkouts for the final place —
+    //    closing that needs a transactional hold. It does stop the ordinary
+    //    case of overselling a retreat that filled up earlier.
+    const { data: capacityRow } = await admin
+      .from("retreats")
+      .select("max_guests")
+      .eq("id", retreat.id)
+      .single();
+    const maxGuests = Number(capacityRow?.max_guests ?? 0);
+    if (maxGuests > 0) {
+      const { count } = await admin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("retreat_id", retreat.id)
+        .eq("status", "paid");
+      if ((count ?? 0) >= maxGuests) {
+        return json({ error: "This retreat is fully booked.", code: "sold_out" }, 409);
+      }
+    }
+
     // Reuse or create the Stripe customer, stored on the profile.
     const { data: profile } = await admin
       .from("profiles")

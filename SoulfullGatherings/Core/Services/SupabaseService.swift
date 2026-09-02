@@ -26,6 +26,8 @@ actor SupabaseService {
     private var programsCacheDate: Date?
     private var practiceCache: [PracticeCategory: [PracticeSession]] = [:]
     private var practiceCacheDate: [PracticeCategory: Date] = [:]
+    private var availableCategoriesCache: Set<PracticeCategory>?
+    private var availableCategoriesCacheDate: Date?
     private let cacheTTL: TimeInterval = 300
 
     /// Deep-link the app handles for auth email confirmations / magic links.
@@ -46,15 +48,27 @@ actor SupabaseService {
 
     // MARK: - Fetches
 
+    /// Upcoming retreats only.
+    ///
+    /// The catalog is filtered server-side on `end_date >= today`: without it
+    /// the app advertises retreats that have already finished (four of the
+    /// seven seeded rows were in the past as of 2026-08-31). A retreat is "upcoming"
+    /// until the day it ends, so one running right now still shows.
     func fetchRetreats() async throws -> [Retreat] {
         if let cache = retreatsCache,
            let date = retreatsCacheDate,
            Date().timeIntervalSince(date) < cacheTTL {
             return cache
         }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        let today = fmt.string(from: Date())
+
         let rows: [RetreatRow] = try await client
             .from("retreats")
             .select()
+            .gte("end_date", value: today)
             .order("start_date", ascending: true)
             .limit(50)
             .execute()
@@ -82,6 +96,38 @@ actor SupabaseService {
         programsCache = programs
         programsCacheDate = Date()
         return programs
+    }
+
+    /// Which media tracks actually have sessions behind them.
+    ///
+    /// The Practice landing uses this to decide whether a track opens or shows
+    /// "Coming soon", so the tracks light up on their own the moment rows are
+    /// seeded — no client release needed. A missing `practice_sessions` table
+    /// (or any failure) is reported as "nothing available" rather than throwing,
+    /// because the caller's only question is what to enable.
+    func availablePracticeCategories() async -> Set<PracticeCategory> {
+        if let cached = availableCategoriesCache,
+           let date = availableCategoriesCacheDate,
+           Date().timeIntervalSince(date) < cacheTTL {
+            return cached
+        }
+        struct CategoryRow: Decodable { let category: String }
+        do {
+            let rows: [CategoryRow] = try await client
+                .from("practice_sessions")
+                .select("category")
+                .limit(500)
+                .execute()
+                .value
+            let set = Set(rows.compactMap { PracticeCategory(rawValue: $0.category) })
+            availableCategoriesCache = set
+            availableCategoriesCacheDate = Date()
+            return set
+        } catch {
+            // Table absent, offline, or RLS blocking — all mean "show nothing
+            // as available". Not cached, so it re-checks on the next visit.
+            return []
+        }
     }
 
     /// Sessions for one practice track, newest-friendly ordering by title.
@@ -174,6 +220,8 @@ actor SupabaseService {
         programsCacheDate = nil
         practiceCache.removeAll()
         practiceCacheDate.removeAll()
+        availableCategoriesCache = nil
+        availableCategoriesCacheDate = nil
     }
 }
 

@@ -20,6 +20,16 @@
   .pcard .ti { display: flex; align-items: center; gap: 8px; }
   .pcard .ti .eb { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
   .pcard .bl { font-size: 13px; line-height: 1.4; color: rgba(255,255,255,0.85); margin: 8px 0 0; }
+  /* Media track with no sessions seeded yet — see AppFeatures /
+     PracticeView.isAvailable. Auto-clears once practice_sessions has rows. */
+  .pcard--soon { opacity: .62; }
+  .pcard .soon-badge {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    font-size: 9px; font-weight: 600; letter-spacing: 1.4px; color: rgba(255,255,255,.9);
+    padding: 4px 8px; border-radius: 999px;
+    background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25);
+  }
+  .pcard .ex--soon { color: rgba(255,255,255,.6); }
   .pcard .ex { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #fff; margin-top: 10px; }
 </style>
 </head><body>
@@ -34,34 +44,34 @@
       <div>
         <p class="eb">Wellness Library</p>
         <h1>Practices</h1>
-        <p>Choose a way in. Sessions for every state of your nervous system.</p>
+        <p>Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way.</p>
       </div>
       <span class="circle-btn" style="position:relative;z-index:3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
     </div>
 
     <div class="cards">
-      <div class="pcard" style="background-image:url('../assets/practice-somatic.jpg')">
-        <div class="ov"></div><span class="folio">01</span>
+      <div class="pcard pcard--soon" style="background-image:url('../assets/practice-somatic.jpg')">
+        <div class="ov"></div><span class="soon-badge">SOON</span><span class="folio">01</span>
         <div class="body">
           <div class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2v20M5 8c2 2 5 2 7 0s5-2 7 0M5 16c2-2 5-2 7 0s5 2 7 0"/></svg><span class="eb">Somatic</span></div>
           <p class="bl">Gentle movement to discharge held stress and return to the body.</p>
-          <span class="ex">Explore <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <span class="ex ex--soon">Coming soon</span>
         </div>
       </div>
-      <div class="pcard" style="background-image:url('../assets/practice-breathwork.jpg')">
-        <div class="ov"></div><span class="folio">02</span>
+      <div class="pcard pcard--soon" style="background-image:url('../assets/practice-breathwork.jpg')">
+        <div class="ov"></div><span class="soon-badge">SOON</span><span class="folio">02</span>
         <div class="body">
           <div class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 12h4l2-5 3 10 2-5h4"/></svg><span class="eb">Breathwork</span></div>
           <p class="bl">Patterned breath to settle, energize, or open — guided end to end.</p>
-          <span class="ex">Explore <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <span class="ex ex--soon">Coming soon</span>
         </div>
       </div>
-      <div class="pcard" style="background-image:url('../assets/practice-meditation.jpg')">
-        <div class="ov"></div><span class="folio">03</span>
+      <div class="pcard pcard--soon" style="background-image:url('../assets/practice-meditation.jpg')">
+        <div class="ov"></div><span class="soon-badge">SOON</span><span class="folio">03</span>
         <div class="body">
           <div class="ti"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="7" r="3"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg><span class="eb">Meditation</span></div>
           <p class="bl">Stillness practices — from two-minute resets to long, quiet sits.</p>
-          <span class="ex">Explore <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <span class="ex ex--soon">Coming soon</span>
         </div>
       </div>
     </div>
@@ -70,7 +80,6 @@
   <nav class="bottom-nav">
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V10z"/></svg></button>
     <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5L19 9l-5.2 2L12 16l-1.8-5L5 9l5.2-2z"/></svg><span class="nav-label">Practice</span></button>
-    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14c2.6 0 4.5 1.8 4.5 4.5"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
   </nav>
   <div class="home-indicator"></div>

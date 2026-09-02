@@ -83,6 +83,8 @@
     box-shadow:0 12px 30px -12px rgba(196,124,76,0.7); transition:transform .18s cubic-bezier(.2,.7,.3,1); text-decoration:none; }
   .pay-btn:active { transform:scale(.985); }
   .pay-btn .amt { font-size:13px; font-weight:400; opacity:0.75; }
+  .paybar .fine-link { display:inline-block; margin-top:5px; font-size:10px; font-weight:500;
+    color:var(--mb-terracotta,#c47c4c); text-decoration:underline; }
   .paybar .fine { text-align:center; font-size:10px; color:var(--muted); margin:10px 0 0; line-height:1.5; }
 </style>
 </head><body>
@@ -136,7 +138,7 @@
 
   <div class="paybar">
     <a class="pay-btn" href="mallorca-welcome.html">Reserve my place <span class="amt">· Pay €800 deposit</span></a>
-    <p class="fine">By reserving you agree to the enrollment terms and cancellation policy.</p>
+    <p class="fine">By reserving you agree to the enrollment terms and cancellation policy.<br><a class="fine-link" href="#">Read the terms &amp; cancellation policy</a></p>
   </div>
 
   <div class="home-indicator"></div>

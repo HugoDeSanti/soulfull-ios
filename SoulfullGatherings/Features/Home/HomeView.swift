@@ -17,6 +17,8 @@ struct HomeView: View {
 
     let onOpenRetreats: () -> Void
     let onOpenRetreat: (Retreat) -> Void
+    /// Jump to a section of the Practice library (from the ritual card).
+    var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
     /// Zoom-hero namespace owned by HomeRoot; retreat cards register as sources.
     var zoomNamespace: Namespace.ID? = nil
 
@@ -26,10 +28,11 @@ struct HomeView: View {
                 header
                 section { moodRow }
                 section { todaysRitual }
-                section { continueJourney }
                 section { upcomingGatherings }
-                section { digitalRetreats }
-                section { circlesList }
+                // Hidden until the `programs` table is seeded — see HomeViewModel.
+                if !vm.programs.isEmpty {
+                    section { digitalRetreats }
+                }
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 24)
@@ -61,7 +64,6 @@ struct HomeView: View {
             Image("soulfull-logo-white")
                 .resizable().scaledToFit()
                 .frame(width: 88, height: 88)
-                .breathing(scale: 0.985...1.015, opacity: 0.88...0.96, period: 6)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(vm.greeting.uppercased())
@@ -121,35 +123,42 @@ struct HomeView: View {
                 .animation(.spring(response: 0.38, dampingFraction: 0.6), value: selected)
         }
         .buttonStyle(SoulPressableStyle(scale: 0.9, hapticOnPress: false, dim: false))
+        .accessibilityLabel(m.label)
+        .accessibilityHint("Suggests a practice for feeling \(m.label.lowercased())")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var todaysRitual: some View {
-        PressableCard(action: {}) {
+        PressableCard(action: { onOpenPractice(vm.ritualDestination) }) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("TODAY'S RITUAL")
+                Text(vm.mood == nil ? "TODAY'S RITUAL" : "BECAUSE YOU FEEL \(vm.mood!.label.uppercased())")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
                     .foregroundStyle(.white)
                     .padding(.bottom, 4)
-                Text("Nervous System Reset")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(vm.ritualTitle)
                     .font(Theme.headline(22))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.2)
-                Text("4 minutes · guided breath")
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(vm.ritualLead)
                     .font(Theme.body(11.5, weight: .medium))
                     .foregroundStyle(.white)
                     .padding(.top, 2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
                     Circle()
                         .fill(Color.white)
                         .frame(width: 6, height: 6)
-                        .pulse()
                     Text("Begin now")
                         .font(Theme.body(11.5, weight: .semibold))
                         .tracking(0.4)
                         .foregroundStyle(.white)
                 }
+                .animation(.easeInOut(duration: 0.25), value: vm.selectedMood)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .overlay(
@@ -172,57 +181,10 @@ struct HomeView: View {
             )
         }
         .padding(.horizontal, 20)
-    }
-
-    private var continueJourney: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Continue your journey", action: "VIEW") { }
-
-            PressableCard(action: {}) {
-                GlassCard(radius: 22, padding: 16) {
-                    HStack(spacing: 16) {
-                        Text("3")
-                            .font(Theme.body(38, weight: .ultraLight))
-                            .foregroundStyle(Theme.ink)
-                            .frame(width: 84, height: 84)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
-                            )
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("DAY 3 OF 7")
-                                .font(Theme.eyebrow(10))
-                                .tracking(2)
-                                .foregroundStyle(.white)
-                            Text("Nervous System Healing")
-                                .font(Theme.headline(20))
-                                .foregroundStyle(Theme.ink)
-                                .kerning(-0.2)
-                            Text("with Dr. Anya Iyer")
-                                .font(Theme.body(12))
-                                .foregroundStyle(Theme.muted)
-
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    Capsule().fill(Theme.line)
-                                    Capsule()
-                                        .fill(
-                                            LinearGradient(colors: [Theme.honey.opacity(0.8), Theme.ink],
-                                                           startPoint: .leading, endPoint: .trailing)
-                                        )
-                                        .frame(width: geo.size.width * 0.43)
-                                }
-                            }
-                            .frame(height: 3)
-                            .padding(.top, 8)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(vm.ritualTitle). \(vm.ritualLead)")
+        .accessibilityHint("Opens \(vm.ritualDestination.title)")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var upcomingGatherings: some View {
@@ -283,11 +245,17 @@ struct HomeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .modifier(ZoomSourceIfAvailable(id: "home-retreat-\(r.id)", namespace: zoomNamespace))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(r.name), \(r.country). \(r.when). \(r.durationDays) days, \(r.maxGuests) guests")
+        .accessibilityHint("Opens retreat details")
     }
 
     private var digitalRetreats: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Digital Retreats", action: "ALL") { }
+            // Informational shelf: there is no program detail screen yet, so
+            // it deliberately offers no "ALL" action and the cards don't press.
+            // Give both back when program detail exists.
+            SectionLabel(title: "Digital Retreats")
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
@@ -303,99 +271,51 @@ struct HomeView: View {
     }
 
     private func programCard(_ p: Program) -> some View {
-        PressableCard(action: {}) {
-            VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .bottomLeading) {
-                    Image(p.imageUrl)
-                        .resizable().scaledToFill()
-                        .frame(width: 260, height: 200)
-                        .clipped()
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .bottomLeading) {
+                Image(p.imageUrl)
+                    .resizable().scaledToFill()
+                    .frame(width: 260, height: 200)
+                    .clipped()
 
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.62)],
-                        startPoint: .top, endPoint: .bottom
-                    )
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.62)],
+                    startPoint: .top, endPoint: .bottom
+                )
 
-                    Text("\(p.days) DAYS · DIGITAL · \(p.when)".uppercased())
-                        .font(Theme.eyebrow(10))
-                        .tracking(2)
-                        .foregroundStyle(.white)
-                        .padding(14)
-                }
-                .frame(width: 260, height: 200)
-                .clipped()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(p.title)
-                        .font(Theme.headline(22))
-                        .foregroundStyle(Theme.ink)
-                        .kerning(-0.2)
-                        .lineLimit(2)
-                    Text("with \(p.lead)")
-                        .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(p.days) DAYS · DIGITAL · \(p.when)".uppercased())
+                    .font(Theme.eyebrow(10))
+                    .tracking(2)
+                    .foregroundStyle(.white)
+                    .padding(14)
             }
-            .frame(width: 260)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }
-    }
+            .frame(width: 260, height: 200)
+            .clipped()
 
-    private var circlesList: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Circles meeting now", action: "ALL") { }
-
-            VStack(spacing: 10) {
-                ForEach(vm.circles) { c in
-                    circleRow(c)
-                }
-            }
-            .padding(.horizontal, 24)
-        }
-    }
-
-    private func circleRow(_ c: CommunityCircle) -> some View {
-        PressableCard(action: {}) {
-            HStack(spacing: 14) {
-                Text(String(c.title.prefix(1)))
-                    .font(Theme.headline(18))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(p.title)
+                    .font(Theme.headline(22))
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        if c.isLive {
-                            Circle().fill(Color.white).frame(width: 6, height: 6).pulse()
-                        }
-                        Text(c.timeLabel.uppercased())
-                            .font(Theme.eyebrow(10))
-                            .tracking(2)
-                            .foregroundStyle(.white)
-                    }
-                    Text(c.title)
-                        .font(Theme.headline(17))
-                        .foregroundStyle(Theme.ink)
-                    Text("\(c.host) · \(c.attendees) attending")
-                        .font(Theme.body(11))
-                        .foregroundStyle(Theme.muted)
-                }
-                Spacer()
+                    .kerning(-0.2)
+                    .lineLimit(2)
+                Text("with \(p.lead)")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.muted)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity)
-            .soulGlassCard(radius: 16)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(width: 260)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(Theme.glassBorder, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program, \(p.when)")
     }
+
 }
 
 /// Registers a zoom-hero source only when the owning stack provided a

@@ -16,6 +16,7 @@ import SwiftUI
 
 struct RetreatCheckoutView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(AuthManager.self) private var auth
 
     let retreat: Retreat
@@ -192,11 +193,30 @@ struct RetreatCheckoutView: View {
                 .opacity(vm.isBusy ? 0.8 : 1)
             }
             .buttonStyle(SoulPressableStyle(scale: 0.985, hapticOnPress: false, dim: false))
+            .accessibilityLabel("\(payTitle). Pay \(dueAmount)")
+            .accessibilityHint("Opens secure payment")
             .disabled(vm.isBusy)
 
-            Text(checkout?.fineprint ?? "By reserving you agree to the enrollment terms and cancellation policy.")
-                .font(Theme.body(10)).foregroundStyle(RetreatPalette.muted)
-                .multilineTextAlignment(.center)
+            // The fineprint names the terms, so it has to reach them — copy
+            // that refers to an agreement with no way to read it is exactly
+            // what App Review flags on a paid flow.
+            VStack(spacing: 5) {
+                Text(checkout?.fineprint ?? "By reserving you agree to the enrollment terms and cancellation policy.")
+                    .font(Theme.body(10)).foregroundStyle(RetreatPalette.muted)
+                    .multilineTextAlignment(.center)
+
+                Button {
+                    Haptics.tap()
+                    openURL(LegalLinks.terms)
+                } label: {
+                    Text("Read the terms & cancellation policy")
+                        .font(Theme.body(10, weight: .medium))
+                        .foregroundStyle(RetreatPalette.terracotta)
+                        .underline()
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isLink)
+            }
         }
         .padding(.horizontal, 22)
         .padding(.top, 18)
@@ -206,13 +226,19 @@ struct RetreatCheckoutView: View {
         )
     }
 
-    private var payTitle: String { vm.isBusy ? "Processing…" : "Reserve my place" }
+    /// "Confirming" is a distinct, honest state: the card has been charged and
+    /// we're waiting on the webhook to write the booking. Saying "Processing"
+    /// there would suggest the payment is still in flight.
+    private var payTitle: String {
+        if vm.isConfirming { return "Confirming your place…" }
+        return vm.isBusy ? "Processing…" : "Reserve my place"
+    }
 
     private func pay() {
         Haptics.bump()
         guard auth.hasAccount else { showAccount = true; return }
         Task {
-            await vm.reserve()
+            await vm.reserve(userID: auth.userID)
             if vm.isReserved { onReserved() }
         }
     }

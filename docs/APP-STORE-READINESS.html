@@ -1,0 +1,562 @@
+<title>Soulfull Submission Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  /* ---- Tokens: light is the base set, dark redefines the same names ---- */
+  :root {
+    --ground:      #f3f1e7;
+    --surface:     #fbfaf4;
+    --surface-2:   #eceadd;
+    --ink:         #191b10;
+    --ink-2:       #4d5040;
+    --ink-3:       #7e806c;
+    --rule:        #dbd7c5;
+    --rule-soft:   #e6e3d4;
+    --accent:      #58622c;
+    --blocker:     #a5401f;
+    --blocker-bg:  #f6e5de;
+    --risk:        #825e08;
+    --risk-bg:     #f6eed6;
+    --settled:     #4c6a2e;
+    --settled-bg:  #e6ebd8;
+    --shadow:      0 1px 2px rgba(25,27,16,.05), 0 8px 24px -16px rgba(25,27,16,.22);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0b0c07;
+      --surface:     #14160e;
+      --surface-2:   #1c1f13;
+      --ink:         #f4f2e7;
+      --ink-2:       #c5c2ac;
+      --ink-3:       #7f7c68;
+      --rule:        rgba(244,242,231,.13);
+      --rule-soft:   rgba(244,242,231,.07);
+      --accent:      #9aa55e;
+      --blocker:     #dc7550;
+      --blocker-bg:  rgba(220,117,80,.13);
+      --risk:        #e5c766;
+      --risk-bg:     rgba(229,199,102,.12);
+      --settled:     #93a057;
+      --settled-bg:  rgba(147,160,87,.12);
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0b0c07;
+    --surface:     #14160e;
+    --surface-2:   #1c1f13;
+    --ink:         #f4f2e7;
+    --ink-2:       #c5c2ac;
+    --ink-3:       #7f7c68;
+    --rule:        rgba(244,242,231,.13);
+    --rule-soft:   rgba(244,242,231,.07);
+    --accent:      #9aa55e;
+    --blocker:     #dc7550;
+    --blocker-bg:  rgba(220,117,80,.13);
+    --risk:        #e5c766;
+    --risk-bg:     rgba(229,199,102,.12);
+    --settled:     #93a057;
+    --settled-bg:  rgba(147,160,87,.12);
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Geist", ui-sans-serif, -apple-system, "Helvetica Neue", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 56px 24px 120px;
+  }
+
+  /* ---- Masthead ---- */
+  .masthead { display: flex; flex-direction: column; gap: 18px; padding-bottom: 30px; border-bottom: 1px solid var(--rule); }
+  .eyebrow {
+    font-size: 10.5px; font-weight: 500; letter-spacing: .19em; text-transform: uppercase;
+    color: var(--accent); margin: 0;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 50px); font-weight: 600; letter-spacing: -.028em;
+    line-height: 1.03; margin: 0; text-wrap: balance;
+  }
+  .standfirst { font-size: 16.5px; color: var(--ink-2); max-width: 62ch; margin: 0; line-height: 1.6; }
+  .verified {
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace;
+    font-size: 11.5px; color: var(--ink-3); line-height: 1.85; margin: 0;
+  }
+  .verified b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---- Scoreboard ---- */
+  .board {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 10px; overflow: hidden; margin: 34px 0 12px;
+  }
+  .board div { background: var(--surface); padding: 15px 16px 14px; display: flex; flex-direction: column; gap: 3px; }
+  .board .n {
+    font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums;
+    font-size: 27px; font-weight: 500; line-height: 1; letter-spacing: -.03em;
+  }
+  .board .k { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+  .n.b { color: var(--blocker); } .n.r { color: var(--risk); } .n.q { color: var(--ink-2); } .n.s { color: var(--settled); }
+
+  /* ---- Gate sections ---- */
+  section { margin-top: 52px; }
+  .gate-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .gate-no {
+    font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; font-weight: 500;
+    color: var(--ink-3); letter-spacing: .05em;
+  }
+  h2 { font-size: 25px; font-weight: 600; letter-spacing: -.022em; margin: 0; }
+  .gate-note { font-size: 14px; color: var(--ink-2); margin: 0 0 22px; max-width: 66ch; }
+
+  /* ---- Items ---- */
+  .items { display: flex; flex-direction: column; gap: 12px; }
+  .item {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--stripe, var(--rule));
+    border-radius: 9px; padding: 17px 20px 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .item.blocker { --stripe: var(--blocker); }
+  .item.risk    { --stripe: var(--risk); }
+  .item.quality { --stripe: var(--ink-3); }
+  .item.done    { --stripe: var(--settled); }
+
+  .item h3 { font-size: 16.5px; font-weight: 600; letter-spacing: -.012em; margin: 0; line-height: 1.35; }
+  .item p  { margin: 0; color: var(--ink-2); font-size: 14.2px; line-height: 1.6; }
+  .item p + p { margin-top: -2px; }
+
+  .tagline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .chip.b { color: var(--blocker); background: var(--blocker-bg); }
+  .chip.r { color: var(--risk);    background: var(--risk-bg); }
+  .chip.q { color: var(--ink-2);   background: var(--surface-2); }
+  .chip.s { color: var(--settled); background: var(--settled-bg); }
+  .ref { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; color: var(--ink-3); }
+
+  .fix {
+    margin-top: 3px; padding-top: 11px; border-top: 1px solid var(--rule-soft);
+    font-size: 14px; color: var(--ink); display: flex; gap: 9px; align-items: baseline;
+  }
+  .fix .lbl {
+    font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); flex: 0 0 auto; padding-top: 2px;
+  }
+  .fix span:last-child { color: var(--ink-2); }
+  .fix b { color: var(--ink); font-weight: 500; }
+
+  code {
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace; font-size: .87em;
+    background: var(--surface-2); padding: 1.5px 5px; border-radius: 4px;
+    color: var(--ink); word-break: break-word;
+  }
+
+  /* ---- Paperwork checklist ---- */
+  .paper { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .paper-col {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 9px;
+    padding: 16px 18px 18px; box-shadow: var(--shadow);
+  }
+  .paper-col h4 {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 11px;
+  }
+  .paper-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .paper-col li {
+    font-size: 13.8px; color: var(--ink-2); line-height: 1.5;
+    padding-left: 17px; position: relative;
+  }
+  .paper-col li::before {
+    content: ""; position: absolute; left: 0; top: 7px;
+    width: 8px; height: 8px; border: 1px solid var(--ink-3); border-radius: 2px;
+  }
+  .paper-col li b { color: var(--ink); font-weight: 500; }
+
+  /* ---- Closing sequence ---- */
+  .seq { display: flex; flex-direction: column; gap: 0; margin-top: 6px; }
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--rule-soft); }
+  .step:last-child { border-bottom: 0; }
+  .step .i {
+    font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; padding-top: 2px;
+  }
+  .step .t { font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
+  .step .t b { color: var(--ink); font-weight: 500; }
+
+  footer {
+    margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--rule);
+    font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px;
+    color: var(--ink-3); line-height: 1.8;
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 38px 17px 90px; }
+    .fix { flex-direction: column; gap: 5px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Soulfull Gatherings · iOS 1.0.0 (1)</p>
+    <h1>What's left before you can submit</h1>
+    <p class="standfirst">Five things stop the binary from uploading at all. Seven more will get it rejected by a reviewer once it does. The rest is quality and paperwork. Everything below was checked against the repo, the built bundle, and the live Supabase project — not inferred.</p>
+    <p class="verified">
+      <b>Release build</b> — succeeds, exit 0, zero code warnings<br>
+      <b>Supabase</b> — <code>retreats</code> 7 rows · <code>profiles</code>, <code>bookings</code> live · <code>programs</code>, <code>practice_sessions</code> return 404 (tables absent)<br>
+      <b>Bundle</b> — no AppIcon in <code>Assets.car</code> · no launch storyboard · no privacy manifest
+    </p>
+  </header>
+
+  <div class="board">
+    <div><span class="n s">0</span><span class="k">Block upload</span></div>
+    <div><span class="n s">0</span><span class="k">Block review</span></div>
+    <div><span class="n s">0</span><span class="k">Fix before launch</span></div>
+    <div><span class="n b">3</span><span class="k">You must supply</span></div>
+  </div>
+
+
+  <section style="margin-top:34px">
+    <div class="item done" style="--stripe:var(--settled)">
+      <div class="tagline"><span class="chip s">Updated 2026-08-31</span></div>
+      <h3>Gates 1 and 2 are cleared</h3>
+      <p><b>Gate 1</b> (build config) was fixed directly: app icon, launch screen, signing hook, privacy manifest, export compliance — plus an iPad-support claim that would have forced iPad screenshots. All verified present in the compiled Release bundle.</p>
+      <p><b>Gate 2</b> was cleared by <b>narrowing v1's scope</b> rather than finishing every feature. Reservations are off (<code>AppFeatures.paymentsEnabled = false</code>), the Circle tab is cut, the Practice media tracks are data-gated to "Coming soon" until <code>practice_sessions</code> is seeded, past retreats are filtered out, and legal links are wired. Nothing was deleted — each flag's doc comment lists what restoring it needs.</p>
+      <p>Turning payments back on re-adds three obligations at once: a demo account with a seeded booking, the Stripe/IAP justification, and curated post-purchase content for <em>every</em> reservable retreat. See <code>docs/APP-REVIEW-NOTES.md</code>.</p>
+      <p><b>Gate 3</b> is done too: <code>print()</code> replaced with a redacting <code>os.Logger</code>; Home's fabricated "DAY 3 OF 7" and live-circles sections removed; mood chips now rewrite the ritual card and open the suggested Practice section; an offline banner with a working Retry; the webhook race closed by polling for server truth after payment; and double-charge / overselling blocked inside <code>create-payment-intent</code>.</p>
+      <p><b>Two Gate 3 items are deliberately deferred</b>, both because reservations are off in v1: taking Stripe live, and a "my reservations" list (which would be a permanently empty screen). Both return with <code>paymentsEnabled</code>.</p>
+      <div class="fix"><span class="lbl">Left</span><span>Three things only you can do — the <b>placeholder URLs</b> in <code>LegalLinks.swift</code>, the <b>Team ID</b> for the <code>app@soulfullgatherings.com</code> developer account, and the <b>App Store Connect paperwork</b> below.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ GATE 1 ============ -->
+  <section>
+    <div class="gate-head">
+      <span class="gate-no">GATE 1</span>
+      <h2>The build won't upload</h2><span class="chip s">All 5 fixed</span>
+    </div>
+    <p class="gate-note">These fail at validation or at App Store Connect ingestion. None involve product work — they're all configuration, and all of them are an afternoon.</p>
+
+    <div class="items">
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Fixed</span><span class="ref">Assets.xcassets/AppIcon.appiconset</span></div>
+        <h3>There is no app icon</h3>
+        <p>The icon set contains only a <code>Contents.json</code> declaring a 1024×1024 slot with no filename. Confirmed absent from the compiled <code>Assets.car</code> in the Release build, and the built <code>Info.plist</code> has no <code>CFBundleIcons</code> key at all. Upload is refused outright.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Drop a <b>1024×1024 PNG, opaque, no alpha channel</b> into the icon set and add its <code>"filename"</code> to <code>Contents.json</code>. One universal size is enough on iOS 18 — Xcode derives the rest. Optionally add the dark and tinted variants while you're there.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Fixed</span><span class="ref">project.yml · Info.plist</span></div>
+        <h3>The launch screen it points at doesn't exist</h3>
+        <p><code>UILaunchStoryboardName</code> is set to <code>LaunchScreen</code>, but there is no <code>LaunchScreen.storyboard</code> anywhere in the repo and none in the built bundle. An app with no resolvable launch screen renders letterboxed at a legacy resolution instead of full-screen — a visible defect a reviewer will catch even if validation lets it through.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Drop <code>UILaunchStoryboardName</code> and use the modern dictionary instead: <code>UILaunchScreen</code> with a <code>UIColorName</code> pointing at a new color set matching <code>Theme.bg</code> (<code>#0b0c07</code>), so the cold-launch frame hands off cleanly into <code>RootView</code>'s breathing logo.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Fixed</span><span class="ref">project.yml → DEVELOPMENT_TEAM</span></div>
+        <h3>No signing identity</h3>
+        <p><code>DEVELOPMENT_TEAM</code> is an empty string, so the Release build signs locally with an ad-hoc identity. There's no distribution certificate, no App Store provisioning profile, and <code>com.soulfullgatherings.app</code> has to be registered as an explicit App ID before either can exist.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Enroll in the Apple Developer Program, register the bundle ID, set the team in <code>project.yml</code>, <code>xcodegen generate</code>, then let Xcode manage signing. Archive against a real device destination — a simulator archive can't be uploaded.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Fixed</span><span class="ref">PrivacyInfo.xcprivacy — absent</span></div>
+        <h3>No privacy manifest</h3>
+        <p>The app has no <code>PrivacyInfo.xcprivacy</code>. <code>AppSettings</code> reads and writes <code>UserDefaults</code> on every launch, which is a required-reason API, and the app collects email, name, and the onboarding answers. Apple's ingestion mails an ITMS-91053 notice on upload and has been escalating these from warning to rejection.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Add a manifest with <code>NSPrivacyAccessedAPICategoryUserDefaults</code> reason <code>CA92.1</code>, plus your collected-data types. Supabase and Stripe ship their own manifests, so you only declare your own usage.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Fixed</span><span class="ref">Info.plist</span></div>
+        <h3>No export compliance declaration</h3>
+        <p><code>ITSAppUsesNonExemptEncryption</code> is missing, so every single upload stops and waits on a manual answer in App Store Connect before the build becomes testable.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Add <code>ITSAppUsesNonExemptEncryption = false</code>. The app uses only HTTPS and platform crypto, which is the exempt case.</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ GATE 2 ============ -->
+  <section>
+    <div class="gate-head">
+      <span class="gate-no">GATE 2</span>
+      <h2>A reviewer will reject it</h2><span class="chip s">All 7 addressed</span>
+    </div>
+    <p class="gate-note">Assume the reviewer opens every tab, taps every button, and tries to buy something. These are the places that fall over when they do.</p>
+
+    <div class="items">
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 2.1 · addressed</span><span class="ref">PracticeViewModel.swift · Models.swift:581</span></div>
+        <h3>The Practice tab plays Big Buck Bunny</h3>
+        <p>The <code>practice_sessions</code> table does not exist — the REST endpoint returns 404. So <code>PracticeViewModel.load</code> silently falls into <code>PracticeSession.mock(for:)</code> for all three media tracks, and every session streams <code>BigBuckBunny.mp4</code> from a Google sample bucket or a 15-second stock MP3. All three Massage entries do the same. A reviewer tapping a guided meditation in a wellness app gets a cartoon rabbit.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Either create the table (with a <code>for select to anon, authenticated</code> policy — the same trap <code>0003</code> already documents), upload real media to the <code>practice-media</code> bucket and seed rows; <b>or</b> cut the three media tracks and Massages from v1 and ship Practice as Journal, Exercises and Recipes, which are real curated content.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 4.2 · addressed</span><span class="ref">Features/Circle/CommunityPlaceholder.swift</span></div>
+        <h3>A whole primary tab is an empty state</h3>
+        <p>Circle is one of four tabs in the bottom nav and its entire content is the line "Live circles, member directory, and DMs land here next." A tab that advertises unbuilt features is the textbook minimum-functionality rejection.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Cut the tab to three for v1 and add Circle back when it exists. Shipping three solid tabs reads as finished; four tabs where one is a coming-soon sign reads as a beta.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 2.1 · addressed</span><span class="ref">Models.swift:314 · RetreatExperienceHubView.swift</span></div>
+        <h3>Paying for any retreat but Mallorca lands on empty screens</h3>
+        <p><code>RetreatExperience.curated(for:)</code> matches on the literal string <code>"mallorca"</code> and returns <code>nil</code> for the other six. So a Kyoto purchase — $6,800 — opens a hub whose hero is a hardcoded <code>Image("mb-welcome")</code> of Mallorca, whose pills say "Deposit paid" regardless, with the to-do card hidden, and whose Packing and Guides tiles push to screens that render <code>[]</code>: a header and nothing beneath it. This is the worst moment in the app to have a blank screen.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>For v1, the honest move is to <b>make Mallorca the only reservable retreat</b> and show the others as "Coming soon" in the catalog. Otherwise you need generic post-booking content plus real empty states, and a per-retreat hero, before any of them can take money.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Review access · addressed</span><span class="ref">RetreatDetailViewModel.reserve()</span></div>
+        <h3>The reviewer can't reach anything behind the paywall</h3>
+        <p>Reserve goes straight to Stripe's PaymentSheet. In live mode the reviewer cannot complete a real charge, so the checkout, the experience hub, to-dos, packing, guides and the concierge chat are all invisible to them — a large share of the app that they will read as unfinished or non-functional.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Supply a <b>demo account in the App Review notes</b> with a <code>paid</code> row pre-seeded in <code>bookings</code> for Mallorca, so signing in flips the CTA to "View your experience" and opens the whole flow. Add a short screen recording of the payment itself.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 3.1.3(e) · addressed</span><span class="ref">Review notes</span></div>
+        <h3>Stripe needs to be explained, or it reads as IAP evasion</h3>
+        <p>Using Stripe here is correct — a retreat is a real-world service consumed outside the app, which is explicitly outside the in-app-purchase requirement. But reviewers see a payment sheet that isn't Apple's and reject first. Note that the future <b>membership</b> product is the opposite case: a digital subscription must use StoreKit.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>State plainly in the review notes that reservations are for physical, in-person retreats at named locations on fixed dates, delivered offline.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 2.1 · addressed</span><span class="ref">Supabase · retreats</span></div>
+        <h3>Four of the seven retreats already happened</h3>
+        <p>Live rows: Mallorca began 2026-04-18, Kyoto 2026-05-09, Sedona 2026-06-06, Bali 2026-07-14 — all in the past. Nothing in <code>HomeViewModel</code> or <code>RetreatsViewModel</code> filters by date, so the catalog is selling four trips that are over, and the one retreat with a complete post-purchase experience is among them.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Filter to <code>end_date >= today</code> in <code>fetchRetreats()</code>, and reseed with real forthcoming dates. This interacts with the Mallorca-only decision above — if Mallorca is the reservable one, it needs a future date.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 5.1.1 · addressed</span><span class="ref">RetreatCheckoutView.swift:197</span></div>
+        <h3>No privacy policy, terms, or support anywhere in the app</h3>
+        <p>Checkout tells the buyer "By reserving you agree to the enrollment terms and cancellation policy" and gives them no way to read either one. There is no privacy policy link, no terms link, and no support contact in any screen — and the app creates accounts and takes payment.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Add a Legal group to the You tab — Privacy Policy, Terms &amp; Cancellation Policy, Contact Support — link the fineprint at checkout to the terms, and host both pages at stable URLs you can also give App Store Connect.</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ GATE 3 ============ -->
+  <section>
+    <div class="gate-head">
+      <span class="gate-no">GATE 3</span>
+      <h2>It would pass, but shouldn't ship like this</h2><span class="chip s">8 fixed · 2 deferred</span>
+    </div>
+    <p class="gate-note">None of these will fail review. All of them are things a paying customer hits in the first week.</p>
+
+    <div class="items">
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Money</span><span class="ref">Stripe dashboard</span></div>
+        <h3>Stripe is still in test mode</h3>
+        <p>The integration is deployed and verified, but on test keys. Going live needs a fully activated Stripe account (business verification, bank details), live restricted keys with Customers + PaymentIntents + <b>Ephemeral Keys</b> write, a live webhook endpoint, and its signing secret in the function secrets.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Run one real low-value live charge end to end and confirm the <code>bookings</code> row lands before you submit — a webhook misconfiguration is silent until someone pays.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Money</span><span class="ref">RetreatDetailViewModel.swift:52</span></div>
+        <h3>The confirmation races the webhook</h3>
+        <p><code>reserve()</code> sets <code>phase = .reserved</code> the instant PaymentSheet reports <code>.completed</code>, but the <code>bookings</code> row is written asynchronously by <code>stripe-webhook</code>. If that write is slow or fails, the next launch calls <code>loadExistingBooking</code>, finds nothing, and shows "Reserve" again to someone who has already been charged.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Poll <code>fetchBooking</code> for a few seconds after success and surface a "confirming your reservation" state, so a missing row is visible rather than silently reverting the CTA.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Money</span><span class="ref">0002_bookings.sql · create-payment-intent</span></div>
+        <h3>Nothing enforces capacity or prevents a double charge</h3>
+        <p><code>retreats.max_guests</code> exists but nothing counts bookings against it, so a retreat can be oversold. And <code>bookings</code> has no uniqueness on <code>(user_id, retreat_id)</code> — the same person can pay twice for the same trip, and the app will happily let them.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Have <code>create-payment-intent</code> reject when a paid booking already exists for that user and retreat, and when paid bookings have reached <code>max_guests</code>. Both checks belong server-side, next to the price read.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Gap</span><span class="ref">Features/Profile</span></div>
+        <h3>There's no "my reservations"</h3>
+        <p>A booking is only visible from inside that one retreat's detail screen. Someone who paid has no list of what they've booked, no receipt, and no way back to their trip except remembering which retreat it was and navigating to it.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Add a reservations list to the You tab reading <code>bookings</code> — it also gives the reviewer an obvious route into the post-purchase flow.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Data</span><span class="ref">Supabase · retreats.group_chat_url</span></div>
+        <h3>The group chat tile can never appear</h3>
+        <p><code>group_chat_url</code> is <code>NULL</code> on all seven rows, and the hub only renders the tile <code>if let url</code> — so a documented feature is invisible in production. The mock fallback carries <code>chat.whatsapp.com/REPLACE-WITH-MALLORCA-INVITE</code>, which would open a dead link if the DB fetch ever failed.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Set a real invite on the reservable retreat, or pull the tile for v1. Also replace the placeholder in <code>Models.swift</code> — a broken external link in an offline fallback is worse than no tile.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Content</span><span class="ref">HomeViewModel.swift</span></div>
+        <h3>Home's programs and circles are hardcoded</h3>
+        <p>The <code>programs</code> table returns 404 and <code>CommunityCircle</code> has no fetch at all, so both shelves are compiled-in mock arrays — including circles with live indicators. As curated content that's defensible; presented as live activity it isn't.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Either seed <code>programs</code> and wire the existing unused <code>fetchPrograms()</code>, or reword the shelves so nothing claims to be happening right now.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Dead control</span><span class="ref">HomeViewModel.tapMood</span></div>
+        <h3>The mood chips don't do anything</h3>
+        <p><code>tapMood</code> toggles <code>selectedMood</code> and nothing reads it. The chips are the first interactive thing on the home screen and they lead nowhere.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Have the selection filter the ritual card or the practice suggestion — or remove the row. A control that responds but does nothing is worse than no control.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Resilience</span><span class="ref">AuthManager.swift · RootView.swift</span></div>
+        <h3>Auth failure is completely silent</h3>
+        <p>If anonymous sign-in fails at launch — no network, or the Supabase project asleep — <code>state</code> becomes <code>.failed</code> and nothing in the UI ever shows it. The app proceeds into mock data, and the user only discovers there's no session when Reserve throws a raw error string at them.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Surface <code>.failed</code> as a quiet retry banner, and make the offline copy honest rather than presenting sample retreats as the live catalog.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Accessibility</span><span class="ref">4 of 50 files</span></div>
+        <h3>VoiceOver has almost nothing to read</h3>
+        <p>Eight accessibility modifiers exist across the whole codebase, in four files. On a UI built from full-bleed photography, glass, and custom-drawn controls, that leaves most of the app unlabelled — including the custom bottom nav and the entire checkout.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Label the bottom nav, the Reserve CTA, the checkout summary, and the checklist rows at minimum. Apple spot-checks this, and it's the one item here that also carries legal weight in several markets.</span></div>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Hygiene</span><span class="ref">across ViewModels</span></div>
+        <h3>Debug logging ships in Release</h3>
+        <p>Bare <code>print()</code> calls in <code>HomeViewModel</code>, <code>RetreatsViewModel</code>, <code>PracticeViewModel</code> and <code>AuthManager</code> are compiled into the shipping binary and write to the device console, including auth error detail.</p>
+        <div class="fix"><span class="lbl">Fix</span><span>Move them behind <code>#if DEBUG</code> or onto <code>Logger</code> with a privacy-aware category.</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ PAPERWORK ============ -->
+  <section>
+    <div class="gate-head"><h2>Paperwork that lives outside the repo</h2></div>
+    <p class="gate-note">None of this is code, all of it is required, and it's the part that reliably adds a week if you start it late. The privacy labels in particular need a decision you should make deliberately.</p>
+
+    <div class="paper">
+
+      <div class="paper-col">
+        <h4>Account &amp; identifiers</h4>
+        <ul>
+          <li><b>Apple Developer Program</b> enrollment — a D-U-N-S number if you enroll as a company, which alone can take days</li>
+          <li>Register <code>com.soulfullgatherings.app</code> as an explicit App ID</li>
+          <li>Create the app record in App Store Connect</li>
+          <li>Distribution certificate and App Store provisioning profile</li>
+        </ul>
+      </div>
+
+      <div class="paper-col">
+        <h4>Store listing</h4>
+        <ul>
+          <li>Name, subtitle, promotional text, full description, keywords</li>
+          <li><b>Support URL</b> and marketing URL — support URL is mandatory</li>
+          <li><b>Privacy policy URL</b> — mandatory, and must actually resolve</li>
+          <li>Screenshots at <b>6.9″ and 6.5″</b>, portrait, 3–10 each</li>
+          <li>Category — Health &amp; Fitness or Lifestyle</li>
+          <li>Age rating questionnaire</li>
+        </ul>
+      </div>
+
+      <div class="paper-col">
+        <h4>Privacy nutrition labels</h4>
+        <ul>
+          <li>Contact info — email, name</li>
+          <li>Identifiers — Supabase user ID, Stripe customer ID</li>
+          <li>Purchases — reservation history</li>
+          <li><b>Health &amp; Fitness</b> — the onboarding body-state and intention answers most likely fall here; classify them deliberately rather than by accident</li>
+          <li>Stripe's own collection, declared as a third-party partner</li>
+        </ul>
+      </div>
+
+      <div class="paper-col">
+        <h4>Rights &amp; compliance</h4>
+        <ul>
+          <li><b>Licensing for the retreat photography</b> — Apple asks for proof if the imagery looks stock or editorial</li>
+          <li>Geist is OFL, so the fonts are clear</li>
+          <li>Export compliance answer, matching the plist key</li>
+          <li>Demo account credentials plus review notes covering Stripe and the seeded booking</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ DONE ============ -->
+  <section>
+    <div class="gate-head"><h2>Already handled — don't redo these</h2></div>
+    <p class="gate-note">Worth stating explicitly, because several are the items teams most often panic about late.</p>
+
+    <div class="items">
+      <div class="item done">
+        <div class="tagline"><span class="chip s">5.1.1(v)</span></div>
+        <h3>In-app account deletion is built and reachable</h3>
+        <p>The You tab offers Delete account behind a confirmation dialog, routed through the <code>delete-account</code> Edge Function, which removes the Stripe customer and the auth user and cascades to <code>profiles</code> and <code>bookings</code>. This is the compliance item most apps get rejected for.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 5.1.1</span></div>
+        <h3>The app is fully browsable without an account</h3>
+        <p>Anonymous guest sessions mean nothing is gated behind registration except payment, which is the correct exception. Forced sign-up is a common rejection you've already avoided.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Guideline 4.8</span></div>
+        <h3>Sign in with Apple is not required</h3>
+        <p>4.8 only triggers when an app offers a third-party or social login. Email/password alone is exempt, so the unbuilt Apple sign-in is a roadmap item, not a submission blocker.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Security</span></div>
+        <h3>Secrets and payment authority are server-side</h3>
+        <p><code>Secrets.xcconfig</code> is gitignored and untracked. Stripe keys exist only in function secrets — even the publishable key is returned by the function. The client never writes payment state, prices are read authoritatively server-side, and <code>bookings</code> is written only by the webhook under the service role.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Security</span></div>
+        <h3>Row-level security is correct on every live table</h3>
+        <p><code>profiles</code> is scoped to <code>auth.uid() = id</code> with no client write to <code>stripe_customer_id</code>; <code>bookings</code> is read-only for its owner with no insert policy at all; <code>retreats</code> grants select to both <code>anon</code> and <code>authenticated</code>, which is the anonymous-role trap already solved in migration 0003.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Build</span></div>
+        <h3>The Release build is clean</h3>
+        <p>Compiles at Swift 6 with zero code warnings. The only warning in the log is the benign "no AppIntents.framework dependency" note.</p>
+      </div>
+
+      <div class="item done">
+        <div class="tagline"><span class="chip s">Config</span></div>
+        <h3>Orientation, deployment target and appearance are consistent</h3>
+        <p>Portrait-only, iOS 18 minimum, dark mode forced at the scene level — no conflicting declarations between <code>project.yml</code> and <code>Info.plist</code>, and no iPad claims to honor.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SEQUENCE ============ -->
+  <section>
+    <div class="gate-head"><h2>The order I'd do it in</h2></div>
+    <p class="gate-note">Enrollment is the long pole and gates everything else, so it starts today regardless of where the code is.</p>
+    <div class="seq">
+      <div class="step"><span class="i">01</span><span class="t"><b>Start Apple Developer enrollment now.</b> D-U-N-S verification is the one item you cannot compress, and nothing else can be uploaded until it clears.</span></div>
+      <div class="step"><span class="i">02</span><span class="t"><b>Clear Gate 1 in a single pass</b> — icon, launch screen, signing, privacy manifest, export compliance. It's configuration, and it makes the build uploadable.</span></div>
+      <div class="step"><span class="i">03</span><span class="t"><b>Make the scope decision.</b> Cut the Circle tab, and decide whether Practice ships with real media or without the media tracks. Both are subtractions, and both remove a rejection.</span></div>
+      <div class="step"><span class="i">04</span><span class="t"><b>Make exactly one retreat truly reservable</b> — future dates, curated post-purchase content, capacity and duplicate checks — and mark the rest coming soon. This is the largest remaining piece of product work.</span></div>
+      <div class="step"><span class="i">05</span><span class="t"><b>Write and host the privacy policy and terms</b>, then link them from the You tab and from the checkout fineprint. Slow to draft, trivial to wire.</span></div>
+      <div class="step"><span class="i">06</span><span class="t"><b>Take Stripe live</b> and run one real charge end to end, confirming the <code>bookings</code> row arrives.</span></div>
+      <div class="step"><span class="i">07</span><span class="t"><b>TestFlight on a physical device</b> before submitting. The Metal shaders, the glass, and the PaymentSheet all behave differently off the simulator.</span></div>
+      <div class="step"><span class="i">08</span><span class="t"><b>Seed the demo account</b> with a paid Mallorca booking, write the review notes explaining the Stripe classification, and submit.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    Audited 2026-08-31 · Gates 1 and 2 addressed the same day · Release build verified locally · Supabase project qkepgohdosmzebdmsctn queried read-only<br>
+    CLAUDE.md has been corrected (<code>retreats</code> holds 7 rows, 3 of them upcoming) and now carries a v1-scope section. Review notes: <code>docs/APP-REVIEW-NOTES.md</code>.
+  </footer>
+
+</div>

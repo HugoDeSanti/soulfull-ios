@@ -17,14 +17,12 @@ final class RetreatsViewModel {
         defer { isLoading = false }
         loadError = nil
         do {
-            print("[RetreatsViewModel] Fetching retreats from Supabase…")
             retreats = try await SupabaseService.shared.fetchRetreats()
             activeIndex = 0
-            print("[RetreatsViewModel] Fetched \(retreats.count) retreats")
         } catch is CancellationError {
             // View was dismissed mid-fetch; leave existing data intact.
         } catch {
-            print("[RetreatsViewModel] fetchRetreats failed: \(error)")
+            Log.data.error("Retreats fetch failed: \(error.localizedDescription)")
             // Graceful fallback (same pattern as practice sessions): browse
             // sample retreats rather than a dead end; reserve still requires
             // the backend.

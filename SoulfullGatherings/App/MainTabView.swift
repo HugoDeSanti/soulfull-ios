@@ -2,22 +2,28 @@
 //  MainTabView.swift
 //  Soulfull Gatherings
 //
-//  Hosts the four primary tabs (Home, Practice, Circle, You) with a custom
-//  floating glass tab bar instead of the system one. Home pushes into
-//  Retreats / Retreat Detail through its own NavigationStack so native
-//  swipe-back works.
+//  Hosts the primary tabs (Home, Practice, You — Circle is cut from v1, see
+//  AppFeatures.circleTabEnabled) with a custom floating glass tab bar instead
+//  of the system one. Home pushes into Retreats / Retreat Detail through its
+//  own NavigationStack so native swipe-back works.
+//
+//  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
+//  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
+//  request on appear.
 //
 
 import SwiftUI
 
+/// The primary tabs. `BottomNav` builds itself from `allCases`, so adding the
+/// Circle case back is all that's needed to restore the tab — see
+/// `AppFeatures.circleTabEnabled` for why it's out of v1.
 enum MainTab: String, Hashable, CaseIterable {
-    case home, practice, circle, you
+    case home, practice, you
 
     var label: String {
         switch self {
         case .home:     return "Home"
         case .practice: return "Practice"
-        case .circle:   return "Circle"
         case .you:      return "You"
         }
     }
@@ -26,7 +32,6 @@ enum MainTab: String, Hashable, CaseIterable {
         switch self {
         case .home:     return "house"
         case .practice: return "sparkles"
-        case .circle:   return "person.2"
         case .you:      return "person.crop.circle"
         }
     }
@@ -36,30 +41,61 @@ enum MainTab: String, Hashable, CaseIterable {
         switch self {
         case .home:     return "house.fill"
         case .practice: return "sparkles"
-        case .circle:   return "person.2.fill"
         case .you:      return "person.crop.circle.fill"
         }
     }
 }
 
 struct MainTabView: View {
-    @State private var tab: MainTab = .home
+    @Environment(AuthManager.self) private var auth
+    @State private var tab: MainTab = Self.initialTab
+
+    /// DEBUG launch hook matching the `-preview-*` family in
+    /// `SoulfullGatheringsApp`: `-tab practice` opens straight to a tab for a
+    /// visual pass without hand-driving the app. Always `.home` in Release.
+    private static var initialTab: MainTab {
+        #if DEBUG
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "-tab"), i + 1 < args.count,
+           let tab = MainTab(rawValue: args[i + 1]) {
+            return tab
+        }
+        #endif
+        return .home
+    }
     /// True while a tab root has something pushed — the nav bows out so
     /// detail screens own the full canvas.
     @State private var navHidden = false
+    /// Set when another tab asks to open a Practice section (Home's ritual
+    /// card). `PracticeRoot` consumes and clears it, which is what makes the
+    /// jump land on the right screen rather than just the Practice landing.
+    @State private var pendingPractice: PracticeMenuItem?
 
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab content
             Group {
                 switch tab {
-                case .home:     HomeRoot(navHidden: $navHidden)
-                case .practice: PracticeRoot(navHidden: $navHidden)
-                case .circle:   CommunityPlaceholder()
+                case .home:
+                    HomeRoot(navHidden: $navHidden) { item in
+                        pendingPractice = item
+                        tab = .practice
+                    }
+                case .practice:
+                    PracticeRoot(navHidden: $navHidden, pending: $pendingPractice)
                 case .you:      ProfilePlaceholder()
                 }
             }
             .ignoresSafeArea(.keyboard)
+
+            // Offline / failed-session notice, above the content but below the
+            // nav. Renders nothing when the session is healthy.
+            VStack {
+                ConnectionBanner()
+                    .padding(.top, 8)
+                Spacer()
+            }
+            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: auth.needsRetry)
 
             // Floating glass nav
             BottomNav(current: $tab)
@@ -90,6 +126,8 @@ private struct HomeRoot: View {
         case retreatChat(Retreat)
     }
     @Binding var navHidden: Bool
+    /// Switch to the Practice tab and open a section there.
+    var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
@@ -98,6 +136,7 @@ private struct HomeRoot: View {
             HomeView(
                 onOpenRetreats: { path.append(.retreatsStack) },
                 onOpenRetreat: { r in path.append(.retreatDetail(r, zoom: true)) },
+                onOpenPractice: onOpenPractice,
                 zoomNamespace: zoomNS
             )
             .navigationDestination(for: Route.self) { route in
@@ -178,12 +217,16 @@ private struct PracticeRoot: View {
         case massageDetail(Massage)
     }
     @Binding var navHidden: Bool
+    /// A section another tab asked to open. Consumed once, then cleared.
+    @Binding var pending: PracticeMenuItem?
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
             PracticeView(onSelect: open, zoomNamespace: zoomNS)
+                .onAppear(perform: consumePending)
+                .onChange(of: pending) { consumePending() }
                 .navigationDestination(for: Route.self) { route in
                     destination(route)
                         .toolbar(.hidden, for: .navigationBar)
@@ -191,6 +234,15 @@ private struct PracticeRoot: View {
                 .toolbar(.hidden, for: .navigationBar)
         }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    /// Opens whatever another tab handed us, then clears it so returning to
+    /// this tab later doesn't re-push the same screen.
+    private func consumePending() {
+        guard let item = pending else { return }
+        pending = nil
+        path = []
+        open(item)
     }
 
     /// Maps a tapped menu card to its list route.

@@ -4,6 +4,7 @@ struct ProfilePlaceholder: View {
     @Environment(AppState.self) private var app
     @Environment(AppSettings.self) private var settings
     @Environment(AuthManager.self) private var auth
+    @Environment(\.openURL) private var openURL
 
     @State private var showAccount = false
     @State private var accountMode: AccountViewModel.Mode = .createAccount
@@ -41,9 +42,12 @@ struct ProfilePlaceholder: View {
 
                 Spacer()
 
-                accountActions
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 120)
+                VStack(spacing: 16) {
+                    accountActions
+                    legalLinks
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 120)
             }
         }
         .sheet(isPresented: $showAccount) {
@@ -143,6 +147,45 @@ struct ProfilePlaceholder: View {
             }
             devReset
         }
+    }
+
+    // MARK: - Legal & support
+
+    /// Privacy policy, terms, and a way to reach a human. App Store Connect
+    /// requires a resolving privacy policy URL and a support URL, and an app
+    /// that creates accounts needs both reachable from inside the app — the
+    /// checkout fineprint referring to "the enrollment terms" isn't enough on
+    /// its own. Destinations live in `LegalLinks`.
+    private var legalLinks: some View {
+        HStack(spacing: 0) {
+            legalLink("Privacy", url: LegalLinks.privacyPolicy)
+            legalDivider
+            legalLink("Terms", url: LegalLinks.terms)
+            legalDivider
+            legalLink("Support", url: LegalLinks.supportMail)
+        }
+        .padding(.top, 2)
+    }
+
+    private var legalDivider: some View {
+        Text("·")
+            .font(Theme.body(12))
+            .foregroundStyle(Theme.muted)
+            .padding(.horizontal, 10)
+    }
+
+    private func legalLink(_ title: String, url: URL) -> some View {
+        Button {
+            Haptics.tap()
+            openURL(url)
+        } label: {
+            Text(title)
+                .font(Theme.body(12))
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isLink)
     }
 
     /// Dev-only onboarding reset. Compiled out of Release builds.

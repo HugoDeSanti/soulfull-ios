@@ -10,7 +10,11 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     IPHONEOS_DEPLOYMENT_TARGET: "18.0"
-    DEVELOPMENT_TEAM: ""
+    # Supplied by Config/Secrets.xcconfig (gitignored) so the Team ID stays out
+    # of the repo. Empty is fine for simulator builds; archiving for the App
+    # Store requires a real ID.
+    DEVELOPMENT_TEAM: $(DEVELOPMENT_TEAM)
+    CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 
@@ -43,7 +47,14 @@ targets:
         CFBundleIdentifier: com.soulfullgatherings.app
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0.0"
-        UILaunchStoryboardName: LaunchScreen
+        # Modern launch screen (no storyboard file). The colour is the
+        # LaunchBackground asset — Theme.bg — so the cold-launch frame is the
+        # same near-black RootView fades its breathing logo up from.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        # HTTPS and platform crypto only — the exempt case. Without this key
+        # every upload stalls waiting on a manual answer in App Store Connect.
+        ITSAppUsesNonExemptEncryption: false
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations: {}
@@ -73,6 +84,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.soulfullgatherings.app
         INFOPLIST_FILE: SoulfullGatherings/Info.plist
+        # iPhone only. Without this Xcode defaults to "1,2", which claims iPad
+        # support — App Store Connect then demands iPad screenshots and the
+        # reviewer tests this portrait-only, iPhone-tuned UI on an iPad.
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_PREVIEWS: YES
         SWIFT_EMIT_LOC_STRINGS: YES

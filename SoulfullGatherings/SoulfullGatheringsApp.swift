@@ -48,7 +48,11 @@ struct SoulfullGatheringsApp: App {
     /// launch args). Release builds always show `RootView`.
     @ViewBuilder private var rootContent: some View {
         #if DEBUG
-        if CommandLine.arguments.contains("-preview-checkout") {
+        if CommandLine.arguments.contains("-preview-retreat") {
+            NavigationStack {
+                RetreatDetailView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+            }
+        } else if CommandLine.arguments.contains("-preview-checkout") {
             NavigationStack {
                 RetreatCheckoutView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
             }

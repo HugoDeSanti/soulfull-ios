@@ -16,6 +16,7 @@ import SwiftUI
 
 struct RetreatDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(AuthManager.self) private var auth
     let retreat: Retreat
     /// Push the checkout review screen (Reserve, when signed in and not yet
@@ -26,6 +27,9 @@ struct RetreatDetailView: View {
 
     @State private var vm: RetreatDetailViewModel
     @State private var showAccount = false
+    /// Shown when the enquiry `mailto:` can't be opened (no mail account set
+    /// up) so the support address is still reachable.
+    @State private var showEnquiryFallback = false
     /// Normalized scroll offset: 0 at rest, negative when pulled down.
     @State private var scrollY: CGFloat = 0
 
@@ -87,8 +91,18 @@ struct RetreatDetailView: View {
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .task(id: auth.userID) { await vm.loadExistingBooking(userID: auth.userID) }
+        // Only meaningful when reservations exist; skipped in v1 so the screen
+        // makes no `bookings` round-trip it can't act on.
+        .task(id: auth.userID) {
+            guard AppFeatures.paymentsEnabled else { return }
+            await vm.loadExistingBooking(userID: auth.userID)
+        }
         .sheet(isPresented: $showAccount) { AccountView() }
+        .alert("Get in touch", isPresented: $showEnquiryFallback) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Email us at \(LegalLinks.supportEmail) to ask about a place on \(retreat.name).")
+        }
     }
 
     // MARK: - Hero photo (scroll-graded)
@@ -202,13 +216,33 @@ struct RetreatDetailView: View {
         .buttonStyle(SoulPressableStyle(scale: 0.96, hapticOnPress: false, dim: false))
         .disabled(vm.isBusy)
         .padding(.top, 4)
+        .accessibilityLabel(reserveTitle)
+        .accessibilityHint(AppFeatures.paymentsEnabled
+                           ? "Reserve a place on \(retreat.name)"
+                           : "Opens an email to ask about a place on \(retreat.name)")
     }
 
-    /// Reserve-CTA routing: gate on account, then push the checkout review
-    /// (the Stripe charge happens there) or open the experience hub once the
-    /// retreat is already reserved.
+    /// Reserve-CTA routing.
+    ///
+    /// While `AppFeatures.paymentsEnabled` is off (v1), the CTA is an enquiry:
+    /// it opens a pre-addressed mail to the support address rather than a
+    /// checkout. That keeps the screen genuinely actionable instead of showing
+    /// a dead "reservations open soon" line. If no mail account is configured,
+    /// `openURL`'s completion reports failure and we show the address instead.
+    ///
+    /// With payments on, it gates on a permanent account, then pushes the
+    /// checkout review (where the Stripe charge happens) — or opens the
+    /// experience hub if this retreat is already reserved.
     private func routeReserve() {
         Haptics.bump()
+
+        guard AppFeatures.paymentsEnabled else {
+            openURL(LegalLinks.enquiry(about: retreat.name)) { opened in
+                if !opened { showEnquiryFallback = true }
+            }
+            return
+        }
+
         if !auth.hasAccount {
             showAccount = true
         } else if vm.isReserved {
@@ -219,6 +253,7 @@ struct RetreatDetailView: View {
     }
 
     private var reserveTitle: String {
+        guard AppFeatures.paymentsEnabled else { return "Request a place" }
         if vm.isReserved { return "View your experience" }
         if vm.isBusy { return "Processing…" }
         return auth.hasAccount ? "Reserve" : "Sign in to reserve"
@@ -580,6 +615,12 @@ struct RetreatDetailView: View {
 
     // MARK: - Pinned reserve bar
 
+    /// Shorter than `reserveTitle` — the bar is tight on width.
+    private var barActionTitle: String {
+        guard AppFeatures.paymentsEnabled else { return "Enquire" }
+        return vm.isReserved ? "Your experience" : "Reserve"
+    }
+
     private var reserveBar: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
@@ -594,7 +635,7 @@ struct RetreatDetailView: View {
             Button {
                 routeReserve()
             } label: {
-                Text(vm.isReserved ? "Your experience" : "Reserve")
+                Text(barActionTitle)
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 20)
