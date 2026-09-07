@@ -130,7 +130,7 @@ SoulfullGatherings/
 └── Features/                          # One folder per feature/tab; each owns its views + VMs
     ├── Auth/
     │   ├── AccountGate.swift          # Just-in-time gate: holds the interrupted action and replays it on dismiss if an account now exists. require(signedIn:_:) -> Bool (caller raises the sheet) / resume(signedIn:)
-    │   ├── AccountView.swift          # Create-account / sign-in sheet (You tab, Reserve, and the practice gate). Sign in with Apple first, "or" rule, then the glass email form; confirm-your-email panel when confirmation is pending — code field (`.oneTimeCode` autofill, no hardcoded length), Confirm, Send a new code (30s cooldown), Use a different sign-in — and it dismisses automatically once hasAccount flips
+    │   ├── AccountView.swift          # Create-account / sign-in sheet (You tab, Reserve, and the practice gate). Sign in with Apple first, "or" rule, then the glass email form; confirm-your-email panel when confirmation is pending — code field (`.oneTimeCode` autofill, no hardcoded length), Confirm, Send a new code (60s cooldown, matching the project's `smtp_max_frequency`), Use a different sign-in — and it dismisses automatically once hasAccount flips
     │   ├── AppleSignInButton.swift    # Native SignInWithAppleButton + AppleNonce (random + SHA-256) for replay protection. Pure UI — hands the credential back to the caller
     │   └── AccountViewModel.swift     # @Observable; form state + validation; confirmCode/resendCode (the confirmation WATCH is AuthManager's — see there); calls AuthManager then syncs profile (auth.pushOnboardingAnswers on create / hydrate on sign-in / mergeProfile for social, which can't tell new from returning). Clears `password` on success and never replays it as a sign-in probe. Shows generic auth errors, never GoTrue's own — those distinguish "already registered" from "invalid credentials" and enumerate accounts. Treats Apple + web-session cancels as .cancelled, not an error
     ├── Welcome/
@@ -372,16 +372,17 @@ Two flags in `Core/Services/AppFeatures.swift` gate what's reachable. **Nothing 
 - **Not yet built (next phases):** a bookings list/history UI (data exists in `bookings`); refund handling; **membership** subscription (a "mix" of digital + real-world perks → must use StoreKit IAP, not Stripe).
 - **Tests:** one UI-test target (`SoulfullUITests/AccountGateTests.swift`, 2 tests) covering the account gate; no unit tests yet. The `-uitest-reset` / `-uitest-onboarded` / `-tab` launch hooks are what make it deterministic.
 - **Offline fallbacks:** `retreats` (Home + stack) still falls back to `Retreat.mock` when Supabase returns nothing. **`practice_sessions` no longer falls back at all** — see the Practice note above. The Supabase project (`qkepgohdosmzebdmsctn.supabase.co`, "Soulfull iOS") is **ACTIVE_HEALTHY**.
-- **Live backend state, verified 2026-09-06:**
+- **Live backend state, re-verified 2026-09-07** (anon-key REST probe, read-only):
   | Table | State |
   |---|---|
   | `retreats` | 7 rows; **4 upcoming** — Dolomites (2026-09-08), Lapland (2027-01-10), Chamonix (2027-02-02), **Mallorca (2027-07-21)**. Kyoto, Sedona and Bali have finished and are correctly hidden. Every `group_chat_url` is still `null`. |
-  | `profiles` / `bookings` | Exist, RLS-protected; `profiles` holds real test accounts. |
-  | `programs` | **Table exists, zero rows** (0006 applied). Home's Digital Retreats shelf hides itself. |
-  | `practice_sessions` | **Table exists, zero rows** (0005 applied). All three media tracks read "Coming soon" — seeding lights them up with no app release. |
+  | `profiles` / `bookings` | Exist, RLS-protected. **Their row counts are not observable with the anon key** — RLS filters to the caller, so an empty result proves nothing about the contents. Don't read one as "the table is empty" (this applies to `practice_plays` below too). |
+  | `programs` | **Table exists, zero rows** (200 + `[]`). Home's Digital Retreats shelf hides itself. |
+  | `practice_sessions` | **Table exists, zero rows** (200 + `[]`). All three media tracks read "Coming soon" — seeding lights them up with no app release. |
   | `practice_plays` + the `practice_progress` / `practice_creator_earnings` views | **Live** (0008 applied 2026-09-06; hardened by 0009 on 2026-09-07). Recording starts with the next practice opened on a build carrying this code. |
-  | Schema hardening | **0009 applied 2026-09-07** via `supabase db push`, which also reconciled 0008 into `supabase_migrations.schema_migrations` (it had been applied by hand and never recorded). `supabase migration list` now shows local and remote in step through 0009. |
+  | Schema hardening | **0009 applied 2026-09-07** via `supabase db push`, which also reconciled 0008 into `supabase_migrations.schema_migrations` (it had been applied by hand and never recorded). `supabase migration list --linked` showed local and remote in step through 0009 — verified immediately before the migration files were removed from the repo the same day. |
   > This corrects an earlier note claiming `programs`/`practice_sessions` return 404. They were applied; they were never seeded — a different problem with a different fix (upload media + insert rows, no migration needed).
+  > **When you re-probe, read the status code, not the body.** A `200` with `[]` means the table exists and is unseeded; only a `404` means it is missing. A `000` is curl timing out, not an answer — retry it. Conflating these is what produced the 404 claim above, and it sends you to write a migration when the actual job is seeding.
 - **Retention loop (new).** Home shows a **Continue** card for the most recently unfinished practice and a streak line once it reaches two days; session rows show a resume hairline or a completion seal. All of it is driven by real server-side history — nothing is invented, and with no history every one of these elements is simply absent. Requires the `practice_plays` table and the `practice_progress` view, both live since 2026-09-06 (0008, since removed from the repo).
 
 ## Resources
