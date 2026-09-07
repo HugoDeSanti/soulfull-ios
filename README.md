@@ -54,7 +54,7 @@ xcodegen generate
 open SoulfullGatherings.xcodeproj
 ```
 
-**Regenerate `.xcodeproj` whenever you edit `project.yml`.** SQL migrations and Edge Functions under `supabase/` are *not* part of the Xcode build, so changing them needs no `xcodegen generate`.
+**Regenerate `.xcodeproj` whenever you edit `project.yml`.** Everything under `supabase/` is *not* part of the Xcode build, so changing them needs no `xcodegen generate`.
 
 > **Why XcodeGen?** The `.xcodeproj` is gitignored and generated. `project.yml` is the single source of truth for the target, Swift 6 / iOS 18 settings, bundle ID `com.soulfullgatherings.app`, SPM dependencies, the Geist font resources, the `soulfull://` URL scheme, and `Secrets.xcconfig` injection.
 
@@ -67,8 +67,8 @@ Config/                 # Secrets.xcconfig (gitignored) + .example template
 Resources/Fonts/        # Geist .otf files (added as a resources build phase)
 docs/DESIGN.md          # Design direction: "quiet luxury, editorial"
 design-system/          # HTML/CSS mirror of the UI, synced to a Claude Design project
-supabase/               # Backend-as-code (migrations + Edge Functions) — NOT in the Xcode build
-├── migrations/         # 0001_profiles, 0002_bookings, 0003_retreats_public_read
+supabase/               # Backend-as-code (Edge Functions + auth email templates) — NOT in the Xcode build
+├── templates/          # Branded auth emails (confirm-signup + change-email)
 └── functions/          # create-payment-intent, stripe-webhook, delete-account (+ README)
 
 SoulfullGatherings/
@@ -97,7 +97,7 @@ There are rendering gotchas that have actually bitten this codebase (Metal effec
 
 ## Backend (Supabase + Stripe)
 
-- **Migrations** live in `supabase/migrations/` — run them in the dashboard SQL editor or via `supabase db push`. Content tables: `retreats`, `programs`, `practice_sessions`; user tables: `profiles`, `bookings` (all RLS-protected). See the **Backend** section of `CLAUDE.md` for the column map and the RLS-role gotcha (anonymous guests authenticate as `authenticated`, not `anon` — public tables must grant SELECT to both).
+- **Migrations were removed from the repo on 2026-09-07**, after all nine had been applied to the live project (`supabase migration list --linked` showed local and remote in step through 0009). The live database is now the only description of the schema; recover the SQL with `git show d20e3f6:supabase/migrations/`. A new migration goes in `supabase/migrations/` and is applied with `supabase db push`. Content tables: `retreats`, `programs`, `practice_sessions`; user tables: `profiles`, `bookings` (all RLS-protected). See the **Backend** section of `CLAUDE.md` for the column map and the RLS-role gotcha (anonymous guests authenticate as `authenticated`, not `anon` — public tables must grant SELECT to both).
 - **Required Supabase Auth settings:** Anonymous sign-ins **ON**, and if "Confirm email" is on, allow-list the redirect URL `soulfull://auth-callback` (Authentication → URL Configuration → Redirect URLs).
 - **Payments** flow through two Edge Functions (`create-payment-intent`, `stripe-webhook`) plus `delete-account` for App Store account-deletion compliance. The client never holds Stripe secrets — even the publishable key is returned by the function. Deploy steps and the required restricted-key permissions are in [`supabase/functions/README.md`](supabase/functions/README.md).
 

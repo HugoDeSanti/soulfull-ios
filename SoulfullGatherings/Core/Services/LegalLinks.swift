@@ -5,9 +5,9 @@
 //  Every outward-facing legal / support destination in one place.
 //
 //  All three pages are live on the Squarespace site and were verified to
-//  return 200 on 2026-09-07. The sources they were published from live in
-//  `website/legal/` at the repo root — edit those and re-publish, so the repo
-//  copy and the live page never drift apart.
+//  return 200 on 2026-09-07. The published page is the only copy — the repo
+//  sources under `website/legal/` were removed on 2026-09-07; recover them
+//  from git history (`git show d20e3f6:website/legal/`) if one needs editing.
 //
 //  Note the `www.` host: the apex redirects, and App Review follows redirects
 //  fine, but linking the final URL saves a hop from inside the app.

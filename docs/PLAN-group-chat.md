@@ -54,6 +54,6 @@ Natural fit: the backend is already Supabase. No third-party chat SDK.
 - Trade-off: the conversation lives outside the app (no in-app notifications, no membership-gating beyond the invite link, no moderation surface).
 
 ## Touch points (if/when built)
-- `supabase/migrations/` (new migration: table + RLS + realtime)
+- `supabase/migrations/` (new migration: table + RLS + realtime — the dir is empty since 2026-09-07; earlier SQL is at `git show d20e3f6:supabase/migrations/`)
 - `SoulfullGatherings/Features/Retreats/PostPurchase/` (new `RetreatChatView` + VM)
 - `RetreatExperience.PostBooking.groupChatURL` → currently the WhatsApp link; would become an in-app route.

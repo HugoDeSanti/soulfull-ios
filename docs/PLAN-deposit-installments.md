@@ -50,7 +50,7 @@ Chosen over Stripe **Subscriptions/Schedules** because this is a *fixed, finite*
 
 ## Touch points in current code
 - `supabase/functions/create-payment-intent/`, `supabase/functions/stripe-webhook/`
-- `supabase/migrations/` (new migration), `bookings` table
+- `supabase/migrations/` (new migration — the dir is empty since 2026-09-07; earlier SQL is at `git show d20e3f6:supabase/migrations/`), `bookings` table
 - `SoulfullGatherings/Core/Services/PaymentService.swift`
 - `SoulfullGatherings/Features/Retreats/RetreatDetailViewModel.swift`
 - `SoulfullGatherings/Features/Retreats/PostPurchase/RetreatCheckoutView.swift` (plan picker)

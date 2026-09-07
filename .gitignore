@@ -37,6 +37,10 @@ Pods/
 .LSOverride
 Thumbs.db
 
+# Claude Code local state (per-machine; never shared)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
 # Env / secrets
 .env
 *.pem

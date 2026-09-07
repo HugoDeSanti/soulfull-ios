@@ -130,8 +130,9 @@ in each HTML file.
 terracotta / olive / gold on an espresso canvas, all-Geist — defined inline as a
 per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
 Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
-The original **brochure-light** versions (cream / Cormorant / Pinyon) are kept
-outside this tree in `docs/design-brochure-backup/`. The `mallorca-chatbot` card
+The original **brochure-light** versions (cream / Cormorant / Pinyon) were kept
+outside this tree in `docs/design-brochure-backup/` until 2026-09-07; recover
+them with `git show d20e3f6:docs/design-brochure-backup/`. The `mallorca-chatbot` card
 stays a **live** prototype (uses `window.claude.complete`); the native app mocks
 its replies. When porting back to Swift, map the `.mb` tokens to `RetreatPalette`
 — don't reintroduce the light palette or fold these into the global `Theme`.

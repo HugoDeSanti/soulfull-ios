@@ -8,7 +8,7 @@
 
 ## One-time setup
 
-1. **Apply the migration** `supabase/migrations/0002_bookings.sql` (SQL Editor or `supabase db push`).
+1. **The `bookings` table already exists** — 0002 was applied to the live project long before the migrations were removed from the repo (2026-09-07). Recreating it elsewhere: `git show d20e3f6:supabase/migrations/0002_bookings.sql`.
 
 2. **Set function secrets** (Stripe keys live only here — the app never stores them):
    ```bash

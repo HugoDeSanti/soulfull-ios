@@ -122,10 +122,10 @@ final class LocalUserStore {
     /// `UserDefaults` was the wrong home for it. A plist in `Preferences/` is
     /// unencrypted at rest beyond the container default, and — the part that
     /// contradicted the policy outright — it is **included in encrypted iCloud
-    /// and Finder backups**. `website/legal/privacy-policy.md` tells the user
-    /// reflections "do not move with you to a new phone"; restoring a backup
-    /// moved them, and anyone with a trusted machine could read them in
-    /// plaintext. The screen itself promises "No one but you sees this."
+    /// and Finder backups**. The published privacy policy (see `LegalLinks`)
+    /// tells the user reflections "do not move with you to a new phone";
+    /// restoring a backup moved them, and anyone with a trusted machine could
+    /// read them in plaintext. The screen itself promises "No one but you sees this."
     ///
     /// These land in Application Support instead, written with
     /// `NSFileProtectionComplete` (unreadable while the device is locked —

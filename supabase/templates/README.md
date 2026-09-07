@@ -41,12 +41,16 @@ no email at all. Set custom SMTP before submitting.
 
 ## Applying the templates
 
-Either paste them in the dashboard (Authentication → **Emails** → pick the
-template → paste the file's contents → Save), or run:
+Paste them in the dashboard (Authentication → **Emails** → pick the template →
+paste the file's contents → Save).
+
+`scripts/apply-auth-emails.sh` used to do this from the command line; it was
+removed on 2026-09-07. To use it again:
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_… ./scripts/apply-auth-emails.sh          # apply
-SUPABASE_ACCESS_TOKEN=sbp_… ./scripts/apply-auth-emails.sh --dry-run
+git show d20e3f6:scripts/apply-auth-emails.sh > /tmp/apply-auth-emails.sh
+chmod +x /tmp/apply-auth-emails.sh
+SUPABASE_ACCESS_TOKEN=sbp_… /tmp/apply-auth-emails.sh --dry-run
 ```
 
 The script PATCHes **only** the four `mailer_*` fields on the project's auth
