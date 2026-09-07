@@ -117,8 +117,12 @@ struct RetreatDetailView: View {
                     .scaleEffect(1 + max(0, -scrollY) / 700)          // stretch on pull-down
                     .blur(radius: min(14, max(0, scrollY) / 26))       // soften under the story
 
+                // The middle stops used to fall to 0.08 — right where the
+                // cover's kind line and blurb sit, on an unblurred photo. They
+                // now hold enough to be that type's ground, the same job the
+                // top scrim does on every PhotoBackdrop screen.
                 LinearGradient(
-                    colors: [.black.opacity(0.42), .black.opacity(0.10), .black.opacity(0.08), .black.opacity(0.62)],
+                    colors: [.black.opacity(0.45), .black.opacity(0.24), .black.opacity(0.22), .black.opacity(0.64)],
                     startPoint: .top, endPoint: .bottom
                 )
 
@@ -138,16 +142,20 @@ struct RetreatDetailView: View {
             VStack(spacing: 18) {
                 Text(exp?.kind ?? "Gathering")
                     .font(Theme.body(15))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(Color.white.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                    // The hero is unblurred and its gradient thins to 0.08
+                    // right here, so the cover type carries its own ground.
+                    .onPhoto()
                 Text(retreat.name)
                     .font(Theme.headline(64, weight: .semibold))
                     .kerning(-2.4)
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
+                    .onPhoto()
 
                 reserveButton
 
@@ -173,10 +181,11 @@ struct RetreatDetailView: View {
                 }
                 Text(exp?.coverLine ?? retreat.blurb)
                     .font(Theme.body(12))
-                    .foregroundStyle(Color.white.opacity(0.78))
+                    .foregroundStyle(Color.white.opacity(0.88))
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
                     .frame(maxWidth: 320)
+                    .onPhoto()
 
                 Image(systemName: "chevron.compact.down")
                     .font(.system(size: 22, weight: .light))

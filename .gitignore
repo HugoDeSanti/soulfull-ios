@@ -17,6 +17,7 @@ xcuserdata/
 # same reason *.xcodeproj isn't: a fresh clone must run `xcodegen generate`
 # before it can build anyway.
 SoulfullGatherings/Info.plist
+SoulfullGatherings/SoulfullGatherings.entitlements
 
 # Build output
 build/

@@ -1,0 +1,114 @@
+<!--
+  Soulfull Gatherings — Supabase Auth email: "Change Email Address".
+  Paste into Supabase → Authentication → Emails → Change Email Address (or apply
+  with scripts/apply-auth-emails.sh). See supabase/templates/README.md.
+
+  THIS is the template most Soulfull sign-ups actually receive: the app upgrades
+  the anonymous guest in place (`auth.update(email:password:)`), which GoTrue
+  treats as an email *change* on the existing user rather than a fresh signup.
+  Keep it identical in tone to confirm-signup.html — the user just sees "the
+  email that finishes my account".
+
+  Template variables used: {{ .Token }} (the OTP code — length is the project's mailer_otp_length), {{ .ConfirmationURL }}
+  (same-device link), {{ .NewEmail }}.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Confirm your email address</title>
+</head>
+<body style="margin:0;padding:0;background:#0B0C07;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your Soulfull Gatherings confirmation code is inside.</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0B0C07;">
+  <tr>
+    <td align="center" style="padding:44px 20px;">
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+
+        <!-- Wordmark -->
+        <tr>
+          <td align="center" style="padding-bottom:28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:3.5px;text-transform:uppercase;color:#C9C5B0;">
+            Soulfull&nbsp;Gatherings
+          </td>
+        </tr>
+
+        <!-- Card -->
+        <tr>
+          <td style="background:#15170D;border:1px solid rgba(245,243,232,0.09);border-radius:22px;padding:38px 34px;">
+
+            <p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;color:#7A7663;">
+              Confirm this address
+            </p>
+
+            <h1 style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:27px;line-height:1.22;font-weight:500;letter-spacing:-0.4px;color:#F5F3E8;">
+              One step to finish
+            </h1>
+
+            <p style="margin:0 0 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#C9C5B0;">
+              Confirming links <span style="color:#F5F3E8;">{{ .NewEmail }}</span> to your Soulfull Gatherings account, so your practices, reflections and reservations stay yours. Enter this code in the app.
+            </p>
+
+            <!-- The code -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" style="background:#0B0C07;border:1px solid rgba(229,199,102,0.34);border-radius:16px;padding:22px 12px;">
+                  <span style="font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:30px;line-height:1;letter-spacing:9px;color:#F5F3E8;">{{ .Token }}</span>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#7A7663;">
+              Reading this on a laptop? That's fine — type the code into the app on your phone and you're in.
+            </p>
+
+            <!-- or -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 24px;">
+              <tr>
+                <td width="45%" style="border-bottom:1px solid rgba(245,243,232,0.10);font-size:0;line-height:0;">&nbsp;</td>
+                <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7A7663;padding:0 10px;">or</td>
+                <td width="45%" style="border-bottom:1px solid rgba(245,243,232,0.10);font-size:0;line-height:0;">&nbsp;</td>
+              </tr>
+            </table>
+
+            <!-- Same-device link -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+              <tr>
+                <td align="center" style="border:1px solid rgba(245,243,232,0.22);border-radius:999px;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;letter-spacing:0.4px;color:#F5F3E8;text-decoration:none;">
+                    Confirm in the app
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:14px 0 0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#7A7663;">
+              This button opens the Soulfull app, so it only works on the iPhone you signed up on.
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:26px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.7;color:#7A7663;">
+            Didn't ask for this? Ignore this email — nothing changes without the code.<br>
+            For your security the code expires; ask for a new one in the app if it does.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#4E4C40;">
+            Soulfull Gatherings · hello@soulfullgatherings.com
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

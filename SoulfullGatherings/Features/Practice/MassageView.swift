@@ -98,7 +98,7 @@ struct MassageDetailView: View {
                             .font(Theme.eyebrow(11))
                             .tracking(2)
                     }
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
 
                     Text(massage.title)
                         .font(Theme.headline(32))
@@ -107,14 +107,16 @@ struct MassageDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text("with \(massage.lead)")
                         .font(Theme.body(13))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                     Text(massage.blurb)
                         .font(Theme.body(14))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
                 }
+                // Header block over the photo backdrop.
+                .onPhoto()
 
                 // Only offered when real media exists for this technique. The
                 // written steps below are the substance either way.
@@ -140,8 +142,9 @@ struct MassageDetailView: View {
                 Text("THE TECHNIQUE")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 4)
+                    .onPhoto()
 
                 VStack(spacing: 14) {
                     ForEach(Array(massage.steps.enumerated()), id: \.offset) { index, step in

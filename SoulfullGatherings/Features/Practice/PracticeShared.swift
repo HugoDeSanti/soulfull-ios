@@ -71,19 +71,20 @@ struct PracticeListScaffold<Content: View>: View {
                     .font(Theme.eyebrow(11))
                     .tracking(3)
             }
-            .foregroundStyle(Theme.muted)
+            .foregroundStyle(Theme.inkSoft)
 
             Text(title)
                 .font(Theme.headline(34))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.3)
             Text(blurb)
-                .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .padding(.top, 2)
         }
         .padding(.bottom, 4)
+        .onPhoto()
     }
 }
 

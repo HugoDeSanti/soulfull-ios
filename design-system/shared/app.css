@@ -67,6 +67,25 @@
 .sg-btn--auto { width: auto; padding-left: 36px; padding-right: 36px; }
 .sg-btn[disabled], .sg-btn.is-disabled { opacity: .45; pointer-events: none; }
 
+/* Sign in with Apple — AppleSignInButton.swift. A native control, so it keeps
+   its own metrics (54px white capsule, 19px system-font label) rather than the
+   Geist sg-btn scale. Apple is the only third-party provider the app offers. */
+.social { display: flex; flex-direction: column; gap: 12px; }
+.social-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: 54px; border: 0; border-radius: 999px;
+  background: #ffffff; color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font-size: 19px; font-weight: 500; cursor: pointer;
+}
+.social-btn:active { transform: scale(.975); }
+.social-btn svg { flex: none; }
+
+/* "or" rule between the social buttons and the email form. */
+.or-rule { display: flex; align-items: center; gap: 12px; }
+.or-rule::before, .or-rule::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.or-rule span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
 /* Quiet secondary text button */
 .quiet-btn {
   background: none; border: 0; cursor: pointer;
@@ -205,7 +224,30 @@
 .vignette { position: absolute; inset: 0; pointer-events: none; }
 .vignette--soft { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.30), rgba(0,0,0,0.55)); }
 .vignette--deep { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.40), rgba(0,0,0,0.75)); }
-.vignette--hero { background: linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.10) 30%, rgba(0,0,0,0.08) 62%, rgba(0,0,0,0.62) 100%); }
+/* Retreat hero (RetreatDetailView.hero). The middle stops hold at ~0.22 — they
+   used to fall to 0.08, right where the cover's kind line and blurb sit on an
+   unblurred photo. */
+.vignette--hero { background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.24) 30%, rgba(0,0,0,0.22) 62%, rgba(0,0,0,0.64) 100%); }
+
+/* PhotoBackdrop's `topScrim` (default 0.45 over 340pt). The vignette above is
+   at its lightest up top, which is where every screen puts its header, so this
+   band gives that type a ground. Sits directly after .vignette in the stack. */
+.top-scrim {
+  position: absolute; top: 0; left: 0; right: 0; height: 340px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.21), transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Type over photography  (View.onPhoto() in Components.swift)
+
+   Text laid on a photo rather than on glass. A tight shadow for edge definition
+   plus a wide, weaker halo; both vanish over dark ground, so the utility is
+   safe on any photo-backed text block. Pair it with the palette rule: eyebrows
+   in --ink-soft (never --muted, which sinks into the scrim) and sublines in
+   --ink-on-photo at 14px.
+   --------------------------------------------------------------------------- */
+.on-photo { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }
 
 /* ---------------------------------------------------------------------------
    Aurora background  (ShaderFX.AuroraBackground) — CSS approximation

@@ -11,10 +11,10 @@
   .topbar img { width: 56px; opacity: .88; }
   .folio { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: var(--w-medium); letter-spacing: 1.5px; color: rgba(255,255,255,.8); }
   .copy { position: relative; z-index: 5; padding: 40px 26px 0; }
-  .copy .eb { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.7); margin-bottom: 16px; }
+  .copy .eb { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.78); margin-bottom: 16px; }
   .copy h2 { font-size: 26px; font-weight: var(--w-medium); letter-spacing: -0.4px; line-height: 1.16; margin: 0 0 18px; color: var(--ink); }
   .copy h2 .dim { color: rgba(255,255,255,0.62); }
-  .copy p { font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.66); margin: 0; max-width: 300px; }
+  .copy p { font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.8); margin: 0; max-width: 300px; }
   .bottom { position: absolute; left: 0; right: 0; bottom: 38px; padding: 0 26px; z-index: 5; }
   .segs { display: flex; gap: 6px; margin-bottom: 26px; }
   .segs span { height: 2px; flex: 1; border-radius: 2px; background: rgba(255,255,255,0.22); }
@@ -30,10 +30,11 @@
   <div class="screen safe-top">
     <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.15) brightness(.85) blur(4px);transform:scale(1.12) translateX(-3%)"></div>
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.45),rgba(0,0,0,.7))"></div>
+    <div class="top-scrim"></div>
 
     <div class="topbar"><img src="../assets/logo.png" alt=""><span class="folio">02 / 03</span></div>
 
-    <div class="copy">
+    <div class="copy on-photo">
       <div class="eb">The Soulfull Way</div>
       <h2>A worldwide community<br>that travels,<br><span class="dim">heals, and connects.</span></h2>
       <p>A conscious space for honest conversation, shared rituals, and the kind of friendships that outlast the retreat.</p>

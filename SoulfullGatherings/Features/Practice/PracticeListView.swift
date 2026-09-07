@@ -2,14 +2,18 @@
 //  PracticeListView.swift
 //  Soulfull Gatherings
 //
-//  Lists every audio / video session for one practice category. Tapping a row
-//  opens `PracticePlayerView`, which resolves the Storage URL and plays.
+//  Lists every audio / video session for one practice category. The list is
+//  open to anyone; tapping a row opens `PracticePlayerView` — which is a
+//  practice, so it goes through `requireAccount` first.
 //
 
 import SwiftUI
 
 struct PracticeListView: View {
     let category: PracticeCategory
+    /// Injected by `PracticeRoot` so this view stays unaware of auth. The
+    /// default runs straight through, which keeps previews working.
+    var requireAccount: (@escaping () -> Void) -> Void = { $0() }
 
     @State private var vm = PracticeViewModel()
     @State private var nowPlaying: PracticeSession?
@@ -33,7 +37,7 @@ struct PracticeListView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(vm.sessions) { session in
-                        PressableCard(action: { nowPlaying = session }) {
+                        PressableCard(action: { requireAccount { nowPlaying = session } }) {
                             sessionRow(session)
                         }
                         .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in

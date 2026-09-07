@@ -1,0 +1,186 @@
+/* ============================================================================
+   Soulfull Gatherings — legal page styles
+   Mirrors design-system/shared/tokens.css (which mirrors Theme.swift).
+
+   Every rule is scoped under `.sg-legal` so this can be pasted straight into a
+   Squarespace Code Block without leaking styles into the rest of the page.
+   The one exception is the `html, body` rule below, which is clearly marked.
+
+   This file is the SOURCE. It is inlined verbatim into each *.html page so the
+   pages stay self-contained. If you edit it, re-inline it (see README.md).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;500;600;700&display=swap');
+
+/* --- Page background. REMOVE THIS RULE if pasting into a Squarespace Code
+       Block on a page that already sets its own background. ---------------- */
+html, body { background: #0b0c07; margin: 0; }
+
+.sg-legal {
+  /* Tokens — 1:1 with design-system/shared/tokens.css */
+  --bg: #0b0c07;
+  --bg-deep: #10120a;
+  --surface: #15170d;
+  --line: rgba(255,255,255,0.10);
+  --glass-border: rgba(255,255,255,0.14);
+  --accent-soft: #77803b;
+  --ink: #f5f3e8;
+  --ink-soft: #c9c5b0;
+  --muted: #7a7663;
+  --honey: #e5c766;
+  --card-radius: 22px;
+  --font: 'Geist', -apple-system, 'Segoe UI', system-ui, sans-serif;
+
+  background: var(--bg);
+  color: var(--ink-soft);
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+  padding: 72px 24px 120px;
+}
+
+.sg-legal * { box-sizing: border-box; }
+.sg-legal .wrap { max-width: 720px; margin: 0 auto; }
+
+/* --- Masthead ------------------------------------------------------------ */
+.sg-legal .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+.sg-legal h1 {
+  font-weight: 300;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 20px;
+}
+.sg-legal .stamp {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 44px;
+  padding-bottom: 44px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* --- Summary card -------------------------------------------------------- */
+.sg-legal .summary {
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  padding: 28px 30px;
+  margin: 0 0 56px;
+}
+.sg-legal .summary h2 {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--honey);
+  font-weight: 400;
+  margin: 0 0 16px;
+}
+.sg-legal .summary ul { margin: 0; padding-left: 20px; }
+.sg-legal .summary li { margin: 0 0 10px; }
+.sg-legal .summary li:last-child { margin-bottom: 0; }
+
+/* --- Sections ------------------------------------------------------------ */
+.sg-legal h2 {
+  font-weight: 400;
+  font-size: clamp(22px, 3.4vw, 28px);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 64px 0 18px;
+}
+.sg-legal h2 .num {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.sg-legal h3 {
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin: 34px 0 10px;
+}
+.sg-legal p { margin: 0 0 18px; }
+.sg-legal ul, .sg-legal ol { margin: 0 0 18px; padding-left: 22px; }
+.sg-legal li { margin: 0 0 9px; }
+.sg-legal strong { color: var(--ink); font-weight: 500; }
+.sg-legal a { color: var(--honey); text-decoration: none; border-bottom: 1px solid rgba(229,199,102,0.35); }
+.sg-legal a:hover { border-bottom-color: var(--honey); }
+
+/* --- Tables -------------------------------------------------------------- */
+.sg-legal .table-scroll { overflow-x: auto; margin: 0 0 22px; }
+.sg-legal table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 460px; }
+.sg-legal th, .sg-legal td {
+  text-align: left;
+  padding: 13px 14px 13px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.sg-legal th {
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* First column is the label column in every table here — give it a fixed share
+   so a long label can't starve the columns beside it. */
+.sg-legal th:first-child,
+.sg-legal td:first-child { width: 28%; padding-right: 26px; }
+.sg-legal td:first-child { color: var(--ink); }
+
+/* --- Callout ------------------------------------------------------------- */
+.sg-legal .note {
+  border-left: 2px solid var(--accent-soft);
+  padding: 4px 0 4px 22px;
+  margin: 0 0 22px;
+  color: var(--ink-soft);
+}
+.sg-legal .note p:last-child { margin-bottom: 0; }
+
+/* --- Unfilled placeholder. Search the page for this class before publishing;
+       there should be none left. ------------------------------------------ */
+.sg-legal .todo {
+  color: var(--honey);
+  border-bottom: 1px dotted var(--honey);
+  font-style: normal;
+}
+
+/* --- Draft banner. DELETE the matching <div> before publishing. ----------- */
+.sg-legal .draft-banner {
+  max-width: 720px;
+  margin: 0 auto 56px;
+  border: 1px solid var(--honey);
+  border-radius: 14px;
+  padding: 16px 20px;
+  color: var(--honey);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* --- Footer -------------------------------------------------------------- */
+.sg-legal footer {
+  margin-top: 80px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.sg-legal footer p { margin: 0 0 8px; }
+
+@media (max-width: 600px) {
+  .sg-legal { padding: 48px 20px 90px; font-size: 15.5px; }
+  .sg-legal .summary { padding: 24px 22px; }
+}

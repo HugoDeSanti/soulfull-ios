@@ -70,7 +70,7 @@ struct PracticeView: View {
                 Text("WELLNESS LIBRARY")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                 Text("Practices")
                     .font(Theme.headline(38))
                     .foregroundStyle(Theme.ink)
@@ -83,12 +83,14 @@ struct PracticeView: View {
                      : availableCategories.isEmpty
                        ? "Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way."
                        : "Choose a way in. Sessions for every state — listen or watch, anytime.")
-                    .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
-                    .lineSpacing(3)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .lineSpacing(4)
                     .padding(.top, 4)
                     .animation(nil, value: sheet)
             }
+            // Floats on a barely-blurred photo — see View.onPhoto().
+            .onPhoto()
             Spacer()
             CircleIconButton(systemName: sheet ? "rectangle.portrait" : "square.grid.2x2", size: 40) {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.82)) { sheet.toggle() }

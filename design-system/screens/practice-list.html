@@ -11,9 +11,9 @@
   .backbar { padding: 8px 24px 0; }
   .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
   .hdr { padding: 18px 20px 0; }
-  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0; }
+  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .hdr h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 8px; }
-  .hdr p { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 0; max-width: 280px; }
+  .hdr p { font-size: 14px; line-height: 1.45; color: var(--ink-on-photo); margin: 0; max-width: 280px; }
   .list { padding: 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
   .row { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; }
   .row .thumb { width: 68px; height: 68px; border-radius: 14px; position: relative; overflow: hidden; flex: none; background-size: cover; background-position: center; }
@@ -33,9 +33,10 @@
   <div class="screen screen--scroll scr">
     <div class="photo" style="background-image:url('../assets/practice-breathwork.jpg');filter:saturate(1.1) brightness(.8) blur(22px);transform:scale(1.2)"></div>
     <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
 
     <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Practices</a></div>
-    <div class="hdr">
+    <div class="hdr on-photo">
       <p class="eb">Breathwork</p>
       <h1>Breathwork</h1>
       <p>Patterned breath to settle, energize, or open.</p>

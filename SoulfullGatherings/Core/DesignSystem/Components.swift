@@ -101,6 +101,14 @@ struct PhotoBackdrop: View {
     var darken: Double = 0.5
     /// Horizontal camera pan, -1…1. Animate across paged content for parallax.
     var pan: CGFloat = 0
+    /// Extra darkening across the top band, fading out by `topScrimHeight`.
+    ///
+    /// The vignette below is at its lightest up top (0.18) — which is exactly
+    /// where every screen puts its header — so cream type over a bright sky
+    /// had nothing to sit on. This gives it a ground. Pass 0 on a screen whose
+    /// top is deliberately empty and whose photo should stay open.
+    var topScrim: Double = 0.45
+    var topScrimHeight: CGFloat = 340
 
     var body: some View {
         ZStack {
@@ -132,7 +140,45 @@ struct PhotoBackdrop: View {
                 startPoint: .top, endPoint: .bottom
             )
         }
+        .overlay(alignment: .top) {
+            if topScrim > 0 {
+                LinearGradient(
+                    colors: [.black.opacity(topScrim), .black.opacity(topScrim * 0.47), .clear],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .frame(height: topScrimHeight)
+                .allowsHitTesting(false)
+            }
+        }
         .ignoresSafeArea()
+    }
+}
+
+// MARK: - Type over photography
+
+extension View {
+    /// Legibility treatment for type that sits directly on a photo rather than
+    /// on glass or a card.
+    ///
+    /// Two shadows, no box: a tight one for edge definition against busy
+    /// detail, and a wide, weaker halo that darkens the pixels immediately
+    /// around the glyphs. Both vanish over an already-dark ground, so this is
+    /// safe to apply to any photo-backed text block — it only shows up where
+    /// the image underneath is bright.
+    ///
+    /// The rest of the rule, so photo-backed headers read the same everywhere:
+    /// eyebrows in `Theme.inkSoft` (never `Theme.muted`, which sinks into the
+    /// scrim) and sublines in `Theme.inkOnPhoto` at `Theme.body(14)`. Type on
+    /// glass needs none of this — the surface is its own ground.
+    ///
+    /// Apply it to text blocks only. A `.shadow` over a UIKit-backed view
+    /// (`TextField`, `TextEditor`, video) forces an offscreen pass on a view
+    /// that can't be composited that way — see the rendering gotchas in
+    /// CLAUDE.md — so wrap the copy, not the container that holds the field.
+    func onPhoto() -> some View {
+        self
+            .shadow(color: .black.opacity(0.7), radius: 4, y: 1)
+            .shadow(color: .black.opacity(0.4), radius: 12)
     }
 }
 
@@ -152,6 +198,13 @@ struct CircleIconButton: View {
                 .foregroundStyle(Theme.ink)
                 .frame(width: size, height: size)
                 .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
+                // Without this the button only hit-tests the drawn glyph — an
+                // Image stretched by `.frame` leaves the surrounding area
+                // non-interactive, and `glassEffect` (iOS 26) contributes no
+                // hit-testable fill the way `.ultraThinMaterial` did. Every
+                // CircleIconButton in the app was a ~11pt target inside a 38pt
+                // circle; the account sheet's close button is where it showed.
+                .contentShape(Circle())
         }
         .buttonStyle(.soulPressableChip)
     }
@@ -184,7 +237,7 @@ struct TabPlaceholder: View {
                 Text(eyebrow.uppercased())
                     .font(Theme.eyebrow(11))
                     .tracking(3)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                 Text(headline)
                     .font(Theme.headline(34))
                     .foregroundStyle(Theme.ink)
@@ -193,7 +246,7 @@ struct TabPlaceholder: View {
                     .frame(maxWidth: 320)
                 Text(message)
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
                     .frame(maxWidth: 320)

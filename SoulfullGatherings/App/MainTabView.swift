@@ -11,6 +11,10 @@
 //  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
 //  request on appear.
 //
+//  Browsing needs no account. `AccountGate` lives here (one sheet for the whole
+//  shell) and is handed to PracticeRoot, which asks for an account only when a
+//  guest opens an actual practice — not when they browse the lists.
+//
 
 import SwiftUI
 
@@ -48,7 +52,15 @@ enum MainTab: String, Hashable, CaseIterable {
 
 struct MainTabView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(AppSettings.self) private var settings
     @State private var tab: MainTab = Self.initialTab
+    /// Holds an interrupted action while the account sheet is up, then replays
+    /// it. Scoped to the tab shell because that's the only place that gates.
+    @State private var gate = AccountGate()
+    /// Presentation is a plain Bool, not a property of `gate` — see the note in
+    /// `AccountGate.swift` for why binding a sheet to an @Observable class's
+    /// property left it undismissable.
+    @State private var showAccount = false
 
     /// DEBUG launch hook matching the `-preview-*` family in
     /// `SoulfullGatheringsApp`: `-tab practice` opens straight to a tab for a
@@ -82,7 +94,12 @@ struct MainTabView: View {
                         tab = .practice
                     }
                 case .practice:
-                    PracticeRoot(navHidden: $navHidden, pending: $pendingPractice)
+                    PracticeRoot(navHidden: $navHidden, pending: $pendingPractice,
+                                 requireAccount: { action in
+                                     if gate.require(signedIn: auth.hasAccount, action) {
+                                         showAccount = true
+                                     }
+                                 })
                 case .you:      ProfilePlaceholder()
                 }
             }
@@ -105,6 +122,13 @@ struct MainTabView: View {
                 .animation(.spring(response: 0.45, dampingFraction: 0.8), value: navHidden)
         }
         .onChange(of: tab) { navHidden = false }
+        // One sheet for the whole shell, so a gated tap works from any tab and
+        // survives the tab switch Home's ritual card performs.
+        .sheet(isPresented: $showAccount, onDismiss: {
+            gate.resume(signedIn: auth.hasAccount)
+        }) {
+            AccountView(initialName: settings.userName)
+        }
     }
 }
 
@@ -219,6 +243,11 @@ private struct PracticeRoot: View {
     @Binding var navHidden: Bool
     /// A section another tab asked to open. Consumed once, then cleared.
     @Binding var pending: PracticeMenuItem?
+    /// Runs the action once an account exists, raising the account sheet first
+    /// if the user is still a guest. Wraps only the *doing* — playing a
+    /// session, opening a prompt, an exercise, a recipe, a massage. The landing
+    /// and every list stay open, so a guest can always see what's on offer.
+    var requireAccount: (@escaping () -> Void) -> Void = { $0() }
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
@@ -284,15 +313,15 @@ private struct PracticeRoot: View {
     private func destinationContent(_ route: Route) -> some View {
         switch route {
         case .sessions(let category):
-            PracticeListView(category: category)
+            PracticeListView(category: category, requireAccount: requireAccount)
         case .journalList:
-            JournalListView(onOpen: { path.append(.journalDetail($0)) })
+            JournalListView(onOpen: { p in requireAccount { path.append(.journalDetail(p)) } })
         case .exerciseList:
-            ExerciseListView(onOpen: { path.append(.exerciseDetail($0)) })
+            ExerciseListView(onOpen: { e in requireAccount { path.append(.exerciseDetail(e)) } })
         case .recipeList:
-            RecipeListView(onOpen: { path.append(.recipeDetail($0)) })
+            RecipeListView(onOpen: { r in requireAccount { path.append(.recipeDetail(r)) } })
         case .massageList:
-            MassageListView(onOpen: { path.append(.massageDetail($0)) })
+            MassageListView(onOpen: { m in requireAccount { path.append(.massageDetail(m)) } })
         case .journalDetail(let prompt):
             JournalDetailView(prompt: prompt)
         case .exerciseDetail(let exercise):

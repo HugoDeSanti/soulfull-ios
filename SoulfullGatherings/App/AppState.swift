@@ -30,6 +30,11 @@ final class AppState {
 
     /// Called once at launch from `SoulfullGatheringsApp.body` via `.task`.
     /// Establishes auth then routes to the correct stage.
+    ///
+    /// Reaching `.main` needs only the onboarding answers — **not** an account.
+    /// Browsing is open to an anonymous guest; the account is asked for at the
+    /// moment the user reaches for a practice, via `AccountGate`. A hard gate
+    /// here would put the app in scope for Guideline 5.1.1(i).
     func initializeAuth() async {
         await auth.initialize()
         let next: Stage = settings.hasOnboarded ? .main : .welcome
@@ -40,15 +45,15 @@ final class AppState {
         withAnimation(.easeInOut(duration: 0.35)) { stage = .onboarding }
     }
 
+    func finishOnboardingSkipping(name: String) {
+        settings.userName = name.trimmingCharacters(in: .whitespaces)
+        finishOnboarding()
+    }
+
     func finishOnboarding() {
         settings.hasOnboarded = true
         Haptics.success()
         withAnimation(.easeInOut(duration: 0.45)) { stage = .main }
-    }
-
-    func finishOnboardingSkipping(name: String) {
-        settings.userName = name.trimmingCharacters(in: .whitespaces)
-        finishOnboarding()
     }
 
     /// Used by the in-app "reset onboarding" Profile action (handy during dev).

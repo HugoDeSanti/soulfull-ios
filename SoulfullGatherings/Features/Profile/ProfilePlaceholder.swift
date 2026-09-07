@@ -28,16 +28,21 @@ struct ProfilePlaceholder: View {
                     .resizable().scaledToFit()
                     .frame(width: 88, height: 88)
                     .breathing(scale: 0.96...1.04, opacity: 0.82...0.95, period: 5.5)
-                Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
-                    .font(Theme.eyebrow(12))
-                    .tracking(3)
-                    .foregroundStyle(Theme.ink)
-                Text("Welcome back.")
-                    .font(Theme.headline(36))
-                    .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                VStack(spacing: 18) {
+                    Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
+                        .font(Theme.eyebrow(12))
+                        .tracking(3)
+                        .foregroundStyle(Theme.ink)
+                    Text("Welcome back.")
+                        .font(Theme.headline(36))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.3)
 
-                accountStatus
+                    accountStatus
+                }
+                // This block is centred over the open sky of home-bg, the
+                // brightest ground in the app — see View.onPhoto().
+                .onPhoto()
                 intentionsRow
 
                 Spacer()
@@ -106,11 +111,11 @@ struct ProfilePlaceholder: View {
         if auth.hasAccount, let email = auth.email {
             Label(email, systemImage: "checkmark.seal.fill")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
         } else {
             Text("Guest · not signed in")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
         }
     }
 

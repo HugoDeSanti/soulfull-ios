@@ -87,7 +87,7 @@ struct ExerciseDetailView: View {
                     }
                     .font(Theme.eyebrow(11))
                     .tracking(2)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
 
                     Text(exercise.title)
                         .font(Theme.headline(32))
@@ -96,16 +96,19 @@ struct ExerciseDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text(exercise.blurb)
                         .font(Theme.body(14))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                // Header block over the (blurred) photo backdrop.
+                .onPhoto()
 
                 Text("THE SEQUENCE")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 4)
+                    .onPhoto()
 
                 VStack(spacing: 14) {
                     ForEach(Array(exercise.steps.enumerated()), id: \.element.id) { index, step in

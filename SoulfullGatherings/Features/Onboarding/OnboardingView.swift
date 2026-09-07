@@ -6,6 +6,9 @@
 //  Shared shell handles backdrop, top bar (back / progress / skip), and
 //  the bottom CTA. Individual step views render only the question body.
 //
+//  No account is asked for here — browsing is open to a guest, and the sign-in
+//  prompt happens later at the first practice (see `AccountGate`).
+//
 
 import SwiftUI
 
@@ -101,17 +104,18 @@ private struct OnboardingShell<StepBody: View>: View {
                 progressBar
                 Text("\(vm.step.index + 1)/\(OnboardingViewModel.Step.questionCount)")
                     .font(Theme.body(13))
-                    .foregroundStyle(Color.white.opacity(0.62))
+                    .foregroundStyle(Color.white.opacity(0.78))
                 Button {
                     Haptics.tap()
                     app.finishOnboardingSkipping(name: vm.name)
                 } label: {
                     Text("skip")
                         .font(Theme.body(14))
-                        .foregroundStyle(Color.white.opacity(0.62))
+                        .foregroundStyle(Color.white.opacity(0.78))
                 }
                 .buttonStyle(.plain)
             }
+            .onPhoto()
         }
     }
 
@@ -154,6 +158,8 @@ private struct NameStep: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
                 .kerning(-0.2)
+                // The question only: never the TextField underneath it.
+                .onPhoto()
 
             TextField("", text: $vm.name, prompt:
                 Text("Your name")
@@ -323,8 +329,9 @@ private struct FinishStepView: View {
                 Text("WELCOME, \(name.isEmpty ? "friend" : name.uppercased())")
                     .font(Theme.eyebrow(11))
                     .tracking(4)
-                    .foregroundStyle(Theme.ink.opacity(0.7))
+                    .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 24)
+                    .onPhoto()
 
                 Text("\u{201C}The soul knows the way — we're simply here to walk beside you.\u{201D}")
                     .font(Theme.headline(28))
@@ -333,13 +340,15 @@ private struct FinishStepView: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 320)
                     .padding(.top, 18)
+                    .onPhoto()
 
                 Text("Your space is ready whenever you are.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.ink.opacity(0.75))
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
                     .padding(.top, 18)
+                    .onPhoto()
 
                 Spacer()
 
@@ -419,16 +428,17 @@ private struct OptionCard: View {
 
 // MARK: - Tiny shared atoms used by the question-step bodies
 
-@ViewBuilder
+@ViewBuilder @MainActor
 private func eyebrow(_ text: String) -> some View {
     Text(text)
         .font(Theme.body(12))
-        .foregroundStyle(Color.white.opacity(0.62))
+        .foregroundStyle(Color.white.opacity(0.75))
         .tracking(0.2)
         .padding(.horizontal, 2)
+        .onPhoto()
 }
 
-@ViewBuilder
+@ViewBuilder @MainActor
 private func headline(_ text: String) -> some View {
     Text(text)
         .font(Theme.headline(34))
@@ -437,6 +447,7 @@ private func headline(_ text: String) -> some View {
         .lineSpacing(2)
         .kerning(-0.4)
         .frame(maxWidth: 320, alignment: .leading)
+        .onPhoto()
 }
 
 #Preview {

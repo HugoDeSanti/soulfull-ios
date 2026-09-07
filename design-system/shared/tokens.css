@@ -20,6 +20,7 @@
    Theme.ink              ->  --ink
    Theme.inkSoft          ->  --ink-soft
    Theme.muted            ->  --muted
+   Theme.inkOnPhoto       ->  --ink-on-photo      (ink @ 0.92)
    Theme.honey            ->  --honey
    Theme.cardRadius       ->  --card-radius       (22)
    Theme.pillRadius       ->  --pill-radius       (999)
@@ -47,7 +48,8 @@
   /* ---- Text ---- */
   --ink:      #f5f3e8;    /* rgb(0.961, 0.953, 0.910)  warm cream */
   --ink-soft: #c9c5b0;    /* rgb(0.788, 0.773, 0.690)  muted cream */
-  --muted:    #7a7663;    /* rgb(0.478, 0.463, 0.388)  tertiary/metadata */
+  --muted:    #7a7663;    /* rgb(0.478, 0.463, 0.388)  tertiary/metadata — on glass only */
+  --ink-on-photo: rgba(245,243,232,0.92);  /* Theme.inkOnPhoto — body copy laid on a photo */
   --honey:    #e5c766;    /* rgb(0.898, 0.780, 0.400)  amber glow / selected */
 
   /* ---- Gradients ---- */

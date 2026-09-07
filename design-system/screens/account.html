@@ -12,8 +12,9 @@
   .head { text-align: center; }
   .head img { width: 64px; opacity: .9; }
   .head h1 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 14px 0 0; }
-  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 8px auto 0; max-width: 290px; }
-  .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 26px; }
+  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px auto 0; max-width: 290px; }
+  .head { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }  /* .on-photo */
+  .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
   .field { display: flex; align-items: center; gap: 10px; padding: 16px 14px; border-radius: 16px; }
   .field.focus { border-color: var(--glass-border-high); }
   .field svg { color: var(--ink-soft); flex: none; }
@@ -35,13 +36,21 @@
   <div class="screen screen--scroll">
     <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.65) blur(8px);transform:scale(1.1)"></div>
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
+    <div class="top-scrim"></div>
 
     <div class="scr" style="position:relative;z-index:3">
       <div class="head">
         <img src="../assets/logo.png" alt="">
         <h1>Create account</h1>
-        <p>Keep your reflections, retreats, and circles across every device.</p>
+        <p>Practices, reflections and reservations are saved to your account — create one and we'll pick up exactly where you were.</p>
       </div>
+      <div class="social" style="margin-top:26px">
+        <button class="social-btn">
+          <svg width="19" height="22" viewBox="0 0 17 20" fill="currentColor"><path d="M14.1 10.6c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.5 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.7 2.2 1.1 0 1.5-.7 2.8-.7s1.7.7 2.8.7c1.2 0 1.9-1 2.6-2.1.8-1.2 1.2-2.4 1.2-2.4s-2.3-.9-2.3-3.3zM11.9 3.9c.6-.7 1-1.7.9-2.7-.9 0-2 .6-2.6 1.3-.6.6-1.1 1.6-.9 2.6 1 .1 2-.5 2.6-1.2z"/></svg>
+          Continue with Apple
+        </button>
+      </div>
+      <div class="or-rule" style="margin-top:22px"><span>or</span></div>
       <div class="fields">
         <div class="field glass">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>

@@ -42,8 +42,14 @@ enum Theme {
     /// Muted ink — secondary text.
     static let inkSoft = Color(red: 0.788, green: 0.773, blue: 0.690)
 
-    /// Tertiary text / metadata.
+    /// Tertiary text / metadata. On glass or a card only — over photography it
+    /// sinks into the image; use `inkSoft` there (see `View.onPhoto()`).
     static let muted = Color(red: 0.478, green: 0.463, blue: 0.388)
+
+    /// Body copy that sits directly on photography rather than on glass.
+    /// Brighter than `inkSoft`, which washes out over a pale sky — the one
+    /// colour for every photo-backed subline in the app.
+    static let inkOnPhoto = ink.opacity(0.92)
 
     /// Honey glow for selected onboarding cards.
     static let honey = Color(red: 0.898, green: 0.780, blue: 0.400)

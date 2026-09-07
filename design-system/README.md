@@ -26,7 +26,7 @@ ships from `SoulfullGatherings/` and never imports anything here.
 | Design System file        | Swift source                          | What lives there |
 |---------------------------|---------------------------------------|------------------|
 | `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`       | Colors, gradients, radii, type — one CSS var per `Theme.*` constant |
-| `shared/app.css`          | `Core/DesignSystem/Components.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift` | Buttons, glass, chips, option cards, nav, steps |
+| `shared/app.css`          | `Core/DesignSystem/Components.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift` | Buttons, glass, chips, option cards, nav, steps, the Apple button |
 | `shared/frame.css`        | (presentation only)                   | iPhone shell + iOS status bar — not part of the app |
 | `foundations/*.html`      | `Theme.swift`                         | Swatch / type / gradient reference sheets |
 | `components/*.html`       | `Components.swift` et al.             | One card per reusable view |
@@ -45,7 +45,8 @@ constant in `Theme.swift`:
 | `--surface` | `Theme.surface` | `#15170D` |
 | `--ink` | `Theme.ink` | `#F5F3E8` |
 | `--ink-soft` | `Theme.inkSoft` | `#C9C5B0` |
-| `--muted` | `Theme.muted` | `#7A7663` |
+| `--muted` | `Theme.muted` | `#7A7663` (on glass only — see below) |
+| `--ink-on-photo` | `Theme.inkOnPhoto` | `rgba(245,243,232,0.92)` (ink @ 0.92) |
 | `--accent` | `Theme.accent` | `#3E4315` |
 | `--accent-soft` | `Theme.accentSoft` | `#77803B` |
 | `--honey` | `Theme.honey` | `#E5C766` |
@@ -54,6 +55,23 @@ constant in `Theme.swift`:
 
 > Theme.swift stores colors as RGB 0–1. To go from a new hex back to Swift:
 > `R/255, G/255, B/255`. e.g. `#E5C766` → `Color(red: 0.898, green: 0.780, blue: 0.400)`.
+
+### Type over photography
+
+Most screens lay their header straight on a photo, and a photo backdrop is at
+its lightest exactly where that header sits. One rule covers it everywhere —
+change it in both places or the mirror drifts:
+
+| Where | CSS | Swift |
+|---|---|---|
+| Header band darkening | `.top-scrim` (after `.vignette`) | `PhotoBackdrop(topScrim:)`, default `0.45` over `340pt` |
+| Text halo | `.on-photo` | `View.onPhoto()` |
+| Eyebrow colour | `--ink-soft` | `Theme.inkSoft` |
+| Subline colour / size | `--ink-on-photo` at 14px | `Theme.inkOnPhoto`, `Theme.body(14)` |
+
+`--muted` / `Theme.muted` is for type on **glass or a solid surface** — over a
+photo it sinks into the scrim. Type inside a card or on `--bg` needs none of
+this; the surface is its own ground.
 
 ## What's faithful vs. approximated
 
@@ -77,6 +95,23 @@ mirror matching the **shipping** app; parked work stays under
 | **Reservations off** (`AppFeatures.paymentsEnabled = false`) | `retreat-detail` CTA reads **"Request a place"** (opens a support email), not "Reserve". The checkout and Mallorca post-purchase cards are unreachable in v1 but stay accurate for 1.1. |
 | **Practice media tracks gated** | Somatic / Breathwork / Meditation carry a `SOON` badge, read "Coming soon", and are dimmed (`.pcard--soon`) until the `practice_sessions` table is seeded. |
 | **Legal links added** | `profile` gains a Privacy · Terms · Support row; `retreat-checkout` fineprint now links the terms it names. |
+
+## Accounts are just-in-time (affects the account card)
+
+An account is **not** required to browse. `AppState` routes to the tabs on the
+onboarding answers alone; `AccountGate` raises the account sheet only when a
+guest opens an actual practice, then replays the tap they were making.
+
+| Change | Mirror effect |
+|---|---|
+| **Sign in with Apple first** | `account` leads with a single `.social-btn` pill, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px white capsule, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled. |
+| **Confirmation is a code, not just a link** | A second card, `account-confirm`, is the state after "Create account" when Supabase email confirmation is on. It leads with a **code field** (one wide field, not a row of boxes — iOS one-time-code autofill targets a single field, and the digit count is the project's `mailer_otp_length`, currently 6) because the emailed *link* can only complete on the iPhone that signed up. Below it: Confirm email · Send a new code (30s cooldown) · Use a different sign-in. |
+| **The sheet arrives mid-tap** | Its subtitle has to justify the interruption and promise the tap isn't lost, which is why the copy reads "we'll pick up exactly where you were" rather than a generic pitch. |
+| **No onboarding gate card** | A full-screen `onboarding-account` card existed briefly on 3 September and was deleted the same day — a hard registration wall put the app in scope for App Store Guideline 5.1.1(i). The four `onboarding-*` question cards keep their `.onb-skip` control. |
+
+> **Apple is the only third-party provider.** Google was built and then removed
+> before shipping (2026-09-03) — don't re-add a second `.social-btn` to the
+> account card without the Swift change to match.
 
 ## Card groups in Claude Design
 

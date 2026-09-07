@@ -9,9 +9,11 @@
 <style>
   .scr { padding-top: 50px; padding-bottom: 130px; }
   .hdr { display: flex; justify-content: space-between; align-items: flex-start; padding: 22px 20px 0; }
-  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0; }
+  /* Type over photography — see .on-photo in app.css. The eyebrow is
+     ink-soft, not muted, or it sinks into the header scrim. */
+  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .hdr h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 8px; }
-  .hdr p { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 0; max-width: 240px; }
+  .hdr p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 0; max-width: 240px; }
   .cards { padding: 18px 20px 0; display: flex; flex-direction: column; gap: 14px; }
   .pcard { position: relative; height: 210px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); background-size: cover; background-position: center; }
   .pcard .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.35) 55%, rgba(0,0,0,.72)); }
@@ -41,7 +43,7 @@
 
   <div class="screen screen--scroll scr">
     <div class="hdr">
-      <div>
+      <div class="on-photo">
         <p class="eb">Wellness Library</p>
         <h1>Practices</h1>
         <p>Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way.</p>

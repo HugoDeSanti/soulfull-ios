@@ -25,6 +25,7 @@ struct RecipeListView: View {
                     PressableCard(action: { onOpen(recipe) }) {
                         recipeCard(recipe)
                     }
+                    .accessibilityIdentifier("recipe-card")
                     .listReveal()
                 }
             }

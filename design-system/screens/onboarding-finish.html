@@ -10,7 +10,7 @@
   .wrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; padding: 0 32px; }
   .wrap img { width: 160px; filter: drop-shadow(0 0 24px rgba(255,255,255,0.18)); }
-  .eb { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: rgba(245,243,232,0.7); margin: 24px 0 0; }
+  .eb { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-soft); margin: 24px 0 0; }
   .quote { font-style: italic; font-size: 28px; line-height: 1.28; color: var(--ink); margin: 18px 0 0; max-width: 320px; }
   .sub { font-size: 14px; color: rgba(245,243,232,0.75); margin: 18px 0 0; }
   .cta { position: absolute; left: 0; right: 0; bottom: 40px; padding: 0 32px; }
@@ -24,6 +24,7 @@
   <div class="screen">
     <div class="photo" style="background-image:url('../assets/finish-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
     <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
     <div class="wrap">
       <img class="breathing" src="../assets/logo.png" alt="Soulfull">
       <p class="eb">Welcome, Hugo</p>

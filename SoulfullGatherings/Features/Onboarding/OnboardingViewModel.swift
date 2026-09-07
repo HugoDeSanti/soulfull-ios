@@ -41,7 +41,7 @@ final class OnboardingViewModel {
     }
 
     var isFirstStep: Bool { step == .name }
-    var isQuestionStep: Bool { step != .finish }
+    var isQuestionStep: Bool { step.index < Step.questionCount }
 
     func toggleIntention(_ id: String) {
         Haptics.select()

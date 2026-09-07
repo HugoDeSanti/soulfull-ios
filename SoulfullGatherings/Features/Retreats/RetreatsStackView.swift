@@ -211,6 +211,8 @@ struct RetreatsStackView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: rowHeight)
+        // Unblurred photography in stack mode — see View.onPhoto().
+        .onPhoto()
         .opacity(isActive ? 1 : 0.42)
         .animation(.easeInOut(duration: 0.3), value: vm.activeIndex)
     }
@@ -286,10 +288,11 @@ struct RetreatsStackView: View {
                     .foregroundStyle(.white)
                 Text("Every gathering, side by side. Pinch in — or tap a cover — to return.")
                     .font(Theme.body(12))
-                    .foregroundStyle(Color.white.opacity(0.7))
+                    .foregroundStyle(Color.white.opacity(0.82))
                     .lineSpacing(2)
                     .frame(maxWidth: 230, alignment: .leading)
             }
+            .onPhoto()
             Spacer()
             CircleIconButton(systemName: "rectangle.portrait", size: 42) {
                 withAnimation(commitSpring) { mode = .stack }

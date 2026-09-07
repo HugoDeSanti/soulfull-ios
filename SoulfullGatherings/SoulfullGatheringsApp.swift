@@ -72,6 +72,8 @@ struct SoulfullGatheringsApp: App {
             NavigationStack {
                 RetreatGuidesView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
             }
+        } else if CommandLine.arguments.contains("-preview-confirm-email") {
+            AccountView(previewConfirmationFor: "hugo@soulfullgatherings.com")
         } else if CommandLine.arguments.contains("-preview-chat") {
             NavigationStack {
                 RetreatAssistantView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)

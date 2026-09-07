@@ -92,8 +92,9 @@ struct WelcomeView: View {
                 Text("TAP TO CONTINUE")
                     .font(Theme.eyebrow(11))
                     .tracking(3.4)
-                    .foregroundStyle(Color(white: 0.92).opacity(0.62))
+                    .foregroundStyle(Color(white: 0.92).opacity(0.72))
                     .padding(14)
+                    .onPhoto()
                     .breathing(scale: 1.0...1.0, opacity: 0.45...0.9, period: 2.8)
                     .padding(.bottom, 32)
             }
@@ -133,10 +134,11 @@ struct WelcomeView: View {
 
                 Text(slide.body)
                     .font(Theme.body(13))
-                    .foregroundStyle(Color.white.opacity(0.66))
+                    .foregroundStyle(Color.white.opacity(0.8))
                     .lineSpacing(3)
             }
             .padding(.horizontal, 30)
+            .onPhoto()
             .id(slide.id)
             .transition(.editorialPage)
 

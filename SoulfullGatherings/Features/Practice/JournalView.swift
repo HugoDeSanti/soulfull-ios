@@ -85,12 +85,14 @@ struct JournalDetailView: View {
                     Text(prompt.theme.uppercased())
                         .font(Theme.eyebrow(11))
                         .tracking(3)
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
+                        .onPhoto()
                     Text(prompt.title)
                         .font(Theme.headline(30))
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.3)
                         .fixedSize(horizontal: false, vertical: true)
+                        .onPhoto()
 
                     // Framing as a pull-quote against a honey rule.
                     HStack(alignment: .top, spacing: 14) {
@@ -99,9 +101,10 @@ struct JournalDetailView: View {
                             .frame(width: 2)
                         Text(prompt.prompt)
                             .font(Theme.body(15))
-                            .foregroundStyle(Theme.inkSoft)
+                            .foregroundStyle(Theme.inkOnPhoto)
                             .lineSpacing(5)
                             .fixedSize(horizontal: false, vertical: true)
+                            .onPhoto()
                     }
                     .padding(.top, 8)
                 }

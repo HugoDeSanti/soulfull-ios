@@ -75,12 +75,14 @@ struct HomeView: View {
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
                 Text("Take your time. We're here with you.")
-                    .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .padding(.top, 8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
+            // Sits on the brightest part of home-bg (blur 3) — see onPhoto().
+            .onPhoto()
         }
     }
 
