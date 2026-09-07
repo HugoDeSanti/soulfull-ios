@@ -166,8 +166,10 @@ final class AccountViewModel {
         }
     }
 
-    /// Sends a fresh confirmation email, then holds a short cooldown so the
-    /// button can't be leaned on (Supabase rate-limits these server-side).
+    /// Sends a fresh confirmation email, then holds a cooldown matching the
+    /// project's `smtp_max_frequency` (60s). Anything shorter just walks the
+    /// user into a server rejection — GoTrue refuses a second mail to the same
+    /// address inside that window.
     func resendCode(auth: AuthManager) async {
         guard resendCooldown == 0, !isWorking else { return }
         errorMessage = nil
@@ -176,7 +178,7 @@ final class AccountViewModel {
             try await auth.resendConfirmation(to: confirmationEmail)
             resendMessage = "Sent — check your inbox again."
             Haptics.tap()
-            startCooldown(30)
+            startCooldown(60)
         } catch {
             Haptics.bump()
             errorMessage = "Couldn't send a new code just now. Try again in a moment."
