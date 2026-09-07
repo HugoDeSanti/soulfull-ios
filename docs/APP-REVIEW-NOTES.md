@@ -59,11 +59,11 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 | **Team ID** | `W346837424` (set as `DEVELOPMENT_TEAM` in gitignored `Config/Secrets.xcconfig`) |
 | **Sign in with Apple** | Entitlement generated from `project.yml`; `APPLE_ID_AUTH` capability **verified enabled** on the App ID (2026-09-03) |
 
-> `app@soulfullgatherings.com` is the **developer account**, not necessarily the
-> customer support address. `LegalLinks.supportEmail` is currently the
-> placeholder `hello@soulfullgatherings.com` and is what users see in the app —
-> it is the Support link in the You tab and the destination of every "Request a
-> place" enquiry. Point it at whichever inbox is actually monitored.
+> `app@soulfullgatherings.com` is the **developer account**, not the customer
+> support address. `LegalLinks.supportEmail` is now `info@soulfullgatherings.com`
+> — the same inbox the three published legal pages give for privacy requests,
+> support and bookings. It is the Support link in the You tab and the
+> destination of every "Request a place" enquiry, so it has to stay monitored.
 
 ## Before you submit — check each of these
 

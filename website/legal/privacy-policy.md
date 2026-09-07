@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated [Month D, YYYY] · Effective [Month D, YYYY]
+Last updated September 7, 2026 · Effective September 7, 2026
 
 ## The short version
 
@@ -10,9 +10,9 @@ Last updated [Month D, YYYY] · Effective [Month D, YYYY]
 - You can browse the whole app without giving us anything at all.
 - You can delete your account and everything attached to it from inside the app, in two taps.
 
-This policy explains what [Legal entity name] ("Soulfull Gatherings", "we", "us") collects when you use the Soulfull Gatherings iOS app, visit soulfullgatherings.com, or enquire about and attend one of our retreats — and what we do with it.
+This policy explains what Soulfull Gatherings LLC, a Texas limited liability company ("Soulfull Gatherings", "we", "us") collects when you use the Soulfull Gatherings iOS app, visit soulfullgatherings.com, or enquire about and attend one of our retreats — and what we do with it.
 
-It is written to be read, not to be survived. If anything in it is unclear, write to us at [privacy@yourdomain.com] and we will explain it in plain words.
+It is written to be read, not to be survived. If anything in it is unclear, write to us at info@soulfullgatherings.com and we will explain it in plain words.
 
 ## 1. What we collect
 
@@ -66,7 +66,7 @@ Because these live on the device, they do not move with you to a new phone, and 
 
 Before a retreat we may ask about injuries, medical conditions, allergies, dietary requirements and emergency contacts. You do not have to tell us anything — but if you withhold something that affects your safety, we may not be able to take you.
 
-This information is used only to run your retreat safely. We share it with the specific guides, practitioners, venue or caterer who need it for your retreat, and with emergency services if there is a medical emergency. We do not use it for anything else, and we delete it within [e.g. 12 months] of the retreat ending.
+This information is used only to run your retreat safely. We share it with the specific guides, practitioners, venue or caterer who need it for your retreat, and with emergency services if there is a medical emergency. We do not use it for anything else, and we delete it within 12 months of the retreat ending.
 
 ## 4. How we use what we collect
 
@@ -99,9 +99,7 @@ Each of these providers has its own privacy policy governing what it does with d
 
 ## 6. The website
 
-> **Confirm before publishing.** This section describes soulfullgatherings.com as it appears to be built today (a hosted website platform, with a mailing-list signup). Check it against what your site actually runs — including any analytics, embedded video, chat widget, or booking form — and edit it to match. If you add analytics or advertising pixels later, this section and section 5 both have to change.
-
-Our website is hosted on a third-party website platform, which sets the cookies it needs to serve pages, keep the site secure, and — where enabled — measure aggregate visits. Your browser sends that platform your IP address, browser type and the pages you view, in the ordinary course of loading the site.
+Our website is hosted on Squarespace, which sets the cookies it needs to serve pages, keep the site secure, and — where enabled — measure aggregate visits. Your browser sends Squarespace your IP address, browser type and the pages you view, in the ordinary course of loading the site.
 
 If you join a mailing list or waitlist on the site, we keep the email address you gave us until you unsubscribe.
 
@@ -113,9 +111,9 @@ If you join a mailing list or waitlist on the site, we keep the email address yo
 |---|---|
 | Account & profile | Until you delete your account |
 | Guest session | Until you delete the app, or the session expires |
-| Booking & payment records | [7] years after the transaction, because tax and accounting law requires it |
-| Pre-retreat health & dietary information | [12 months] after the retreat |
-| Emails and messages you send us | [3] years |
+| Booking & payment records | 7 years after the transaction, because tax and accounting law requires it |
+| Pre-retreat health & dietary information | 12 months after the retreat |
+| Emails and messages you send us | 3 years |
 | Mailing list | Until you unsubscribe |
 | Technical and security logs | As kept by our providers, typically weeks to months |
 
@@ -130,7 +128,7 @@ Open the **You** tab and choose **Delete account**. This is immediate and perman
 - **See what we hold.** Ask us and we will send you a copy.
 - **Correct it.** Your name and email are editable in the app; write to us for anything else.
 - **Stop marketing email.** Use the unsubscribe link, or ask us.
-- **Ask a question or complain.** Write to [privacy@yourdomain.com].
+- **Ask a question or complain.** Write to info@soulfullgatherings.com.
 
 We answer requests within 45 days, and will tell you if we need longer. We will never charge you for making a request or treat you differently for having made one.
 
@@ -146,7 +144,7 @@ Under the California Consumer Privacy Act, as amended, you have the rights to kn
 
 **We have not sold personal information, and we have not shared it for cross-context behavioural advertising, in the preceding twelve months — including the personal information of anyone under 16.** Because we do not sell or share, we do not offer a "Do Not Sell or Share My Personal Information" link; there is nothing for it to do. We do not use or disclose sensitive personal information for any purpose beyond those permitted without a right to limit.
 
-You may make a request yourself or through an authorised agent, at [privacy@yourdomain.com]. We verify requests by matching the email address on the account.
+You may make a request yourself or through an authorised agent, at info@soulfullgatherings.com. We verify requests by matching the email address on the account.
 
 ## 10. If you live in another US state
 
@@ -168,7 +166,7 @@ No system is perfectly secure, and we cannot guarantee absolute security. If a b
 
 ## 13. Children
 
-The app and website are not directed to children under 13, and we do not knowingly collect personal information from them. If you believe a child under 13 has given us information, write to [privacy@yourdomain.com] and we will delete it. You must be at least 18 to book a retreat.
+The app and website are not directed to children under 13, and we do not knowingly collect personal information from them. If you believe a child under 13 has given us information, write to info@soulfullgatherings.com and we will delete it. You must be at least 18 to book a retreat.
 
 ## 14. Changes
 
@@ -178,15 +176,15 @@ If we change this policy we will update the date at the top. If the change is si
 
 Write to us and a person will answer.
 
-[Legal entity name]
-[Street address]
-[City, State ZIP]
+Soulfull Gatherings LLC
+3001 Esperanza Crossing
+78758 Austin, Texas
 United States
 
-[privacy@yourdomain.com]
+info@soulfullgatherings.com
 
 ---
 
 Terms of Service · Retreat Booking & Cancellation Policy
 
-© [YYYY] [Legal entity name]. All rights reserved.
+© 2026 Soulfull Gatherings LLC. All rights reserved.

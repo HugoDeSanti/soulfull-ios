@@ -197,25 +197,25 @@ struct RetreatCheckoutView: View {
             .accessibilityHint("Opens secure payment")
             .disabled(vm.isBusy)
 
-            // The fineprint names the terms, so it has to reach them — copy
-            // that refers to an agreement with no way to read it is exactly
-            // what App Review flags on a paid flow.
+            // The fineprint names two agreements, so it has to reach both —
+            // copy that refers to an agreement with no way to read it is
+            // exactly what App Review flags on a paid flow. They are separate
+            // documents: `terms` covers the app, `retreatPolicy` covers the
+            // booking, and it is the one that actually holds the cancellation
+            // windows and the refund table.
             VStack(spacing: 5) {
                 Text(checkout?.fineprint ?? "By reserving you agree to the enrollment terms and cancellation policy.")
                     .font(Theme.body(10)).foregroundStyle(RetreatPalette.muted)
                     .multilineTextAlignment(.center)
 
-                Button {
-                    Haptics.tap()
-                    openURL(LegalLinks.terms)
-                } label: {
-                    Text("Read the terms & cancellation policy")
-                        .font(Theme.body(10, weight: .medium))
-                        .foregroundStyle(RetreatPalette.terracotta)
-                        .underline()
+                HStack(spacing: 0) {
+                    fineprintLink("Cancellation policy", url: LegalLinks.retreatPolicy)
+                    Text("·")
+                        .font(Theme.body(10))
+                        .foregroundStyle(RetreatPalette.muted)
+                        .padding(.horizontal, 8)
+                    fineprintLink("Terms", url: LegalLinks.terms)
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(.isLink)
             }
         }
         .padding(.horizontal, 22)
@@ -265,6 +265,26 @@ struct RetreatCheckoutView: View {
     }
 
     private var rule: some View { Rectangle().fill(RetreatPalette.glassLine).frame(height: 1) }
+
+    /// One underlined legal link in the pay bar's fineprint. Small type, so it
+    /// carries an explicit `contentShape` — an underlined 10pt label is a
+    /// punishing tap target without one (see the CircleIconButton note in
+    /// CLAUDE.md's rendering gotchas).
+    private func fineprintLink(_ title: String, url: URL) -> some View {
+        Button {
+            Haptics.tap()
+            openURL(url)
+        } label: {
+            Text(title)
+                .font(Theme.body(10, weight: .medium))
+                .foregroundStyle(RetreatPalette.terracotta)
+                .underline()
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isLink)
+    }
 
     private func summaryRow(_ title: String, _ detail: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {

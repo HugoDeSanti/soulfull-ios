@@ -48,5 +48,7 @@ for src in src/*.body.html; do
 done
 
 echo
-echo "Remaining placeholders to fill in:"
-grep -c 'class="todo"' ./*.html | sed 's/^/  /'
+# `grep -c` exits 1 when a file has no matches, which under `set -e` would fail
+# the build on the one outcome we actually want. `|| true` keeps that honest.
+echo "Unfilled placeholders remaining (0 is what you want before publishing):"
+grep -c 'class="todo"' ./*.html 2>/dev/null | sed 's/^/  /' || true

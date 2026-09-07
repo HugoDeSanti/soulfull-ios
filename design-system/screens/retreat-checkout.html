@@ -86,6 +86,7 @@
   .paybar .fine-link { display:inline-block; margin-top:5px; font-size:10px; font-weight:500;
     color:var(--mb-terracotta,#c47c4c); text-decoration:underline; }
   .paybar .fine { text-align:center; font-size:10px; color:var(--muted); margin:10px 0 0; line-height:1.5; }
+  .fine-sep { color: var(--mb-muted, #8a7f74); padding: 0 8px; }
 </style>
 </head><body>
 <div class="stage"><div class="device mb-device">
@@ -138,7 +139,9 @@
 
   <div class="paybar">
     <a class="pay-btn" href="mallorca-welcome.html">Reserve my place <span class="amt">· Pay €800 deposit</span></a>
-    <p class="fine">By reserving you agree to the enrollment terms and cancellation policy.<br><a class="fine-link" href="#">Read the terms &amp; cancellation policy</a></p>
+    <!-- Two documents, so two links: `terms` covers the app, `retreatPolicy`
+         holds the cancellation windows and refund table. -->
+    <p class="fine">By reserving you agree to the enrollment terms and cancellation policy.<br><a class="fine-link" href="https://www.soulfullgatherings.com/soulfull-retreat-policy">Cancellation policy</a><span class="fine-sep">&middot;</span><a class="fine-link" href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a></p>
   </div>
 
   <div class="home-indicator"></div>

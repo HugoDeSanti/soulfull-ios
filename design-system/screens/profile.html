@@ -16,7 +16,7 @@
   .intentions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 18px 0 0; }
   .legal { display:flex; align-items:center; justify-content:center; margin-top:4px; }
   .legal a { font-size:12px; color:var(--ink-soft); padding:8px 0; text-decoration:none; }
-  .legal .sep { font-size:12px; color:var(--muted); padding:0 10px; }
+  .legal .sep { font-size:12px; color:var(--muted); padding:0 7px; }
   .actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 12px; align-items: center; }
   .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: #d95c54; cursor: pointer; }
 </style>
@@ -52,9 +52,11 @@
         <button class="delete">Delete account</button>
         <!-- App Store Connect requires a resolving privacy policy URL and a
              support URL; an app that creates accounts needs both reachable
-             in-app. Destinations live in Core/Services/LegalLinks.swift. -->
+             in-app. Destinations live in Core/Services/LegalLinks.swift.
+             The retreat policy sits here because v1 has payments off, so
+             checkout - which would normally carry it - is unreachable. -->
         <div class="legal">
-          <a href="#">Privacy</a><span class="sep">&middot;</span><a href="#">Terms</a><span class="sep">&middot;</span><a href="#">Support</a>
+          <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-retreat-policy">Retreat policy</a><span class="sep">&middot;</span><a href="mailto:info@soulfullgatherings.com">Support</a>
         </div>
       </div>
     </div>

@@ -1,16 +1,16 @@
 # Retreat Booking & Cancellation Policy
 
-Last updated [Month D, YYYY] · Effective [Month D, YYYY]
+Last updated September 7, 2026 · Effective September 7, 2026
 
 ## The things people ask first
 
-- Your place is held by a **[$X] deposit**, and the balance is due **[60] days before** the retreat starts.
+- Your place is held by a **30% deposit**, and the balance is due **60 days before** the retreat starts.
 - Deposits are **non-refundable**. After that, what comes back to you depends on how far out you cancel — the table is in section 5.
 - **Travel insurance is required**, and it needs to cover cancellation. Section 9.
 - Flights are not included unless a retreat says so.
 - If we cancel, you choose between a full refund of what you paid us and a credit toward another retreat.
 
-This policy governs your booking with [Legal entity name] ("Soulfull Gatherings", "we", "us") for any retreat, gathering or event we run. It sits alongside our Terms of Service and Privacy Policy; where this policy and the Terms of Service differ on a booking question, this policy governs.
+This policy governs your booking with Soulfull Gatherings LLC, a Texas limited liability company ("Soulfull Gatherings", "we", "us") for any retreat, gathering or event we run. It sits alongside our Terms of Service and Privacy Policy; where this policy and the Terms of Service differ on a booking question, this policy governs.
 
 Booking a place means you have read and accepted it, on your own behalf and on behalf of everyone in your booking.
 
@@ -24,21 +24,21 @@ Places are limited and are allocated in the order deposits are received.
 
 ## 2. Prices, and what is in them
 
-Prices are quoted in [US dollars] and are per person, based on [shared occupancy] unless your confirmation says otherwise. The price we confirm to you in writing is the price you pay; we will not increase it after confirmation except for a change in government-imposed taxes or fees, which we will pass on at cost and evidence to you.
+Prices are quoted in US dollars and are per person, based on shared occupancy unless your confirmation says otherwise. The price we confirm to you in writing is the price you pay; we will not increase it after confirmation except for a change in government-imposed taxes or fees, which we will pass on at cost and evidence to you.
 
 ### Included
 
-- [Accommodation for the nights stated]
-- [Meals as described in the retreat itinerary]
-- [All scheduled sessions, practices and guided activities]
-- [Ground transport described in the itinerary]
+- Accommodation for the nights stated
+- Meals as described in the retreat itinerary
+- All scheduled sessions, practices and guided activities, and one massage per person
+- Ground transport described in the itinerary
 
 ### Not included
 
 - **Flights** and travel to and from the meeting point, unless stated.
 - **Travel insurance**, which is required — see section 9.
 - Visas, passport fees, vaccinations, and any entry costs.
-- Treatments, excursions and sessions marked as optional or as extras.
+- Treatments, excursions and sessions beyond those listed as included.
 - Alcohol, unless stated.
 - Personal expenses, laundry, tips and anything else not listed as included.
 
@@ -48,34 +48,34 @@ Do not book flights until we have confirmed to you in writing that the retreat i
 
 | Stage | Amount | When |
 |---|---|---|
-| Deposit | [$X or X%], non-refundable | To confirm your place |
-| Balance | The remainder | [60] days before the start date |
-| Late bookings | The full amount | At the time of booking, if you book within [60] days of the start |
+| Deposit | 30% of the retreat price, non-refundable | To confirm your place |
+| Balance | The remainder | 60 days before the start date |
+| Late bookings | The full amount | At the time of booking, if you book within 60 days of the start |
 
-Payments are taken by card through Stripe, or by [bank transfer, on request]. We do not see or store your full card number.
+Payments are taken by card through Stripe, or by bank transfer on request. We do not see or store your full card number.
 
-**If the balance is not paid by its due date** we will remind you and give you [7] days. If it is still unpaid after that, we may treat the booking as cancelled by you, releasing the place and applying section 5. Payment plans are sometimes possible — ask before you book, and any arrangement must be agreed in writing.
+**If the balance is not paid by its due date** we will remind you and give you 7 days. If it is still unpaid after that, we may treat the booking as cancelled by you, releasing the place and applying section 5. Payment plans are sometimes possible — ask before you book, and any arrangement must be agreed in writing.
 
 ## 4. Changing your booking
 
 Ask us and we will do what we can. Changes depend on availability and on what our suppliers allow.
 
-- **Changing dates or moving to a different retreat** more than [90] days before the start: [a $X administration fee], plus any difference in price. Inside that window, treat it as a cancellation under section 5.
-- **Passing your place to someone else**: possible up to [30] days before the start, if they meet the requirements for the retreat and accept this policy in writing. [A $X transfer fee] plus any supplier charges apply. You remain responsible for the balance until it is paid.
+- **Changing dates or moving to a different retreat** more than 90 days before the start: a US$150 administration fee, plus any difference in price. Inside that window, treat it as a cancellation under section 5.
+- **Passing your place to someone else**: possible up to 30 days before the start, if they meet the requirements for the retreat and accept this policy in writing. A US$150 transfer fee plus any supplier charges apply. You remain responsible for the balance until it is paid.
 - **Room changes and single supplements** are subject to availability and are charged at the applicable rate.
 
 ## 5. If you cancel
 
-Cancellations must be sent to [hello@yourdomain.com] in writing. They take effect on the day we receive them, and we will acknowledge in writing — if you have not had an acknowledgement, assume we have not received it.
+Cancellations must be sent to info@soulfullgatherings.com in writing. They take effect on the day we receive them, and we will acknowledge in writing — if you have not had an acknowledgement, assume we have not received it.
 
 | You cancel | What is refunded |
 |---|---|
-| [90+] days before | Everything paid **except the deposit** |
-| [60–89] days before | [50%] of the total, less the deposit |
-| [Under 60] days before | **No refund** |
+| 90 or more days before | Everything paid **except the deposit** |
+| 60–89 days before | 50% of the total, less the deposit |
+| Under 60 days before | **No refund** |
 | No-show, late arrival, or leaving early | **No refund**, in whole or in part, and no refund for unused sessions, meals or nights |
 
-Where we can recover money from a supplier we will pass it on to you, but we cannot promise it. Refunds go back by the method you paid, within [14] days of us confirming the amount. **This is exactly what travel insurance is for** — a policy with cancellation cover will usually reimburse what this table does not.
+Where we can recover money from a supplier we will pass it on to you, but we cannot promise it. Refunds go back by the method you paid, within 14 days of us confirming the amount. **This is exactly what travel insurance is for** — a policy with cancellation cover will usually reimburse what this table does not.
 
 Because a retreat is travel and leisure accommodation supplied on specific dates, statutory cooling-off and cancellation rights that apply to ordinary online purchases generally do not apply to it. Nothing here limits any right you do have under the mandatory consumer law of your own country.
 
@@ -87,9 +87,9 @@ If we make a **significant** change before departure — a change of country, of
 
 ## 7. If we cancel
 
-We may cancel a retreat if it does not reach its minimum number of guests — we will tell you no later than [45] days before the start — or if it becomes unsafe or impossible to run for reasons outside our control.
+We may cancel a retreat if it does not reach its minimum number of guests — we will tell you no later than 45 days before the start — or if it becomes unsafe or impossible to run for reasons outside our control.
 
-You then choose between **a full refund of everything you have paid us** and **a credit for a future retreat**, valid [24 months] and [with an added $X of value].
+You then choose between **a full refund of everything you have paid us** and **a credit for a future retreat**, valid for 24 months.
 
 **We do not refund flights, visas, vaccinations, insurance premiums or any other cost you incurred separately**, whatever the reason for the cancellation. This is why we ask you not to book travel until the retreat is confirmed as guaranteed to run, and why we require insurance.
 
@@ -144,23 +144,23 @@ We arrange accommodation, transport, guides and activities, some of which are pr
 
 ## 16. If something goes wrong
 
-Tell us **at the retreat**, straight away — almost everything is fixable while you are still there, and almost nothing is afterwards. If it is not resolved, write to [hello@yourdomain.com] within [28] days of the retreat ending with the details, and we will respond within [14] days.
+Tell us **at the retreat**, straight away — almost everything is fixable while you are still there, and almost nothing is afterwards. If it is not resolved, write to info@soulfullgatherings.com within 28 days of the retreat ending with the details, and we will respond within 14 days.
 
 ## 17. Governing law
 
-This policy is governed by the laws of the State of [State], without regard to conflict-of-laws rules. The dispute resolution provisions of section 17 of our Terms of Service, including arbitration and the class-action waiver, apply to disputes under this policy. Mandatory consumer protections in your country of residence are unaffected.
+This policy is governed by the laws of the State of Texas, without regard to conflict-of-laws rules. The dispute resolution provisions of section 17 of our Terms of Service, including arbitration and the class-action waiver, apply to disputes under this policy. Mandatory consumer protections in your country of residence are unaffected.
 
 ## 18. Contact
 
-[Legal entity name]
-[Street address]
-[City, State ZIP]
+Soulfull Gatherings LLC
+3001 Esperanza Crossing
+78758 Austin, Texas
 United States
 
-[hello@yourdomain.com]
+info@soulfullgatherings.com
 
 ---
 
 Privacy Policy · Terms of Service
 
-© [YYYY] [Legal entity name]. All rights reserved.
+© 2026 Soulfull Gatherings LLC. All rights reserved.

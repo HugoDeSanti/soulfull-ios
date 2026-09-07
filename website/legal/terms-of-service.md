@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated [Month D, YYYY] · Effective [Month D, YYYY]
+Last updated September 7, 2026 · Effective September 7, 2026
 
 ## Before you read on
 
@@ -8,7 +8,7 @@ Last updated [Month D, YYYY] · Effective [Month D, YYYY]
 - Section 8 is a **wellness disclaimer**. The app is not medical care, and nothing in it is medical advice.
 - Section 17 contains a **binding arbitration agreement and a class-action waiver**. It affects how disputes between us are resolved. You can opt out within 30 days.
 
-These Terms of Service are an agreement between you and [Legal entity name] ("Soulfull Gatherings", "we", "us"). They apply when you download, open or use the Soulfull Gatherings iOS app, and when you use soulfullgatherings.com.
+These Terms of Service are an agreement between you and Soulfull Gatherings LLC, a Texas limited liability company ("Soulfull Gatherings", "we", "us"). They apply when you download, open or use the Soulfull Gatherings iOS app, and when you use soulfullgatherings.com.
 
 **By using the app or the site, you agree to these terms.** If you do not agree, do not use them.
 
@@ -26,7 +26,7 @@ You do not need an account to look around. The retreat catalogue, retreat detail
 
 ### Creating one
 
-You can create an account with an email address and a password, or use Sign in with Apple. You agree to give accurate information and keep it current. You are responsible for your password and for everything that happens under your account. Tell us promptly at [support@yourdomain.com] if you think someone else has access to it.
+You can create an account with an email address and a password, or use Sign in with Apple. You agree to give accurate information and keep it current. You are responsible for your password and for everything that happens under your account. Tell us promptly at info@soulfullgatherings.com if you think someone else has access to it.
 
 One person, one account. Do not share your login, and do not create an account on someone else's behalf without their permission.
 
@@ -130,7 +130,7 @@ You may stop using the service and delete your account at any time. We may suspe
 
 ## 16. Governing law
 
-These terms are governed by the laws of the State of [State] and the federal laws of the United States, without regard to conflict-of-laws rules. Subject to section 17, the state and federal courts located in [County, State] have exclusive jurisdiction, and you consent to their jurisdiction and venue.
+These terms are governed by the laws of the State of Texas and the federal laws of the United States, without regard to conflict-of-laws rules. Subject to section 17, the state and federal courts located in Travis County, Texas have exclusive jurisdiction, and you consent to their jurisdiction and venue.
 
 If you are a consumer resident elsewhere, this does not deprive you of the protection of mandatory consumer law in your own country.
 
@@ -140,11 +140,11 @@ If you are a consumer resident elsewhere, this does not deprive you of the prote
 
 ### Talk to us first
 
-Before starting anything formal, email [support@yourdomain.com] describing the problem and what you would like us to do. We will do the same before making a claim against you. Most things end here. If it is not resolved within 60 days, either of us may proceed.
+Before starting anything formal, email info@soulfullgatherings.com describing the problem and what you would like us to do. We will do the same before making a claim against you. Most things end here. If it is not resolved within 60 days, either of us may proceed.
 
 ### Arbitration
 
-Any dispute arising out of or relating to these terms or the service that is not resolved informally will be settled by binding individual arbitration administered by the American Arbitration Association under its Consumer Arbitration Rules. Arbitration will take place in [County, State] or, at your election, by telephone, video, or on written submissions. The arbitrator's award may be entered in any court with jurisdiction. The Federal Arbitration Act governs this section.
+Any dispute arising out of or relating to these terms or the service that is not resolved informally will be settled by binding individual arbitration administered by the American Arbitration Association under its Consumer Arbitration Rules. Arbitration will take place in Travis County, Texas or, at your election, by telephone, video, or on written submissions. The arbitrator's award may be entered in any court with jurisdiction. The Federal Arbitration Act governs this section.
 
 ### What is carved out
 
@@ -156,30 +156,30 @@ Either of us may bring an individual claim in **small-claims court** instead, an
 
 ### Opting out
 
-**You can opt out of arbitration.** Email [support@yourdomain.com] with the subject "Arbitration opt-out", and your name and the email on your account, within **30 days** of first accepting these terms. Opting out costs you nothing and changes nothing else about your relationship with us.
+**You can opt out of arbitration.** Email info@soulfullgatherings.com with the subject "Arbitration opt-out", and your name and the email on your account, within **30 days** of first accepting these terms. Opting out costs you nothing and changes nothing else about your relationship with us.
 
 ## 18. The rest
 
 - **Whole agreement.** These terms, the Privacy Policy and — if you book — the Retreat Booking & Cancellation Policy are the entire agreement between us, and replace anything said before.
-- **Changes.** We may update these terms. We will change the date at the top, and for material changes we will notify you in the app or by email at least [30] days before they take effect. Continuing to use the service after that means you accept them; if you do not, stop using the service and delete your account.
+- **Changes.** We may update these terms. We will change the date at the top, and for material changes we will notify you in the app or by email at least 30 days before they take effect. Continuing to use the service after that means you accept them; if you do not, stop using the service and delete your account.
 - **Severability.** If a provision is unenforceable, the rest stands.
 - **No waiver.** Not enforcing something once does not waive it.
 - **Assignment.** You may not assign these terms. We may, to a successor in connection with a merger, acquisition or sale of assets.
-- **Notices.** We will contact you at the email on your account. You reach us at [support@yourdomain.com] and at the address below.
+- **Notices.** We will contact you at the email on your account. You reach us at info@soulfullgatherings.com and at the address below.
 - **Force majeure.** Neither of us is liable for a failure caused by something genuinely outside our reasonable control.
 - **No third-party rights**, except Apple as set out in section 11.
 
 ## 19. Contact
 
-[Legal entity name]
-[Street address]
-[City, State ZIP]
+Soulfull Gatherings LLC
+3001 Esperanza Crossing
+78758 Austin, Texas
 United States
 
-[support@yourdomain.com]
+info@soulfullgatherings.com
 
 ---
 
 Privacy Policy · Retreat Booking & Cancellation Policy
 
-© [YYYY] [Legal entity name]. All rights reserved.
+© 2026 Soulfull Gatherings LLC. All rights reserved.

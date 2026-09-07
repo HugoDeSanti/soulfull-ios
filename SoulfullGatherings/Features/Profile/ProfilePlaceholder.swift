@@ -156,16 +156,24 @@ struct ProfilePlaceholder: View {
 
     // MARK: - Legal & support
 
-    /// Privacy policy, terms, and a way to reach a human. App Store Connect
-    /// requires a resolving privacy policy URL and a support URL, and an app
-    /// that creates accounts needs both reachable from inside the app — the
-    /// checkout fineprint referring to "the enrollment terms" isn't enough on
-    /// its own. Destinations live in `LegalLinks`.
+    /// Privacy policy, terms, the retreat booking policy, and a way to reach a
+    /// human. App Store Connect requires a resolving privacy policy URL and a
+    /// support URL, and an app that creates accounts needs them reachable from
+    /// inside the app — the checkout fineprint referring to "the enrollment
+    /// terms" isn't enough on its own. Destinations live in `LegalLinks`.
+    ///
+    /// The retreat policy is here because in v1 it has nowhere else to be:
+    /// `AppFeatures.paymentsEnabled` is false, so checkout — the screen that
+    /// would normally carry it — is unreachable, and the retreat CTA is an
+    /// email enquiry. Someone asking for a place should still be able to read
+    /// the cancellation terms before they write.
     private var legalLinks: some View {
         HStack(spacing: 0) {
             legalLink("Privacy", url: LegalLinks.privacyPolicy)
             legalDivider
             legalLink("Terms", url: LegalLinks.terms)
+            legalDivider
+            legalLink("Retreat policy", url: LegalLinks.retreatPolicy)
             legalDivider
             legalLink("Support", url: LegalLinks.supportMail)
         }
@@ -176,7 +184,7 @@ struct ProfilePlaceholder: View {
         Text("·")
             .font(Theme.body(12))
             .foregroundStyle(Theme.muted)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 7)
     }
 
     private func legalLink(_ title: String, url: URL) -> some View {
