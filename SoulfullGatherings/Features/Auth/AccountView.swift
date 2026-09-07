@@ -80,13 +80,17 @@ struct AccountView: View {
         }
         .onChange(of: vm.awaitingConfirmation) { _, awaiting in
             if awaiting {
-                vm.beginConfirmationWatch(auth: auth, settings: settings)
+                // Owned by AuthManager, not by this sheet — so confirming on a
+                // laptop still lands here after the user swipes the sheet away.
+                auth.beginConfirmationWatch()
                 focus = .code
             } else {
-                vm.endConfirmationWatch()
+                auth.endConfirmationWatch()
             }
         }
-        .onDisappear { vm.endConfirmationWatch() }
+        // Only the resend cooldown is this sheet's to cancel. Cancelling the
+        // confirmation watch here is what made the watch useless.
+        .onDisappear { vm.endCooldown() }
     }
 
     // MARK: - Email confirmation panel

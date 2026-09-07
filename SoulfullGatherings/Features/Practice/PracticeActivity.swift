@@ -37,6 +37,9 @@ final class PlaybackReporter {
     private static let seekThreshold: Double = 2
 
     private let play: PracticePlay
+    /// Whose play this is, fixed when the player opened. A sign-out mid-listen
+    /// must not re-attribute the remaining heartbeats to the next session.
+    private let owner: UUID?
     private weak var player: AVPlayer?
     private var observer: Any?
     private var endObserver: (any NSObjectProtocol)?
@@ -50,6 +53,7 @@ final class PlaybackReporter {
 
     init(play: PracticePlay) {
         self.play = play
+        self.owner = PracticeProgressStore.shared.currentUserID
     }
 
     /// Where this practice was left last time, if anywhere. The player seeks
@@ -111,10 +115,13 @@ final class PlaybackReporter {
         let seconds = Int(playedSeconds.rounded())
         let position = Int(positionSeconds.rounded())
         let completed = didComplete
-        Task { await PracticeProgressStore.shared.record(play,
-                                                         secondsPlayed: seconds,
-                                                         positionSeconds: position,
-                                                         completed: completed) }
+        Task { [owner] in
+            await PracticeProgressStore.shared.record(play,
+                                                      owner: owner,
+                                                      secondsPlayed: seconds,
+                                                      positionSeconds: position,
+                                                      completed: completed)
+        }
     }
 
     /// Final write + teardown. Idempotent, because `onDisappear` and a sheet
@@ -154,17 +161,34 @@ private struct PracticeActivityModifier: ViewModifier {
     /// Long enough to mean the screen was read rather than glanced at.
     private static let dwellForCompletion: TimeInterval = 45
     private static let heartbeat: Duration = .seconds(30)
+    /// A reading session longer than this is someone who walked away with the
+    /// screen open, not someone reading. Wall-clock needs a ceiling because
+    /// most of these practices have no length to clamp against server-side:
+    /// `PracticePlay.journal` carries no `durationSeconds` at all, so the DB
+    /// trigger's `least(seconds_played, duration_seconds)` is skipped and
+    /// nothing bounded the number.
+    private static let maxDwell: TimeInterval = 30 * 60
+
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var openedAt: Date?
+    /// Foreground seconds from sittings that have already ended (the screen was
+    /// backgrounded and returned to) within this same visit.
+    @State private var banked: TimeInterval = 0
     @State private var reported: TimeInterval = 0
     /// One id for this screen's whole visit, so every heartbeat upserts the
     /// same ledger row instead of adding another. Created once per view
     /// identity, which is exactly what `@State` guarantees.
     @State private var eventID = UUID()
+    /// Whose sitting this is, fixed on appear — see `PlaybackReporter.owner`.
+    @State private var owner: UUID?
 
     func body(content: Content) -> some View {
         content
-            .onAppear { openedAt = .now }
+            .onAppear {
+                openedAt = .now
+                if owner == nil { owner = PracticeProgressStore.shared.currentUserID }
+            }
             .task {
                 // Periodic write, so a practice left open and then force-quit
                 // still credits what was actually spent on it.
@@ -175,11 +199,36 @@ private struct PracticeActivityModifier: ViewModifier {
                 }
             }
             .onDisappear { write() }
+            // `onDisappear` does NOT fire when the app is backgrounded, so
+            // without this the clock ran through it: open a prompt, background
+            // the phone overnight, come back and tap Back, and the ledger got
+            // eight hours of "reading". Stop the clock on the way out and
+            // restart it on the way back in.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    if openedAt == nil { openedAt = .now }
+                } else {
+                    write()
+                    // Bank this sitting before stopping the clock, so returning
+                    // to the screen continues the count rather than restarting
+                    // it (the row's seconds are monotonic server-side, so a
+                    // restart would silently discard the shorter sitting).
+                    if let openedAt { banked += Date.now.timeIntervalSince(openedAt) }
+                    openedAt = nil
+                }
+            }
+    }
+
+    /// Foreground time on this screen across every sitting of this visit,
+    /// capped. `banked` covers sittings already ended; `openedAt` the live one.
+    private var dwell: TimeInterval {
+        let live = openedAt.map { Date.now.timeIntervalSince($0) } ?? 0
+        return min(banked + live, Self.maxDwell)
     }
 
     private func write() {
-        guard enabled, let openedAt else { return }
-        let dwell = Date.now.timeIntervalSince(openedAt)
+        guard enabled, openedAt != nil || banked > 0 else { return }
+        let dwell = self.dwell
         guard dwell >= 5, dwell > reported else { return }
         reported = dwell
         let completed = completedWhen?() ?? (dwell >= Self.dwellForCompletion)
@@ -189,10 +238,13 @@ private struct PracticeActivityModifier: ViewModifier {
                                    category: play.category,
                                    durationSeconds: play.durationSeconds,
                                    eventID: eventID)
-        Task { await PracticeProgressStore.shared.record(sitting,
-                                                         secondsPlayed: seconds,
-                                                         positionSeconds: seconds,
-                                                         completed: completed) }
+        Task { [owner] in
+            await PracticeProgressStore.shared.record(sitting,
+                                                      owner: owner,
+                                                      secondsPlayed: seconds,
+                                                      positionSeconds: seconds,
+                                                      completed: completed)
+        }
     }
 }
 

@@ -63,9 +63,9 @@ final class AccountViewModel {
     /// Seconds left before another code can be requested (0 = ready).
     private(set) var resendCooldown = 0
 
-    /// Owned by the view model rather than the view, so dismissing the sheet
-    /// mid-flight doesn't cancel the profile write that follows a confirmation.
-    private var watchTask: Task<Void, Never>?
+    /// The cross-device confirmation watch is **not** here — it lives on
+    /// `AuthManager`, which outlives this sheet. See
+    /// `AuthManager.beginConfirmationWatch()`.
     private var cooldownTask: Task<Void, Never>?
 
     /// The address a confirmation link was sent to (shown on the confirm panel).
@@ -109,10 +109,12 @@ final class AccountViewModel {
             switch mode {
             case .createAccount:
                 try await auth.createAccount(email: trimmedEmail, password: password, fullName: trimmedName)
-                try await pushProfile(auth: auth, settings: settings)
+                if settings.userName.isEmpty { settings.userName = trimmedName }
+                await auth.pushOnboardingAnswers()
                 // With "Confirm email" on, the upgrade stays a guest session until
                 // the emailed link is tapped, so hasAccount is still false here.
                 if auth.hasAccount {
+                    password = ""
                     Haptics.success()
                     return .signedIn
                 } else {
@@ -122,13 +124,22 @@ final class AccountViewModel {
                 }
             case .signIn:
                 try await auth.signIn(email: trimmedEmail, password: password)
+                password = ""
                 await hydrateProfile(auth: auth, settings: settings)
                 Haptics.success()
                 return .signedIn
             }
         } catch {
             Haptics.bump()
-            errorMessage = error.localizedDescription
+            // Never the server's own words. GoTrue distinguishes "User already
+            // registered" from "Invalid login credentials", which turns this
+            // banner into an account-enumeration oracle: anyone could test
+            // whether a given address has an account with a wellness app.
+            // The detail stays in the (release-redacted) log.
+            Log.auth.error("Auth submit failed: \(error.localizedDescription)")
+            errorMessage = mode == .createAccount
+                ? "We couldn't create that account. Check the address and password, then try again."
+                : "That email and password didn't match. Try again."
             return .failed
         }
     }
@@ -173,52 +184,20 @@ final class AccountViewModel {
         }
     }
 
-    /// Watches for a confirmation completed *somewhere else*: opening the link
-    /// on a laptop confirms the address server-side, and nothing tells this
-    /// device — so ask, gently, while the panel is up.
-    func beginConfirmationWatch(auth: AuthManager, settings: AppSettings) {
-        guard watchTask == nil else { return }
-        watchTask = Task { [weak self] in
-            for _ in 0..<60 {                       // ~5 minutes, then stop asking
-                try? await Task.sleep(for: .seconds(5))
-                guard !Task.isCancelled, let self, self.awaitingConfirmation else { return }
-                if await self.detectConfirmation(auth: auth) {
-                    await self.finishConfirmation(auth: auth, settings: settings)
-                    return
-                }
-            }
-        }
-    }
-
-    func endConfirmationWatch() {
-        watchTask?.cancel()
-        watchTask = nil
+    /// Tears down only what this sheet owns. The cross-device confirmation
+    /// watch belongs to `AuthManager` and must NOT be cancelled here — that is
+    /// exactly the bug this replaced.
+    func endCooldown() {
         cooldownTask?.cancel()
         cooldownTask = nil
     }
 
-    private func detectConfirmation(auth: AuthManager) async -> Bool {
-        // Usual case: the guest session is still live, so re-read the user.
-        if auth.userID != nil { return await auth.refreshConfirmationState() }
-        // signUp fallback (no anonymous session to upgrade): there is no session
-        // at all until the address is confirmed, so the only way to notice is to
-        // try the credentials the user just gave us.
-        guard !password.isEmpty else { return false }
-        do {
-            try await auth.signIn(email: confirmationEmail, password: password)
-            return auth.hasAccount
-        } catch {
-            return false
-        }
-    }
-
     private func finishConfirmation(auth: AuthManager, settings: AppSettings) async {
-        endConfirmationWatch()
+        auth.endConfirmationWatch()
         awaitingConfirmation = false
         confirmationCode = ""
-        // The anonymous-upgrade path already wrote the row at create time; the
-        // signUp fallback had no session then, so write it now.
-        try? await pushProfile(auth: auth, settings: settings)
+        password = ""
+        await auth.pushOnboardingAnswers()
         Haptics.success()
     }
 
@@ -292,38 +271,11 @@ final class AccountViewModel {
                 if !existing.frequency.isEmpty { settings.frequency = existing.frequency }
                 if !existing.intentions.isEmpty { settings.intentions = Set(existing.intentions) }
             } else {
-                try await SupabaseService.shared.upsertProfile(
-                    Profile(
-                        id: id,
-                        email: auth.email ?? existing?.email ?? "",
-                        fullName: settings.userName,
-                        intentions: settings.intentions.sorted(),
-                        bodyState: settings.bodyState,
-                        frequency: settings.frequency,
-                        stripeCustomerId: nil
-                    )
-                )
+                await auth.pushOnboardingAnswers()
             }
         } catch {
             Log.auth.error("Profile merge failed: \(error.localizedDescription)")
         }
-    }
-
-    /// On account creation, push the device's onboarding answers up so the new
-    /// account starts populated.
-    private func pushProfile(auth: AuthManager, settings: AppSettings) async throws {
-        guard let id = auth.userID else { return }
-        if settings.userName.isEmpty { settings.userName = trimmedName }
-        let profile = Profile(
-            id: id,
-            email: trimmedEmail,
-            fullName: settings.userName.isEmpty ? trimmedName : settings.userName,
-            intentions: settings.intentions.sorted(),
-            bodyState: settings.bodyState,
-            frequency: settings.frequency,
-            stripeCustomerId: nil
-        )
-        try await SupabaseService.shared.upsertProfile(profile)
     }
 
     /// On sign-in (possibly on a fresh device), pull the saved profile down into

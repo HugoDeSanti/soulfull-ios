@@ -128,7 +128,12 @@ Deno.serve(async (req) => {
     let customerId = profile?.stripe_customer_id as string | null | undefined;
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: profile?.email ?? user.email ?? undefined,
+        // `user.email` comes from the verified JWT. `profiles.email` used to be
+        // preferred here and was client-writable, so a member could point their
+        // Stripe customer record — and its receipts — at an address they don't
+        // own. 0009 locks the column server-side; this keeps the verified value
+        // first regardless.
+        email: user.email ?? profile?.email ?? undefined,
         name: profile?.full_name ?? undefined,
         metadata: { supabase_user_id: user.id },
       });
@@ -141,6 +146,17 @@ Deno.serve(async (req) => {
       { apiVersion: ephemeralKeyApiVersion },
     );
 
+    // Idempotent per (member, retreat, price). This is what actually closes the
+    // double-charge race: the `already_booked` guard above reads `bookings`,
+    // which only the webhook writes and only *after* the charge, so two
+    // checkouts started inside that window both saw zero paid rows and both got
+    // their own PaymentIntent. With a key, the second request returns the FIRST
+    // intent instead of minting another, so there is only ever one chargeable
+    // intent per member per retreat.
+    //
+    // The amount is in the key because Stripe rejects a reused key whose
+    // parameters changed — without it, a price correction inside the key's
+    // 24-hour lifetime would fail every checkout for that retreat.
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
@@ -152,6 +168,8 @@ Deno.serve(async (req) => {
         retreat_id: String(retreat.id),
         retreat_name: retreat.name ?? "",
       },
+    }, {
+      idempotencyKey: `pi:${user.id}:${retreat.id}:${amount}`,
     });
 
     return json({
@@ -163,7 +181,12 @@ Deno.serve(async (req) => {
       currency: "usd",
     });
   } catch (e) {
+    // Full detail stays server-side. Forwarding `e.message` leaked Stripe API
+    // errors (including which permissions the restricted key is missing) and
+    // postgrest constraint/column names straight into the app's error banner.
+    // The deliberate, structured failures above (already_booked / sold_out)
+    // are still returned verbatim — those are designed for the client.
     console.error("[create-payment-intent]", e);
-    return json({ error: (e as Error).message ?? "Unexpected error" }, 500);
+    return json({ error: "Couldn't start this payment. Please try again." }, 500);
   }
 });

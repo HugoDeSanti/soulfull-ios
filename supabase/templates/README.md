@@ -26,7 +26,9 @@ Fixing the sender means switching to custom SMTP:
    Resend and Postmark are the least ceremony for this volume.
 2. Dashboard → **Project Settings → Authentication → SMTP Settings** →
    *Enable Custom SMTP*, then fill in:
-   - **Sender email**: `hello@soulfullgatherings.com` (must be on the verified domain)
+   - **Sender email**: `info@soulfullgatherings.com` — must be on the verified
+     domain, and it should stay in step with `LegalLinks.supportEmail`, because
+     replies to a confirmation email land wherever this points.
    - **Sender name**: `Soulfull Gatherings`
    - host / port / username / password from the provider.
 3. Save, then send yourself a test sign-up.

@@ -28,25 +28,39 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
+// Every failure in here THROWS rather than logging and moving on, and the
+// handler below turns that into a non-2xx — which is the only thing that makes
+// Stripe redeliver the event.
+//
+// This used to log and return success. The consequence was the worst failure
+// this system has: a transient Postgres error left a CHARGED customer with no
+// booking row, Stripe saw 200 and never retried, and on next launch the app's
+// `loadExistingBooking` found nothing, reverted the CTA to "Reserve" and
+// invited a second charge — because `create-payment-intent`'s already_booked
+// guard reads the very row that was never written.
 async function upsertBooking(pi: Stripe.PaymentIntent, status: string) {
   const userId = pi.metadata?.user_id;
   const retreatId = pi.metadata?.retreat_id;
   if (!userId || !retreatId) {
-    console.error("[stripe-webhook] PaymentIntent missing metadata", pi.id);
-    return;
+    // Not retryable — redelivery won't add metadata — but it must still be
+    // loud. A PaymentIntent reaching here without metadata means someone
+    // created one outside create-payment-intent.
+    throw new Error(`PaymentIntent ${pi.id} has no user_id/retreat_id metadata`);
   }
   const { error } = await admin.from("bookings").upsert(
     {
       user_id: userId,
       retreat_id: Number(retreatId),
-      amount_usd: Math.round((pi.amount_received || pi.amount) / 100),
+      // Stripe's native minor unit. Storing whole dollars (the old
+      // `amount_usd`) rounded cents away — see 0009_integrity_hardening.sql.
+      amount_cents: pi.amount_received || pi.amount,
       currency: pi.currency,
       status,
       stripe_payment_intent_id: pi.id,
     },
     { onConflict: "stripe_payment_intent_id" },
   );
-  if (error) console.error("[stripe-webhook] booking upsert failed", error);
+  if (error) throw new Error(`booking upsert failed for ${pi.id}: ${error.message}`);
 }
 
 Deno.serve(async (req) => {

@@ -69,6 +69,8 @@ struct JournalListView: View {
 struct JournalDetailView: View {
     let prompt: JournalPrompt
     @State private var entry = ""
+    /// Debounces the save so a long reflection isn't rewritten per keystroke.
+    @State private var saveTask: Task<Void, Never>?
     @FocusState private var writing: Bool
 
     /// Reflections are private, device-local notes (per CLAUDE.md) — one entry
@@ -161,9 +163,20 @@ struct JournalDetailView: View {
             PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }
         .scrollDismissesKeyboard(.interactively)
-        .onAppear { entry = LocalUserStore.shared.string(forKey: storageKey) ?? "" }
+        .onAppear { entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? "" }
+        // Debounced: this wrote the whole entry on every keystroke, which for a
+        // long reflection is a plist/file write per character.
         .onChange(of: entry) {
-            LocalUserStore.shared.set(entry, forKey: storageKey)
+            saveTask?.cancel()
+            saveTask = Task {
+                try? await Task.sleep(for: .milliseconds(600))
+                guard !Task.isCancelled else { return }
+                LocalUserStore.shared.setPrivateText(entry, forKey: storageKey)
+            }
+        }
+        .onDisappear {
+            saveTask?.cancel()
+            LocalUserStore.shared.setPrivateText(entry, forKey: storageKey)
         }
         // Records that this prompt was opened, and for how long — never the
         // reflection itself, which stays on the device. A prompt counts as done

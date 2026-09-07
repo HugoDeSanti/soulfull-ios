@@ -19,17 +19,30 @@ struct PracticeView: View {
     /// True = contact sheet (2-up covers), false = feature spread.
     @State private var sheet = false
 
-    /// Media tracks that actually have sessions behind them. Empty until the
-    /// check completes, and empty forever while `practice_sessions` is unseeded
-    /// — the three audio/video cards then render as "Coming soon" instead of
-    /// opening an empty list. Seeding the table lights them up with no release.
-    @State private var availableCategories: Set<PracticeCategory> = []
+    /// Which media tracks have sessions behind them — or `.unknown` while the
+    /// check is in flight or if it failed (offline). Seeding
+    /// `practice_sessions` lights the tracks up with no client release.
+    @State private var availability: SupabaseService.CategoryAvailability = .unknown
 
-    /// A media card is live only once its category is known to have sessions.
+    /// Categories known to have content. Empty while `.unknown`.
+    private var availableCategories: Set<PracticeCategory> {
+        if case .known(let set) = availability { return set }
+        return []
+    }
+
+    /// A media card is live once its category is known to have sessions — or
+    /// while we simply don't know, because being offline is not the same as a
+    /// track being empty. An optimistic card that turns out to have nothing
+    /// behind it lands on `PracticeListView`, which has a real error state and
+    /// a retry; a pessimistic one tells a user on a train that content they
+    /// paid for doesn't exist.
     /// Bespoke sections (journal, exercises, recipes, massages) are always live.
     private func isAvailable(_ item: PracticeMenuItem) -> Bool {
         guard let category = item.mediaCategory else { return true }
-        return availableCategories.contains(category)
+        switch availability {
+        case .known(let set): return set.contains(category)
+        case .unknown:        return true
+        }
     }
 
     private var columns: [GridItem] {
@@ -58,11 +71,21 @@ struct PracticeView: View {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.76)
         }
         .task {
-            availableCategories = await SupabaseService.shared.availablePracticeCategories()
+            availability = await SupabaseService.shared.availablePracticeCategories()
         }
     }
 
     // MARK: - Header
+
+    /// Only *known* emptiness drops the "listen or watch" promise. While the
+    /// check is in flight or failed, the cards are open, so the copy must not
+    /// contradict them by saying sessions are still on the way.
+    private var headerBlurb: String {
+        if case .known(let set) = availability, set.isEmpty {
+            return "Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way."
+        }
+        return "Choose a way in. Sessions for every state — listen or watch, anytime."
+    }
 
     private var header: some View {
         HStack(alignment: .top) {
@@ -78,11 +101,7 @@ struct PracticeView: View {
                 // Don't promise audio and video while the media tracks are
                 // still "Coming soon"; the line corrects itself once
                 // `practice_sessions` is seeded.
-                Text(sheet
-                     ? "The whole library, side by side."
-                     : availableCategories.isEmpty
-                       ? "Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way."
-                       : "Choose a way in. Sessions for every state — listen or watch, anytime.")
+                Text(sheet ? "The whole library, side by side." : headerBlurb)
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(4)

@@ -5,14 +5,26 @@ import SwiftUI
 /// safe to access from concurrent async contexts without explicit locking.
 actor SupabaseService {
 
+    /// Bootstrap failure is fatal in DEBUG (a missing `Secrets.xcconfig` should
+    /// stop a developer immediately) but **not** in Release: a bad build
+    /// configuration would ship as a launch crash, which App Review rejects
+    /// under Guideline 2.1 and which tells the user nothing. In Release the
+    /// client is built against a placeholder host, every request fails, and
+    /// `AuthManager` surfaces it through the existing `ConnectionBanner` retry
+    /// path — visible and diagnosable instead of a dead icon.
     static let shared: SupabaseService = {
         do {
             return try SupabaseService()
         } catch {
+            #if DEBUG
             fatalError("""
                 [SupabaseService] \(error)
                 Copy Config/Secrets.xcconfig.example → Config/Secrets.xcconfig and fill in your values.
                 """)
+            #else
+            Log.data.error("Supabase bootstrap failed: \(error.localizedDescription)")
+            return SupabaseService(unconfigured: true)
+            #endif
         }
     }()
 
@@ -46,6 +58,17 @@ actor SupabaseService {
         client = SupabaseClient(supabaseURL: config.url, supabaseKey: config.anonKey, options: options)
     }
 
+    /// Release-only fallback for a build whose credentials didn't resolve.
+    /// Every call fails and surfaces through the connection banner — see the
+    /// note on `shared`. Never reached in DEBUG, which still traps.
+    private init(unconfigured: Bool) {
+        client = SupabaseClient(
+            supabaseURL: URL(string: "https://unconfigured.invalid")!,
+            supabaseKey: "unconfigured",
+            options: SupabaseClientOptions(auth: .init(redirectToURL: Self.authRedirectURL))
+        )
+    }
+
     // MARK: - Fetches
 
     /// Upcoming retreats only.
@@ -63,6 +86,11 @@ actor SupabaseService {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")
+        // UTC, not the device's zone. `end_date` is a bare Postgres `date`, so
+        // formatting "today" locally made the catalog disagree with itself
+        // across time zones — a user in UTC+13 lost a retreat ending today,
+        // one in UTC−11 kept seeing one that ended yesterday.
+        fmt.timeZone = TimeZone(secondsFromGMT: 0)
         let today = fmt.string(from: Date())
 
         let rows: [RetreatRow] = try await client
@@ -100,16 +128,26 @@ actor SupabaseService {
 
     /// Which media tracks actually have sessions behind them.
     ///
-    /// The Practice landing uses this to decide whether a track opens or shows
-    /// "Coming soon", so the tracks light up on their own the moment rows are
-    /// seeded — no client release needed. A missing `practice_sessions` table
-    /// (or any failure) is reported as "nothing available" rather than throwing,
-    /// because the caller's only question is what to enable.
-    func availablePracticeCategories() async -> Set<PracticeCategory> {
+    /// Which media tracks have sessions behind them — or `.unknown` if we
+    /// couldn't find out.
+    ///
+    /// The distinction matters. This used to collapse "the table is empty" and
+    /// "we're offline" into an empty set, and the Practice landing rendered
+    /// both as three dimmed "Coming soon" cards: a user on a train was told the
+    /// content doesn't exist. Offline, the honest answer is that we don't know
+    /// — the same answer `ConnectionBanner` is already giving them — so let the
+    /// caller keep the tracks open and surface the real error on the list.
+    enum CategoryAvailability {
+        case known(Set<PracticeCategory>)
+        /// Offline, or the check itself failed. Not "nothing here".
+        case unknown
+    }
+
+    func availablePracticeCategories() async -> CategoryAvailability {
         if let cached = availableCategoriesCache,
            let date = availableCategoriesCacheDate,
            Date().timeIntervalSince(date) < cacheTTL {
-            return cached
+            return .known(cached)
         }
         struct CategoryRow: Decodable { let category: String }
         do {
@@ -122,11 +160,11 @@ actor SupabaseService {
             let set = Set(rows.compactMap { PracticeCategory(rawValue: $0.category) })
             availableCategoriesCache = set
             availableCategoriesCacheDate = Date()
-            return set
+            return .known(set)
         } catch {
-            // Table absent, offline, or RLS blocking — all mean "show nothing
-            // as available". Not cached, so it re-checks on the next visit.
-            return []
+            // Not cached, so it re-checks on the next visit.
+            Log.data.info("Practice availability unknown: \(error.localizedDescription)")
+            return .unknown
         }
     }
 
@@ -172,7 +210,6 @@ actor SupabaseService {
     func upsertProfile(_ profile: Profile) async throws {
         let payload = ProfileUpsert(
             id: profile.id,
-            email: profile.email,
             fullName: profile.fullName,
             intentions: profile.intentions,
             bodyState: profile.bodyState,
@@ -316,17 +353,23 @@ private struct ProfileRow: Decodable {
 }
 
 /// Write model for `profiles` — only the columns the app owns. Excludes
-/// `stripe_customer_id` (server-managed) and timestamps (DB defaults / trigger).
+/// `stripe_customer_id` and timestamps (DB defaults / trigger), and **`email`**.
+///
+/// `email` used to be sent from here. RLS only ever asserted `auth.uid() = id`,
+/// so the column was client-writable, and `create-payment-intent` preferred it
+/// over the verified `user.email` when creating the Stripe customer — letting a
+/// member point their Stripe record, and its receipts, at an address they
+/// don't own. The column is now server-owned: 0009 reverts client writes to it
+/// and mirrors `auth.users.email` into it on every change.
 private struct ProfileUpsert: Encodable {
     let id: UUID
-    let email: String
     let fullName: String
     let intentions: [String]
     let bodyState: String
     let frequency: String
 
     enum CodingKeys: String, CodingKey {
-        case id, email, intentions, frequency
+        case id, intentions, frequency
         case fullName  = "full_name"
         case bodyState = "body_state"
     }
@@ -337,20 +380,20 @@ private struct ProfileUpsert: Encodable {
 private struct BookingRow: Decodable {
     let id: UUID
     let retreatId: Int
-    let amountUsd: Int
+    let amountCents: Int
     let currency: String
     let status: String
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, currency, status
-        case retreatId = "retreat_id"
-        case amountUsd = "amount_usd"
-        case createdAt = "created_at"
+        case retreatId   = "retreat_id"
+        case amountCents = "amount_cents"
+        case createdAt   = "created_at"
     }
 
     var booking: Booking {
-        Booking(id: id, retreatId: retreatId, amountUsd: amountUsd,
+        Booking(id: id, retreatId: retreatId, amountCents: amountCents,
                 currency: currency, status: status, createdAt: createdAt)
     }
 }
@@ -399,7 +442,13 @@ private struct RetreatRow: Codable {
             toneTop:  Color(hex: toneTop),
             toneMid:  Color(hex: toneMid),
             toneBase: Color(hex: toneBase),
-            groupChatURL: groupChatUrl.flatMap { URL(string: $0) }
+            // Scheme-checked at the decode boundary, so nothing downstream has
+            // to remember. The hub hands this straight to `openURL`, and
+            // `URL(string:)` accepts any scheme — a mis-seeded or tampered row
+            // could have opened an arbitrary app. WhatsApp invites are https.
+            groupChatURL: groupChatUrl
+                .flatMap { URL(string: $0) }
+                .flatMap { $0.scheme?.lowercased() == "https" ? $0 : nil }
         )
     }
 }

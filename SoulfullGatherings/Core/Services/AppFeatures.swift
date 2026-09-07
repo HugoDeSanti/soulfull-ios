@@ -27,7 +27,34 @@ enum AppFeatures {
     ///   • `RetreatDetailViewModel.loadExistingBooking` on appear
     /// and make sure every reservable retreat resolves a `RetreatExperience`
     /// with a `PostBooking`, not just Mallorca.
+    ///
+    /// ⚠️ Flipping this is **not** a one-line change. Before it can go on:
+    ///   • live Stripe keys + a live webhook endpoint/secret
+    ///     (supabase/functions/README.md)
+    ///   • a demo account with a seeded `paid` booking for App Review
+    ///   • `PostBooking` content for every reservable retreat
+    ///   • `depositInstallmentsEnabled` decided — see below; the checkout must
+    ///     never name an amount the server won't charge.
     static let paymentsEnabled = false
+
+    /// Deposit + installments on the retreat checkout (a deposit due today,
+    /// with the balance billed monthly).
+    ///
+    /// **Off, because it is not built.** The plan is `docs/PLAN-deposit-installments.md`;
+    /// the server charges the retreat's full `price_usd` in one payment.
+    ///
+    /// This flag exists because the copy shipped ahead of the capability and
+    /// reached the pay button: `RetreatCheckoutView` rendered
+    /// `PostBooking.Checkout.dueToday` — the hardcoded string `"€800"` — inside
+    /// the button label and the "Due today — deposit" card, while
+    /// `create-payment-intent` charged ~$5,678 USD. A user would have tapped
+    /// "Pay €800" and been charged the full price in another currency.
+    ///
+    /// While this is off, the checkout shows only what the server will actually
+    /// charge. Turning it on requires the installment schedule to exist
+    /// server-side (a Stripe Subscription or scheduled PaymentIntents) **and**
+    /// `dueToday` to be derived from it rather than from brochure copy.
+    static let depositInstallmentsEnabled = false
 
     /// The Circle tab (community circles, member directory, DMs).
     ///

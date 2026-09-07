@@ -53,8 +53,10 @@ final class HomeViewModel {
     func load() async {
         do {
             retreats = try await SupabaseService.shared.fetchRetreats()
-        } catch is CancellationError {
+        } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
+            // `is CancellationError` never matched — the SDK surfaces
+            // cancellation as URLError(.cancelled). See Error.isCancellation.
         } catch {
             Log.data.error("Home retreats fetch failed: \(error.localizedDescription)")
             // Offline fallback so the shelf isn't empty. The connection banner
@@ -67,7 +69,7 @@ final class HomeViewModel {
         // can enrol in is exactly the kind of filler App Review rejects.
         do {
             programs = try await SupabaseService.shared.fetchPrograms()
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             Log.data.info("Programs unavailable: \(error.localizedDescription)")
             programs = []

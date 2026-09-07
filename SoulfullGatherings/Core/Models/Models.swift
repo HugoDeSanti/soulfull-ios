@@ -33,13 +33,22 @@ struct Profile: Identifiable, Hashable {
 struct Booking: Identifiable, Hashable {
     let id: UUID
     let retreatId: Int
-    let amountUsd: Int
+    /// The charge in Stripe's **minor unit** (cents), which is what Stripe
+    /// reports. This was `amountUsd` in whole dollars, and the webhook's
+    /// `Math.round(amount_received / 100)` rounded the cents away — a booking
+    /// for $2,449.50 was recorded as $2,450. See 0009_integrity_hardening.sql.
+    let amountCents: Int
     let currency: String
     /// `pending` | `paid` | `failed` | `refunded` (authoritative from Stripe).
     let status: String
     let createdAt: Date
 
     var isPaid: Bool { status == "paid" }
+
+    /// Display string in the booking's own currency, cents included.
+    var amountFormatted: String {
+        (Decimal(amountCents) / 100).formatted(.currency(code: currency.uppercased()))
+    }
 }
 
 // MARK: - Retreats (in-person)
@@ -685,8 +694,14 @@ extension PracticePlay {
                      creator: massage.lead, durationSeconds: massage.durationSeconds)
     }
 
+    /// A prompt has no intrinsic length, but it needs a nominal one: it is the
+    /// bound the DB trigger clamps `seconds_played` against
+    /// (`least(seconds_played, duration_seconds)`), and with it null the clamp
+    /// is skipped entirely and a journal play accrues without limit. Fifteen
+    /// minutes is a long sitting with one prompt.
     static func journal(_ prompt: JournalPrompt) -> PracticePlay {
-        PracticePlay(kind: .journal, contentID: prompt.id, title: prompt.title)
+        PracticePlay(kind: .journal, contentID: prompt.id, title: prompt.title,
+                     durationSeconds: 900)
     }
 
     static func exercise(_ exercise: Exercise) -> PracticePlay {

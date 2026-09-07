@@ -75,7 +75,10 @@ struct AppleSignInButton: View {
 /// Apple embeds that hash in the signed token, and Supabase checks it against
 /// the raw nonce we send with the token.
 enum AppleNonce {
-    private static let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+    // Note the W: the widely-copied version of this line (Firebase's sample)
+    // omits it, which is a typo rather than a constraint. 65 characters, and
+    // `next(upperBound:)` is unbiased, so entropy is ~5.98 bits/char.
+    private static let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._")
 
     /// `SystemRandomNumberGenerator` is documented as cryptographically secure,
     /// so no `SecRandomCopyBytes` retry loop is needed.

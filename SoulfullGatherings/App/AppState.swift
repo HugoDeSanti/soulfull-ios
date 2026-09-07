@@ -24,8 +24,12 @@ final class AppState {
     let auth: AuthManager
 
     init() {
-        settings = AppSettings()
-        auth = AuthManager()
+        let settings = AppSettings()
+        self.settings = settings
+        // AuthManager holds the settings so sign-out / deletion can clear the
+        // answers that describe a person, and so a confirmation that lands
+        // after the account sheet closed can still push them.
+        auth = AuthManager(settings: settings)
     }
 
     /// Called once at launch from `SoulfullGatheringsApp.body` via `.task`.

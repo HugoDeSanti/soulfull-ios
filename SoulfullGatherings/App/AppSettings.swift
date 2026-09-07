@@ -44,6 +44,23 @@ final class AppSettings {
 
     func reset() {
         hasOnboarded  = false
+        clearPersonalAnswers()
+    }
+
+    /// Everything here that describes **a person** rather than this install.
+    ///
+    /// Called on sign-out and account deletion. Without it these outlived the
+    /// session that produced them, with two consequences. The You tab still
+    /// greeted a deleted user by name and listed their intentions — after a
+    /// dialog that promised to delete "saved data". Worse, the next person to
+    /// sign in on the same phone had the previous member's answers **uploaded
+    /// to their `profiles` row**: `AccountViewModel.mergeProfile` sees a server
+    /// row with no answers, takes the "this is a new account" branch, and
+    /// pushes whatever is in `AppSettings`.
+    ///
+    /// `hasOnboarded` deliberately survives — it describes the install, and
+    /// clearing it would throw a returning user back through onboarding.
+    func clearPersonalAnswers() {
         userName      = ""
         intentionsRaw = ""
         bodyState     = ""

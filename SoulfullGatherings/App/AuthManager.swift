@@ -49,8 +49,13 @@ final class AuthManager {
     var userID: UUID? { supabase.auth.currentUser?.id }
 
     private let supabase: SupabaseClient
+    /// Held so sign-out and deletion can clear the answers that describe a
+    /// person, and so a confirmation landing after the account sheet closed can
+    /// still push them to the new profile.
+    private let settings: AppSettings
 
-    init() {
+    init(settings: AppSettings) {
+        self.settings = settings
         supabase = SupabaseService.shared.client
     }
 
@@ -210,6 +215,80 @@ final class AuthManager {
         return hasAccount
     }
 
+    // MARK: - Cross-device confirmation watch
+
+    /// Polls for a confirmation completed somewhere else, and pushes the
+    /// device's onboarding answers once it lands.
+    ///
+    /// This lives here, not on `AccountViewModel`, because it has to outlive
+    /// the account sheet. The view model owned it and documented itself as
+    /// doing so ("dismissing the sheet mid-flight doesn't cancel the profile
+    /// write") — but `AccountView.onDisappear` cancelled it and the `@State`
+    /// view model was deallocated with the sheet anyway. Someone who signed
+    /// up, swiped the sheet away and confirmed on their laptop saw nothing
+    /// happen until the app was relaunched.
+    ///
+    /// `AuthManager` is app-lifetime, so the watch now survives that, and the
+    /// sheet's `onChange(of: auth.hasAccount)` closes itself when it fires.
+    private var confirmationWatch: Task<Void, Never>?
+
+    func beginConfirmationWatch() {
+        guard confirmationWatch == nil, !hasAccount else { return }
+        confirmationWatch = Task { [weak self] in
+            // Backoff rather than a fixed 5s: this used to hammer the auth
+            // endpoint 60 times per sign-up. Roughly 5s → 60s over ~10 minutes.
+            var delay = Duration.seconds(5)
+            while !Task.isCancelled {
+                try? await Task.sleep(for: delay)
+                delay = min(delay * 2, .seconds(60))
+                guard !Task.isCancelled, let self else { return }
+                // `hasAccount` first: the confirmation may have completed by a
+                // route this loop didn't drive — the emailed link deep-linking
+                // back into the app, or the code panel. Returning early on that
+                // (as an earlier version did) skipped the profile push
+                // entirely, which is the only reason this watch exists.
+                var confirmed = self.hasAccount
+                if !confirmed { confirmed = await self.refreshConfirmationState() }
+                if confirmed {
+                    await self.pushOnboardingAnswers()
+                    return
+                }
+            }
+        }
+    }
+
+    func endConfirmationWatch() {
+        confirmationWatch?.cancel()
+        confirmationWatch = nil
+    }
+
+    /// Writes the device's onboarding answers onto the signed-in profile.
+    /// Best-effort and idempotent — a failure must never undo a valid session.
+    ///
+    /// Owned here rather than by `AccountViewModel` so the watch above can run
+    /// it after the sheet is gone. `email` is deliberately absent: it is
+    /// server-owned (mirrored from `auth.users` by 0009) and was previously
+    /// client-writable, which let a member address their Stripe customer record
+    /// at someone else's address.
+    func pushOnboardingAnswers() async {
+        guard let id = userID, hasAccount else { return }
+        do {
+            try await SupabaseService.shared.upsertProfile(
+                Profile(
+                    id: id,
+                    email: email ?? "",
+                    fullName: settings.userName,
+                    intentions: settings.intentions.sorted(),
+                    bodyState: settings.bodyState,
+                    frequency: settings.frequency,
+                    stripeCustomerId: nil
+                )
+            )
+        } catch {
+            Log.auth.error("Profile push failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Sign in with Apple
 
     /// Signs in with Apple, using the identity token that
@@ -256,10 +335,24 @@ final class AuthManager {
         do {
             let session = try await supabase.auth.session(from: url)
             apply(session.user)
+            // The account just became permanent by a route the account sheet
+            // isn't driving, so nothing else would carry the device's
+            // onboarding answers up. No-ops if they're already there.
+            await pushOnboardingAnswers()
+            endConfirmationWatch()
             return true
         } catch {
+            // Deliberately does NOT touch `state`.
+            //
+            // `soulfull://` is an unclaimed custom scheme: any installed app, or
+            // a link on any web page, can open `soulfull://auth-callback?code=x`.
+            // Setting `.failed` here let an external party flip
+            // `needsRetry` and park the ConnectionBanner over every tab of a
+            // perfectly healthy session. A code that doesn't exchange is a
+            // property of the link, not of the session — the PKCE verifier is
+            // in this device's Keychain and an attacker's code simply won't
+            // match it, which is the flow working correctly.
             Log.auth.error("Auth deep link failed: \(error.localizedDescription)")
-            state = .failed(AppError.authFailure(error).localizedDescription)
             return false
         }
     }
@@ -273,7 +366,13 @@ final class AuthManager {
             Log.auth.error("Sign-out failed: \(error.localizedDescription)")
         }
         await SupabaseService.shared.invalidateCache()
+        endConfirmationWatch()
         pendingConfirmation = nil
+        // The answers describe the person who is leaving, not this phone. Left
+        // in place they were shown to whoever signed in next AND uploaded to
+        // their profile row by AccountViewModel.mergeProfile — see
+        // AppSettings.clearPersonalAnswers().
+        settings.clearPersonalAnswers()
         await signInAnonymously()
     }
 
@@ -286,6 +385,7 @@ final class AuthManager {
         // The Functions client attaches the current session's JWT, so the server
         // deletes exactly this user.
         let _: DeleteResult = try await supabase.functions.invoke("delete-account")
+        endConfirmationWatch()
         // Everything this member kept on the device goes with it — journal
         // reflections and trip checklists. The confirmation dialog promises to
         // delete "saved data", and until this call it didn't: the server row

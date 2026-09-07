@@ -125,20 +125,26 @@
         <div class="total"><div class="k">Total experience</div><div class="vv">€5,678</div></div>
       </div>
 
+      <!-- Deposit + installments is NOT built: the server charges the full
+           price in one payment. In the app this block is behind
+           `AppFeatures.depositInstallmentsEnabled`, which is off, because the
+           €800 was reaching the pay button while the real charge was €5,678.
+           Mirroring the shipped (single-payment) state here. Restore the
+           deposit copy when the installment schedule actually exists. -->
       <div class="due">
-        <div class="k">Due today — deposit<small>Then 2 × €2,439, billed monthly</small></div>
-        <div class="vv">€800</div>
+        <div class="k">Due today</div>
+        <div class="vv">€5,678</div>
       </div>
 
       <div class="secure">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-        Encrypted &amp; secure. Your place is held the moment your deposit clears.
+        Encrypted &amp; secure. Your place is held the moment your payment clears.
       </div>
     </div>
   </div>
 
   <div class="paybar">
-    <a class="pay-btn" href="mallorca-welcome.html">Reserve my place <span class="amt">· Pay €800 deposit</span></a>
+    <a class="pay-btn" href="mallorca-welcome.html">Reserve my place <span class="amt">· Pay €5,678</span></a>
     <!-- Two documents, so two links: `terms` covers the app, `retreatPolicy`
          holds the cancellation windows and refund table. -->
     <p class="fine">By reserving you agree to the enrollment terms and cancellation policy.<br><a class="fine-link" href="https://www.soulfullgatherings.com/soulfull-retreat-policy">Cancellation policy</a><span class="fine-sep">&middot;</span><a class="fine-link" href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a></p>

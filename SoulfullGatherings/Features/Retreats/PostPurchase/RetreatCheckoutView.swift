@@ -8,8 +8,16 @@
 //  `RetreatDetailViewModel.reserve()`. There are deliberately NO raw card
 //  fields (the prototype's form is dropped) — PCI stays with Stripe. On a
 //  successful charge it calls `onReserved`, which routes on to the experience
-//  hub. The deposit / installment copy is presentational; the live charge is
-//  the single-payment flow (see docs/PLAN-deposit-installments.md).
+//  hub.
+//
+//  ⚠️ EVERY AMOUNT ON THIS SCREEN MUST BE ONE THE SERVER WILL CHARGE.
+//  The deposit / installment copy in `PostBooking.Checkout` describes a payment
+//  plan that does not exist (docs/PLAN-deposit-installments.md), and it used to
+//  be described here as merely "presentational" — while being rendered into the
+//  pay button as "Pay €800" against a live charge of the retreat's full
+//  `price_usd` in USD. It is now gated behind
+//  `AppFeatures.depositInstallmentsEnabled`, and `dueAmount` reads only from
+//  the retreat's real price. Don't reintroduce brochure copy into the pay bar.
 //
 
 import SwiftUI
@@ -32,8 +40,24 @@ struct RetreatCheckoutView: View {
     }
 
     private var exp: RetreatExperience? { retreat.experience ?? RetreatExperience.curated(for: retreat) }
-    private var checkout: RetreatExperience.PostBooking.Checkout? { exp?.postBooking?.checkout }
-    private var dueAmount: String { checkout?.dueToday ?? retreat.priceFormatted }
+
+    /// Curated brochure copy for the order summary. Gated on
+    /// `depositInstallmentsEnabled`, because everything it describes — a
+    /// deposit, a balance billed monthly — is a payment plan that does not
+    /// exist server-side.
+    private var checkout: RetreatExperience.PostBooking.Checkout? {
+        AppFeatures.depositInstallmentsEnabled ? exp?.postBooking?.checkout : nil
+    }
+
+    /// **The amount the server will actually charge.** Never brochure copy.
+    ///
+    /// This used to read `checkout?.dueToday ?? retreat.priceFormatted`, and
+    /// `dueToday` is the hardcoded string `"€800"` from
+    /// `RetreatExperience.mallorca` — so the pay button read "Pay €800" while
+    /// `create-payment-intent` charged the full `price_usd` (~$5,678) in USD.
+    /// The label on a pay button is a promise about a charge; it has to come
+    /// from the same place the charge does.
+    private var dueAmount: String { retreat.priceFormatted }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -163,7 +187,11 @@ struct RetreatCheckoutView: View {
             Image(systemName: "lock.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(RetreatPalette.olive)
-            Text("Encrypted & secure. Your place is held the moment your deposit clears.")
+            // Must not name a deposit while the charge is the full price —
+            // see AppFeatures.depositInstallmentsEnabled.
+            Text(AppFeatures.depositInstallmentsEnabled
+                 ? "Encrypted & secure. Your place is held the moment your deposit clears."
+                 : "Encrypted & secure. Your place is held the moment your payment clears.")
                 .font(Theme.body(11)).foregroundStyle(RetreatPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }

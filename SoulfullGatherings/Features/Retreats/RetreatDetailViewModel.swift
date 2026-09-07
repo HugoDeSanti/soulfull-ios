@@ -55,6 +55,10 @@ final class RetreatDetailViewModel {
     /// have already ensured the user has a permanent account. `userID` is used
     /// to reconcile the resulting booking against server truth.
     func reserve(userID: UUID?) async {
+        // Re-entrancy is guarded here, not only by the view disabling its
+        // button: a second entry would re-enter `.preparing` and present a
+        // second PaymentSheet over the first.
+        guard !isBusy else { return }
         phase = .preparing
         do {
             let intent = try await PaymentService.shared.createPaymentIntent(retreatID: retreat.id)

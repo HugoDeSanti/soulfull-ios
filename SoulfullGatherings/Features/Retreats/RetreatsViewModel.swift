@@ -19,8 +19,12 @@ final class RetreatsViewModel {
         do {
             retreats = try await SupabaseService.shared.fetchRetreats()
             activeIndex = 0
-        } catch is CancellationError {
+        } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
+            // `is CancellationError` never matched — the SDK surfaces
+            // cancellation as URLError(.cancelled). See Error.isCancellation.
+            // This one mattered most: the fallback below swapped in
+            // `Retreat.mock`, so a quick back-navigation showed sample data.
         } catch {
             Log.data.error("Retreats fetch failed: \(error.localizedDescription)")
             // Graceful fallback (same pattern as practice sessions): browse

@@ -114,6 +114,88 @@ final class LocalUserStore {
         defaults.set(value, forKey: key(suffix))
     }
 
+    // MARK: - Private text (journal reflections)
+
+    /// Storage for text the privacy policy promises is *private*, as distinct
+    /// from the merely device-local values above.
+    ///
+    /// `UserDefaults` was the wrong home for it. A plist in `Preferences/` is
+    /// unencrypted at rest beyond the container default, and — the part that
+    /// contradicted the policy outright — it is **included in encrypted iCloud
+    /// and Finder backups**. `website/legal/privacy-policy.md` tells the user
+    /// reflections "do not move with you to a new phone"; restoring a backup
+    /// moved them, and anyone with a trusted machine could read them in
+    /// plaintext. The screen itself promises "No one but you sees this."
+    ///
+    /// These land in Application Support instead, written with
+    /// `NSFileProtectionComplete` (unreadable while the device is locked —
+    /// which costs nothing, since a journal is only ever read in the
+    /// foreground) and in a directory flagged `isExcludedFromBackup`.
+
+    func privateText(forKey suffix: String) -> String? {
+        guard let url = privateFileURL(suffix) else { return nil }
+        migrateLegacyPrivateText(suffix, to: url)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    func setPrivateText(_ value: String?, forKey suffix: String) {
+        guard let url = privateFileURL(suffix) else { return }
+        guard let value, !value.isEmpty else {
+            try? FileManager.default.removeItem(at: url)
+            return
+        }
+        do {
+            try Data(value.utf8).write(to: url, options: [.atomic, .completeFileProtection])
+        } catch {
+            Log.data.error("Couldn't save private text: \(error.localizedDescription)")
+        }
+    }
+
+    /// One-time move of anything written before this store had file-backed
+    /// private text, so nobody loses a reflection to the fix. Clears the plist
+    /// copy — leaving it behind would defeat the point.
+    private func migrateLegacyPrivateText(_ suffix: String, to url: URL) {
+        let legacyKey = key(suffix)
+        guard let legacy = defaults.string(forKey: legacyKey) else { return }
+        if !FileManager.default.fileExists(atPath: url.path), !legacy.isEmpty {
+            try? Data(legacy.utf8).write(to: url, options: [.atomic, .completeFileProtection])
+        }
+        defaults.removeObject(forKey: legacyKey)
+    }
+
+    /// `…/Application Support/private/<scope>/<suffix>.txt`, creating the
+    /// directory (protected, backup-excluded) on first use.
+    private func privateFileURL(_ suffix: String) -> URL? {
+        guard !scope.isEmpty, let directory = privateDirectory() else { return nil }
+        // Suffixes are internal ("journal.3"), but never build a path from one
+        // without neutralising separators.
+        let name = suffix.replacingOccurrences(of: "/", with: "_")
+                         .replacingOccurrences(of: "..", with: "_")
+        return directory.appending(path: "\(name).txt", directoryHint: .notDirectory)
+    }
+
+    private func privateDirectory(scope id: String? = nil) -> URL? {
+        let scopeID = id ?? scope
+        guard !scopeID.isEmpty else { return nil }
+        var directory = URL.applicationSupportDirectory
+            .appending(path: "private", directoryHint: .isDirectory)
+            .appending(path: scopeID, directoryHint: .isDirectory)
+        do {
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true,
+                attributes: [.protectionKey: FileProtectionType.complete]
+            )
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true      // the policy promises this
+            try directory.setResourceValues(values)
+        } catch {
+            Log.data.error("Couldn't prepare private storage: \(error.localizedDescription)")
+            return nil
+        }
+        return directory
+    }
+
     // MARK: - Private
 
     /// `sg.u.<scope>.<suffix>`
@@ -137,12 +219,34 @@ final class LocalUserStore {
             guard defaults.object(forKey: destination) == nil else { continue }
             defaults.set(value, forKey: destination)
         }
+        migratePrivateFiles(from: old, to: new)
+    }
+
+    /// Private text lives outside `UserDefaults`, so a guest→member handover
+    /// has to carry the files as well — otherwise becoming a member silently
+    /// loses everything the guest wrote.
+    private func migratePrivateFiles(from old: String, to new: String) {
+        let fm = FileManager.default
+        guard let source = privateDirectory(scope: old),
+              let destination = privateDirectory(scope: new),
+              let files = try? fm.contentsOfDirectory(at: source, includingPropertiesForKeys: nil)
+        else { return }
+        for file in files {
+            let target = destination.appending(path: file.lastPathComponent, directoryHint: .notDirectory)
+            guard !fm.fileExists(atPath: target.path) else { continue }  // newer identity wins
+            try? fm.moveItem(at: file, to: target)
+        }
     }
 
     private func purge(scope id: String) {
         let prefix = "\(Self.root)\(id)."
         for storedKey in defaults.dictionaryRepresentation().keys where storedKey.hasPrefix(prefix) {
             defaults.removeObject(forKey: storedKey)
+        }
+        // "Delete my account" promises the writing goes too, and it no longer
+        // lives in UserDefaults.
+        if let directory = privateDirectory(scope: id) {
+            try? FileManager.default.removeItem(at: directory)
         }
     }
 }

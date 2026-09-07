@@ -44,7 +44,7 @@ final class PracticeProgressStore {
             let rows = try await SupabaseService.shared.fetchPracticeProgress(userID: userID)
             progress = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
             loadedFor = userID
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             // A missing table (before 0008 is applied) or a dropped connection
             // both mean "no history to show" — the Practice tab and Home simply
@@ -54,11 +54,16 @@ final class PracticeProgressStore {
         }
     }
 
+    /// The member the current session belongs to. Capture this when a practice
+    /// opens and hand it back to `record` — see that method.
+    var currentUserID: UUID? { userID }
+
     /// Drops everything in memory. Called on sign-out so the next member
     /// doesn't briefly see the previous one's continue card.
     func clear() {
         progress = [:]
         loadedFor = nil
+        foldedSeconds.removeAll()
     }
 
     // MARK: - Reading
@@ -114,11 +119,16 @@ final class PracticeProgressStore {
     ///
     /// Never throws: a lost heartbeat costs a few seconds of attribution, and
     /// nothing about playback should stall or fail because a write did.
+    /// - Parameter owner: the member this play belongs to, captured when the
+    ///   practice was opened. Reading `userID` here instead meant a sign-out
+    ///   mid-playback attributed the final heartbeat to whoever the session
+    ///   belonged to *now* — in practice the fresh anonymous guest.
     func record(_ play: PracticePlay,
+                owner: UUID?,
                 secondsPlayed: Int,
                 positionSeconds: Int,
                 completed: Bool) async {
-        guard let userID else { return }
+        guard let userID, let owner, owner == userID else { return }
         applyLocally(play, secondsPlayed: secondsPlayed, positionSeconds: positionSeconds, completed: completed)
         do {
             try await SupabaseService.shared.recordPracticePlay(

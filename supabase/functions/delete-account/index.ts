@@ -69,13 +69,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Delete the auth user — cascades to public.profiles + public.bookings.
+    // Delete the auth user. This cascades to public.profiles, and ANONYMISES
+    // rather than erases public.bookings and public.practice_plays (both are
+    // `on delete set null` — see 0009 and 0008): a paid reservation and a
+    // creator's earned play both have to survive the member, and RLS hides the
+    // orphaned rows from every client because `auth.uid() = NULL` is NULL.
     const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
-    if (delErr) return json({ error: delErr.message }, 500);
+    if (delErr) {
+      console.error("[delete-account] deleteUser failed", delErr);
+      return json({ error: "Couldn't delete the account. Please try again." }, 500);
+    }
 
     return json({ deleted: true });
   } catch (e) {
     console.error("[delete-account]", e);
-    return json({ error: (e as Error).message ?? "Unexpected error" }, 500);
+    return json({ error: "Couldn't delete the account. Please try again." }, 500);
   }
 });

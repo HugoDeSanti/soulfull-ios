@@ -32,8 +32,10 @@ final class PracticeViewModel {
         do {
             sessions = try await SupabaseService.shared.fetchPracticeSessions(category: category)
             didLoad = true
-        } catch is CancellationError {
+        } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
+            // `is CancellationError` never matched — the SDK surfaces
+            // cancellation as URLError(.cancelled). See Error.isCancellation.
         } catch {
             sessions = []
             didLoad = true
