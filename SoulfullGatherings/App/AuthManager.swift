@@ -286,6 +286,13 @@ final class AuthManager {
         // The Functions client attaches the current session's JWT, so the server
         // deletes exactly this user.
         let _: DeleteResult = try await supabase.functions.invoke("delete-account")
+        // Everything this member kept on the device goes with it — journal
+        // reflections and trip checklists. The confirmation dialog promises to
+        // delete "saved data", and until this call it didn't: the server row
+        // went and the writing stayed behind. Purge before the sign-out below
+        // switches the scope out from under us.
+        LocalUserStore.shared.purgeCurrentScope()
+        PracticeProgressStore.shared.clear()
         // The session is now invalid server-side; drop it and open a fresh
         // anonymous one so the app stays usable.
         await signOut()
@@ -319,5 +326,16 @@ final class AuthManager {
         isAnonymous = (user?.isAnonymous ?? true) && !confirmed
         email = hasEmail ? mail : nil
         if user != nil { state = .authenticated }
+
+        // Device-local private data is namespaced per member, so tell the store
+        // whose data is now in scope. It hands a guest's writing forward when
+        // that guest becomes a member, and returns true only when the identity
+        // actually moved — this runs on every confirmation poll.
+        if LocalUserStore.shared.adopt(userID: user?.id, isAnonymous: isAnonymous) {
+            RetreatTripStore.shared.reload()
+            // Server-side practice history belongs to the previous member;
+            // drop it so their continue card can't flash up for someone else.
+            PracticeProgressStore.shared.clear()
+        }
     }
 }

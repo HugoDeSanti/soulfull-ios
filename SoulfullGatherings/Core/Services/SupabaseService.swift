@@ -203,6 +203,63 @@ actor SupabaseService {
         return rows.first?.booking
     }
 
+    // MARK: - Practice progress
+
+    /// Records (or tops up) one playback/reading session in `practice_plays`.
+    ///
+    /// Upserted on `(user_id, client_event_id)` so the periodic heartbeat during
+    /// a listen keeps updating the same row rather than minting a new one —
+    /// which is what stops a creator being paid several times over for a single
+    /// play. The DB trigger clamps `seconds_played` to the practice's length and
+    /// refuses to let it go backwards, so a replayed heartbeat is harmless.
+    ///
+    /// Uncached, and deliberately fire-and-forget at the call site: losing a
+    /// heartbeat costs a few seconds of attribution, and blocking playback on a
+    /// network write would cost far more.
+    func recordPracticePlay(_ play: PracticePlay,
+                            userID: UUID,
+                            secondsPlayed: Int,
+                            positionSeconds: Int,
+                            completed: Bool) async throws {
+        let payload = PracticePlayUpsert(
+            userId: userID,
+            clientEventId: play.eventID,
+            contentKind: play.kind.rawValue,
+            contentId: play.contentID,
+            contentTitle: play.title,
+            creator: play.creator,
+            category: play.category?.rawValue,
+            secondsPlayed: max(0, secondsPlayed),
+            positionSeconds: max(0, positionSeconds),
+            durationSeconds: play.durationSeconds,
+            completed: completed
+        )
+        try await client
+            .from("practice_plays")
+            .upsert(payload, onConflict: "user_id,client_event_id")
+            .execute()
+    }
+
+    /// Everything this member has played, newest first. Reads the
+    /// `practice_progress` view, which aggregates the ledger — so the resume
+    /// point the app shows and the seconds a creator is paid for come from the
+    /// same rows and can't drift apart.
+    ///
+    /// RLS on the underlying table (through the view's `security_invoker`) means
+    /// only the caller's own rows come back; the `user_id` filter is belt and
+    /// braces. Uncached — it changes every time they press play.
+    func fetchPracticeProgress(userID: UUID, limit: Int = 200) async throws -> [PracticeProgress] {
+        let rows: [PracticeProgressRow] = try await client
+            .from("practice_progress")
+            .select()
+            .eq("user_id", value: userID)
+            .order("last_played_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+        return rows.map(\.progress)
+    }
+
     /// Resolves a private Storage object path into a time-limited playable URL.
     /// Media in a *public* bucket can skip this and use its permanent URL.
     func signedMediaURL(path: String,
@@ -396,6 +453,79 @@ private struct PracticeSessionRow: Codable {
             durationSeconds: durationSeconds,
             imageUrl: imageUrl,
             blurb: blurb ?? ""
+        )
+    }
+}
+
+
+/// Write model for `practice_plays`. `id`, `started_at`, `created_at` and
+/// `updated_at` are all DB-managed (defaults + the integrity trigger), so they
+/// are deliberately absent.
+private struct PracticePlayUpsert: Encodable {
+    let userId: UUID
+    let clientEventId: UUID
+    let contentKind: String
+    let contentId: Int
+    let contentTitle: String
+    let creator: String?
+    let category: String?
+    let secondsPlayed: Int
+    let positionSeconds: Int
+    let durationSeconds: Int?
+    let completed: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case creator, category, completed
+        case userId          = "user_id"
+        case clientEventId   = "client_event_id"
+        case contentKind     = "content_kind"
+        case contentId       = "content_id"
+        case contentTitle    = "content_title"
+        case secondsPlayed   = "seconds_played"
+        case positionSeconds = "position_seconds"
+        case durationSeconds = "duration_seconds"
+    }
+}
+
+/// Read model for the `practice_progress` view.
+private struct PracticeProgressRow: Decodable {
+    let contentKind: String
+    let contentId: Int
+    let contentTitle: String
+    let creator: String?
+    let category: String?
+    let positionSeconds: Int
+    let durationSeconds: Int?
+    let totalSecondsPlayed: Int
+    let completed: Bool
+    let playCount: Int
+    let lastPlayedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case creator, category, completed
+        case contentKind        = "content_kind"
+        case contentId          = "content_id"
+        case contentTitle       = "content_title"
+        case positionSeconds    = "position_seconds"
+        case durationSeconds    = "duration_seconds"
+        case totalSecondsPlayed = "total_seconds_played"
+        case playCount          = "play_count"
+        case lastPlayedAt       = "last_played_at"
+    }
+
+    var progress: PracticeProgress {
+        PracticeProgress(
+            kind: PracticeContentKind(rawValue: contentKind) ?? .session,
+            contentID: contentId,
+            title: contentTitle,
+            creator: creator,
+            category: category.flatMap(PracticeCategory.init(rawValue:)),
+            positionSeconds: positionSeconds,
+            durationSeconds: durationSeconds,
+            totalSecondsPlayed: totalSecondsPlayed,
+            completed: completed,
+            playCount: playCount,
+            lastPlayedAt: lastPlayedAt
         )
     }
 }

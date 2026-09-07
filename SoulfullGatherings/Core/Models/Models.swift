@@ -542,6 +542,12 @@ struct MediaItem: Identifiable, Hashable {
     /// Storage object path, or an absolute `http(s)` URL for sample / public media.
     let storagePath: String
     let durationSeconds: Int
+    /// Which library this came from. The player records playback against it, so
+    /// a massage and a session with the same numeric id stay distinct in the
+    /// ledger that creator payouts are drawn from.
+    var contentKind: PracticeContentKind = .session
+    /// Media track, for sessions; `nil` for massages.
+    var category: PracticeCategory? = nil
 
     var durationLabel: String {
         let minutes = max(0, durationSeconds) / 60
@@ -571,7 +577,8 @@ struct PracticeSession: Identifiable, Hashable {
 
     var media: MediaItem {
         MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
-                  mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds)
+                  mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds,
+                  contentKind: .session, category: category)
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -611,6 +618,141 @@ extension PracticeSession {
     }
 }
 
+// MARK: - Practice progress (what a member has played)
+
+/// Which library a tracked practice came from. Mirrors the `content_kind`
+/// column on `practice_plays`; the raw values are the contract with the DB
+/// check constraint, so don't rename them casually.
+enum PracticeContentKind: String, Hashable, Codable, Sendable {
+    case session, massage, journal, exercise, recipe
+
+    /// Whether this library credits a named creator. Sessions and massages name
+    /// a real guide who gets paid; the written libraries are house content for
+    /// now, so they record a null creator and simply don't appear in a payout
+    /// run until that changes.
+    var creditsCreator: Bool {
+        switch self {
+        case .session, .massage:            return true
+        case .journal, .exercise, .recipe:  return false
+        }
+    }
+}
+
+/// One playback / reading session, addressed by a client-generated `eventID` so
+/// heartbeats and retries land on the same ledger row instead of paying a
+/// creator twice for one listen.
+struct PracticePlay: Hashable, Sendable {
+    let eventID: UUID
+    let kind: PracticeContentKind
+    let contentID: Int
+    let title: String
+    /// Snapshot of the creator's name at play time — deliberately copied rather
+    /// than joined, so retitling or reassigning content can't move historical
+    /// payouts. `nil` for the written libraries.
+    let creator: String?
+    let category: PracticeCategory?
+    let durationSeconds: Int?
+
+    init(kind: PracticeContentKind, contentID: Int, title: String,
+         creator: String? = nil, category: PracticeCategory? = nil,
+         durationSeconds: Int? = nil, eventID: UUID = UUID()) {
+        self.eventID = eventID
+        self.kind = kind
+        self.contentID = contentID
+        self.title = title
+        self.creator = creator
+        self.category = category
+        self.durationSeconds = durationSeconds
+    }
+
+    /// Stable identity of the *content* (not the play), matching
+    /// `PracticeProgress.id`.
+    var contentKey: String { "\(kind.rawValue)-\(contentID)" }
+}
+
+extension PracticePlay {
+    static func media(_ item: MediaItem) -> PracticePlay {
+        PracticePlay(kind: item.contentKind, contentID: item.id, title: item.title,
+                     creator: item.lead, category: item.category,
+                     durationSeconds: item.durationSeconds)
+    }
+
+    /// Reading a massage's written technique, for the ones with no media yet.
+    /// When media *does* exist the player reports it instead — see the
+    /// `enabled:` flag on `.practiceActivity`.
+    static func massage(_ massage: Massage) -> PracticePlay {
+        PracticePlay(kind: .massage, contentID: massage.id, title: massage.title,
+                     creator: massage.lead, durationSeconds: massage.durationSeconds)
+    }
+
+    static func journal(_ prompt: JournalPrompt) -> PracticePlay {
+        PracticePlay(kind: .journal, contentID: prompt.id, title: prompt.title)
+    }
+
+    static func exercise(_ exercise: Exercise) -> PracticePlay {
+        PracticePlay(kind: .exercise, contentID: exercise.id, title: exercise.title,
+                     durationSeconds: exercise.durationSeconds)
+    }
+
+    /// `Recipe.lead` is a dietary angle ("Anti-inflammatory"), not a person, so
+    /// it is deliberately NOT passed as the creator — a payout run must never
+    /// try to pay "Gut-friendly".
+    static func recipe(_ recipe: Recipe) -> PracticePlay {
+        PracticePlay(kind: .recipe, contentID: recipe.id, title: recipe.title,
+                     durationSeconds: recipe.minutes * 60)
+    }
+}
+
+/// A member's standing with one practice, read back from the `practice_progress`
+/// view (which aggregates every play of it).
+struct PracticeProgress: Identifiable, Hashable, Sendable {
+    let kind: PracticeContentKind
+    let contentID: Int
+    let title: String
+    let creator: String?
+    let category: PracticeCategory?
+    /// Where to pick the media back up.
+    let positionSeconds: Int
+    let durationSeconds: Int?
+    /// Summed across every replay — this is the payout-relevant number.
+    let totalSecondsPlayed: Int
+    let completed: Bool
+    let playCount: Int
+    let lastPlayedAt: Date
+
+    var id: String { "\(kind.rawValue)-\(contentID)" }
+
+    /// How far through, 0–1. Zero when the length isn't known.
+    var fraction: Double {
+        guard let durationSeconds, durationSeconds > 0 else { return completed ? 1 : 0 }
+        return min(1, max(0, Double(positionSeconds) / Double(durationSeconds)))
+    }
+
+    /// Started, but not finished — the set the "Continue" card draws from.
+    /// A few seconds in doesn't count as started; that's usually a mis-tap.
+    var isResumable: Bool {
+        !completed && positionSeconds >= 10 && fraction < 0.95
+    }
+
+    var remainingLabel: String? {
+        guard let durationSeconds, durationSeconds > positionSeconds else { return nil }
+        let minutes = max(1, (durationSeconds - positionSeconds) / 60)
+        return "\(minutes) min left"
+    }
+
+    /// Where this practice lives on the Practice tab, so a "Continue" tap can
+    /// route to it.
+    var menuItem: PracticeMenuItem {
+        switch kind {
+        case .session:  return category.map(PracticeMenuItem.init(category:)) ?? .somatic
+        case .massage:  return .massages
+        case .journal:  return .journal
+        case .exercise: return .exercises
+        case .recipe:   return .recipes
+        }
+    }
+}
+
 // MARK: - Practice menu (the cards on the Practice tab)
 
 /// Every card on `PracticeView`. The first three are audio/video tracks backed
@@ -620,6 +762,15 @@ enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
     case journal, exercises, recipes, massages
 
     var id: String { rawValue }
+
+    /// The card that hosts a given media track.
+    init(category: PracticeCategory) {
+        switch category {
+        case .somatic:    self = .somatic
+        case .breathwork: self = .breathwork
+        case .meditation: self = .meditation
+        }
+    }
 
     /// The media category for the audio/video tracks; `nil` for bespoke sections.
     var mediaCategory: PracticeCategory? {
@@ -804,7 +955,8 @@ struct Massage: Identifiable, Hashable {
     var media: MediaItem? {
         guard !storagePath.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         return MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
-                         mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds)
+                         mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds,
+                         contentKind: .massage, category: nil)
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }

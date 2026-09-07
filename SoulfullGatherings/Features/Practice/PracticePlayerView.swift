@@ -22,6 +22,11 @@ struct PracticePlayerView: View {
     @State private var transport: AudioTransport?
     @State private var loadError: String?
     @State private var tones: (top: Color, mid: Color, base: Color)?
+    /// Counts what is actually listened to and heartbeats it to the ledger the
+    /// creator payouts are drawn from. Built in `resolveAndPlay` (the `@State`
+    /// initialiser can't see `media`) and one per presentation, so each listen
+    /// is its own row. See `PracticeActivity.swift`.
+    @State private var reporter: PlaybackReporter?
 
     var body: some View {
         ZStack {
@@ -62,6 +67,7 @@ struct PracticePlayerView: View {
         .onDisappear {
             player?.pause()
             transport?.stop()
+            reporter?.finish()
         }
     }
 
@@ -223,6 +229,13 @@ struct PracticePlayerView: View {
 
     private func resolveAndPlay() async {
         guard player == nil else { return }
+        // History has to be in hand before the resume point is read, and this
+        // view is reachable from the massage detail screen as well as the
+        // session list — so don't assume a caller already loaded it. No-ops
+        // when it's current.
+        await PracticeProgressStore.shared.refresh()
+        let reporter = PlaybackReporter(play: .media(media))
+        self.reporter = reporter
         do {
             let url: URL
             if media.storagePath.hasPrefix("http"), let direct = URL(string: media.storagePath) {
@@ -233,11 +246,22 @@ struct PracticePlayerView: View {
                 url = try await SupabaseService.shared.signedMediaURL(path: media.storagePath)
             }
             let avPlayer = AVPlayer(url: url)
+
+            // Pick up where they left off. Only offered for a practice that was
+            // genuinely under way — see `PracticeProgress.isResumable`.
+            let resumeAt = reporter.resumePosition
+            if resumeAt > 0 {
+                await avPlayer.seek(to: CMTime(seconds: resumeAt, preferredTimescale: 600),
+                                    toleranceBefore: .zero, toleranceAfter: .zero)
+            }
+
             if media.mediaKind == .audio {
                 let t = AudioTransport(player: avPlayer, duration: Double(media.durationSeconds))
+                t.currentTime = resumeAt
                 t.start()
                 transport = t
             }
+            reporter.attach(to: avPlayer)
             player = avPlayer
             avPlayer.play()
         } catch {

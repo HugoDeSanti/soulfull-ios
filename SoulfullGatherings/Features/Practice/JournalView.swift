@@ -71,9 +71,11 @@ struct JournalDetailView: View {
     @State private var entry = ""
     @FocusState private var writing: Bool
 
-    /// Reflections are private, device-local notes (per CLAUDE.md) — one
-    /// UserDefaults entry per prompt.
-    private var storageKey: String { "sg.journal.\(prompt.id)" }
+    /// Reflections are private, device-local notes (per CLAUDE.md) — one entry
+    /// per prompt, namespaced to the signed-in member by `LocalUserStore`.
+    /// A flat `sg.journal.<id>` key was keyed to the *device*, so two people
+    /// sharing a phone read each other's writing.
+    private var storageKey: String { "journal.\(prompt.id)" }
 
     var body: some View {
         ScrollView {
@@ -159,10 +161,14 @@ struct JournalDetailView: View {
             PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }
         .scrollDismissesKeyboard(.interactively)
-        .onAppear { entry = UserDefaults.standard.string(forKey: storageKey) ?? "" }
+        .onAppear { entry = LocalUserStore.shared.string(forKey: storageKey) ?? "" }
         .onChange(of: entry) {
-            UserDefaults.standard.set(entry, forKey: storageKey)
+            LocalUserStore.shared.set(entry, forKey: storageKey)
         }
+        // Records that this prompt was opened, and for how long — never the
+        // reflection itself, which stays on the device. A prompt counts as done
+        // once something has been written against it.
+        .practiceActivity(.journal(prompt), completedWhen: { !entry.isEmpty })
         .toolbar {
             if writing {
                 ToolbarItem(placement: .keyboard) {

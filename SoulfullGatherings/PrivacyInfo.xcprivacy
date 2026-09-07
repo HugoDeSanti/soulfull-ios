@@ -78,6 +78,35 @@
 		</dict>
 
 		<!--
+		  Practice activity: which session, prompt, exercise, recipe or massage
+		  was opened, how much of it was consumed, and when
+		  (`practice_plays`, see 0008_practice_progress.sql).
+
+		  Declared because it is genuinely collected and linked to the account —
+		  it powers "Continue where you left off" and is the record content
+		  creator payouts are calculated from. It is NOT tracking: it never
+		  leaves our own backend, is not joined to any third-party identity,
+		  and no advertising or analytics SDK sees it.
+
+		  Note what is NOT here: the text of a journal reflection. Only the fact
+		  that a prompt was opened is recorded — the writing itself stays on the
+		  device (LocalUserStore) and is declared nowhere because it is never
+		  collected.
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!--
 		  Onboarding answers: intentions, body state, practice frequency
 		  (`profiles.intentions` / `body_state` / `frequency`).
 
@@ -106,7 +135,9 @@
 		<!--
 		  AppSettings reads and writes UserDefaults on every launch
 		  (sg.hasOnboarded, sg.userName, sg.bodyState, sg.frequency,
-		  sg.intentions), and RetreatTripStore persists trip checklists there.
+		  sg.intentions). LocalUserStore also keeps this member's private
+		  device-only data there — journal reflections and the retreat trip
+		  checklists — namespaced under sg.u.<user id>.
 		  CA92.1 = access limited to this app's own defaults.
 		-->
 		<dict>

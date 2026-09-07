@@ -14,6 +14,9 @@ struct HomeView: View {
     @Environment(AppState.self) private var app
     @Environment(AppSettings.self) private var settings
     @State private var vm = HomeViewModel()
+    /// Server-held practice history — the continue card and the streak line.
+    /// Read inside `body`, which is what registers the observation.
+    private let history = PracticeProgressStore.shared
 
     let onOpenRetreats: () -> Void
     let onOpenRetreat: (Retreat) -> Void
@@ -27,6 +30,12 @@ struct HomeView: View {
             VStack(spacing: 32) {
                 header
                 section { moodRow }
+                // Picking up something already begun beats being handed
+                // something new, so it sits above the ritual. Absent entirely
+                // when there's nothing under way — no invented state.
+                if let resume = history.resumable {
+                    section { continueCard(resume) }
+                }
                 section { todaysRitual }
                 section { upcomingGatherings }
                 // Hidden until the `programs` table is seeded — see HomeViewModel.
@@ -42,6 +51,7 @@ struct HomeView: View {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
         }
         .task { await vm.load() }
+        .task { await history.refresh() }
     }
 
     /// Shared scroll-in reveal: sections rise out of a blur as they enter
@@ -74,6 +84,22 @@ struct HomeView: View {
                     .font(Theme.headline(38))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
+                // A streak is only worth naming once it is one; a single day
+                // is just today, and calling that a run is exactly the
+                // manufactured momentum this screen had removed from it.
+                if history.streakDays >= 2 {
+                    HStack(spacing: 7) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 10))
+                        Text("\(history.streakDays) days in a row")
+                            .font(Theme.eyebrow(11))
+                            .tracking(1.5)
+                    }
+                    .foregroundStyle(Theme.honey)
+                    .padding(.top, 8)
+                    .accessibilityLabel("\(history.streakDays) day practice streak")
+                }
+
                 Text("Take your time. We're here with you.")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkOnPhoto)
@@ -128,6 +154,55 @@ struct HomeView: View {
         .accessibilityLabel(m.label)
         .accessibilityHint("Suggests a practice for feeling \(m.label.lowercased())")
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// "Continue where you left off" — the one piece of real continuity the app
+    /// has. Routes to the section the practice lives in rather than deep-linking
+    /// the item, so it behaves identically for a half-played meditation and a
+    /// half-read recipe.
+    private func continueCard(_ progress: PracticeProgress) -> some View {
+        PressableCard(action: { onOpenPractice(progress.menuItem) }) {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("CONTINUE")
+                        .font(Theme.eyebrow(10))
+                        .tracking(2)
+                        .foregroundStyle(Theme.honey)
+                    Text(progress.title)
+                        .font(Theme.headline(19))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        ProgressRule(fraction: progress.fraction, width: 64)
+                        if let remaining = progress.remainingLabel {
+                            Text(remaining)
+                                .font(Theme.eyebrow(10))
+                                .tracking(1)
+                                .textCase(.uppercase)
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "play.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.black)
+                    .frame(width: 38, height: 38)
+                    .background(Circle().fill(Theme.ink))
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .soulGlassCard(radius: 22)
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }
+        .padding(.horizontal, 20)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Continue \(progress.title)")
+        .accessibilityHint("Opens \(progress.menuItem.title)")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var todaysRitual: some View {

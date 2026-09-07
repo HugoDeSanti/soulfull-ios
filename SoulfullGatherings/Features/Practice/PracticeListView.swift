@@ -17,6 +17,9 @@ struct PracticeListView: View {
 
     @State private var vm = PracticeViewModel()
     @State private var nowPlaying: PracticeSession?
+    /// Shared history, so a row can say "resume" instead of starting over.
+    /// Reading it inside `body` is what registers the observation.
+    private let history = PracticeProgressStore.shared
 
     var body: some View {
         PracticeListScaffold(
@@ -51,9 +54,19 @@ struct PracticeListView: View {
             }
         }
         .task(id: category) { await vm.load(category: category) }
+        .task { await history.refresh() }
+        // A listen writes on dismiss, so re-read once the player closes.
+        .onChange(of: nowPlaying) { _, new in
+            guard new == nil else { return }
+            Task { await history.refresh(force: true) }
+        }
         .sheet(item: $nowPlaying) { session in
             PracticePlayerView(media: session.media)
         }
+    }
+
+    private func progress(_ session: PracticeSession) -> PracticeProgress? {
+        history.progress(kind: .session, contentID: session.id)
     }
 
     // MARK: - Session row
@@ -89,18 +102,37 @@ struct PracticeListView: View {
                     Label(session.mediaKind.label, systemImage: session.mediaKind.systemImage)
                         .labelStyle(.titleAndIcon)
                     Text("·")
-                    Text(session.durationLabel)
+                    if let remaining = progress(session)?.remainingLabel, progress(session)?.isResumable == true {
+                        Text(remaining)
+                            .foregroundStyle(Theme.honey)
+                    } else {
+                        Text(session.durationLabel)
+                    }
                 }
                 .font(Theme.eyebrow(10))
                 .tracking(1)
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.inkSoft)
                 .padding(.top, 1)
+
+                // A hairline of how far in they got. Only for a practice
+                // genuinely under way — a finished one gets the seal instead.
+                if let p = progress(session), p.isResumable {
+                    ProgressRule(fraction: p.fraction)
+                        .padding(.top, 5)
+                }
             }
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.muted)
+            if progress(session)?.completed == true {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.honey.opacity(0.85))
+                    .accessibilityLabel("Completed")
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity)

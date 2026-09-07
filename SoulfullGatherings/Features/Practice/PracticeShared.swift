@@ -122,3 +122,27 @@ struct NumberedStepRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+// MARK: - Progress rule
+
+/// A hairline showing how far into a practice the member got. Quiet by design:
+/// it sits under a row's metadata and reads as an underline until you look at
+/// it, which is the right weight for something that shouldn't feel like a task
+/// tracker.
+struct ProgressRule: View {
+    /// 0–1.
+    let fraction: Double
+    var width: CGFloat = 92
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Capsule()
+                .fill(Theme.ink.opacity(0.18))
+                .frame(width: width, height: 2)
+            Capsule()
+                .fill(Theme.honey.opacity(0.8))
+                .frame(width: max(3, width * min(1, max(0, fraction))), height: 2)
+        }
+        .accessibilityHidden(true)
+    }
+}

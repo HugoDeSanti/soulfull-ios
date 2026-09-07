@@ -327,3 +327,59 @@
 .num-step .t { font-size: 15px; line-height: 1.45; color: var(--ink); }
 .num-step .d { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
 .practice-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Practice progress ───────────────────────────────────────────────────────
+   Mirrors ProgressRule (PracticeShared.swift) and the progress states added to
+   PracticeListView / HomeView. Quiet by design: the rule reads as an underline
+   until you look at it, which is the right weight for something that must not
+   feel like a task tracker. */
+
+.prog-rule {
+  position: relative;
+  width: 92px; height: 2px;
+  border-radius: var(--pill-radius);
+  background: rgba(245,243,232,.18);
+}
+.prog-rule > i {
+  position: absolute; inset: 0 auto 0 0;
+  display: block; height: 2px;
+  border-radius: var(--pill-radius);
+  background: color-mix(in srgb, var(--honey) 80%, transparent);
+}
+/* Remaining-time text on a row that can be resumed. */
+.meta .resume { color: var(--honey); }
+/* Completion seal, replacing the chevron. */
+.seal { color: color-mix(in srgb, var(--honey) 85%, transparent); display: flex; }
+
+/* Home's "Continue where you left off" card. Glass, not the ritual card's
+   aurora — it is a resumption, not an invitation. */
+.continue {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px;
+  border-radius: var(--card-radius);
+}
+.continue .eb { color: var(--honey); margin: 0 0 5px; }
+.continue h3 {
+  font-size: 19px; line-height: 1.18; letter-spacing: -.2px;
+  color: var(--ink); margin: 0;
+}
+.continue .left { flex: 1; min-width: 0; }
+.continue .foot { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.continue .foot .left-label {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.continue .play {
+  flex: none; width: 38px; height: 38px; border-radius: var(--pill-radius);
+  background: var(--ink); color: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Streak line under the greeting. Only rendered at >= 2 days — a single day is
+   just today, and naming that a run is manufactured momentum. */
+.streak {
+  display: flex; align-items: center; gap: 7px;
+  margin-top: 8px;
+  color: var(--honey);
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+}

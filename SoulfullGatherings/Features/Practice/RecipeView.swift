@@ -150,6 +150,7 @@ struct RecipeDetailView: View {
             }
         }
             .scrollIndicators(.hidden)
+            .practiceActivity(.recipe(recipe))
             .ignoresSafeArea(edges: .top)
             .background(Theme.bg)
             .onScrollGeometryChange(for: CGFloat.self) { geo in

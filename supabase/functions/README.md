@@ -44,3 +44,36 @@
 ## Testing
 
 Use Stripe **test mode** keys and the test card `4242 4242 4242 4242` (any future expiry / any CVC / any ZIP). More scenarios via the plugin's `/stripe:test-cards`. Watch logs with `supabase functions logs stripe-webhook`.
+
+## Not a function yet: practice-play verification
+
+`practice_plays` (see `../migrations/0008_practice_progress.sql`) is written
+**directly by the client**, and it is the record content-creator payouts are
+calculated from. The DB trigger bounds what a client can claim — identity
+columns are frozen, `seconds_played` only ever increases, and it is clamped to
+the practice's own length — so a buggy or replayed client cannot inflate a
+payout beyond one full play per row.
+
+It does **not** stop a determined attacker forging plays for a creator they
+want to enrich, because the insert is theirs to make. That is an acceptable
+trade while creators are a handful of known guides and payouts are reviewed by
+hand. It stops being acceptable the moment payouts run automatically at scale.
+
+The fix, when it is needed, is a `record-practice-play` Edge Function that:
+
+1. takes the play over an authenticated call instead of a direct table write
+   (revoke `insert`/`update` on `practice_plays` from `authenticated`);
+2. cross-checks the claimed seconds against the **Storage access log** for the
+   signed URL that was minted for that `storage_path` — a play with no
+   corresponding media fetch never happened;
+3. writes with the service role.
+
+Until then, before any real payout run, sanity-check the ledger for rows whose
+`seconds_played` is implausible against `play_count` and distinct listeners:
+
+```sql
+select creator, listeners, hours_played, plays
+  from public.practice_creator_earnings
+ where month = date_trunc('month', now() - interval '1 month')
+ order by hours_played desc;
+```

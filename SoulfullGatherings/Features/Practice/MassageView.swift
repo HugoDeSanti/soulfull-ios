@@ -161,6 +161,7 @@ struct MassageDetailView: View {
             .padding(.horizontal, 20)
         }
         .scrollIndicators(.hidden)
+        .practiceActivity(.massage(massage), enabled: massage.media == nil)
         .background {
             PhotoBackdrop(imageName: massage.imageUrl, blur: 24, darken: 0.8)
         }

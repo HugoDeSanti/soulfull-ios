@@ -63,6 +63,11 @@
     <div class="greet on-photo">
       <p class="eb">Good morning</p>
       <h1>Hugo.</h1>
+      <!-- Shown only at >= 2 consecutive days (PracticeProgressStore.streakDays). -->
+      <div class="streak">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4.5 4 8a4 4 0 0 1-8 0c0-1 .3-2 .8-2.8C9 9 9 11 10 11c1.5 0 1-4 2-9Z"/><path d="M12 22a6 6 0 0 0 6-6c0-2-1-4-2.5-5.5.2 3-1.5 4.5-3 4.5s-2.2-1-2-2.5C9 14 6 15.5 6 18a6 6 0 0 0 6 4Z"/></svg>
+        <span>4 days in a row</span>
+      </div>
       <p>Take your time. We're here with you.</p>
     </div>
 
@@ -75,6 +80,22 @@
         <span class="mood-chip">Heavy</span>
         <span class="mood-chip">Hopeful</span>
       </div>
+    </div>
+
+    <!-- Continue where you left off. Sits ABOVE the ritual: picking up
+         something already begun beats being handed something new. Absent
+         entirely when PracticeProgressStore.resumable is nil — no history,
+         no card, nothing invented. -->
+    <div class="sec continue glass">
+      <div class="left">
+        <p class="eb">Continue</p>
+        <h3>Coherent Breathing</h3>
+        <div class="foot">
+          <span class="prog-rule" style="width:64px"><i style="width:38%"></i></span>
+          <span class="left-label">6 min left</span>
+        </div>
+      </div>
+      <span class="play"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     </div>
 
     <div class="sec ritual glass">

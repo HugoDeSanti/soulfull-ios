@@ -125,6 +125,7 @@ struct ExerciseDetailView: View {
             .padding(.horizontal, 20)
         }
         .scrollIndicators(.hidden)
+        .practiceActivity(.exercise(exercise))
         .background {
             PhotoBackdrop(imageName: exercise.imageUrl, blur: 24, darken: 0.8)
         }

@@ -135,7 +135,8 @@ following changes, the privacy policy is wrong until you update it:
 |---|---|
 | Add any analytics or crash-reporting SDK | §1 "What we do not collect", §5, §6, §9 |
 | Turn on `AppFeatures.paymentsEnabled` | §1 payment note — the "reservations are switched off" callout stops being true |
-| Sync journal reflections to Supabase | §2 — the "never leaves your phone" promise is the strongest claim in the document, and the easiest to break by accident |
+| Sync journal reflections to Supabase | §2 — the "never leaves your phone" promise is the strongest claim in the document, and the easiest to break by accident. Recording that a prompt was *opened* is already covered (§1, "your practice activity"); uploading a word of what was *written* is not |
+| Change what `practice_plays` records, or start paying out on a new library | §1 "your practice activity", §4, and the deletion paragraph in §11 |
 | Add a provider (email marketing, push, support desk) | §5 sharing table |
 | Make the onboarding questions clinical | §1, plus `PrivacyInfo.xcprivacy` moves from `OtherDataTypes` to `Health` |
 | Re-add Google sign-in | §5 sharing table |

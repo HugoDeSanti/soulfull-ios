@@ -26,7 +26,7 @@ ships from `SoulfullGatherings/` and never imports anything here.
 | Design System file        | Swift source                          | What lives there |
 |---------------------------|---------------------------------------|------------------|
 | `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`       | Colors, gradients, radii, type — one CSS var per `Theme.*` constant |
-| `shared/app.css`          | `Core/DesignSystem/Components.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift` | Buttons, glass, chips, option cards, nav, steps, the Apple button |
+| `shared/app.css`          | `Core/DesignSystem/Components.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift` | Buttons, glass, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak |
 | `shared/frame.css`        | (presentation only)                   | iPhone shell + iOS status bar — not part of the app |
 | `foundations/*.html`      | `Theme.swift`                         | Swatch / type / gradient reference sheets |
 | `components/*.html`       | `Components.swift` et al.             | One card per reusable view |

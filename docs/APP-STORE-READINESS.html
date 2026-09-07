@@ -221,6 +221,16 @@
     </p>
   </header>
 
+  <div class="note" style="margin-top:22px;border-left:3px solid var(--honey,#E5C766);padding:14px 18px;background:rgba(229,199,102,.07);border-radius:10px">
+    <p style="margin:0 0 8px"><b>Addendum — 2026-09-06.</b> This audit is a snapshot of 2026-08-31 and its findings are left as written. Four facts in it have since changed:</p>
+    <ul style="margin:0;padding-left:20px">
+      <li><code>programs</code> and <code>practice_sessions</code> <b>no longer return 404</b> — both tables exist (0005 / 0006 applied). They are <b>empty</b>, which produces the same user-visible behaviour (hidden shelf, "Coming soon" tracks) but needs seeding, not a migration.</li>
+      <li><b>Mallorca is back in the catalog</b> (<code>0007_mallorca_dates.sql</code> moved it to 2027-07-21→26), so the brochure layout and the post-purchase tier are reachable again once payments are on. Four retreats are now upcoming, not three.</li>
+      <li><b>Practice history is now recorded server-side</b> (<code>0008_practice_progress.sql</code>, applied 2026-09-06) — which adds <b>Product Interaction</b> to the privacy manifest and a paragraph to the privacy policy. The App Store Connect nutrition labels must match.</li>
+      <li>Journal reflections and trip checklists are now <b>namespaced per member</b> and erased on account deletion. The audit's account-deletion item understated what "delete my data" had to cover.</li>
+    </ul>
+  </div>
+
   <div class="board">
     <div><span class="n s">0</span><span class="k">Block upload</span></div>
     <div><span class="n s">0</span><span class="k">Block review</span></div>

@@ -217,7 +217,7 @@ html, body { background: #0b0c07; margin: 0; }
     <ul>
       <li>We collect the little we need to run the app and your retreat — your name, your email, the few answers you give when you first open the app, and your booking.</li>
       <li><strong>We do not track you.</strong> No advertising identifiers, no ad networks, no analytics SDKs in the app, and nothing sold or shared for advertising.</li>
-      <li><strong>Your journal reflections never leave your phone.</strong> Neither do your packing and to-do checklists.</li>
+      <li><strong>Your journal reflections never leave your phone.</strong> Neither do your packing and to-do checklists. We do record <em>which</em> practices you open and how much of each you get through, so the app can pick up where you left off and so we can pay the people who made them.</li>
       <li>You can browse the whole app without giving us anything at all.</li>
       <li>You can delete your account and everything attached to it from inside the app, in two taps.</li>
     </ul>
@@ -228,7 +228,7 @@ html, body { background: #0b0c07; margin: 0; }
   <p>It is written to be read, not to be survived. If anything in it is unclear, write to us at <span class="todo">[privacy@yourdomain.com]</span> and we will explain it in plain words.</p>
 
 
-  <h2><span class="num">01</span>What we collect</h2>
+  <h2 id="collect"><span class="num">01</span>What we collect</h2>
 
   <h3>What you give us</h3>
   <div class="table-scroll">
@@ -250,6 +250,7 @@ html, body { background: #0b0c07; margin: 0; }
   <h3>What is created automatically</h3>
   <ul>
     <li><strong>A guest identifier.</strong> The app opens an anonymous session the first time you launch it, so that retreat listings and images load before you have an account. This creates a random identifier for your device's session. It contains no name, no email, and nothing that identifies you personally. If you later create an account with an email and password, that same identifier becomes your account.</li>
+    <li><strong>Your practice activity.</strong> When you open a guided session, journal prompt, exercise, recipe or massage, we record which one it was, how long you spent with it, how far through you got, and when. This is what lets the app offer to resume something you left half-finished, and it is how we work out what to pay the guides and teachers whose work you listened to. <strong>For a journal prompt, we record only that you opened it — never a word of what you wrote.</strong></li>
     <li><strong>Booking records</strong> — which retreat, the amount, the currency, whether payment succeeded, and a reference to the payment held by our payment processor.</li>
     <li><strong>Ordinary technical records</strong> kept by the services that host the app's data and our website — IP address, approximate region, device and browser type, timestamps, and error logs. We use these to keep things running and secure, not to build a profile of you.</li>
   </ul>
@@ -274,12 +275,12 @@ html, body { background: #0b0c07; margin: 0; }
   <h2><span class="num">02</span>What stays on your phone</h2>
   <p>Some of the most personal things in the app are never uploaded to us at all. They are stored only in the app's own storage on your device, and they are removed when you delete the app:</p>
   <ul>
-    <li><strong>Your journal reflections.</strong> Everything you write against a journal prompt stays on your phone. We cannot read it, and it is not backed up to our servers.</li>
+    <li><strong>Your journal reflections.</strong> Everything you write against a journal prompt stays on your phone. We cannot read it, and it is not backed up to our servers. We do record that you opened that prompt — see “your practice activity” in <a href="#collect">section 1</a> — but never the writing itself.</li>
     <li><strong>Your retreat to-do list and packing list</strong>, including which items you have ticked off.</li>
     <li><strong>Your 1:1 session choices</strong> made in the retreat experience.</li>
     <li><strong>Your onboarding answers</strong>, which are held on the device and are only copied to our servers if and when you create an account.</li>
   </ul>
-  <p>Because these live on the device, they do not move with you to a new phone, and we cannot recover them for you.</p>
+  <p>Because these live on the device, they do not move with you to a new phone, and we cannot recover them for you. They are held separately for each account signed in on that phone, so sharing a device does not mean sharing a journal — and deleting your account erases them from the device along with everything on our servers.</p>
 
 
   <h2 id="health"><span class="num">03</span>Health information before a retreat</h2>
@@ -291,6 +292,8 @@ html, body { background: #0b0c07; margin: 0; }
   <ul>
     <li>To run the app — sign you in, keep you signed in, remember your preferences, and show you the right content.</li>
     <li>To provide the practices, recipes, prompts and retreat information you asked for.</li>
+    <li>To remember where you were in a practice, so you can pick it back up.</li>
+    <li>To calculate what we owe the guides, teachers and practitioners whose sessions you listened to. Payout reports are totals per creator; they do not name you.</li>
     <li>To arrange, confirm and run your retreat, including logistics and safety.</li>
     <li>To take payment and keep the financial and tax records the law requires us to keep.</li>
     <li>To reply to you when you contact us.</li>
@@ -347,7 +350,7 @@ html, body { background: #0b0c07; margin: 0; }
   <h2><span class="num">08</span>Your choices</h2>
 
   <h3>Deleting your account, from inside the app</h3>
-  <p>Open the <strong>You</strong> tab and choose <strong>Delete account</strong>. This is immediate and permanent. It deletes your sign-in record, your profile and your bookings, and it deletes your customer record with our payment processor along with any saved payment method. Completed charges remain in our accounting records, as the law requires. Anything held only on your phone — your journal, your checklists — goes when you delete the app.</p>
+  <p>Open the <strong>You</strong> tab and choose <strong>Delete account</strong>. This is immediate and permanent. It deletes your sign-in record, your profile and your bookings, and it deletes your customer record with our payment processor along with any saved payment method. Completed charges remain in our accounting records, as the law requires. Anything held only on your phone — your journal, your checklists — is erased from the device at the same time, and goes with the app if you delete that instead. Your practice history is unlinked from you: the record that a session was played survives so the creator is still paid for it, but it no longer carries your identity and cannot be traced back to you.</p>
 
   <h3>Everything else</h3>
   <ul>

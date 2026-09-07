@@ -94,8 +94,11 @@ If a reviewer still queries it, the honest answer is in the notes block below.
       rather than wrong — but an empty catalog reads as a broken app.
 - [ ] If you seeded `practice_sessions`, open each track once on a device and
       confirm the media actually plays from the `practice-media` bucket.
+- [x] `0008_practice_progress.sql` is applied (2026-09-06). Practice history,
+      the Continue card and the creator-payout ledger are live.
 - [ ] Privacy nutrition labels in App Store Connect match
-      `SoulfullGatherings/PrivacyInfo.xcprivacy`.
+      `SoulfullGatherings/PrivacyInfo.xcprivacy` — including **Product
+      Interaction**, added when practice history started being recorded.
 - [ ] If you seeded `programs` (`0006_programs.sql`), the Digital Retreats shelf
       appears on Home. Until then it is hidden by design — not a bug.
 
@@ -131,11 +134,13 @@ above via "or / Email", or Sign in with Apple. After signing in the app
 continues straight into whatever you tapped.
 
 WHY THOSE SCREENS ASK FOR AN ACCOUNT
-Practice history and written reflections are per-member data — they are stored
-against the account and synced across devices, so there is nowhere to put them
-for an anonymous user. Nothing that is merely browsable is behind the prompt.
-Account creation collects only a name and an email address, and is covered by
-our privacy policy.
+Opening a practice records it to that member's practice history on our server —
+which session, how much of it, and when — so the app can offer to resume it and
+so we can pay the guide who recorded it. There is nowhere to put that for an
+anonymous user. Written journal reflections are per-member too, but they are
+held only on the device and are never uploaded. Nothing that is merely
+browsable is behind the prompt. Account creation collects only a name and an
+email address, and is covered by our privacy policy.
 
 SIGN IN WITH APPLE
 Offered and listed first. It is the only third-party login in the app; the

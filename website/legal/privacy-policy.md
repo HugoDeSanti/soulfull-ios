@@ -6,7 +6,7 @@ Last updated [Month D, YYYY] · Effective [Month D, YYYY]
 
 - We collect the little we need to run the app and your retreat — your name, your email, the few answers you give when you first open the app, and your booking.
 - **We do not track you.** No advertising identifiers, no ad networks, no analytics SDKs in the app, and nothing sold or shared for advertising.
-- **Your journal reflections never leave your phone.** Neither do your packing and to-do checklists.
+- **Your journal reflections never leave your phone.** Neither do your packing and to-do checklists. We do record *which* practices you open and how much of each you get through, so the app can pick up where you left off and so we can pay the people who made them.
 - You can browse the whole app without giving us anything at all.
 - You can delete your account and everything attached to it from inside the app, in two taps.
 
@@ -32,6 +32,7 @@ The four onboarding answers are self-described preferences — what you are hopi
 ### What is created automatically
 
 - **A guest identifier.** The app opens an anonymous session the first time you launch it, so that retreat listings and images load before you have an account. This creates a random identifier for your device's session. It contains no name, no email, and nothing that identifies you personally. If you later create an account with an email and password, that same identifier becomes your account.
+- **Your practice activity.** When you open a guided session, journal prompt, exercise, recipe or massage, we record which one it was, how long you spent with it, how far through you got, and when. This is what lets the app offer to resume something you left half-finished, and it is how we work out what to pay the guides and teachers whose work you listened to. **For a journal prompt, we record only that you opened it — never a word of what you wrote.**
 - **Booking records** — which retreat, the amount, the currency, whether payment succeeded, and a reference to the payment held by our payment processor.
 - **Ordinary technical records** kept by the services that host the app's data and our website — IP address, approximate region, device and browser type, timestamps, and error logs. We use these to keep things running and secure, not to build a profile of you.
 
@@ -54,12 +55,12 @@ When retreat payments are taken in the app, card details go directly to **Stripe
 
 Some of the most personal things in the app are never uploaded to us at all. They are stored only in the app's own storage on your device, and they are removed when you delete the app:
 
-- **Your journal reflections.** Everything you write against a journal prompt stays on your phone. We cannot read it, and it is not backed up to our servers.
+- **Your journal reflections.** Everything you write against a journal prompt stays on your phone. We cannot read it, and it is not backed up to our servers. We do record that you opened that prompt — see "your practice activity" in section 1 — but never the writing itself.
 - **Your retreat to-do list and packing list**, including which items you have ticked off.
 - **Your 1:1 session choices** made in the retreat experience.
 - **Your onboarding answers**, which are held on the device and are only copied to our servers if and when you create an account.
 
-Because these live on the device, they do not move with you to a new phone, and we cannot recover them for you.
+Because these live on the device, they do not move with you to a new phone, and we cannot recover them for you. They are held separately for each account signed in on that phone, so sharing a device does not mean sharing a journal — and deleting your account erases them from the device along with everything on our servers.
 
 ## 3. Health information before a retreat
 
@@ -71,6 +72,8 @@ This information is used only to run your retreat safely. We share it with the s
 
 - To run the app — sign you in, keep you signed in, remember your preferences, and show you the right content.
 - To provide the practices, recipes, prompts and retreat information you asked for.
+- To remember where you were in a practice, so you can pick it back up.
+- To calculate what we owe the guides, teachers and practitioners whose sessions you listened to. Payout reports are totals per creator; they do not name you.
 - To arrange, confirm and run your retreat, including logistics and safety.
 - To take payment and keep the financial and tax records the law requires us to keep.
 - To reply to you when you contact us.
@@ -120,7 +123,7 @@ If you join a mailing list or waitlist on the site, we keep the email address yo
 
 ### Deleting your account, from inside the app
 
-Open the **You** tab and choose **Delete account**. This is immediate and permanent. It deletes your sign-in record, your profile and your bookings, and it deletes your customer record with our payment processor along with any saved payment method. Completed charges remain in our accounting records, as the law requires. Anything held only on your phone — your journal, your checklists — goes when you delete the app.
+Open the **You** tab and choose **Delete account**. This is immediate and permanent. It deletes your sign-in record, your profile and your bookings, and it deletes your customer record with our payment processor along with any saved payment method. Completed charges remain in our accounting records, as the law requires. Anything held only on your phone — your journal, your checklists — is erased from the device at the same time, and goes with the app if you delete that instead. Your practice history is unlinked from you: the record that a session was played survives so the creator is still paid for it, but it no longer carries your identity and cannot be traced back to you.
 
 ### Everything else
 
