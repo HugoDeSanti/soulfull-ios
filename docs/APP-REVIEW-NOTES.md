@@ -76,15 +76,21 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 
 **Sign in with Apple revocation — Guideline 5.1.1(v), and a rejection if skipped:**
 
-- [ ] **Migration `0010_apple_credentials.sql` is applied** to the live project.
-      Without the table every Apple sign-in logs an upsert failure and nothing
-      is stored to revoke with.
-- [ ] **A Sign in with Apple key (`.p8`) exists** for `com.soulfullgatherings.app`
-      and the four secrets are set: `APPLE_TEAM_ID`, `APPLE_KEY_ID`,
-      `APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID` (the **bundle ID**, not a Services
-      ID). Steps: `supabase/functions/README.md`.
-- [ ] **`store-apple-token` is deployed** and `delete-account` is **re-deployed**
-      (it gained the revoke step).
+- [ ] ⚠️ **Migration `0010_apple_credentials.sql` is applied** to the live
+      project. **This is the one step still outstanding.** Without the table
+      every Apple sign-in logs an upsert failure and nothing is stored to
+      revoke with.
+- [x] **A Sign in with Apple key (`.p8`) exists** for `com.soulfullgatherings.app`
+      — Key ID `5224W8727Y`, created 2026-09-10 — and the four secrets are set:
+      `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID`
+      (the **bundle ID**, not a Services ID). Verified by minting a client
+      secret and calling Apple's `/auth/revoke`, which answered 200 — so the
+      key, team and bundle ID all authenticate. The `.p8` lives untracked at the
+      repo root and is gitignored; **it must never be committed.**
+- [x] **`store-apple-token` is deployed** and `delete-account` **re-deployed**
+      (2026-09-10). Smoke-tested: both reject unauthenticated callers with 401,
+      and `store-apple-token` boots and sees its secrets (a guest JWT gets the
+      expected 403, not a 501).
 - [ ] **Verified end to end on a real device**: sign in with Apple → You tab →
       Delete account → *Settings → your name → Sign-In & Security → Sign in with
       Apple* no longer lists Soulfull. A simulator cannot prove this.
