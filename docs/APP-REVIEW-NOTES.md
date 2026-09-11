@@ -76,10 +76,10 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 
 **Sign in with Apple revocation — Guideline 5.1.1(v), and a rejection if skipped:**
 
-- [ ] ⚠️ **Migration `0010_apple_credentials.sql` is applied** to the live
-      project. **This is the one step still outstanding.** Without the table
-      every Apple sign-in logs an upsert failure and nothing is stored to
-      revoke with.
+- [x] **Migration `0010_apple_credentials.sql` is applied** to the live
+      project (2026-09-10). Verified: RLS on, 0 policies, 0 grants to
+      `anon`/`authenticated`, FK `on delete cascade`, and both client roles get
+      `42501 permission denied` rather than a row.
 - [x] **A Sign in with Apple key (`.p8`) exists** for `com.soulfullgatherings.app`
       — Key ID `5224W8727Y`, created 2026-09-10 — and the four secrets are set:
       `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID`
