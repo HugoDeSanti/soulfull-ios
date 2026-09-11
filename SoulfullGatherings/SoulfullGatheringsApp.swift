@@ -44,17 +44,17 @@ struct SoulfullGatheringsApp: App {
     }
 
     /// The app root, or a DEBUG screen override for visual passes without
-    /// driving the full app to it (`-preview-checkout` / `-preview-experience`
+    /// driving the full app to it (`-preview-retreat` / `-preview-experience`
     /// launch args). Release builds always show `RootView`.
+    ///
+    /// `-preview-checkout` and `-preview-chat` are gone with the screens they
+    /// rendered: the Stripe checkout (dependency dropped) and the mocked
+    /// assistant chat (the app has no AI).
     @ViewBuilder private var rootContent: some View {
         #if DEBUG
         if CommandLine.arguments.contains("-preview-retreat") {
             NavigationStack {
                 RetreatDetailView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
-            }
-        } else if CommandLine.arguments.contains("-preview-checkout") {
-            NavigationStack {
-                RetreatCheckoutView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
             }
         } else if CommandLine.arguments.contains("-preview-experience") {
             NavigationStack {
@@ -74,10 +74,6 @@ struct SoulfullGatheringsApp: App {
             }
         } else if CommandLine.arguments.contains("-preview-confirm-email") {
             AccountView(previewConfirmationFor: "hugo@soulfullgatherings.com")
-        } else if CommandLine.arguments.contains("-preview-chat") {
-            NavigationStack {
-                RetreatAssistantView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
-            }
         } else {
             RootView()
         }

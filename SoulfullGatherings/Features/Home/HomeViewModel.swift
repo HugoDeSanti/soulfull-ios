@@ -61,7 +61,9 @@ final class HomeViewModel {
             Log.data.error("Home retreats fetch failed: \(error.localizedDescription)")
             // Offline fallback so the shelf isn't empty. The connection banner
             // tells the user this is saved content, not the live catalogue.
-            if retreats.isEmpty { retreats = Retreat.mock }
+            // `hasBegun` is applied here too: saved content may be stale, and a
+            // stale retreat must drop out rather than be offered.
+            if retreats.isEmpty { retreats = Retreat.mock.filter { !$0.hasBegun } }
         }
 
         // Programs are additive: the shelf only appears once the table is

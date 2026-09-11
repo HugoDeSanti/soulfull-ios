@@ -21,14 +21,29 @@ enum AppFeatures {
     /// curated content for Mallorca, so buying any other retreat lands on empty
     /// screens.
     ///
-    /// v1 ships as a browsable catalog. When this flips to `true`, restore:
-    ///   • the Reserve CTA in `RetreatDetailView`
-    ///   • the `retreatCheckout` / `retreatExperience` routes in `MainTabView`
-    ///   • `RetreatDetailViewModel.loadExistingBooking` on appear
-    /// and make sure every reservable retreat resolves a `RetreatExperience`
-    /// with a `PostBooking`, not just Mallorca.
+    /// v1 ships as a browsable catalog.
     ///
-    /// ⚠️ Flipping this is **not** a one-line change. Before it can go on:
+    /// ⚠️ **Flipping this alone now does almost nothing.** The client payment
+    /// rail was *removed*, not just routed around, when the StripePaymentSheet
+    /// SPM dependency was dropped — that dependency linked a card scanner,
+    /// which forced an `NSCameraUsageDescription` for a capability the app
+    /// could not reach, and a purpose string with no feature behind it invites
+    /// a reviewer to ask where the camera is used. Deleted with it:
+    ///   • `Core/Services/PaymentService.swift`
+    ///   • `Features/Retreats/PostPurchase/RetreatCheckoutView.swift`
+    ///   • `RetreatDetailViewModel.reserve()` / `confirmBooking()`
+    ///   • the `retreatCheckout` route in `MainTabView`
+    /// All recoverable from git history. `loadExistingBooking` **stayed** —
+    /// reading a `bookings` row is plain Supabase, so a reservation made by any
+    /// means still shows on the detail screen.
+    ///
+    /// The **server** rail is untouched and still deployed: `create-payment-intent`
+    /// and `stripe-webhook` are Edge Functions, not part of the app build.
+    ///
+    /// So bringing payments back means, in order:
+    ///   • re-add the `Stripe` package + `StripePaymentSheet` product and the
+    ///     camera purpose string to `project.yml`
+    ///   • restore the four deleted Swift pieces from git history
     ///   • live Stripe keys + a live webhook endpoint/secret
     ///     (supabase/functions/README.md)
     ///   • a demo account with a seeded `paid` booking for App Review
@@ -44,7 +59,7 @@ enum AppFeatures {
     /// the server charges the retreat's full `price_usd` in one payment.
     ///
     /// This flag exists because the copy shipped ahead of the capability and
-    /// reached the pay button: `RetreatCheckoutView` rendered
+    /// reached the pay button: the since-deleted `RetreatCheckoutView` rendered
     /// `PostBooking.Checkout.dueToday` — the hardcoded string `"€800"` — inside
     /// the button label and the "Due today — deposit" card, while
     /// `create-payment-intent` charged ~$5,678 USD. A user would have tapped

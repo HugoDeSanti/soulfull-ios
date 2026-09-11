@@ -117,9 +117,13 @@ If a reviewer still queries it, the honest answer is in the notes block below.
       pages, and the same privacy URL is entered in App Store Connect.
       A privacy policy URL that 404s is an automatic rejection.
 - [ ] `LegalLinks.supportEmail` is a monitored inbox.
-- [ ] The `retreats` table contains only retreats that have **not yet ended**.
-      The app filters on `end_date >= today`, so a stale catalog shows as empty
-      rather than wrong — but an empty catalog reads as a broken app.
+- [ ] The `retreats` table contains retreats that have **not yet started**.
+      The app filters on `start_date > today` (a retreat under way can no longer
+      be joined, so offering a place on it is a wrong price and a wrong date),
+      and `Retreat.hasBegun` applies the same rule to the offline fallback. A
+      stale catalog therefore shows as empty rather than wrong — but an empty
+      catalog reads as a broken app, so keep at least a few ahead.
+      As of 2026-09-11: Lapland, Chamonix, Mallorca, Dolomites (all 2027).
 - [ ] If you seeded `practice_sessions`, open each track once on a device and
       confirm the media actually plays from the `practice-media` bucket.
 - [x] `0008_practice_progress.sql` is applied (2026-09-06). Practice history,
@@ -181,9 +185,14 @@ account created with Sign in with Apple, deletion also calls Apple's
 Apple at the same time.
 
 NO PURCHASES IN THIS VERSION
-This version contains no in-app purchases and no payment flow. Retreat pages
-show details and pricing for information; the call to action opens an email
-enquiry to our team. Bookings are handled offline by our staff.
+This version contains no in-app purchases and no payment flow of any kind —
+there is no payment SDK in the binary. Retreat pages show details and pricing
+for information; the call to action opens an email enquiry to our team.
+Bookings are handled offline by our staff.
+
+NO AI
+The app contains no AI features, no chatbot and no generative content. Every
+piece of text in it was written by our team.
 
 CONTENT NOTE
 "Coming soon" on the Somatic, Breathwork and Meditation cards is intentional:

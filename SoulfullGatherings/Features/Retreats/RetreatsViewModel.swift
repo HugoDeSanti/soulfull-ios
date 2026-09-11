@@ -27,11 +27,14 @@ final class RetreatsViewModel {
             // `Retreat.mock`, so a quick back-navigation showed sample data.
         } catch {
             Log.data.error("Retreats fetch failed: \(error.localizedDescription)")
-            // Graceful fallback (same pattern as practice sessions): browse
-            // sample retreats rather than a dead end; reserve still requires
-            // the backend.
-            if retreats.isEmpty {
-                retreats = Retreat.mock
+            // Graceful fallback: browse saved retreats rather than hit a dead
+            // end. Filtered by `hasBegun` exactly like the server query — the
+            // fixture used to go out unfiltered, so an offline user was shown
+            // five retreats that had already finished, each with a price and a
+            // live "Request a place" button.
+            let fallback = Retreat.mock.filter { !$0.hasBegun }
+            if retreats.isEmpty, !fallback.isEmpty {
+                retreats = fallback
                 activeIndex = 0
             } else {
                 loadError = "Couldn't load retreats. Please try again."

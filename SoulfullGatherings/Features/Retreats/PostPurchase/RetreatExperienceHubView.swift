@@ -23,7 +23,6 @@ struct RetreatExperienceHubView: View {
     var onOpenTodos: () -> Void = {}
     var onOpenGuides: () -> Void = {}
     var onOpenPacking: () -> Void = {}
-    var onOpenChat: () -> Void = {}
     var onOpenDetail: () -> Void = {}
 
     @State private var trip = RetreatTripStore.shared
@@ -194,7 +193,7 @@ struct RetreatExperienceHubView: View {
                 }
                 gridTile(icon: "checklist", title: "Packing list", sub: "What to bring", action: onOpenPacking)
             }
-            assistantTile
+            supportTile
         }
     }
 
@@ -221,10 +220,18 @@ struct RetreatExperienceHubView: View {
         .buttonStyle(.soulPressable)
     }
 
-    private var assistantTile: some View {
-        Button(action: onOpenChat) {
+    /// This was a mocked "assistant" chat — canned, keyword-matched replies
+    /// dressed as a concierge. The app has no AI and will not have one, so the
+    /// tile now does the thing the chat only imitated: puts the member in front
+    /// of a human. The address sits in the subtitle so the tile still says
+    /// something useful on a device with no mail account configured.
+    private var supportTile: some View {
+        Button {
+            Haptics.tap()
+            openURL(LegalLinks.supportMail)
+        } label: {
             HStack(spacing: 14) {
-                Image(systemName: "sparkles")
+                Image(systemName: "envelope")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(RetreatPalette.terracotta)
                     .frame(width: 36, height: 36)
@@ -233,7 +240,7 @@ struct RetreatExperienceHubView: View {
                     Text("Questions before you arrive?")
                         .font(Theme.headline(17, weight: .semibold)).kerning(-0.3)
                         .foregroundStyle(RetreatPalette.cream)
-                    Text("Chat with the Soulfull Gatherings assistant")
+                    Text("Email \(LegalLinks.supportEmail)")
                         .font(Theme.body(11)).foregroundStyle(RetreatPalette.muted)
                 }
                 Spacer(minLength: 0)

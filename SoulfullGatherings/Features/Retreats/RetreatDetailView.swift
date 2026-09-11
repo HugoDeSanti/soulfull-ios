@@ -21,7 +21,6 @@ struct RetreatDetailView: View {
     let retreat: Retreat
     /// Push the checkout review screen (Reserve, when signed in and not yet
     /// reserved). Payment itself runs on the checkout screen.
-    var onCheckout: (Retreat) -> Void = { _ in }
     /// Open the post-purchase experience hub (once the retreat is reserved).
     var onOpenExperience: (Retreat) -> Void = { _ in }
 
@@ -34,10 +33,8 @@ struct RetreatDetailView: View {
     @State private var scrollY: CGFloat = 0
 
     init(retreat: Retreat,
-         onCheckout: @escaping (Retreat) -> Void = { _ in },
          onOpenExperience: @escaping (Retreat) -> Void = { _ in }) {
         self.retreat = retreat
-        self.onCheckout = onCheckout
         self.onOpenExperience = onOpenExperience
         _vm = State(initialValue: RetreatDetailViewModel(retreat: retreat))
     }
@@ -207,10 +204,6 @@ struct RetreatDetailView: View {
             HStack(spacing: 8) {
                 if vm.isReserved {
                     Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold))
-                } else if vm.isBusy {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.black)
                 }
                 Text(reserveTitle)
                     .font(Theme.body(15, weight: .medium))
@@ -220,10 +213,8 @@ struct RetreatDetailView: View {
             .padding(.vertical, 14)
             .background(Capsule().fill(.white))
             .shadow(color: .black.opacity(0.18), radius: 20, y: 6)
-            .opacity(vm.isBusy ? 0.7 : 1)
         }
         .buttonStyle(SoulPressableStyle(scale: 0.96, hapticOnPress: false, dim: false))
-        .disabled(vm.isBusy)
         .padding(.top, 4)
         .accessibilityLabel(reserveTitle)
         .accessibilityHint(AppFeatures.paymentsEnabled
@@ -239,33 +230,30 @@ struct RetreatDetailView: View {
     /// a dead "reservations open soon" line. If no mail account is configured,
     /// `openURL`'s completion reports failure and we show the address instead.
     ///
-    /// With payments on, it gates on a permanent account, then pushes the
-    /// checkout review (where the Stripe charge happens) — or opens the
-    /// experience hub if this retreat is already reserved.
+    /// A retreat that is already reserved opens its experience hub — that
+    /// still works with no payment rail, because `bookings` is read from the
+    /// server, not written here.
+    ///
+    /// Everything else is an enquiry. v1 has **no client-side checkout at all**
+    /// now that the StripePaymentSheet dependency is dropped, so there is
+    /// nothing to push even if `paymentsEnabled` were flipped — restoring the
+    /// charge means restoring the dependency and the two deleted files first.
     private func routeReserve() {
         Haptics.bump()
 
-        guard AppFeatures.paymentsEnabled else {
-            openURL(LegalLinks.enquiry(about: retreat.name)) { opened in
-                if !opened { showEnquiryFallback = true }
-            }
+        if AppFeatures.paymentsEnabled, vm.isReserved {
+            onOpenExperience(retreat)
             return
         }
 
-        if !auth.hasAccount {
-            showAccount = true
-        } else if vm.isReserved {
-            onOpenExperience(retreat)
-        } else {
-            onCheckout(retreat)
+        openURL(LegalLinks.enquiry(about: retreat.name)) { opened in
+            if !opened { showEnquiryFallback = true }
         }
     }
 
     private var reserveTitle: String {
-        guard AppFeatures.paymentsEnabled else { return "Request a place" }
-        if vm.isReserved { return "View your experience" }
-        if vm.isBusy { return "Processing…" }
-        return auth.hasAccount ? "Reserve" : "Sign in to reserve"
+        if AppFeatures.paymentsEnabled, vm.isReserved { return "View your experience" }
+        return "Request a place"
     }
 
     // MARK: - Story sections
@@ -652,7 +640,6 @@ struct RetreatDetailView: View {
                     .background(Capsule().fill(.white))
             }
             .buttonStyle(SoulPressableStyle(scale: 0.95, hapticOnPress: false, dim: false))
-            .disabled(vm.isBusy)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)

@@ -71,12 +71,16 @@ actor SupabaseService {
 
     // MARK: - Fetches
 
-    /// Upcoming retreats only.
+    /// Retreats that have **not started yet**.
     ///
-    /// The catalog is filtered server-side on `end_date >= today`: without it
-    /// the app advertises retreats that have already finished (four of the
-    /// seven seeded rows were in the past as of 2026-08-31). A retreat is "upcoming"
-    /// until the day it ends, so one running right now still shows.
+    /// Filtered server-side on `start_date > today`. It used to be
+    /// `end_date >= today`, which kept a retreat listed for its whole duration
+    /// — so on 2026-09-10 the catalog was still offering "Request a place" on
+    /// Dolomites, which had begun two days earlier. A retreat you cannot join
+    /// any more is not a catalog entry, it is a wrong price and a wrong date in
+    /// front of a customer.
+    ///
+    /// Strictly greater than today: a retreat starting *this morning* has begun.
     func fetchRetreats() async throws -> [Retreat] {
         if let cache = retreatsCache,
            let date = retreatsCacheDate,
@@ -86,17 +90,17 @@ actor SupabaseService {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.locale = Locale(identifier: "en_US_POSIX")
-        // UTC, not the device's zone. `end_date` is a bare Postgres `date`, so
-        // formatting "today" locally made the catalog disagree with itself
-        // across time zones — a user in UTC+13 lost a retreat ending today,
-        // one in UTC−11 kept seeing one that ended yesterday.
+        // UTC, not the device's zone. `start_date` is a bare Postgres `date`,
+        // so formatting "today" locally made the catalog disagree with itself
+        // across time zones — a user in UTC+13 lost a retreat starting today,
+        // one in UTC−11 kept seeing one that had already begun.
         fmt.timeZone = TimeZone(secondsFromGMT: 0)
         let today = fmt.string(from: Date())
 
         let rows: [RetreatRow] = try await client
             .from("retreats")
             .select()
-            .gte("end_date", value: today)
+            .gt("start_date", value: today)
             .order("start_date", ascending: true)
             .limit(50)
             .execute()

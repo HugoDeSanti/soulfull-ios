@@ -1,6 +1,6 @@
 # Soulfull Gatherings — iOS (SwiftUI)
 
-A native iOS app for a wellness retreat and community platform — dark, editorial, "quiet luxury" aesthetic throughout. Built with **SwiftUI**, **iOS 18+**, **Swift 6**, and an **MVVM + Observation** architecture. Backed by **Supabase** (PostgreSQL + Storage + Auth) and **Stripe** (retreat reservations — built, but switched off in v1).
+A native iOS app for a wellness retreat and community platform — dark, editorial, "quiet luxury" aesthetic throughout. Built with **SwiftUI**, **iOS 18+**, **Swift 6**, and an **MVVM + Observation** architecture. Backed by **Supabase** (PostgreSQL + Storage + Auth). Stripe powers retreat reservations server-side, but the client payment rail is **removed from v1**.
 
 > **`CLAUDE.md` is the deep architecture reference** — the full file map, backend schema, RLS gotchas, and conventions live there. This README is the get-it-building onboarding guide. For the design direction see [`docs/DESIGN.md`](docs/DESIGN.md); for backend deploy steps see [`supabase/functions/README.md`](supabase/functions/README.md); for the Claude Design mirror see [`design-system/README.md`](design-system/README.md).
 
@@ -9,12 +9,12 @@ A native iOS app for a wellness retreat and community platform — dark, editori
 - **Welcome** — splash (breathing logo) → 3 explainer slides → onboarding
 - **Onboarding** — name → intention → nervous-system check-in → cadence → finish (4 questions + a closing slide)
 - **Home** — dashboard: greeting (+ a streak line once it reaches two days), mood chips, a **Continue** card for the most recently unfinished practice, ritual card, retreat glimpse, and a Digital Retreats shelf that hides itself until `programs` has rows
-- **Retreats** — viewport-aligned stacked name picker over crossfading photo backdrops → full editorial detail spread with a Reserve CTA (Stripe). Rich brochure stories render for retreats with curated `RetreatExperience` content (e.g. Mallorca).
+- **Retreats** — viewport-aligned stacked name picker over crossfading photo backdrops → full editorial detail spread with a "Request a place" CTA (opens a support email). Rich brochure stories render for retreats with curated `RetreatExperience` content (e.g. Mallorca).
 - **Practice** — media categories (Somatic / Breathwork / Meditation) → session list → AVKit player, plus Journal prompts, Exercises, Recipes, and Personal Massages
 - **You** — real account UI (create / sign in / sign out / delete account), onboarding status, and a Privacy · Terms · Retreat policy · Support row
 - **Auth** — an anonymous Supabase guest session opens on launch and upgrades **in place** to a permanent account. **Browsing never requires an account**; the sheet is raised just-in-time at the first practice and replays the tap you were making (`AccountGate`). **Sign in with Apple** is the only third-party provider, alongside email/password with three email-confirmation paths (deep link, emailed code, confirmed-elsewhere poll).
 - **Practice history** — every practice opened is recorded server-side to `practice_plays`; it drives resume points, completion seals, the Home Continue card and streak, and the content-creator payout report
-- **Payments** — Stripe `PaymentSheet` for retreat reservations, wired end-to-end and verified in Stripe test mode, **but switched off in v1** (`AppFeatures.paymentsEnabled = false`; the CTA is "Request a place"). See [v1 ships narrower](#v1-ships-narrower-than-the-codebase).
+- **Payments** — the **server** rail (two Edge Functions) is built and verified in Stripe test mode, but the **client** rail is gone from v1: the `StripePaymentSheet` dependency, `PaymentService` and `RetreatCheckoutView` were deleted, because the SDK linked a card scanner that forced a camera permission for a feature the app can't reach. The CTA is "Request a place". See [v1 ships narrower](#v1-ships-narrower-than-the-codebase).
 
 Plus mandatory haptics on every meaningful tap, a Metal-shader effect suite (grain / aurora / shimmer / dissolve / ripple, all Reduce-Motion-aware), real Liquid Glass on iOS 26+ (material fallback on 18–25), and dark mode forced app-wide.
 
@@ -28,7 +28,7 @@ Plus mandatory haptics on every meaningful tap, a Metal-shader effect suite (gra
 | Navigation | `NavigationStack` with typed `Route` enums per tab root (value-based) |
 | Project gen | [XcodeGen](https://github.com/yonaskolb/XcodeGen) — `project.yml` is the single source of truth |
 | Backend | Supabase (Postgres + Storage + Auth; anonymous guests upgradable to email/password) |
-| Payments | Stripe `StripePaymentSheet` via Supabase Edge Functions |
+| Payments | Stripe via Supabase Edge Functions (server-side only — no payment SDK in the app) |
 | Fonts | Geist (six weights, registered in `Info.plist`) — no serif/SF split, everything is Geist |
 | Tests | One UI-test target — `SoulfullUITests/AccountGateTests.swift` (2 tests) covering the account gate. No unit tests yet. |
 
@@ -59,7 +59,7 @@ open SoulfullGatherings.xcodeproj
 
 > **Why XcodeGen?** The `.xcodeproj` is gitignored and generated. `project.yml` is the single source of truth for the target, Swift 6 / iOS 18 settings, bundle ID `com.soulfullgatherings.app`, SPM dependencies, the Geist font resources, the `soulfull://` URL scheme, and `Secrets.xcconfig` injection.
 
-> **Stripe SPM source:** dependencies resolve from **`github.com/stripe/stripe-ios-spm`** (the slim, SPM-optimized distribution), *not* `stripe/stripe-ios` — the main repo's multi-GB history makes resolution extremely slow. Don't switch it back.
+> **If Stripe ever comes back:** resolve it from **`github.com/stripe/stripe-ios-spm`** (the slim, SPM-optimized distribution), *not* `stripe/stripe-ios` — the main repo's multi-GB history makes resolution extremely slow. It is **not** a dependency today.
 
 ## Project layout
 
@@ -82,7 +82,7 @@ SoulfullGatherings/
 ├── Core/
 │   ├── Models/Models.swift       # All domain models + mock data
 │   ├── DesignSystem/             # Theme, Components, SoulGlass, Pressable, shaders (Shaders.metal/ShaderFX), etc.
-│   ├── Services/                 # SupabaseConfig/Service, PaymentService, PracticeProgressStore,
+│   ├── Services/                 # SupabaseConfig/Service, PracticeProgressStore,
 │   │                             # LocalUserStore, AppFeatures (v1 flags), LegalLinks, AppError
 │   └── Utils/                    # Log (os.Logger — no print() anywhere), Haptics, ArtworkTones
 └── Features/                     # One folder per feature: Auth (gate + account sheet + Apple button),
@@ -132,7 +132,7 @@ Three flags in `Core/Services/AppFeatures.swift` gate what a user can reach. **N
 
 | Flag | v1 | Why |
 |---|---|---|
-| `paymentsEnabled` | `false` | The Stripe rail is built and test-verified, but shipping it needs live keys, a demo account with a seeded `paid` booking (a reviewer can't complete a charge), and curated `PostBooking` content for **every** reservable retreat — which only Mallorca has. The retreat CTA becomes **"Request a place"** (a support email). Flipping this is not a one-line change; the flag's doc comment carries the checklist. |
+| `paymentsEnabled` | `false` | The **server** rail is built and test-verified; the **client** rail is deleted (the SDK forced a camera permission for an unreachable feature). Shipping payments needs that restored from git history, plus live keys, a demo account with a seeded `paid` booking (a reviewer can't complete a charge), and curated `PostBooking` content for **every** reservable retreat — which only Mallorca has. The retreat CTA is **"Request a place"** (a support email). The flag's doc comment carries the full checklist. |
 | `depositInstallmentsEnabled` | `false` | Deposit + monthly installments are **copy only** — the server charges the full price in one payment. The copy had reached the pay button: checkout rendered a hardcoded `"€800"` while the function charged ~$5,678. **Never put brochure copy on a pay button.** |
 | `circleTabEnabled` | `false` | The tab's whole content was "lands here next" — App Store Guideline 4.2. `MainTab` omits the case and `BottomNav` builds from `allCases`, so it disappears on its own. |
 
@@ -143,7 +143,8 @@ For the full submission audit see [`docs/APP-STORE-READINESS.html`](docs/APP-STO
 ## Current state
 
 - **Done:** anonymous auth upgradable in place; just-in-time account gating (`AccountGate`) with **Sign in with Apple** + email/password; email confirmation via three paths (deep link / emailed code / confirmed-elsewhere poll); account deletion (App Store 5.1.1(v)); `profiles` sync; Welcome; Onboarding; Home; Retreats stack + editorial detail; full Practice tab; **server-side practice history** driving resume, streaks and the creator-payout report.
-- **Built but off in v1:** Stripe reservations (deployed + verified in Stripe test mode) and the Mallorca post-purchase experience — checkout, welcome hub, to-do's, packing, 1:1 guide booking, and a **mocked** concierge chat.
+- **Built but off in v1:** Stripe reservations — the **server** half is deployed and verified in test mode; the client half is deleted (recover from git history). The Mallorca post-purchase experience — welcome hub, to-do's, packing, 1:1 guide booking — is intact but unreachable.
+- **Deliberately not built: any AI.** No companion, assistant or chat, and none planned. A mocked concierge and a "Soul AI" welcome slide were removed on 2026-09-11.
 - **Mock-driven:** `CommunityCircle` on Home; all Journal / Exercise / Recipe / Massage *content* (pending their own tables). Their **progress** is real and server-backed even though the content isn't. Journal reflections stay on the device — file-backed under Application Support with `NSFileProtectionComplete` and excluded from backups, not in `UserDefaults`.
 - **Parked:** Circle (Community) tab.
 - **Not yet built:** a bookings history UI (the data exists), refund handling, and membership subscriptions (which must use StoreKit IAP, not Stripe). Google sign-in was built and deliberately removed — Apple is the only third-party provider.
@@ -152,7 +153,7 @@ For the full submission audit see [`docs/APP-STORE-READINESS.html`](docs/APP-STO
 >
 > | Table | State |
 > |---|---|
-> | `retreats` | 7 rows, **4 upcoming** — Dolomites, Lapland, Chamonix, Mallorca. Kyoto / Sedona / Bali have finished and are correctly hidden by the `end_date >= today` filter. Every `group_chat_url` is still `null`. |
+> | `retreats` | 7 rows, **4 upcoming** — Lapland (2027-01-10), Chamonix (2027-02-02), Mallorca (2027-07-21), Dolomites (2027-09-08). Kyoto / Sedona / Bali are past and correctly hidden by the `start_date > today` filter. Every `group_chat_url` is still `null`. |
 > | `programs` | Exists, **0 rows** — Home's Digital Retreats shelf hides itself. |
 > | `practice_sessions` | Exists, **0 rows** — all three media tracks read "Coming soon". Seeding needs no app release. |
 > | `profiles` / `bookings` / `practice_plays` | Exist, RLS-protected. Row counts aren't observable with the anon key — RLS filters them to the caller, so an empty result here proves nothing about what's in them. |

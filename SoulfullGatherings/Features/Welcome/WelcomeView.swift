@@ -34,12 +34,12 @@ struct WelcomeView: View {
               firstHalf: "A worldwide community",
               accentHalf: "that travels, heals, and connects.",
               body: "A conscious space for honest conversation and shared practice."),
-        Slide(id: "soulai",
-              eyebrow: "Soul AI",
-              firstHalf: "Meet Soul,",
-              accentHalf: "your companion through the journey.",
-              body: "A private guide for check-ins, reflections, and practices shaped to how you feel today.")
     ]
+    // A third slide sold "Soul AI — Meet Soul, your companion through the
+    // journey". There is no AI in this app and none planned, and this ran on
+    // every first launch, so it promised every new user a feature that does not
+    // exist. Everything here is driven off `slides.count`, so removing it needs
+    // no other change. Don't re-add a slide for something unbuilt.
 
     var body: some View {
         ZStack {
