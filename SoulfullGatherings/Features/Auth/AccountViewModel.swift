@@ -219,7 +219,7 @@ final class AccountViewModel {
 
     /// Finishes an Apple authorization: exchanges the identity token for a
     /// Supabase session, then reconciles the profile.
-    func submitApple(idToken: String, nonce: String, fullName: String?,
+    func submitApple(_ credential: AppleCredential,
                      auth: AuthManager, settings: AppSettings) async -> Outcome {
         guard !isWorking else { return .failed }
         isWorking = true
@@ -227,9 +227,10 @@ final class AccountViewModel {
         defer { isWorking = false }
 
         do {
-            try await auth.signInWithApple(idToken: idToken, nonce: nonce, fullName: fullName)
+            try await auth.signInWithApple(credential)
             // Apple hands the name over exactly once; take it if we have nothing better.
-            if let fullName, !fullName.isEmpty, settings.userName.isEmpty { settings.userName = fullName }
+            if let fullName = credential.fullName, !fullName.isEmpty,
+               settings.userName.isEmpty { settings.userName = fullName }
             await mergeProfile(auth: auth, settings: settings)
             Haptics.success()
             return .signedIn

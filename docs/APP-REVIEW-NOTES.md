@@ -50,6 +50,13 @@ If a reviewer still queries it, the honest answer is in the notes block below.
   Signing out drops the user back to a guest session and leaves them where they
   were — the app stays fully browsable.
 
+  Deletion also **revokes the Sign in with Apple grant** via Apple's
+  `/auth/revoke`, which 5.1.1(v) requires of any app offering both. Deleting the
+  Supabase user is not enough on its own: without the revoke the app stays
+  listed under *Settings → Apple ID → Sign in with Apple*, and that is the thing
+  a reviewer actually looks at. The setup this needs is in the checklist below —
+  **it is not automatic, and the app ships non-compliant until it is done.**
+
 ## Accounts and identifiers
 
 | | |
@@ -66,6 +73,21 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 > destination of every "Request a place" enquiry, so it has to stay monitored.
 
 ## Before you submit — check each of these
+
+**Sign in with Apple revocation — Guideline 5.1.1(v), and a rejection if skipped:**
+
+- [ ] **Migration `0010_apple_credentials.sql` is applied** to the live project.
+      Without the table every Apple sign-in logs an upsert failure and nothing
+      is stored to revoke with.
+- [ ] **A Sign in with Apple key (`.p8`) exists** for `com.soulfullgatherings.app`
+      and the four secrets are set: `APPLE_TEAM_ID`, `APPLE_KEY_ID`,
+      `APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID` (the **bundle ID**, not a Services
+      ID). Steps: `supabase/functions/README.md`.
+- [ ] **`store-apple-token` is deployed** and `delete-account` is **re-deployed**
+      (it gained the revoke step).
+- [ ] **Verified end to end on a real device**: sign in with Apple → You tab →
+      Delete account → *Settings → your name → Sign-In & Security → Sign in with
+      Apple* no longer lists Soulfull. A simulator cannot prove this.
 
 **Auth — the app is unusable if any of these is wrong:**
 
@@ -147,7 +169,10 @@ Offered and listed first. It is the only third-party login in the app; the
 alternative is an email and password.
 
 ACCOUNT DELETION
-In-app under the "You" tab -> Delete account (Guideline 5.1.1(v)).
+In-app under the "You" tab -> Delete account (Guideline 5.1.1(v)). For an
+account created with Sign in with Apple, deletion also calls Apple's
+/auth/revoke, so the app is removed from Settings -> Apple ID -> Sign in with
+Apple at the same time.
 
 NO PURCHASES IN THIS VERSION
 This version contains no in-app purchases and no payment flow. Retreat pages

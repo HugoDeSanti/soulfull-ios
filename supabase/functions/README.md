@@ -4,11 +4,17 @@
 |---|---|---|
 | `create-payment-intent` | Caller's Supabase JWT | Reads the authoritative retreat price, reuses/creates the Stripe customer, returns a PaymentIntent client secret + ephemeral key for the iOS PaymentSheet. |
 | `stripe-webhook` | Stripe signature (no Supabase JWT) | On `payment_intent.succeeded` / `…payment_failed`, writes a row to `bookings` with the service role. The only writer of payment state. |
-| `delete-account` | Caller's Supabase JWT | Deletes the caller's own account (App Store 5.1.1(v)): best-effort deletes their Stripe customer, then deletes the auth user with the service role — cascading to `profiles` + `bookings`. |
+| `delete-account` | Caller's Supabase JWT | Deletes the caller's own account (App Store 5.1.1(v)): best-effort deletes their Stripe customer, **revokes their Sign in with Apple grant**, then deletes the auth user with the service role — cascading to `profiles` + `bookings` + `apple_credentials`. |
+| `store-apple-token` | Caller's Supabase JWT | Runs after every Sign in with Apple. Exchanges Apple's single-use authorization code for a refresh token and stores it in `apple_credentials`, so `delete-account` has something to revoke. |
+
+`_shared/apple.ts` holds the Apple client-secret JWT, the token exchange and the
+revoke call, used by the last two.
 
 ## One-time setup
 
 1. **The `bookings` table already exists** — 0002 was applied to the live project long before the migrations were removed from the repo (2026-09-07). Recreating it elsewhere: `git show d20e3f6:supabase/migrations/0002_bookings.sql`.
+
+   **`apple_credentials` does not** — apply `../migrations/0010_apple_credentials.sql` before deploying `store-apple-token`, or every Apple sign-in will log an upsert failure.
 
 2. **Set function secrets** (Stripe keys live only here — the app never stores them):
    ```bash
@@ -16,6 +22,17 @@
    supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_...
    supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...      # from the webhook endpoint you create in step 4
    ```
+
+   And the Sign in with Apple key, which is what makes account deletion able to
+   revoke the Apple grant — see [the section below](#sign-in-with-apple-token-revocation-guideline-511v)
+   for how to create it:
+   ```bash
+   supabase secrets set APPLE_TEAM_ID=W346837424
+   supabase secrets set APPLE_KEY_ID=ABCD123456                 # the .p8 key's Key ID
+   supabase secrets set APPLE_CLIENT_ID=com.soulfullgatherings.app
+   supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_ABCD123456.p8)"
+   ```
+
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
    **Use a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) (`rk_…`), not a secret key**, following least privilege. Minimum permissions:
@@ -29,12 +46,71 @@
    supabase functions deploy create-payment-intent
    supabase functions deploy stripe-webhook --no-verify-jwt   # Stripe sends its own signature, not a Supabase JWT
    supabase functions deploy delete-account                   # keep JWT verification ON (default)
+   supabase functions deploy store-apple-token                # keep JWT verification ON (default)
    ```
 
 4. **Create the Stripe webhook endpoint** (Stripe dashboard → Developers → Webhooks):
    - URL: `https://<project-ref>.functions.supabase.co/stripe-webhook`
    - Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
    - Copy its signing secret into `STRIPE_WEBHOOK_SECRET` (step 2) and redeploy if you set it after deploying.
+
+## Sign in with Apple: token revocation (Guideline 5.1.1(v))
+
+> **This is a submission blocker, not a nicety.** Apple's rule: an app offering
+> both Sign in with Apple and account deletion *"must use the Sign in with Apple
+> REST API to revoke the user tokens when the account is deleted."* Deleting the
+> Supabase auth user does not do that — until `/auth/revoke` is called, the app
+> keeps appearing under **Settings → Apple ID → Sign in with Apple** on the
+> user's device. A reviewer deletes the demo account and looks there.
+
+**How it works.** Revoking needs a refresh token; the refresh token comes from
+exchanging an authorization code; the code expires in ~5 minutes. So the work is
+split in two:
+
+1. **At sign-in** — `AppleSignInButton` captures `authorizationCode` alongside
+   the identity token, `AuthManager.signInWithApple` posts it to
+   `store-apple-token`, which exchanges it with Apple and writes the refresh
+   token to `apple_credentials`. Best-effort: a failure here never blocks the
+   sign-in, and Apple issues a fresh code on *every* authorization, so the next
+   sign-in repairs it.
+2. **At deletion** — `delete-account` reads that token (before deleting the
+   user, which cascades the row away) and calls `/auth/revoke`. Also
+   best-effort: the member's right to delete outranks an Apple outage, so a
+   failure is logged loudly and reported as `apple_revoked: false` in the
+   response rather than blocking the delete.
+
+### One-time: create the Sign in with Apple key
+
+1. [Apple Developer portal](https://developer.apple.com/account/resources/authkeys/list)
+   → **Certificates, Identifiers & Profiles → Keys → +**.
+2. Name it (e.g. `Soulfull Sign in with Apple`), tick **Sign in with Apple**,
+   press **Configure**, and pick **`com.soulfullgatherings.app`** as the primary
+   App ID. Save → Continue → Register.
+3. **Download the `.p8`. Apple lets you download it exactly once** — if it is
+   lost, revoke the key and make a new one. Note the **Key ID** shown next to it.
+4. Set the four `APPLE_*` secrets above. `APPLE_CLIENT_ID` is the **bundle ID**,
+   not a Services ID: this app uses the native flow only (which is also why the
+   Supabase Apple provider's *Secret Key* field stays blank). A Services ID
+   would be right only for a web OAuth flow, and there isn't one.
+
+### Verifying it
+
+The honest end-to-end check needs a real device and a real Apple ID:
+
+1. Sign in with Apple on a clean install.
+2. Confirm the row landed — service role only, so from the SQL editor:
+   `select user_id, created_at, updated_at from public.apple_credentials;`
+   (An anon-key REST probe returns permission denied, by design.)
+3. You tab → **Delete account**.
+4. On the device: **Settings → your name → Sign-In & Security → Sign in with
+   Apple**. *Soulfull* must be **gone** from the list.
+5. `supabase functions logs delete-account` should show no revocation error, and
+   the response carries `"apple_revoked": true`.
+
+If step 4 still lists the app, the revoke did not happen — check the logs for
+`invalid_client` (wrong `APPLE_CLIENT_ID`/`APPLE_KEY_ID`/team, or a key not
+configured for this App ID) or `invalid_grant` (the stored token was already
+revoked or belongs to another client).
 
 ## API versions
 

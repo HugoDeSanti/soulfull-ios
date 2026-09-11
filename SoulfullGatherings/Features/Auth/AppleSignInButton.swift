@@ -22,11 +22,36 @@ struct SocialSignInError: LocalizedError {
     init(_ message: String) { errorDescription = message }
 }
 
+/// Everything one Apple authorization gives us. Grouped rather than passed as
+/// four positional parameters, because two of the four are optional strings and
+/// transposing them at a call site would fail silently.
+struct AppleCredential {
+    /// The signed identity token Supabase exchanges for a session.
+    let idToken: String
+    /// Raw (un-hashed) nonce — Supabase needs it to verify the `nonce` claim
+    /// Apple embedded in the signed token.
+    let nonce: String
+    /// Apple sends the name on the very first authorization only.
+    let fullName: String?
+    /// Single-use code, valid about five minutes, which the server exchanges
+    /// for Apple's refresh token.
+    ///
+    /// That refresh token is the only way to call Apple's `/auth/revoke` when
+    /// the member deletes their account — which App Store Guideline 5.1.1(v)
+    /// requires of any app offering both Sign in with Apple and account
+    /// deletion. Deleting the Supabase user does **not** revoke the grant: the
+    /// app goes on appearing under Settings → Apple ID → Sign in with Apple
+    /// until Apple is told, and that is what a reviewer checks.
+    ///
+    /// Optional only so that a missing code can never block a sign-in the
+    /// member asked for. Apple issues a new one on every authorization, so the
+    /// next sign-in repairs it.
+    let authorizationCode: String?
+}
+
 struct AppleSignInButton: View {
     var disabled: Bool = false
-    /// Raw (un-hashed) nonce comes back alongside the token — Supabase needs it
-    /// to verify the `nonce` claim Apple embedded in the signed token.
-    let onCredential: (_ idToken: String, _ nonce: String, _ fullName: String?) -> Void
+    let onCredential: (AppleCredential) -> Void
     let onFailure: (Error) -> Void
 
     /// One nonce per authorization attempt; rotated in `onCompletion`.
@@ -62,7 +87,15 @@ struct AppleSignInButton: View {
             // Apple only sends the name on the very first authorization; it's nil
             // (and `formatted()` empty) every time after that.
             let name = credential.fullName?.formatted()
-            onCredential(token, nonce, (name?.isEmpty ?? true) ? nil : name)
+            // The code is opaque ASCII. Absent is survivable (see
+            // `AppleCredential.authorizationCode`), so don't fail the sign-in.
+            let code = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            onCredential(
+                AppleCredential(idToken: token,
+                                nonce: nonce,
+                                fullName: (name?.isEmpty ?? true) ? nil : name,
+                                authorizationCode: (code?.isEmpty ?? true) ? nil : code)
+            )
         case .failure(let error):
             onFailure(error)
         }

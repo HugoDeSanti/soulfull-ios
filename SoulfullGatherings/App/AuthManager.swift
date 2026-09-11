@@ -304,16 +304,66 @@ final class AuthManager {
     /// answers live in `AppSettings` and are pushed onto the new user's profile
     /// by `AccountViewModel`. (Preserving the guest id would need `linkIdentity`,
     /// which requires manual linking to be enabled in the Supabase dashboard.)
-    func signInWithApple(idToken: String, nonce: String, fullName: String?) async throws {
+    func signInWithApple(_ credential: AppleCredential) async throws {
         let session = try await supabase.auth.signInWithIdToken(
-            credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken, nonce: nonce)
+            credentials: OpenIDConnectCredentials(provider: .apple,
+                                                  idToken: credential.idToken,
+                                                  nonce: credential.nonce)
         )
         // Apple returns the user's name only on the *first* authorization ever
         // granted to this app, so persist it the one time we see it.
-        if let fullName, !fullName.isEmpty, session.user.userMetadata["full_name"] == nil {
+        if let fullName = credential.fullName, !fullName.isEmpty,
+           session.user.userMetadata["full_name"] == nil {
             _ = try? await supabase.auth.update(user: UserAttributes(data: ["full_name": .string(fullName)]))
         }
         apply(supabase.auth.currentUser)
+        // Detached from the sign-in on purpose — see `storeAppleRefreshToken`.
+        let code = credential.authorizationCode
+        Task { await self.storeAppleRefreshToken(code) }
+    }
+
+    /// Hands Apple's single-use authorization code to the `store-apple-token`
+    /// Edge Function, which exchanges it with Apple for a refresh token and
+    /// keeps it where only the service role can read it.
+    ///
+    /// That token is what `delete-account` feeds to Apple's `/auth/revoke`.
+    /// **App Store Guideline 5.1.1(v) requires that revocation** of any app
+    /// offering both Sign in with Apple and account deletion — deleting the
+    /// Supabase user alone leaves the app listed under Settings → Apple ID →
+    /// Sign in with Apple, which is precisely what a reviewer checks. So this
+    /// is compliance work, not housekeeping.
+    ///
+    /// It is nonetheless **best-effort, never throws, and deliberately runs
+    /// off the sign-in's own task**: the member asked to sign in, and making
+    /// them watch a spinner while a *follow-up* call to Apple round-trips is a
+    /// bad trade — on a poor connection the invoke can sit there for the
+    /// URLSession timeout, long after the session itself is live. Apple mints a
+    /// fresh code on *every* authorization, so a miss here is repaired by the
+    /// next sign-in rather than being permanent; the cost is one account that
+    /// deletes without revoking, which `delete-account` also logs.
+    ///
+    /// The theoretical race — delete the account before the exchange lands —
+    /// needs the member to cross into the You tab, tap Delete account and
+    /// confirm a dialog inside the round-trip, which is not a real sequence.
+    /// Don't make this blocking to close it.
+    private func storeAppleRefreshToken(_ authorizationCode: String?) async {
+        guard let authorizationCode, !authorizationCode.isEmpty else {
+            Log.auth.error("Apple returned no authorization code; account deletion won't be able to revoke this grant.")
+            return
+        }
+        struct Body: Encodable {
+            let authorizationCode: String
+            enum CodingKeys: String, CodingKey { case authorizationCode = "authorization_code" }
+        }
+        struct Result: Decodable { let stored: Bool }
+        do {
+            let _: Result = try await supabase.functions.invoke(
+                "store-apple-token",
+                options: FunctionInvokeOptions(body: Body(authorizationCode: authorizationCode))
+            )
+        } catch {
+            Log.auth.error("Storing the Apple refresh token failed: \(error.localizedDescription)")
+        }
     }
 
     /// Signs in to an existing permanent account.
