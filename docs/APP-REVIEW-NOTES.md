@@ -113,6 +113,12 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 
 **Content and legal:**
 
+- [ ] **Age rating answers match the content.** The app has no alcohol, tobacco
+      or drug references, so *Alcohol, Tobacco, or Drug Use or References* is
+      **None** and the app rates 4+. That is only true as long as nobody adds a
+      brochure line like the "A winery experience" that was removed on
+      2026-09-11 — a wrong rating is a Guideline 2.3.6 rejection.
+
 - [ ] `LegalLinks.privacyPolicy` and `LegalLinks.terms` point at **live, public**
       pages, and the same privacy URL is entered in App Store Connect.
       A privacy policy URL that 404s is an automatic rejection.

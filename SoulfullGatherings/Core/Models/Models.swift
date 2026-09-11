@@ -363,10 +363,16 @@ extension RetreatExperience {
                   systemImage: "bicycle",
                   summary: "Ride the island, build strength, and move every day until you feel your best.",
                   highlights: ["Two riding days on curated routes", "Daily functional strength training", "Hillside hikes", "Restorative stretch sessions"]),
+            // No alcohol references anywhere in the app — "A winery experience"
+            // was here and was removed. Beyond taste, it was the only thing
+            // pulling the App Store age rating off 4+: the rating questionnaire
+            // asks about "Alcohol, Tobacco, or Drug Use or References", and
+            // answering "None" with this on a reachable brochure screen is an
+            // inaccurate rating (Guideline 2.3.6). Keep it that way.
             .init(title: "Explore",
                   systemImage: "sailboat.fill",
                   summary: "Discover Mallorca, from its coast and waters to its mountains and villages.",
-                  highlights: ["Buggy tour across the island", "A day in the village of Deià", "A winery experience", "Beach time", "A catamaran day along the coast"]),
+                  highlights: ["Buggy tour across the island", "A day in the village of Deià", "Beach time", "A catamaran day along the coast"]),
             .init(title: "Recover",
                   systemImage: "leaf.fill",
                   summary: "Relearn how to slow down — resting the body and quieting the mind.",
