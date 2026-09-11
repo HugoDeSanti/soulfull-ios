@@ -101,8 +101,7 @@ struct PracticePlayerView: View {
                         .frame(width: 430, height: 430)
                         .breathing(scale: 0.9...1.08, opacity: 0.5...1.0, period: 6)
 
-                    Image(media.imageUrl)
-                        .resizable().scaledToFill()
+                    CatalogImage(media.imageUrl) { $0.resizable().scaledToFill() }
                         .frame(width: 248, height: 248)
                         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
                         .overlay(

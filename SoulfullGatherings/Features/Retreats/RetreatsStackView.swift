@@ -314,11 +314,16 @@ struct RetreatsStackView: View {
             }
         }) {
             ZStack(alignment: .bottomLeading) {
-                Image(r.imageUrl)
-                    .resizable().scaledToFill()
-                    .frame(height: 224)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
+                CatalogImage(r.imageUrl) { image in
+                    image
+                        .resizable().scaledToFill()
+                        .frame(height: 224)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                }
+                .frame(height: 224)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
                 LinearGradient(
                     colors: [.black.opacity(0.05), .clear, .black.opacity(0.66)],
@@ -419,11 +424,15 @@ struct RetreatsStackView: View {
                 (vm.active?.tone.base ?? Theme.bg)
                 ZStack {
                     ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
-                        Image(r.imageUrl)
-                            .resizable().scaledToFill()
-                            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
-                            .clipped()
-                            .opacity(idx == vm.activeIndex ? 1 : 0)
+                        CatalogImage(r.imageUrl) { image in
+                            image
+                                .resizable().scaledToFill()
+                                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+                                .clipped()
+                        }
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .clipped()
+                        .opacity(idx == vm.activeIndex ? 1 : 0)
                     }
                 }
                 .blur(radius: mode == .catalog ? 16 : 0)

@@ -27,7 +27,7 @@ struct RetreatExperienceHubView: View {
 
     @State private var trip = RetreatTripStore.shared
 
-    private var exp: RetreatExperience? { retreat.experience ?? RetreatExperience.curated(for: retreat) }
+    private var exp: RetreatExperience? { retreat.experience }
     private var post: RetreatExperience.PostBooking? { exp?.postBooking }
 
     /// Prefer the signed-in member's name; fall back to the curated mock name.

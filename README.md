@@ -9,7 +9,7 @@ A native iOS app for a wellness retreat and community platform — dark, editori
 - **Welcome** — splash (breathing logo) → 3 explainer slides → onboarding
 - **Onboarding** — name → intention → nervous-system check-in → cadence → finish (4 questions + a closing slide)
 - **Home** — dashboard: greeting (+ a streak line once it reaches two days), mood chips, a **Continue** card for the most recently unfinished practice, ritual card, retreat glimpse, and a Digital Retreats shelf that hides itself until `programs` has rows
-- **Retreats** — viewport-aligned stacked name picker over crossfading photo backdrops → full editorial detail spread with a "Request a place" CTA (opens a support email). Rich brochure stories render for retreats with curated `RetreatExperience` content (e.g. Mallorca).
+- **Retreats** — viewport-aligned stacked name picker over crossfading photo backdrops → full editorial detail spread with a "Request a place" CTA (opens a support email). The long-form brochure comes from the `retreats.experience` jsonb column, and photos from Supabase Storage, so **adding a retreat is a row and an upload — no app release**. See [`docs/ADDING-A-RETREAT.md`](docs/ADDING-A-RETREAT.md).
 - **Practice** — media categories (Somatic / Breathwork / Meditation) → session list → AVKit player, plus Journal prompts, Exercises, Recipes, and Personal Massages
 - **You** — real account UI (create / sign in / sign out / delete account), onboarding status, and a Privacy · Terms · Retreat policy · Support row
 - **Auth** — an anonymous Supabase guest session opens on launch and upgrades **in place** to a permanent account. **Browsing never requires an account**; the sheet is raised just-in-time at the first practice and replays the tap you were making (`AccountGate`). **Sign in with Apple** is the only third-party provider, alongside email/password with three email-confirmation paths (deep link, emailed code, confirmed-elsewhere poll).
@@ -147,6 +147,7 @@ For the full submission audit see [`docs/APP-STORE-READINESS.html`](docs/APP-STO
 - **Deliberately not built: any AI.** No companion, assistant or chat, and none planned. A mocked concierge and a "Soul AI" welcome slide were removed on 2026-09-11.
 - **Mock-driven:** `CommunityCircle` on Home; all Journal / Exercise / Recipe / Massage *content* (pending their own tables). Their **progress** is real and server-backed even though the content isn't. Journal reflections stay on the device — file-backed under Application Support with `NSFileProtectionComplete` and excluded from backups, not in `UserDefaults`.
 - **Parked:** Circle (Community) tab.
+- **Content is data:** retreats (row + brochure jsonb + Storage photo) need no release. Practice *sessions* are a table too, but the written libraries — journal prompts, exercises, recipes, massages — are still hardcoded in `Models.swift`.
 - **Not yet built:** a bookings history UI (the data exists), refund handling, and membership subscriptions (which must use StoreKit IAP, not Stripe). Google sign-in was built and deliberately removed — Apple is the only third-party provider.
 
 > **Backend status** — Supabase project `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"), `ACTIVE_HEALTHY`. Verified 2026-09-07:

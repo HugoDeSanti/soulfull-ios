@@ -33,8 +33,7 @@ struct ExerciseListView: View {
 
     private func exerciseRow(_ exercise: Exercise) -> some View {
         HStack(spacing: 14) {
-            Image(exercise.imageUrl)
-                .resizable().scaledToFill()
+            CatalogImage(exercise.imageUrl) { $0.resizable().scaledToFill() }
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))

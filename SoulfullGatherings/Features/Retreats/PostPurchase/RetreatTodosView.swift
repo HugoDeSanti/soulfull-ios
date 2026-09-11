@@ -19,7 +19,7 @@ struct RetreatTodosView: View {
 
     @State private var trip = RetreatTripStore.shared
 
-    private var exp: RetreatExperience? { retreat.experience ?? RetreatExperience.curated(for: retreat) }
+    private var exp: RetreatExperience? { retreat.experience }
     private var post: RetreatExperience.PostBooking? { exp?.postBooking }
     private var todos: [RetreatExperience.PostBooking.TodoItem] { post?.todos ?? [] }
 

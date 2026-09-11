@@ -39,16 +39,22 @@ struct RetreatDetailView: View {
         _vm = State(initialValue: RetreatDetailViewModel(retreat: retreat))
     }
 
-    /// Rich content for this retreat — the inline `experience` if the model
-    /// carried one (mock), otherwise the curated copy matched by name. This is
-    /// what lets the Mallorca brochure render even when the retreat arrives
-    /// from Supabase (which doesn't carry the long-form content yet).
+    /// The long-form brochure, decoded from this retreat's `experience` jsonb
+    /// column. `nil` — no document, or an unreadable one — falls through to
+    /// `basicStory`, which builds a real page out of `blurb` and `tags`.
+    ///
+    /// It used to fall back to `RetreatExperience.curated(for:)`, a switch on
+    /// the retreat's name with exactly one case. That meant brochure content
+    /// shipped in the binary: any retreat that wasn't Mallorca got the short
+    /// layout and no amount of editing the database could change it.
     private var exp: RetreatExperience? {
-        retreat.experience ?? RetreatExperience.curated(for: retreat)
+        retreat.experience
     }
 
-    /// Brochure date when an experience exists, else the model's own range.
-    private var whenLabel: String { exp?.dateRange ?? retreat.when }
+    /// The brochure's own date line if it overrides one, else the range
+    /// derived from the row's real dates. `flatMap` because `dateRange` is
+    /// itself optional — `exp?.dateRange` is a double optional.
+    private var whenLabel: String { exp.flatMap(\.dateRange) ?? retreat.when }
 
     var body: some View {
         ZStack {
@@ -107,12 +113,16 @@ struct RetreatDetailView: View {
     private var hero: some View {
         GeometryReader { proxy in
             ZStack {
-                Image(retreat.imageUrl)
-                    .resizable().scaledToFill()
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .clipped()
-                    .scaleEffect(1 + max(0, -scrollY) / 700)          // stretch on pull-down
-                    .blur(radius: min(14, max(0, scrollY) / 26))       // soften under the story
+                CatalogImage(retreat.imageUrl) { image in
+                    image
+                        .resizable().scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .clipped()
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .clipped()
+                .scaleEffect(1 + max(0, -scrollY) / 700)          // stretch on pull-down
+                .blur(radius: min(14, max(0, scrollY) / 26))       // soften under the story
 
                 // The middle stops used to fall to 0.08 — right where the
                 // cover's kind line and blurb sit, on an unblurred photo. They

@@ -311,6 +311,20 @@ actor SupabaseService {
             .createSignedURL(path: path, expiresIn: expiresIn)
     }
 
+    /// Public URL for an object in a **public** bucket — no signing, no round
+    /// trip, just a string. Catalog photography is marketing material shown to
+    /// anonymous guests, so it has no business behind a signed URL: a public
+    /// object is cacheable by `URLSession`, survives offline, and never expires
+    /// mid-scroll the way a 1-hour signature does.
+    ///
+    /// `nonisolated` so `ImageSource` can resolve one synchronously while
+    /// building a view, without hopping onto the actor.
+    ///
+    /// Private media (`practice-media`) still goes through `signedMediaURL`.
+    nonisolated func publicObjectURL(bucket: String, path: String) -> URL? {
+        try? client.storage.from(bucket).getPublicURL(path: path)
+    }
+
     func invalidateCache() {
         retreatsCache = nil
         retreatsCacheDate = nil
@@ -417,9 +431,12 @@ private struct RetreatRow: Codable {
     let toneMid: String
     let toneBase: String
     let groupChatUrl: String?
+    /// The long-form brochure, as a jsonb document. Decoded separately (see
+    /// `experience`) so one malformed blob can't take the whole catalog down.
+    let experience: AnyJSON?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, country, tags, blurb
+        case id, name, country, tags, blurb, experience
         case imageUrl      = "image_url"
         case startDate     = "start_date"
         case endDate       = "end_date"
@@ -429,6 +446,35 @@ private struct RetreatRow: Codable {
         case toneMid       = "tone_mid"
         case toneBase      = "tone_base"
         case groupChatUrl  = "group_chat_url"
+    }
+
+    /// Decoder for the `experience` document.
+    ///
+    /// Keys inside the jsonb are snake_case like every column, so this converts
+    /// rather than making every nested type carry `CodingKeys` — there are
+    /// thirteen multi-word keys across eight types, and hand-maintaining them
+    /// is thirteen chances to typo a key that then silently drops a section.
+    private static let experienceDecoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
+    }()
+
+    /// The decoded brochure, or `nil` if there isn't one **or it's malformed**.
+    ///
+    /// Failing soft is the point. This is content someone hand-authors in the
+    /// dashboard; a missing comma must not blank the catalog. A retreat with an
+    /// undecodable document simply falls back to the concise detail layout,
+    /// exactly as one with no document does — and the reason lands in the log.
+    var decodedExperience: RetreatExperience? {
+        guard let experience, experience != .null else { return nil }
+        do {
+            let data = try JSONEncoder().encode(experience)
+            return try Self.experienceDecoder.decode(RetreatExperience.self, from: data)
+        } catch {
+            Log.data.error("Retreat \(self.id, privacy: .public) has an unreadable experience document: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     var retreat: Retreat {
@@ -452,7 +498,8 @@ private struct RetreatRow: Codable {
             // could have opened an arbitrary app. WhatsApp invites are https.
             groupChatURL: groupChatUrl
                 .flatMap { URL(string: $0) }
-                .flatMap { $0.scheme?.lowercased() == "https" ? $0 : nil }
+                .flatMap { $0.scheme?.lowercased() == "https" ? $0 : nil },
+            experience: decodedExperience
         )
     }
 }

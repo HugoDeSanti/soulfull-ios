@@ -95,6 +95,10 @@ struct SectionLabel: View {
 // MARK: - Blurred photo backdrop (welcome / onboarding / home / finish)
 
 struct PhotoBackdrop: View {
+    /// Either a bundled asset name or a `bucket/path.jpg` in Supabase Storage —
+    /// `ImageSource` routes on the shape, so the static backdrops ("home-bg")
+    /// and a data-driven retreat photo both arrive here as a plain String and
+    /// no call site had to change.
     let imageName: String
     /// 0 = sharp, higher = more blur. Default lightly blurred per the prototype.
     var blur: CGFloat = 5
@@ -120,14 +124,16 @@ struct PhotoBackdrop: View {
             // pushes sibling content past the screen edges.
             Color.clear
                 .overlay {
-                    Image(imageName)
-                        .resizable()
-                        .scaledToFill()
-                        .blur(radius: blur)
-                        .saturation(1.15)
-                        .brightness(-0.05)
-                        .scaleEffect(pan == 0 ? 1.06 : 1.16)
-                        .offset(x: -pan * 22)
+                    CatalogImage(imageName) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .blur(radius: blur)
+                            .saturation(1.15)
+                            .brightness(-0.05)
+                            .scaleEffect(pan == 0 ? 1.06 : 1.16)
+                            .offset(x: -pan * 22)
+                    }
                 }
                 .clipped()
             // Top→bottom vignette for legibility.

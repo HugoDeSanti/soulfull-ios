@@ -20,7 +20,7 @@ struct RetreatGuidesView: View {
 
     private typealias Offer = RetreatExperience.PostBooking.GuideOffer
 
-    private var exp: RetreatExperience? { retreat.experience ?? RetreatExperience.curated(for: retreat) }
+    private var exp: RetreatExperience? { retreat.experience }
     private var guides: [RetreatExperience.Guide] { exp?.guides ?? [] }
     private var offers: [Offer] { exp?.postBooking?.offers ?? [] }
 

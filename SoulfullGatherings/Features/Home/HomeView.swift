@@ -319,10 +319,14 @@ struct HomeView: View {
         PressableCard(action: { onOpenRetreat(r) }) {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
-                    Image(r.imageUrl)
-                        .resizable().scaledToFill()
-                        .frame(width: 260, height: 150)
-                        .clipped()
+                    CatalogImage(r.imageUrl) { image in
+                        image
+                            .resizable().scaledToFill()
+                            .frame(width: 260, height: 150)
+                            .clipped()
+                    }
+                    .frame(width: 260, height: 150)
+                    .clipped()
                     LinearGradient(colors: [.clear, .black.opacity(0.55)],
                                    startPoint: .top, endPoint: .bottom)
                     Text("\(r.country) · \(r.when)".uppercased())
@@ -382,10 +386,14 @@ struct HomeView: View {
     private func programCard(_ p: Program) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                Image(p.imageUrl)
-                    .resizable().scaledToFill()
-                    .frame(width: 260, height: 200)
-                    .clipped()
+                CatalogImage(p.imageUrl) { image in
+                    image
+                        .resizable().scaledToFill()
+                        .frame(width: 260, height: 200)
+                        .clipped()
+                }
+                .frame(width: 260, height: 200)
+                .clipped()
 
                 LinearGradient(
                     colors: [.clear, .black.opacity(0.62)],

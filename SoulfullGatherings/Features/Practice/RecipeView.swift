@@ -39,8 +39,7 @@ struct RecipeListView: View {
                     .frame(height: 160)
                     .frame(maxWidth: .infinity)
                     .overlay {
-                        Image(recipe.imageUrl)
-                            .resizable().scaledToFill()
+                        CatalogImage(recipe.imageUrl) { $0.resizable().scaledToFill() }
                     }
                     .clipped()
                 LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
@@ -90,8 +89,7 @@ struct RecipeDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ZStack(alignment: .top) {
-                        Image(recipe.imageUrl)
-                            .resizable().scaledToFill()
+                        CatalogImage(recipe.imageUrl) { $0.resizable().scaledToFill() }
                             .frame(height: 320)
                             .clipped()
                             // Stretch on pull-down, anchored to the top edge.

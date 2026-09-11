@@ -121,12 +121,19 @@ struct Retreat: Identifiable, Hashable {
 /// the goal is to inspire, not to exhaustively list. Value type, `Hashable`
 /// so it slots cleanly into the `Retreat` value (whose own `==`/`hash` stay
 /// id-only).
-struct RetreatExperience: Hashable {
+struct RetreatExperience: Hashable, Codable {
     /// Kind line above the title on the cover (e.g. "A Wellness & Fitness Retreat").
     let kind: String
-    /// Short, brochure-accurate date range for the cover (e.g. "July 21–26").
-    /// Prefer this over the (possibly stale) DB date when an experience exists.
-    let dateRange: String
+    /// Brochure date line for the cover (e.g. "July 21–26"), overriding the
+    /// row's real dates.
+    ///
+    /// **Optional, and normally leave it out.** When it's absent the screen
+    /// derives the line from `start_date`/`end_date`, which cannot drift. A
+    /// hardcoded "July 21–26" sitting on top of a row that says 2027-07-21 is
+    /// two sources of truth for one fact, and they have already disagreed once.
+    /// Set it only when the brochure genuinely says something the dates don't
+    /// ("Midsummer week"), and then remember it wins.
+    var dateRange: String? = nil
     /// One-line invitation shown under the cover title.
     let coverLine: String
     /// The opening invitation — one short stanza per paragraph.
@@ -156,7 +163,7 @@ struct RetreatExperience: Hashable {
     var postBooking: PostBooking? = nil
 
     /// Move / Explore / Recover / Connect — title, icon, a line, a few specifics.
-    struct Element: Hashable, Identifiable {
+    struct Element: Hashable, Identifiable, Codable {
         var id: String { title }
         let title: String
         let systemImage: String
@@ -164,14 +171,14 @@ struct RetreatExperience: Hashable {
         let highlights: [String]
     }
 
-    struct Testimonial: Hashable {
+    struct Testimonial: Hashable, Codable {
         let quote: String
         let author: String
         /// e.g. "Entrepreneur, 29 · Member since 2023".
         let attribution: String
     }
 
-    struct Guide: Hashable, Identifiable {
+    struct Guide: Hashable, Identifiable, Codable {
         var id: String { name }
         let name: String
         let role: String
@@ -185,7 +192,7 @@ struct RetreatExperience: Hashable {
     /// The post-purchase trip: everything unlocked after a retreat is reserved.
     /// All copy is curated brochure content; bookable/checkable state is kept
     /// device-locally by `RetreatTripStore` (no backend yet).
-    struct PostBooking: Hashable {
+    struct PostBooking: Hashable, Codable {
         /// Member display name used in greetings — a mock fallback; views should
         /// prefer the signed-in profile/`AppSettings` name when available.
         let memberName: String
@@ -199,7 +206,7 @@ struct RetreatExperience: Hashable {
         /// Bookable 1:1 sessions, each tied to a `guides` entry by name.
         let offers: [GuideOffer]
 
-        struct Checkout: Hashable {
+        struct Checkout: Hashable, Codable {
             let lineItems: [LineItem]
             let total: String
             /// Amount due at reserve (e.g. the deposit) and a one-line note.
@@ -208,7 +215,7 @@ struct RetreatExperience: Hashable {
             let receiptNumber: String
             let fineprint: String
 
-            struct LineItem: Hashable, Identifiable {
+            struct LineItem: Hashable, Identifiable, Codable {
                 var id: String { title }
                 let title: String
                 let detail: String
@@ -216,7 +223,7 @@ struct RetreatExperience: Hashable {
             }
         }
 
-        struct TodoItem: Hashable, Identifiable {
+        struct TodoItem: Hashable, Identifiable, Codable {
             let id: String
             let title: String
             let detail: String
@@ -226,7 +233,7 @@ struct RetreatExperience: Hashable {
             let isMust: Bool
         }
 
-        struct GuideOffer: Hashable, Identifiable {
+        struct GuideOffer: Hashable, Identifiable, Codable {
             /// Matches the guide's `name` in `RetreatExperience.guides`.
             var id: String { guideName }
             let guideName: String
@@ -266,9 +273,10 @@ extension Retreat {
     /// shows nothing rather than advertising a retreat that already happened —
     /// which is exactly what the offline fallback did until 2026-09-10.
     ///
-    /// Mallorca stays 21–26 July because `RetreatExperience.mallorca.dateRange`
-    /// hardcodes "July 21–26" as brochure copy and that string wins on the
-    /// detail screen. Change the two together or they disagree.
+    /// These carry **no** `experience`: the brochure lives in the
+    /// `retreats.experience` jsonb column, so there is nothing to hardcode here
+    /// any more. A fixture retreat therefore renders the concise layout, which
+    /// is correct — an offline device has no brochure to show.
     static let mock: [Retreat] = [
         Retreat(id: 1, name: "Mallorca", country: "Spain",
                 startDate: day(2027, 7, 21), endDate: day(2027, 7, 26),
@@ -282,8 +290,7 @@ extension Retreat {
                 // the offline fallback is worse than no tile, and the hub only
                 // renders the tile when this is non-nil. Real invites come from
                 // `retreats.group_chat_url`, so adding one is a data change.
-                groupChatURL: nil,
-                experience: .mallorca),
+                groupChatURL: nil),
         Retreat(id: 2, name: "Bali", country: "Indonesia",
                 startDate: day(2027, 8, 9), endDate: day(2027, 8, 16),
                 maxGuests: 16, priceUsd: 3900,
@@ -332,142 +339,10 @@ extension Retreat {
 // MARK: - Mallorca experience content (curated from the 2026 retreat brochure)
 
 extension RetreatExperience {
-    /// The curated long-form content for a retreat, matched by name. This
-    /// brochure copy lives in the app (not yet in Supabase), so it attaches to
-    /// whichever `Retreat` the screen receives — a DB row or the mock — instead
-    /// of relying on the mock's inline `experience`.
-    static func curated(for retreat: Retreat) -> RetreatExperience? {
-        switch retreat.name.lowercased() {
-        case "mallorca": return .mallorca
-        default:         return nil
-        }
-    }
-
-    static let mallorca = RetreatExperience(
-        kind: "A Wellness & Fitness Retreat",
-        dateRange: "July 21–26",
-        coverLine: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
-        invitation: [
-            "A private Spanish villa, a curated group of like-minded humans, and the coast of the Mediterranean Sea.",
-            "All brought together by a desire for movement and an optimistic purpose that will refresh and refuel you.",
-            "Arrive by yourself. Leave with a blissful view of life — and a forever community.",
-        ],
-        whoFor: [
-            "Perhaps you've always been a traveler, but now you're ready to become an adventurer.",
-            "Maybe you've been enjoying life and new places, but you're seeking refreshing company.",
-            "You value quality over quantity, choose optimism, and treasure the hours you forget to reach for your phone.",
-        ],
-        welcome: "If this is you — welcome home. You belong here.",
-        elements: [
-            .init(title: "Move",
-                  systemImage: "bicycle",
-                  summary: "Ride the island, build strength, and move every day until you feel your best.",
-                  highlights: ["Two riding days on curated routes", "Daily functional strength training", "Hillside hikes", "Restorative stretch sessions"]),
-            // No alcohol references anywhere in the app — "A winery experience"
-            // was here and was removed. Beyond taste, it was the only thing
-            // pulling the App Store age rating off 4+: the rating questionnaire
-            // asks about "Alcohol, Tobacco, or Drug Use or References", and
-            // answering "None" with this on a reachable brochure screen is an
-            // inaccurate rating (Guideline 2.3.6). Keep it that way.
-            .init(title: "Explore",
-                  systemImage: "sailboat.fill",
-                  summary: "Discover Mallorca, from its coast and waters to its mountains and villages.",
-                  highlights: ["Buggy tour across the island", "A day in the village of Deià", "Beach time", "A catamaran day along the coast"]),
-            .init(title: "Recover",
-                  systemImage: "leaf.fill",
-                  summary: "Relearn how to slow down — resting the body and quieting the mind.",
-                  highlights: ["Cold plunge & sauna", "Breathwork & daily meditation", "Somatic & nervous-system workshops", "Compression boots & custom massage"]),
-            .init(title: "Connect",
-                  systemImage: "sparkles",
-                  summary: "Real connection grows naturally — around good food, honest talk, and shared creativity.",
-                  highlights: ["Shared meals", "Creativity workshops", "Curated conversation", "Dinners that become dance parties"]),
-        ],
-        testimonial: .init(
-            quote: "I almost backed off my first retreat, just because I'd be traveling with \u{201C}strangers.\u{201D} Oh, how much joy and feeling alive I would have missed. I've made twelve forever friends here — I'd only give Soulfull 4.8 stars, because they've made going home the hard part.",
-            author: "G. Martínez",
-            attribution: "Entrepreneur, 29 · Member since 2023"
-        ),
-        guides: [
-            .init(name: "Alejandra Campos", role: "Head Retreat Leader"),
-            .init(name: "Michelle Campos", role: "Retreat Guide & Psychotherapist"),
-            .init(name: "Ana Lucía Chávez", role: "Retreat Guide & Fitness Trainer"),
-            .init(name: "Regina Mendoza", role: "Assistant & Physical Therapist"),
-            .init(name: "Sabina González", role: "Numerologist & Business Guide"),
-        ],
-        stay: "A private villa on the island of Mallorca, with your choice of a shared stay or a private suite. Settle in, and let time slow down.",
-        inclusions: [
-            "Every meal, from check-in to check-out",
-            "In-room amenities & a welcome gift box (€250+ value)",
-            "A 50-minute custom restorative massage (€259+ value)",
-            "Airport transfers & transport to every activity",
-            "All workshop materials, bikes & gear, buggies, and boat rides",
-            "Every session across Move, Explore, Recover & Connect",
-        ],
-        inclusionsNote: "Flights, travel insurance, and personal expenses are not included.",
-        postBooking: mallorcaPostBooking
-    )
 
     /// The post-purchase trip content for Mallorca — curated from the brochure
     /// and the Claude Design `mallorca-*` / `retreat-*` screens. Bookable state
     /// lives device-locally in `RetreatTripStore`; the copy here is static.
-    static let mallorcaPostBooking = PostBooking(
-        memberName: "G. Martinez",
-        checkout: .init(
-            lineItems: [
-                .init(title: "Mallorca Wellness Experience", detail: "6 days · all-inclusive", value: "€5,678"),
-                .init(title: "Shared suite", detail: "Private villa · twin occupancy", value: "Included"),
-                .init(title: "Welcome gift box", detail: "On arrival", value: "Included"),
-            ],
-            total: "€5,678",
-            dueToday: "€800",
-            dueTodayNote: "Then 2 × €2,439, billed monthly",
-            receiptNumber: "SF-26-0412",
-            fineprint: "By reserving you agree to the enrollment terms and cancellation policy."
-        ),
-        todos: [
-            .init(id: "call", title: "Book your enrollment call",
-                  detail: "A 15-minute welcome call with your retreat guide to confirm the fit.",
-                  tag: "Do this first", isMust: true),
-            .init(id: "health", title: "Complete your health & dietary form",
-                  detail: "Allergies, injuries, and anything we should plan around.",
-                  tag: "Required", isMust: true),
-            .init(id: "flights", title: "Book your flights to Palma (PMI)",
-                  detail: "Arrive before 3pm on July 21; depart anytime July 26.",
-                  tag: nil, isMust: false),
-            .init(id: "transfer", title: "Share your arrival details",
-                  detail: "Flight number & landing time so we can arrange your airport transfer.",
-                  tag: nil, isMust: false),
-            .init(id: "installments", title: "Set your installment dates",
-                  detail: "Two payments of €2,439 — choose the dates that suit you.",
-                  tag: nil, isMust: false),
-            .init(id: "chat", title: "Join the member group chat",
-                  detail: "Meet your group and the guides before you arrive.",
-                  tag: nil, isMust: false),
-            .init(id: "pack", title: "Review the packing list",
-                  detail: "From riding gear to evening dinners — everything you'll want with you.",
-                  tag: nil, isMust: false),
-        ],
-        packing: [
-            "Activewear and trainers",
-            "Swimwear",
-            "A light layer for evenings",
-            "Comfortable walking shoes",
-            "Sunscreen and a reusable water bottle",
-            "One nicer outfit for group dinners",
-        ],
-        offers: [
-            .init(guideName: "Alejandra Campos", session: "Intention-setting session",
-                  duration: "45 min · private", slots: ["Mon · 09:00", "Tue · 16:30", "Thu · 11:00"]),
-            .init(guideName: "Michelle Campos", session: "Private therapy session",
-                  duration: "50 min · confidential", slots: ["Mon · 14:00", "Wed · 10:00", "Fri · 15:30"]),
-            .init(guideName: "Ana Lucía Chávez", session: "Personal training session",
-                  duration: "60 min · 1:1 coaching", slots: ["Mon · 07:30", "Wed · 07:30", "Fri · 08:00"]),
-            .init(guideName: "Regina Mendoza", session: "Recovery & physical therapy",
-                  duration: "50 min · bodywork", slots: ["Tue · 13:00", "Thu · 16:00", "Fri · 11:30"]),
-            .init(guideName: "Sabina González", session: "Numerology & business reading",
-                  duration: "45 min · private", slots: ["Tue · 10:30", "Wed · 17:00", "Thu · 14:30"]),
-        ],
-    )
 }
 
 // MARK: - Digital programs (for home carousel)

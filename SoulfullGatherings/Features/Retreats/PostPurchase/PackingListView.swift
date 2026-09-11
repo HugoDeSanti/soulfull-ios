@@ -16,7 +16,7 @@ struct PackingListView: View {
 
     @State private var trip = RetreatTripStore.shared
 
-    private var exp: RetreatExperience? { retreat.experience ?? RetreatExperience.curated(for: retreat) }
+    private var exp: RetreatExperience? { retreat.experience }
     private var items: [String] { exp?.postBooking?.packing ?? [] }
 
     private func id(_ index: Int) -> String { "pack-\(index)" }

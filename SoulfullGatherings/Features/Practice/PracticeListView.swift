@@ -74,8 +74,7 @@ struct PracticeListView: View {
     private func sessionRow(_ session: PracticeSession) -> some View {
         HStack(spacing: 14) {
             ZStack {
-                Image(session.imageUrl)
-                    .resizable().scaledToFill()
+                CatalogImage(session.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 68, height: 68)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")

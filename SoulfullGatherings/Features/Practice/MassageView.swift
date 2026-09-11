@@ -35,8 +35,7 @@ struct MassageListView: View {
     private func massageRow(_ massage: Massage) -> some View {
         HStack(spacing: 14) {
             ZStack {
-                Image(massage.imageUrl)
-                    .resizable().scaledToFill()
+                CatalogImage(massage.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 56, height: 56)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Image(systemName: massage.mediaKind == .video ? "play.fill" : "waveform")
