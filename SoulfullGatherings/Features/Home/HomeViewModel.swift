@@ -27,6 +27,9 @@ final class HomeViewModel {
     /// `Program.mock` as though it were a real catalogue.
     var programs: [Program] = []
     var retreats: [Retreat] = []
+    /// Set when the retreat shelf has nothing to show and why — the shelf
+    /// renders the reason instead of quietly disappearing.
+    var retreatsFailure: RetreatsLoadFailure? = nil
     let moods: [MoodChip] = MoodChip.all
 
     /// The chip currently selected, if any.
@@ -52,6 +55,7 @@ final class HomeViewModel {
 
     func load() async {
         do {
+            retreatsFailure = nil
             retreats = try await SupabaseService.shared.fetchRetreats()
         } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
@@ -59,9 +63,12 @@ final class HomeViewModel {
             // cancellation as URLError(.cancelled). See Error.isCancellation.
         } catch {
             Log.data.error("Home retreats fetch failed: \(error.localizedDescription)")
-            // Offline fallback so the shelf isn't empty. The connection banner
-            // tells the user this is saved content, not the live catalogue.
-            if retreats.isEmpty { retreats = Retreat.mock }
+            // No fallback: the shelf used to fill with `Retreat.mock`, which
+            // put already-finished retreats in front of an offline user as
+            // though they were the live catalog. See `RetreatsLoadFailure`.
+            if retreats.isEmpty {
+                retreatsFailure = error.isOffline ? .offline : .failed
+            }
         }
 
         // Programs are additive: the shelf only appears once the table is

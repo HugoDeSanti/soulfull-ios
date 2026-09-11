@@ -45,3 +45,11 @@ Thumbs.db
 .env
 *.pem
 Config/Secrets.xcconfig
+
+# Apple private keys (Sign in with Apple .p8, App Store Connect API keys).
+# Apple lets you download a .p8 exactly once and it signs auth on your behalf,
+# so a committed one has to be revoked in the developer portal, not just
+# deleted from the tree. It lives here untracked; its contents go into the
+# Supabase function secrets (APPLE_PRIVATE_KEY), never into the repo.
+*.p8
+AuthKey_*

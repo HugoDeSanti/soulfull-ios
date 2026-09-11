@@ -270,17 +270,49 @@ struct HomeView: View {
                 onOpenRetreats()
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(vm.retreats.prefix(5)) { r in
-                        retreatCard(r)
+            if let failure = vm.retreatsFailure {
+                retreatsUnavailable(failure)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 14) {
+                        ForEach(vm.retreats.prefix(5)) { r in
+                            retreatCard(r)
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .scrollTargetLayout()
                 }
-                .padding(.horizontal, 20)
-                .scrollTargetLayout()
+                .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
             }
-            .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
         }
+    }
+
+    /// Shown in place of the shelf when there is no catalog to show. It used to
+    /// fill with `Retreat.mock` instead, which put finished retreats in front
+    /// of an offline user as if they were real — see `RetreatsLoadFailure`.
+    private func retreatsUnavailable(_ failure: RetreatsLoadFailure) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.triangle")
+                .font(.system(size: 15, weight: .light))
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(failure.title)
+                    .font(Theme.body(13, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                Text(failure.detail)
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .soulGlassCard(radius: Theme.cardRadius)
+        .padding(.horizontal, 20)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(failure.title). \(failure.detail)")
     }
 
     private func retreatCard(_ r: Retreat) -> some View {

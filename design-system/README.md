@@ -92,9 +92,11 @@ mirror matching the **shipping** app; parked work stays under
 | Change | Mirror effect |
 |---|---|
 | **Circle tab cut** (Guideline 4.2 — a primary tab advertising unbuilt features) | `bottom-nav` is **three** items everywhere: Home · Practice · You. `community.html` moved to `Screens · Parked (post-v1)`. |
-| **Reservations off** (`AppFeatures.paymentsEnabled = false`) | `retreat-detail` CTA reads **"Request a place"** (opens a support email), not "Reserve". The checkout and Mallorca post-purchase cards are unreachable in v1 but stay accurate for 1.1. |
+| **Reservations off, Stripe dependency dropped** | `retreat-detail` CTA reads **"Request a place"** (opens a support email) and has no other state — there is no client-side checkout left to push to. `retreat-checkout` is **deleted** from the mirror along with `RetreatCheckoutView.swift` and `PaymentService.swift`; recover both from git history if payments return. The Mallorca post-purchase cards (hub, to-dos, packing, guides) stay — they are trip logistics, not payment. |
+| **No offline fallback for retreats** | The app no longer substitutes sample retreats when a fetch fails — it renders an explicit *"No internet connection"* or *"Couldn't load retreats"* state instead (Guideline 2.1(a): placeholder content must be scrubbed). **Not modelled here**: this mirror shows happy-path screens only, and has never carried error, empty or offline states — `ConnectionBanner` has no card either. If the UX team wants to design these, they are `RetreatsLoadFailure` in `RetreatsViewModel.swift` (a two-line card on `home`, a full-screen state on `retreats-stack`). |
 | **Practice media tracks gated** | Somatic / Breathwork / Meditation carry a `SOON` badge, read "Coming soon", and are dimmed (`.pcard--soon`) until the `practice_sessions` table is seeded. |
-| **Legal links added** | `profile` gains a Privacy · Terms · Support row; `retreat-checkout` fineprint now links the terms it names. |
+| **Legal links added** | `profile` gains a Privacy · Terms · Support row. |
+| **No AI anywhere** | The app has no AI companion or chat and none is planned. `mallorca-chatbot` is **deleted** (it was a live `window.claude.complete` prototype), the hub's wide tile now opens an email to the team instead of a chat, and the third welcome slide — "Soul AI · Meet Soul, your companion through the journey" — is gone from `WelcomeView`. **Don't reintroduce an assistant card**: shipping UI that advertises an AI the app doesn't have is a metadata-accuracy rejection, and it ran on every first launch. |
 
 ## Accounts are just-in-time (affects the account card)
 
@@ -124,18 +126,17 @@ in each HTML file.
 
 ### Mallorca post-purchase set (warm-espresso)
 
-`Screens · Retreats` includes the reserved-retreat flow: `retreat-checkout`,
-`mallorca-welcome` (hub), `retreat-todos`, `packing`, `mallorca-guides`, and
-`mallorca-chatbot`. These use the UX team's **warm-espresso** dark direction —
+`Screens · Retreats` includes the reserved-retreat flow: `mallorca-welcome`
+(hub), `retreat-todos`, `packing` and `mallorca-guides`. These use the UX team's
+**warm-espresso** dark direction —
 terracotta / olive / gold on an espresso canvas, all-Geist — defined inline as a
 per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
 Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
 The original **brochure-light** versions (cream / Cormorant / Pinyon) were kept
 outside this tree in `docs/design-brochure-backup/` until 2026-09-07; recover
-them with `git show d20e3f6:docs/design-brochure-backup/`. The `mallorca-chatbot` card
-stays a **live** prototype (uses `window.claude.complete`); the native app mocks
-its replies. When porting back to Swift, map the `.mb` tokens to `RetreatPalette`
-— don't reintroduce the light palette or fold these into the global `Theme`.
+them with `git show d20e3f6:docs/design-brochure-backup/`. When porting back to
+Swift, map the `.mb` tokens to `RetreatPalette` — don't reintroduce the light
+palette or fold these into the global `Theme`.
 
 ## Run it locally
 

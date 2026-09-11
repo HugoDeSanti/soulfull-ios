@@ -220,10 +220,11 @@ struct AccountView: View {
     private var appleButton: some View {
         AppleSignInButton(
             disabled: vm.isWorking,
-            onCredential: { token, nonce, name in
+            onCredential: { credential in
                 Task {
-                    if case .signedIn = await vm.submitApple(idToken: token, nonce: nonce, fullName: name,
-                                                             auth: auth, settings: settings) { dismiss() }
+                    if case .signedIn = await vm.submitApple(credential, auth: auth, settings: settings) {
+                        dismiss()
+                    }
                 }
             },
             onFailure: { vm.reportAppleFailure($0) }

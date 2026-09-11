@@ -38,8 +38,8 @@ struct RetreatsStackView: View {
 
             if vm.isLoading {
                 ProgressView().tint(.white)
-            } else if let msg = vm.loadError {
-                errorState(msg)
+            } else if let failure = vm.loadFailure {
+                errorState(failure)
             } else {
                 // The stack stays mounted under the catalog so its scroll
                 // state survives — tapping a cover animates the live
@@ -374,13 +374,26 @@ struct RetreatsStackView: View {
 
     // MARK: - Error state
 
-    private func errorState(_ msg: String) -> some View {
+    /// No catalog, and why. There is deliberately no sample data behind this —
+    /// see `RetreatsLoadFailure`.
+    private func errorState(_ failure: RetreatsLoadFailure) -> some View {
         VStack(spacing: 20) {
-            Text(msg)
-                .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+            VStack(spacing: 8) {
+                Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.triangle")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Theme.inkSoft)
+                    .padding(.bottom, 4)
+                Text(failure.title)
+                    .font(Theme.headline(19, weight: .medium)).kerning(-0.2)
+                    .foregroundStyle(Theme.ink)
+                Text(failure.detail)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkSoft)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .padding(.horizontal, 32)
+            }
+            .onPhoto()
             Button {
                 Task { await vm.load() }
             } label: {

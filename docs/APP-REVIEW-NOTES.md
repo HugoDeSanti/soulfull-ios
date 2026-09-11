@@ -50,6 +50,13 @@ If a reviewer still queries it, the honest answer is in the notes block below.
   Signing out drops the user back to a guest session and leaves them where they
   were — the app stays fully browsable.
 
+  Deletion also **revokes the Sign in with Apple grant** via Apple's
+  `/auth/revoke`, which 5.1.1(v) requires of any app offering both. Deleting the
+  Supabase user is not enough on its own: without the revoke the app stays
+  listed under *Settings → Apple ID → Sign in with Apple*, and that is the thing
+  a reviewer actually looks at. The setup this needs is in the checklist below —
+  **it is not automatic, and the app ships non-compliant until it is done.**
+
 ## Accounts and identifiers
 
 | | |
@@ -66,6 +73,27 @@ If a reviewer still queries it, the honest answer is in the notes block below.
 > destination of every "Request a place" enquiry, so it has to stay monitored.
 
 ## Before you submit — check each of these
+
+**Sign in with Apple revocation — Guideline 5.1.1(v), and a rejection if skipped:**
+
+- [x] **Migration `0010_apple_credentials.sql` is applied** to the live
+      project (2026-09-10). Verified: RLS on, 0 policies, 0 grants to
+      `anon`/`authenticated`, FK `on delete cascade`, and both client roles get
+      `42501 permission denied` rather than a row.
+- [x] **A Sign in with Apple key (`.p8`) exists** for `com.soulfullgatherings.app`
+      — Key ID `5224W8727Y`, created 2026-09-10 — and the four secrets are set:
+      `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID`
+      (the **bundle ID**, not a Services ID). Verified by minting a client
+      secret and calling Apple's `/auth/revoke`, which answered 200 — so the
+      key, team and bundle ID all authenticate. The `.p8` lives untracked at the
+      repo root and is gitignored; **it must never be committed.**
+- [x] **`store-apple-token` is deployed** and `delete-account` **re-deployed**
+      (2026-09-10). Smoke-tested: both reject unauthenticated callers with 401,
+      and `store-apple-token` boots and sees its secrets (a guest JWT gets the
+      expected 403, not a 501).
+- [ ] **Verified end to end on a real device**: sign in with Apple → You tab →
+      Delete account → *Settings → your name → Sign-In & Security → Sign in with
+      Apple* no longer lists Soulfull. A simulator cannot prove this.
 
 **Auth — the app is unusable if any of these is wrong:**
 
@@ -89,9 +117,13 @@ If a reviewer still queries it, the honest answer is in the notes block below.
       pages, and the same privacy URL is entered in App Store Connect.
       A privacy policy URL that 404s is an automatic rejection.
 - [ ] `LegalLinks.supportEmail` is a monitored inbox.
-- [ ] The `retreats` table contains only retreats that have **not yet ended**.
-      The app filters on `end_date >= today`, so a stale catalog shows as empty
-      rather than wrong — but an empty catalog reads as a broken app.
+- [ ] The `retreats` table contains retreats that have **not yet started**.
+      The app filters on `start_date > today` (a retreat under way can no longer
+      be joined, so offering a place on it is a wrong price and a wrong date),
+      and `Retreat.hasBegun` applies the same rule to the offline fallback. A
+      stale catalog therefore shows as empty rather than wrong — but an empty
+      catalog reads as a broken app, so keep at least a few ahead.
+      As of 2026-09-11: Lapland, Chamonix, Mallorca, Dolomites (all 2027).
 - [ ] If you seeded `practice_sessions`, open each track once on a device and
       confirm the media actually plays from the `practice-media` bucket.
 - [x] `0008_practice_progress.sql` is applied (2026-09-06). Practice history,
@@ -147,12 +179,20 @@ Offered and listed first. It is the only third-party login in the app; the
 alternative is an email and password.
 
 ACCOUNT DELETION
-In-app under the "You" tab -> Delete account (Guideline 5.1.1(v)).
+In-app under the "You" tab -> Delete account (Guideline 5.1.1(v)). For an
+account created with Sign in with Apple, deletion also calls Apple's
+/auth/revoke, so the app is removed from Settings -> Apple ID -> Sign in with
+Apple at the same time.
 
 NO PURCHASES IN THIS VERSION
-This version contains no in-app purchases and no payment flow. Retreat pages
-show details and pricing for information; the call to action opens an email
-enquiry to our team. Bookings are handled offline by our staff.
+This version contains no in-app purchases and no payment flow of any kind —
+there is no payment SDK in the binary. Retreat pages show details and pricing
+for information; the call to action opens an email enquiry to our team.
+Bookings are handled offline by our staff.
+
+NO AI
+The app contains no AI features, no chatbot and no generative content. Every
+piece of text in it was written by our team.
 
 CONTENT NOTE
 "Coming soon" on the Somatic, Breathwork and Meditation cards is intentional:

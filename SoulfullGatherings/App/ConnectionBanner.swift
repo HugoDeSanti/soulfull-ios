@@ -28,7 +28,11 @@ struct ConnectionBanner: View {
                     Text("You're offline")
                         .font(Theme.body(13, weight: .medium))
                         .foregroundStyle(Theme.ink)
-                    Text("Showing saved content. Some things won't work yet.")
+                    // NOT "showing saved content" — there is none. The retreat
+                    // fallback was removed (see `RetreatsLoadFailure`), so offline
+                    // means the catalog is genuinely unavailable, and each
+                    // surface says so in its own empty state.
+                    Text("Reconnect to load retreats and practices.")
                         .font(Theme.body(11))
                         .foregroundStyle(Theme.inkSoft)
                         .lineLimit(2)
@@ -67,7 +71,7 @@ struct ConnectionBanner: View {
             .padding(.horizontal, 16)
             .transition(.move(edge: .top).combined(with: .opacity))
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("You're offline. Showing saved content.")
+            .accessibilityLabel("You're offline. Reconnect to load retreats and practices.")
             .accessibilityHint("Double tap Retry to reconnect")
         }
     }

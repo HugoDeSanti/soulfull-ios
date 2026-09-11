@@ -149,7 +149,7 @@ struct RetreatExperience: Hashable {
     let inclusionsNote: String?
     /// Content unlocked once the retreat is reserved — the post-purchase
     /// experience (welcome hub, to-do's, packing, 1:1 guide sessions, mocked
-    /// concierge). Mirrors the Claude Design `mallorca-*` / `retreat-*` screens.
+    /// trip logistics). Mirrors the Claude Design `mallorca-*` / `retreat-*` screens.
     /// `nil` for retreats without a curated trip. Must stay a defaulted `var`
     /// (not `let`) so the synthesized memberwise init still accepts it — a
     /// `let` with a default is omitted from the memberwise initializer.
@@ -198,12 +198,6 @@ struct RetreatExperience: Hashable {
         let packing: [String]
         /// Bookable 1:1 sessions, each tied to a `guides` entry by name.
         let offers: [GuideOffer]
-        /// Mocked concierge — opening line, suggestion chips, canned replies.
-        let assistantIntro: String
-        let assistantSuggestions: [String]
-        let assistantReplies: [CannedReply]
-        /// Reply when no canned keyword matches.
-        let assistantFallback: String
 
         struct Checkout: Hashable {
             let lineItems: [LineItem]
@@ -241,11 +235,6 @@ struct RetreatExperience: Hashable {
             let slots: [String]
         }
 
-        struct CannedReply: Hashable {
-            /// Lowercased substrings that route a user message to this reply.
-            let keywords: [String]
-            let reply: String
-        }
     }
 }
 
@@ -254,12 +243,35 @@ extension Retreat {
         Calendar.current.date(from: DateComponents(year: y, month: m, day: d))!
     }
 
-    /// Sample retreats mirroring the seeded `retreats` table, used as a
-    /// graceful fallback when Supabase is unreachable (same pattern as
-    /// `PracticeSession.mock`).
+    /// True once the retreat's first day has arrived. The catalog must not
+    /// offer a place on something already under way — a price and a date you
+    /// can no longer act on is worse than an empty shelf.
+    ///
+    /// Mirrors the `start_date > today` filter in
+    /// `SupabaseService.fetchRetreats()`, in UTC for the same reason: the dates
+    /// are bare Postgres `date`s, so comparing in the device's zone made the
+    /// catalog disagree with itself either side of the date line.
+    var hasBegun: Bool {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(secondsFromGMT: 0)!
+        let today = utc.startOfDay(for: Date())
+        return utc.startOfDay(for: startDate) <= today
+    }
+
+    /// Sample retreats, used as a graceful fallback when Supabase is
+    /// unreachable (same pattern as `PracticeSession.mock`).
+    ///
+    /// ⚠️ These dates are absolute and **will rot**. Filter every use through
+    /// `hasBegun` (`Retreat.mock.filter { !$0.hasBegun }`) so a stale fixture
+    /// shows nothing rather than advertising a retreat that already happened —
+    /// which is exactly what the offline fallback did until 2026-09-10.
+    ///
+    /// Mallorca stays 21–26 July because `RetreatExperience.mallorca.dateRange`
+    /// hardcodes "July 21–26" as brochure copy and that string wins on the
+    /// detail screen. Change the two together or they disagree.
     static let mock: [Retreat] = [
         Retreat(id: 1, name: "Mallorca", country: "Spain",
-                startDate: day(2026, 7, 21), endDate: day(2026, 7, 26),
+                startDate: day(2027, 7, 21), endDate: day(2027, 7, 26),
                 maxGuests: 14, priceUsd: 4400,
                 tags: ["Wellness", "Fitness", "Recovery"],
                 blurb: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
@@ -273,28 +285,28 @@ extension Retreat {
                 groupChatURL: nil,
                 experience: .mallorca),
         Retreat(id: 2, name: "Bali", country: "Indonesia",
-                startDate: day(2026, 8, 9), endDate: day(2026, 8, 16),
+                startDate: day(2027, 8, 9), endDate: day(2027, 8, 16),
                 maxGuests: 16, priceUsd: 3900,
                 tags: ["Breathwork", "Somatic", "Jungle"],
                 blurb: "Seven nights between rice terraces and temple mornings. Breath, stillness, and green without end.",
                 imageUrl: "retreat-bali",
                 toneTop: Color(hex: "#9DBA6E"), toneMid: Color(hex: "#4C6B33"), toneBase: Color(hex: "#15200D")),
         Retreat(id: 3, name: "Dolomites", country: "Italy",
-                startDate: day(2026, 9, 4), endDate: day(2026, 9, 9),
+                startDate: day(2027, 9, 8), endDate: day(2027, 9, 13),
                 maxGuests: 12, priceUsd: 5200,
                 tags: ["Alpine", "Hiking", "Cold Therapy"],
                 blurb: "Granite light, long ridgelines, and evenings that ask very little of you. Walk up, settle down.",
                 imageUrl: "retreat-dolomites",
                 toneTop: Color(hex: "#B9C3CD"), toneMid: Color(hex: "#5C6B7A"), toneBase: Color(hex: "#161B21")),
         Retreat(id: 4, name: "Kyoto", country: "Japan",
-                startDate: day(2026, 10, 12), endDate: day(2026, 10, 18),
+                startDate: day(2027, 10, 12), endDate: day(2027, 10, 18),
                 maxGuests: 10, priceUsd: 6100,
                 tags: ["Zen", "Tea", "Forest Bathing"],
                 blurb: "Temple gardens at first light, tea in silence, maple shade. A week of deliberate slowness.",
                 imageUrl: "retreat-kyoto",
                 toneTop: Color(hex: "#C98A66"), toneMid: Color(hex: "#7A4631"), toneBase: Color(hex: "#1F120C")),
         Retreat(id: 5, name: "Sedona", country: "United States",
-                startDate: day(2026, 11, 6), endDate: day(2026, 11, 11),
+                startDate: day(2027, 11, 6), endDate: day(2027, 11, 11),
                 maxGuests: 14, priceUsd: 4800,
                 tags: ["Desert", "Sound Healing", "Hiking"],
                 blurb: "Red rock amphitheaters, canyon hikes, sound baths under enormous sky.",
@@ -449,21 +461,6 @@ extension RetreatExperience {
             .init(guideName: "Sabina González", session: "Numerology & business reading",
                   duration: "45 min · private", slots: ["Tue · 10:30", "Wed · 17:00", "Thu · 14:30"]),
         ],
-        assistantIntro: "Welcome — you're all set for Mallorca this July. I'm here for anything before you arrive: flights, packing, the daily rhythm, payments, or what's included. What's on your mind?",
-        assistantSuggestions: [
-            "What should I pack?",
-            "What's a typical day like?",
-            "When are my next payments?",
-        ],
-        assistantReplies: [
-            .init(keywords: ["pack", "packing", "bring", "wear", "clothes"],
-                  reply: "Pack light and practical: activewear and trainers, swimwear, a light layer for evenings, comfortable walking shoes, sunscreen and a reusable bottle — plus one nicer outfit for our group dinners. Everything else is taken care of."),
-            .init(keywords: ["day", "typical", "rhythm", "schedule", "itinerary"],
-                  reply: "Every day flows through four elements — Move (island rides, strength, hikes), Explore (buggy tours, a day in Deià, a catamaran day), Recover (cold plunge, sauna, breathwork, massage), and Connect (shared dinners and creativity). Mornings move, afternoons explore, evenings slow down together."),
-            .init(keywords: ["pay", "payment", "installment", "deposit", "balance", "cost", "price"],
-                  reply: "Your €800 deposit is already paid. The balance is two payments of €2,439, billed monthly — you'll set the dates from your to-do list. The €5,678 covers everything except flights, insurance, and personal expenses."),
-        ],
-        assistantFallback: "I'm not quite sure on that one — our team can help any time at info@soulfullgatherings.com."
     )
 }
 

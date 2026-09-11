@@ -22,12 +22,6 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
-  Stripe:
-    # Slim, SPM-optimized distribution (no multi-GB git history / test fixtures
-    # that make the main stripe/stripe-ios repo extremely slow to resolve).
-    url: https://github.com/stripe/stripe-ios-spm
-    minVersion: 23.0.0
-    maxVersion: 100.0.0
 
 schemes:
   SoulfullGatherings:
@@ -80,18 +74,18 @@ targets:
       properties:
         CFBundleDisplayName: Soulfull
         CFBundleIdentifier: com.soulfullgatherings.app
-        CFBundleVersion: "2"
-        CFBundleShortVersionString: "0.0.1"
-        # Required by App Store upload validation (ITMS-90683), NOT by our code.
-        # StripePaymentSheet links a card scanner (STPCardScanner /
-        # CardScanningView), so the camera API reference is present in the
-        # binary even though AppFeatures.paymentsEnabled = false makes it
-        # unreachable. Apple's static scan does not do reachability analysis.
-        # Removing this key fails every upload; it can only go away by dropping
-        # the Stripe dependency entirely.
-        NSCameraUsageDescription: >-
-          Used only if you choose to scan a payment card when reserving a
-          retreat, so you don't have to type the number by hand.
+        CFBundleVersion: "3"
+        # Must match the version record created in App Store Connect. A build whose
+        # CFBundleShortVersionString is 0.0.1 will not attach to a "1.0" version.
+        CFBundleShortVersionString: "1.0"
+        # NO NSCameraUsageDescription, deliberately. It existed only because
+        # StripePaymentSheet linked a card scanner (STPCardScanner /
+        # CardScanningView), which put a camera API reference in the binary and
+        # tripped ITMS-90683 — while AppFeatures.paymentsEnabled = false made it
+        # unreachable. Declaring a purpose string for a capability the app can't
+        # reach invites a reviewer to ask where the camera is used, and the
+        # honest answer was "nowhere". Stripe is gone from v1, so the key goes
+        # with it. If payments come back, the dependency brings this key back too.
         # Modern launch screen (no storyboard file). The colour is the
         # LaunchBackground asset — Theme.bg — so the cold-launch frame is the
         # same near-black RootView fades its breathing logo up from.
@@ -123,8 +117,6 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
-      - package: Stripe
-        product: StripePaymentSheet
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.soulfullgatherings.app
