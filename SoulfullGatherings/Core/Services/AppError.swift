@@ -36,4 +36,31 @@ extension Error {
     var isCancellation: Bool {
         self is CancellationError || (self as? URLError)?.code == .cancelled
     }
+
+    /// True when this device has no usable connection — as distinct from "we
+    /// reached the network and something went wrong".
+    ///
+    /// The distinction is the whole point of the two failure states: telling
+    /// someone on a train to "try again" is useless, and telling someone whose
+    /// connection is fine to "check your connection" sends them chasing the
+    /// wrong problem.
+    ///
+    /// Deliberately conservative. `timedOut` and `cannotConnectToHost` are NOT
+    /// here: they are just as likely to mean our backend is down as that the
+    /// user is offline, and those fall through to the generic message. Read off
+    /// `NSError` rather than casting to `URLError`, because the Supabase SDK
+    /// hands some failures back already bridged.
+    var isOffline: Bool {
+        let ns = self as NSError
+        guard ns.domain == NSURLErrorDomain else { return false }
+        switch ns.code {
+        case NSURLErrorNotConnectedToInternet,
+             NSURLErrorNetworkConnectionLost,
+             NSURLErrorDataNotAllowed,
+             NSURLErrorInternationalRoamingOff:
+            return true
+        default:
+            return false
+        }
+    }
 }

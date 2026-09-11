@@ -36,7 +36,7 @@ Plus mandatory haptics on every meaningful tap, a Metal-shader effect suite (gra
 
 - **Xcode 16+** with the iOS 18 SDK. The **Metal toolchain** is a separate Xcode component and the shaders won't build without it — `xcodebuild -downloadComponent MetalToolchain` if you hit "cannot execute tool 'metal'".
 - **XcodeGen** — `brew install xcodegen`
-- A **Supabase** project. The app needs one to do anything real: auth, the retreat catalog and all practice content come from it. `retreats` falls back to mock data when the fetch returns nothing, but **`practice_sessions` deliberately does not** — an unseeded table renders as "Coming soon" rather than serving sample media. For payments (off in v1), a **Stripe** account.
+- A **Supabase** project. The app needs one to do anything real: auth, the retreat catalog and all practice content come from it. **Nothing falls back to sample data** — an unreachable backend renders an explicit offline/error state, and an unseeded `practice_sessions` renders "Coming soon", rather than either serving mock content as if it were real. For payments (off in v1), a **Stripe** account.
 
 ## Build & run
 
