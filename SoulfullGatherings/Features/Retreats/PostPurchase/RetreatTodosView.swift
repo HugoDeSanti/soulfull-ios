@@ -52,7 +52,7 @@ struct RetreatTodosView: View {
     private var hero: some View {
         ZStack(alignment: .bottom) {
             Color.clear.frame(height: 320)
-                .overlay { Image("mb-boats").resizable().scaledToFill() }
+                .overlay { TripImage(post?.todosImage) }
                 .clipped()
             LinearGradient(colors: [.black.opacity(0.5), .black.opacity(0.2), RetreatPalette.espresso.opacity(0.0), RetreatPalette.espresso],
                            startPoint: .top, endPoint: .bottom)

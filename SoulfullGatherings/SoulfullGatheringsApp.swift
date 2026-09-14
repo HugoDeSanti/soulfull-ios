@@ -54,23 +54,23 @@ struct SoulfullGatheringsApp: App {
         #if DEBUG
         if CommandLine.arguments.contains("-preview-retreat") {
             NavigationStack {
-                RetreatDetailView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+                PreviewRetreat { RetreatDetailView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-experience") {
             NavigationStack {
-                RetreatExperienceHubView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+                PreviewRetreat { RetreatExperienceHubView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-todos") {
             NavigationStack {
-                RetreatTodosView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+                PreviewRetreat { RetreatTodosView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-packing") {
             NavigationStack {
-                PackingListView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+                PreviewRetreat { PackingListView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-guides") {
             NavigationStack {
-                RetreatGuidesView(retreat: .mock[0]).toolbar(.hidden, for: .navigationBar)
+                PreviewRetreat { RetreatGuidesView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-confirm-email") {
             AccountView(previewConfirmationFor: "hugo@soulfullgatherings.com")
@@ -82,3 +82,31 @@ struct SoulfullGatheringsApp: App {
         #endif
     }
 }
+
+#if DEBUG
+/// Supplies a **real** retreat to the `-preview-*` screens.
+///
+/// They used to render `Retreat.mock[0]`, which stopped being useful the moment
+/// the brochure and the trip photography moved into `retreats.experience`: the
+/// fixture carries neither, so every post-purchase preview came up empty and
+/// the arg quietly stopped doing its job. Prefers a retreat that actually has a
+/// document, falling back to the first one.
+private struct PreviewRetreat<Content: View>: View {
+    @ViewBuilder var content: (Retreat) -> Content
+    @State private var retreat: Retreat?
+
+    var body: some View {
+        Group {
+            if let retreat {
+                content(retreat)
+            } else {
+                Theme.bg.ignoresSafeArea().overlay(ProgressView().tint(Theme.ink))
+            }
+        }
+        .task {
+            let all = (try? await SupabaseService.shared.fetchRetreats()) ?? []
+            retreat = all.first { $0.experience != nil } ?? all.first
+        }
+    }
+}
+#endif

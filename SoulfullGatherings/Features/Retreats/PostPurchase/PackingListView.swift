@@ -17,6 +17,7 @@ struct PackingListView: View {
     @State private var trip = RetreatTripStore.shared
 
     private var exp: RetreatExperience? { retreat.experience }
+    private var post: RetreatExperience.PostBooking? { exp?.postBooking }
     private var items: [String] { exp?.postBooking?.packing ?? [] }
 
     private func id(_ index: Int) -> String { "pack-\(index)" }
@@ -43,7 +44,7 @@ struct PackingListView: View {
     private var hero: some View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(height: 240)
-                .overlay { Image("mb-villa").resizable().scaledToFill() }
+                .overlay { TripImage(post?.packingImage) }
                 .clipped()
             LinearGradient(colors: [.black.opacity(0.45), .black.opacity(0.15), RetreatPalette.espresso.opacity(0.0), RetreatPalette.espresso],
                            startPoint: .top, endPoint: .bottom)

@@ -206,6 +206,23 @@ struct RetreatExperience: Hashable, Codable {
         /// Bookable 1:1 sessions, each tied to a `guides` entry by name.
         let offers: [GuideOffer]
 
+        // MARK: Trip photography
+        //
+        // These were hardcoded `Image("mb-welcome")` / `("mb-villa")` etc. in
+        // the four trip screens — "mb" for *Mallorca brochure*. That is fine
+        // while Mallorca is the only trip with content and wrong the moment it
+        // isn't: reserve Patagonia and the packing screen shows a Mallorca
+        // villa, confidently, with nothing to suggest anything is off.
+        //
+        // `bucket/path.jpg` like every other catalog image. All optional — a
+        // trip with no photography renders its palette alone, which is a
+        // deliberate blank rather than someone else's holiday.
+        let welcomeImage: String?
+        let featuredTodoImage: String?
+        let todosImage: String?
+        let packingImage: String?
+        let guidesImage: String?
+
         struct Checkout: Hashable, Codable {
             let lineItems: [LineItem]
             let total: String

@@ -109,6 +109,32 @@ the whole document fails to decode.
 Optional: `testimonial` (`quote`/`author`/`attribution`), `post_booking` (the
 reserved-trip screens), and `date_range`.
 
+### Trip photography
+
+If you supply `post_booking`, give it its screen photography too — otherwise
+those screens render the espresso ground alone:
+
+```json
+"post_booking": {
+  "welcome_image":       "retreat-images/mallorca-2027-07/welcome.jpg",
+  "featured_todo_image": "retreat-images/mallorca-2027-07/featured-todo.jpg",
+  "todos_image":         "retreat-images/mallorca-2027-07/todos.jpg",
+  "packing_image":       "retreat-images/mallorca-2027-07/packing.jpg",
+  "guides_image":        "retreat-images/mallorca-2027-07/guides.jpg"
+}
+```
+
+Convention: a **folder per retreat instance**, named after the hero file's stem
+— `retreat-images/mallorca-2027-07/…`. Everything for one trip sits together,
+and `ImageSource` splits on the first slash only, so the bucket is still
+`retreat-images` and the rest is the object path.
+
+These were hardcoded `Image("mb-villa")` in the views until 2026-09-14 — "mb"
+for *Mallorca brochure*. That was fine while Mallorca was the only trip with
+content and wrong the moment it wasn't: reserving Patagonia would have shown a
+Mallorca villa on the packing screen, confidently, with nothing to suggest
+anything was off. Leaving them out now renders a deliberate blank instead.
+
 ### Two things to know
 
 **`date_range` overrides the real dates — normally leave it out.** When absent
@@ -141,6 +167,23 @@ xcodebuild test -project SoulfullGatherings.xcodeproj -scheme SoulfullGatherings
 It opens Mallorca from the live database and asserts the brochure layout
 rendered. It is pointed at Mallorca specifically, so it won't catch a problem
 with *your* new row — for that, open the retreat in the app and look.
+
+## Other imagery already in the bucket
+
+Uploaded 2026-09-14 when the post-purchase screens stopped hardcoding them:
+
+| Path | Used by |
+|---|---|
+| `mallorca-2027-07/{welcome,featured-todo,todos,packing,guides}.jpg` | the four trip screens, via `post_booking` |
+| `mallorca-2027-07/{hero,checkout,cycle,dinner,recover,swim,yoga}.jpg` | **nothing yet** — they were in the app bundle unreferenced. Parked here so a future brochure can point at them (element photography, say) without a release. |
+| `members/g-martinez.jpg` | **nothing** — the testimonial renders quote, author and attribution, never a photograph. See below. |
+
+> **The member photograph has never been displayed.** `member-gmartinez` sat in
+> the asset catalog at 1.1MB, referenced by no view and no mirror card — the
+> testimonial section renders text only. It is now in Storage and out of the
+> bundle, but showing it would need a design decision and an avatar in
+> `testimonialSection`, which nobody has asked for. If you do want it, the field
+> to add is `testimonial.image`.
 
 ## What still needs a release
 

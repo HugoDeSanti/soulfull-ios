@@ -34,3 +34,27 @@ enum RetreatPalette {
     static let glassLine     = cream.opacity(0.12)
     static let glassLineSoft = cream.opacity(0.08)
 }
+
+/// Header photography for a trip screen, addressed by the trip document
+/// (`bucket/path.jpg`) rather than hardcoded in the view.
+///
+/// It used to be `Image("mb-villa")` and friends — "mb" for *Mallorca
+/// brochure*. Fine while Mallorca was the only trip with content, and wrong
+/// the moment it isn't: reserve Patagonia and the packing screen would show a
+/// Mallorca villa, confidently, with nothing to suggest anything was off.
+///
+/// `nil` paints the espresso ground instead. A trip with no photography of its
+/// own should look deliberately spare, never borrow someone else's holiday.
+struct TripImage: View {
+    let path: String?
+
+    init(_ path: String?) { self.path = path }
+
+    var body: some View {
+        if let path, !path.trimmingCharacters(in: .whitespaces).isEmpty {
+            CatalogImage(path) { $0.resizable().scaledToFill() }
+        } else {
+            RetreatPalette.espresso
+        }
+    }
+}

@@ -21,6 +21,7 @@ struct RetreatGuidesView: View {
     private typealias Offer = RetreatExperience.PostBooking.GuideOffer
 
     private var exp: RetreatExperience? { retreat.experience }
+    private var post: RetreatExperience.PostBooking? { exp?.postBooking }
     private var guides: [RetreatExperience.Guide] { exp?.guides ?? [] }
     private var offers: [Offer] { exp?.postBooking?.offers ?? [] }
 
@@ -52,7 +53,7 @@ struct RetreatGuidesView: View {
     private var hero: some View {
         ZStack(alignment: .bottomLeading) {
             Color.clear.frame(height: 300)
-                .overlay { Image("mb-massage").resizable().scaledToFill() }
+                .overlay { TripImage(post?.guidesImage) }
                 .clipped()
             LinearGradient(colors: [.black.opacity(0.45), .black.opacity(0.18), RetreatPalette.espresso.opacity(0.0), RetreatPalette.espresso],
                            startPoint: .top, endPoint: .bottom)

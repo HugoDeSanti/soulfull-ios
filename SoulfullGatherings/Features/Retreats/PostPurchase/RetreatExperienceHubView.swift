@@ -71,7 +71,7 @@ struct RetreatExperienceHubView: View {
         ZStack(alignment: .bottomLeading) {
             Color.clear
                 .frame(height: 380)
-                .overlay { Image("mb-welcome").resizable().scaledToFill() }
+                .overlay { TripImage(post?.welcomeImage) }
                 .clipped()
 
             LinearGradient(
@@ -130,7 +130,7 @@ struct RetreatExperienceHubView: View {
         let done = post?.todos.filter { trip.isDone($0.id, retreatID: retreat.id) }.count ?? 0
         return Button(action: onOpenTodos) {
             ZStack(alignment: .leading) {
-                Color.clear.overlay { Image("mb-todos").resizable().scaledToFill() }.clipped()
+                Color.clear.overlay { TripImage(post?.featuredTodoImage) }.clipped()
                 LinearGradient(colors: [.black.opacity(0.5), .black.opacity(0.8)],
                                startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 11) {
