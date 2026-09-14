@@ -16,8 +16,8 @@ import SwiftUI
 
 struct RetreatDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @Environment(AuthManager.self) private var auth
+    @Environment(AppSettings.self) private var settings
     let retreat: Retreat
     /// Push the checkout review screen (Reserve, when signed in and not yet
     /// reserved). Payment itself runs on the checkout screen.
@@ -26,9 +26,9 @@ struct RetreatDetailView: View {
 
     @State private var vm: RetreatDetailViewModel
     @State private var showAccount = false
-    /// Shown when the enquiry `mailto:` can't be opened (no mail account set
-    /// up) so the support address is still reachable.
-    @State private var showEnquiryFallback = false
+    /// The retreat application — the website's "Join a retreat" form, asked
+    /// in the app. Raised by the CTA while reservations are off.
+    @State private var showEnquiry = false
     /// Normalized scroll offset: 0 at rest, negative when pulled down.
     @State private var scrollY: CGFloat = 0
 
@@ -101,10 +101,15 @@ struct RetreatDetailView: View {
             await vm.loadExistingBooking(userID: auth.userID)
         }
         .sheet(isPresented: $showAccount) { AccountView() }
-        .alert("Get in touch", isPresented: $showEnquiryFallback) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Email us at \(LegalLinks.supportEmail) to ask about a place on \(retreat.name).")
+        .sheet(isPresented: $showEnquiry) {
+            // Seeded with what we already know, so the form asks for as
+            // little as it can. A guest has neither, and that is fine — no
+            // account is required to apply.
+            RetreatEnquiryView(
+                retreat: retreat,
+                initialName: settings.userName,
+                initialEmail: auth.email ?? ""
+            )
         }
     }
 
@@ -229,16 +234,20 @@ struct RetreatDetailView: View {
         .accessibilityLabel(reserveTitle)
         .accessibilityHint(AppFeatures.paymentsEnabled
                            ? "Reserve a place on \(retreat.name)"
-                           : "Opens an email to ask about a place on \(retreat.name)")
+                           : "Opens the application form for \(retreat.name)")
     }
 
     /// Reserve-CTA routing.
     ///
-    /// While `AppFeatures.paymentsEnabled` is off (v1), the CTA is an enquiry:
-    /// it opens a pre-addressed mail to the support address rather than a
-    /// checkout. That keeps the screen genuinely actionable instead of showing
-    /// a dead "reservations open soon" line. If no mail account is configured,
-    /// `openURL`'s completion reports failure and we show the address instead.
+    /// While `AppFeatures.paymentsEnabled` is off (v1), the CTA is an
+    /// application rather than a checkout — `RetreatEnquiryView`, which asks
+    /// the same questions as the "Join a retreat" form on the website and
+    /// mails the answers to the team. That keeps the screen genuinely
+    /// actionable instead of showing a dead "reservations open soon" line.
+    ///
+    /// It used to open a blank `mailto:` with only a subject line, which left
+    /// the guest to guess what the team needed to know and gave the team an
+    /// inbox of applications that each answered something different.
     ///
     /// A retreat that is already reserved opens its experience hub — that
     /// still works with no payment rail, because `bookings` is read from the
@@ -256,9 +265,7 @@ struct RetreatDetailView: View {
             return
         }
 
-        openURL(LegalLinks.enquiry(about: retreat.name)) { opened in
-            if !opened { showEnquiryFallback = true }
-        }
+        showEnquiry = true
     }
 
     private var reserveTitle: String {
@@ -706,10 +713,12 @@ private struct MetaPill: View {
 }
 
 #Preview {
-    NavigationStack {
+    let app = AppState()
+    return NavigationStack {
         RetreatDetailView(retreat: Retreat.mock[0])
             .toolbar(.hidden, for: .navigationBar)
     }
-    .environment(AppState().auth)
+    .environment(app.auth)
+    .environment(app.settings)
     .preferredColorScheme(.dark)
 }

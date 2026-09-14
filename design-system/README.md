@@ -92,7 +92,7 @@ mirror matching the **shipping** app; parked work stays under
 | Change | Mirror effect |
 |---|---|
 | **Circle tab cut** (Guideline 4.2 — a primary tab advertising unbuilt features) | `bottom-nav` is **three** items everywhere: Home · Practice · You. `community.html` moved to `Screens · Parked (post-v1)`. |
-| **Reservations off, Stripe dependency dropped** | `retreat-detail` CTA reads **"Request a place"** (opens a support email) and has no other state — there is no client-side checkout left to push to. `retreat-checkout` is **deleted** from the mirror along with `RetreatCheckoutView.swift` and `PaymentService.swift`; recover both from git history if payments return. The Mallorca post-purchase cards (hub, to-dos, packing, guides) stay — they are trip logistics, not payment. |
+| **Reservations off, Stripe dependency dropped** | `retreat-detail` CTA reads **"Request a place"** and opens `retreat-enquiry` (the retreat application form), with no other state: there is no client-side checkout left to push to. `retreat-checkout` is **deleted** from the mirror along with `RetreatCheckoutView.swift` and `PaymentService.swift`; recover both from git history if payments return. The Mallorca post-purchase cards (hub, to-dos, packing, guides) stay — they are trip logistics, not payment. |
 | **No offline fallback for retreats** | The app no longer substitutes sample retreats when a fetch fails — it renders an explicit *"No internet connection"* or *"Couldn't load retreats"* state instead (Guideline 2.1(a): placeholder content must be scrubbed). **Not modelled here**: this mirror shows happy-path screens only, and has never carried error, empty or offline states — `ConnectionBanner` has no card either. If the UX team wants to design these, they are `RetreatsLoadFailure` in `RetreatsViewModel.swift` (a two-line card on `home`, a full-screen state on `retreats-stack`). |
 | **Catalog photos come from Storage** | Retreat photography is fetched from the public `retreat-images` bucket, not bundled, so a new retreat needs no release. While a photo loads — or if it fails — the app paints a quiet two-stop gradient (`Theme.surface` → `Theme.bgDeep`) rather than a blank. **Not modelled here**, like the other loading states; the mirror shows loaded screens. |
 | **Practice media tracks gated** | Somatic / Breathwork / Meditation carry a `SOON` badge, read "Coming soon", and are dimmed (`.pcard--soon`) until the `practice_sessions` table is seeded. |
@@ -124,6 +124,29 @@ guest opens an actual practice, then replays the tap they were making.
 
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.
+
+### The retreat application (`retreat-enquiry`)
+
+`Screens · Retreats` carries the form the "Request a place" CTA opens. It is a
+**mirror of the website's own "Join a retreat" form** — same questions, same
+order, same option lists — because an application sent from the app and one
+sent from the site are read side by side in the same inbox. In Swift the
+question text lives in `RetreatEnquiry.Question` and is used by both the form
+and the email body, so the two cannot drift; edit the copy on this card and it
+has to change there, not in the view.
+
+Two things on the card are **not** free text to restyle:
+
+- the four investment bands and the three decision answers are the retreat
+  team's own answer labels (`RetreatEnquiry.Investment` / `.Decision`) —
+  rewording one silently splits a report that groups applications by band;
+- the retreat options are drawn from the live `retreats` catalog at runtime and
+  preselected to the retreat the guest came from. The four on the card are
+  illustrative, not a list to maintain.
+
+The submitted answers go to the system mail composer, so the app has no "sent"
+spinner — the card ends at Submit, and the confirmation copy afterwards is the
+website's own thank-you message.
 
 ### Mallorca post-purchase set (warm-espresso)
 

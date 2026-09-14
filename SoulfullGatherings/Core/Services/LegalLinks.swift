@@ -34,8 +34,8 @@ enum LegalLinks {
     /// The monitored inbox. Same address the three published pages give for
     /// privacy requests, support and bookings.
     ///
-    /// Also the destination of every "Request a place" enquiry while
-    /// reservations are off (`AppFeatures.paymentsEnabled == false`).
+    /// Also where every retreat application lands while reservations are off
+    /// (`AppFeatures.paymentsEnabled == false`) — see `RetreatEnquiry.recipient`.
     static let supportEmail = "info@soulfullgatherings.com"
 
     /// `mailto:` for general support, subject pre-filled.
@@ -43,11 +43,12 @@ enum LegalLinks {
         mail(subject: "Soulfull — support")
     }
 
-    /// `mailto:` for a place on a specific retreat, used by the detail screen's
-    /// CTA while reservations are off.
-    static func enquiry(about retreat: String) -> URL {
-        mail(subject: "Soulfull — a place on \(retreat)")
-    }
+    // `enquiry(about:)` lived here until the retreat CTA stopped opening a
+    // blank email: a `mailto:` carrying only a subject asked the guest to
+    // work out for themselves what the retreat team needed to know. The CTA
+    // now opens `RetreatEnquiryView`, which asks the website's own
+    // application questions and composes the mail from the answers. Recover
+    // the helper from git history if a bare enquiry link is ever wanted again.
 
     private static func mail(subject: String) -> URL {
         var components = URLComponents()
