@@ -66,11 +66,19 @@ enum ImageSource: Hashable, Sendable {
 
 /// Decoded-image cache in front of `URLSession`.
 ///
-/// Two layers, deliberately. `URLSession`'s shared `URLCache` already keeps the
-/// *bytes* on disk — Supabase Storage serves public objects with cache headers
-/// — so this exists to avoid re-*decoding* them, which is the expensive part
-/// when the retreats stack crossfades between every photograph in the catalog
-/// at once.
+/// Two layers, deliberately. `URLSession`'s shared `URLCache` holds the *bytes*
+/// and Storage serves a strong `ETag`, so a repeat request revalidates and comes
+/// back `304` with an empty body instead of re-downloading. What that does not
+/// avoid is re-*decoding* them — the expensive part when the retreats stack
+/// crossfades between every photograph in the catalog at once. That is what this
+/// cache is for.
+///
+/// Note Supabase answers `cache-control: no-cache` on public objects **whatever
+/// `cacheControl` you set at upload** (the value is kept in the object's
+/// metadata for its CDN, not echoed to the client — verified 2026-09-14). So a
+/// cold launch always pays one revalidation round trip per photo. That is cheap,
+/// and it costs nothing offline: the catalog has no offline fallback, so there
+/// are no cards to put photographs on in the first place.
 ///
 /// An actor because two views asking for the same photo in the same frame is
 /// the normal case here, not the exception: `inFlight` coalesces them into one

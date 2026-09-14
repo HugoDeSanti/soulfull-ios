@@ -16,13 +16,32 @@ data. See `supabase/migrations/0011_retreats_self_serve.sql`.
 Dashboard → **Storage** → `retreat-images` → Upload.
 
 - **Bucket:** `retreat-images` (public, 10MB cap, JPEG/PNG/WebP only)
-- **Naming:** anything; `mallorca-2027.jpg` reads well
+- **Naming: `<place>-<yyyy>-<mm>.jpg`** — `mallorca-2027-07.jpg`, `lapland-2027-01.jpg`.
+  Place first so listing the bucket groups every Mallorca together, which is how
+  you actually browse it. Year-month because retreats recur annually in the same
+  place, so the place alone collides; the day would be noise. **Not the row id** —
+  ids mean nothing to a human scanning a bucket, and if a row is ever recreated
+  the file would be misnamed while the photo is unchanged. Lowercase and hyphens,
+  so the URL needs no escaping.
 - **Size:** it is used full-bleed behind type on the detail hero and the
   retreats stack. ~2000px on the long edge is plenty; bigger only costs the
   user bandwidth.
+- **Replacing a photo:** upload over the same name with `x-upsert: true`. Clients
+  revalidate against the ETag, so a replacement is picked up on the next launch.
+  For an instant change, upload under a new name and update the row — which the
+  naming convention supports, since a new shoot is usually a new date anyway.
 - **Tone:** the app lays cream type over the top of it. A photo that is bright
   and busy in its upper third will fight the header — `PhotoBackdrop` darkens
   the top band, but it can't rescue a white sky.
+
+> **The photos already there** were uploaded on 2026-09-14 from the app bundle,
+> and all seven rows point at them. The `retreat-*` imagesets stay in
+> `Assets.xcassets` — the Practice mock content still borrows them as placeholder
+> art — but nothing in the retreat catalog reads them any more.
+>
+> Note the originals are small: five of the seven are only 736px wide, which the
+> full-bleed hero upscales on a 3× phone. If you are reshooting, ~2000px on the
+> long edge is the target.
 
 ## 2. Insert the row
 
@@ -39,7 +58,7 @@ values (
   5200,
   array['Hiking', 'Cold Therapy', 'Stillness'],
   'Granite, wind, and long silences. Walk all day, sleep like the dead.',
-  'retreat-images/patagonia-2028.jpg',      -- bucket/path, NOT an asset name
+  'retreat-images/patagonia-2028-03.jpg',   -- bucket/path, NOT an asset name
   '#B9C3CD', '#5C6B7A', '#161B21'           -- see "Tone colours" below
 );
 ```
