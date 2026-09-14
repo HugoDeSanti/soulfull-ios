@@ -421,7 +421,7 @@ final class AudioTransport {
     // state. Point this at a real Storage path to preview playback.
     PracticePlayerView(media: MediaItem(
         id: 1, title: "Grounding Body Scan", lead: "Dr. Anya Iyer",
-        imageUrl: "retreat-sedona", mediaKind: .audio,
+        imageUrl: "retreat-images/sedona-2026-06.jpg", mediaKind: .audio,
         storagePath: "", durationSeconds: 720
     ))
 }

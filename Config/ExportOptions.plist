@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Export options for the TestFlight / App Store release loop.
+
+	  Kept in the repo because it was ad-hoc last time and had to be
+	  reconstructed. Nothing here is secret: the Team ID is already in
+	  docs/APP-REVIEW-NOTES.md. The signing *certificates* live in the
+	  keychain, not here.
+
+	  Full loop: docs/APP-REVIEW-NOTES.md and the release memory.
+
+	    xcodebuild archive -project SoulfullGatherings.xcodeproj \
+	      -scheme SoulfullGatherings -destination 'generic/platform=iOS' \
+	      -archivePath build/Soulfull.xcarchive -allowProvisioningUpdates
+
+	    xcodebuild -exportArchive -archivePath build/Soulfull.xcarchive \
+	      -exportOptionsPlist Config/ExportOptions.plist \
+	      -exportPath build/export -allowProvisioningUpdates
+
+	    xcrun altool --upload-app -f build/export/Soulfull.ipa -t ios \
+	      --apiKey 4N9F28J3W5 --apiIssuer 80229b6e-cc0a-4c2a-9ce8-e23a78590f00
+	-->
+	<key>method</key>
+	<string>app-store-connect</string>
+
+	<!-- SOULFULL GATHERINGS LLC. A second, personal team (B37C7Z8C44) also has
+	     a certificate in this keychain — pinning the team here is what stops
+	     the export picking the wrong one. -->
+	<key>teamID</key>
+	<string>W346837424</string>
+
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!-- TestFlight/App Store handles thinning; a single universal IPA keeps the
+	     upload simple and is what altool expects. -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- Bitcode has been dead since Xcode 14; leaving it on emits a warning. -->
+	<key>uploadBitcode</key>
+	<false/>
+
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

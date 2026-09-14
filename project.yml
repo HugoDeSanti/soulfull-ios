@@ -15,8 +15,13 @@ settings:
     # Store requires a real ID.
     DEVELOPMENT_TEAM: $(DEVELOPMENT_TEAM)
     CODE_SIGN_STYLE: Automatic
-    MARKETING_VERSION: "0.0.1"
-    CURRENT_PROJECT_VERSION: "2"
+    # Keep these in step with info.properties.CFBundleShortVersionString /
+    # CFBundleVersion below. They are SEPARATE keys — xcodegen writes the
+    # info.properties pair into Info.plist verbatim and these into build
+    # settings — and they drifted once already: R6 bumped the plist pair to
+    # 1.0 (3) and left these reading 0.0.1 (2).
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "3"
 
 packages:
   Supabase:

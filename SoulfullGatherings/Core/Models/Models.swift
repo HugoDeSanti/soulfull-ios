@@ -300,7 +300,7 @@ extension Retreat {
                 maxGuests: 14, priceUsd: 4400,
                 tags: ["Wellness", "Fitness", "Recovery"],
                 blurb: "A private Mediterranean villa, curated company, and days built to move, explore, recover, and connect.",
-                imageUrl: "retreat-mallorca",
+                imageUrl: "retreat-images/mallorca-2027-07.jpg",
                 toneTop: Color(hex: "#73A0B8"), toneMid: Color(hex: "#335266"), toneBase: Color(hex: "#0F1A24"),
                 // Offline fallback only — production reads retreats.group_chat_url from the DB.
                 // No placeholder invite here: a dead chat.whatsapp.com link in
@@ -313,42 +313,42 @@ extension Retreat {
                 maxGuests: 16, priceUsd: 3900,
                 tags: ["Breathwork", "Somatic", "Jungle"],
                 blurb: "Seven nights between rice terraces and temple mornings. Breath, stillness, and green without end.",
-                imageUrl: "retreat-bali",
+                imageUrl: "retreat-images/bali-2026-07.jpg",
                 toneTop: Color(hex: "#9DBA6E"), toneMid: Color(hex: "#4C6B33"), toneBase: Color(hex: "#15200D")),
         Retreat(id: 3, name: "Dolomites", country: "Italy",
                 startDate: day(2027, 9, 8), endDate: day(2027, 9, 13),
                 maxGuests: 12, priceUsd: 5200,
                 tags: ["Alpine", "Hiking", "Cold Therapy"],
                 blurb: "Granite light, long ridgelines, and evenings that ask very little of you. Walk up, settle down.",
-                imageUrl: "retreat-dolomites",
+                imageUrl: "retreat-images/dolomites-2027-09.jpg",
                 toneTop: Color(hex: "#B9C3CD"), toneMid: Color(hex: "#5C6B7A"), toneBase: Color(hex: "#161B21")),
         Retreat(id: 4, name: "Kyoto", country: "Japan",
                 startDate: day(2027, 10, 12), endDate: day(2027, 10, 18),
                 maxGuests: 10, priceUsd: 6100,
                 tags: ["Zen", "Tea", "Forest Bathing"],
                 blurb: "Temple gardens at first light, tea in silence, maple shade. A week of deliberate slowness.",
-                imageUrl: "retreat-kyoto",
+                imageUrl: "retreat-images/kyoto-2026-05.jpg",
                 toneTop: Color(hex: "#C98A66"), toneMid: Color(hex: "#7A4631"), toneBase: Color(hex: "#1F120C")),
         Retreat(id: 5, name: "Sedona", country: "United States",
                 startDate: day(2027, 11, 6), endDate: day(2027, 11, 11),
                 maxGuests: 14, priceUsd: 4800,
                 tags: ["Desert", "Sound Healing", "Hiking"],
                 blurb: "Red rock amphitheaters, canyon hikes, sound baths under enormous sky.",
-                imageUrl: "retreat-sedona",
+                imageUrl: "retreat-images/sedona-2026-06.jpg",
                 toneTop: Color(hex: "#D88E5E"), toneMid: Color(hex: "#8C4A2D"), toneBase: Color(hex: "#23120A")),
         Retreat(id: 6, name: "Chamonix", country: "France",
                 startDate: day(2027, 1, 15), endDate: day(2027, 1, 20),
                 maxGuests: 12, priceUsd: 5600,
                 tags: ["Snow", "Sauna", "Breathwork"],
                 blurb: "Mont Blanc out every window. Powder mornings, sauna and plunge, fireside circles.",
-                imageUrl: "retreat-chamonix",
+                imageUrl: "retreat-images/chamonix-2027-02.jpg",
                 toneTop: Color(hex: "#A9C3DD"), toneMid: Color(hex: "#4F6B85"), toneBase: Color(hex: "#101822")),
         Retreat(id: 7, name: "Lapland", country: "Finland",
                 startDate: day(2027, 2, 19), endDate: day(2027, 2, 24),
                 maxGuests: 10, priceUsd: 5900,
                 tags: ["Aurora", "Ice Bath", "Silence"],
                 blurb: "Northern lights over frozen lakes. Ice, heat, and the deepest quiet you've ever heard.",
-                imageUrl: "retreat-lapland",
+                imageUrl: "retreat-images/lapland-2027-01.jpg",
                 toneTop: Color(hex: "#6FA08F"), toneMid: Color(hex: "#2E5247"), toneBase: Color(hex: "#0C1714")),
     ]
 }
@@ -375,11 +375,11 @@ struct Program: Identifiable, Hashable {
 
 extension Program {
     static let mock: [Program] = [
-        Program(id: "cyc7",  title: "Cycling & Recovery",             lead: "Valentina Velasco", when: "June 12–19",  days: 7,  imageUrl: "retreat-mallorca"),
-        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",      when: "June 24–28",  days: 5,  imageUrl: "retreat-bali"),
-        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",   days: 14, imageUrl: "retreat-dolomites"),
-        Program(id: "hcl14", title: "Heal Yourself, Change Your Life", lead: "Michelle Campos",   when: "August 1–14", days: 14, imageUrl: "retreat-sedona"),
-        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",  days: 7,  imageUrl: "retreat-kyoto"),
+        Program(id: "cyc7",  title: "Cycling & Recovery",             lead: "Valentina Velasco", when: "June 12–19",  days: 7,  imageUrl: "retreat-images/mallorca-2027-07.jpg"),
+        Program(id: "bw5",   title: "Intro to Breathwork",            lead: "Rodrigo Peán",      when: "June 24–28",  days: 5,  imageUrl: "retreat-images/bali-2026-07.jpg"),
+        Program(id: "yw14",  title: "Yoga & Wellness",                lead: "Alma Guerra",        when: "July 8–21",   days: 14, imageUrl: "retreat-images/dolomites-2027-09.jpg"),
+        Program(id: "hcl14", title: "Heal Yourself, Change Your Life", lead: "Michelle Campos",   when: "August 1–14", days: 14, imageUrl: "retreat-images/sedona-2026-06.jpg"),
+        Program(id: "md7",   title: "Movement & Discipline",          lead: "Analu Chavez",       when: "July 14–20",  days: 7,  imageUrl: "retreat-images/kyoto-2026-05.jpg"),
     ]
 }
 
@@ -502,19 +502,19 @@ extension PracticeSession {
     /// Real rows carry a bucket-relative `storagePath` resolved via a signed URL.
     static let mock: [PracticeSession] = [
         // Somatic Therapy
-        .init(id: 1, category: .somatic, title: "Grounding Body Scan", lead: "Dr. Anya Iyer", mediaKind: .audio, storagePath: "", durationSeconds: 720, imageUrl: "retreat-sedona", blurb: "A slow head-to-toe scan to settle the nervous system."),
-        .init(id: 2, category: .somatic, title: "Shake & Release", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 480, imageUrl: "retreat-mallorca", blurb: "Discharge held tension through gentle, guided movement."),
-        .init(id: 3, category: .somatic, title: "Orienting to Safety", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 900, imageUrl: "retreat-dolomites", blurb: "A trauma-informed practice for re-establishing felt safety."),
+        .init(id: 1, category: .somatic, title: "Grounding Body Scan", lead: "Dr. Anya Iyer", mediaKind: .audio, storagePath: "", durationSeconds: 720, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "A slow head-to-toe scan to settle the nervous system."),
+        .init(id: 2, category: .somatic, title: "Shake & Release", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 480, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "Discharge held tension through gentle, guided movement."),
+        .init(id: 3, category: .somatic, title: "Orienting to Safety", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 900, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "A trauma-informed practice for re-establishing felt safety."),
 
         // Breathwork
-        .init(id: 4, category: .breathwork, title: "Box Breathing Basics", lead: "Rodrigo Peán", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-bali", blurb: "Four-count breathing to steady a racing mind."),
-        .init(id: 5, category: .breathwork, title: "Coherent Breathing", lead: "Valentina Velasco", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-mallorca", blurb: "Five breaths a minute to balance the autonomic system."),
-        .init(id: 6, category: .breathwork, title: "Breath of Fire", lead: "Alma Guerra", mediaKind: .video, storagePath: "", durationSeconds: 540, imageUrl: "retreat-kyoto", blurb: "An energizing kundalini practice to wake the body."),
+        .init(id: 4, category: .breathwork, title: "Box Breathing Basics", lead: "Rodrigo Peán", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "Four-count breathing to steady a racing mind."),
+        .init(id: 5, category: .breathwork, title: "Coherent Breathing", lead: "Valentina Velasco", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "Five breaths a minute to balance the autonomic system."),
+        .init(id: 6, category: .breathwork, title: "Breath of Fire", lead: "Alma Guerra", mediaKind: .video, storagePath: "", durationSeconds: 540, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "An energizing kundalini practice to wake the body."),
 
         // Meditation
-        .init(id: 7, category: .meditation, title: "Morning Stillness", lead: "Michelle Campos", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Begin the day with ten minutes of open awareness."),
-        .init(id: 8, category: .meditation, title: "Sleep Descent", lead: "Analu Chavez", mediaKind: .audio, storagePath: "", durationSeconds: 1200, imageUrl: "retreat-dolomites", blurb: "A long, drifting body relaxation for falling asleep."),
-        .init(id: 9, category: .meditation, title: "Loving-Kindness", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 840, imageUrl: "retreat-sedona", blurb: "Cultivate warmth toward yourself and others."),
+        .init(id: 7, category: .meditation, title: "Morning Stillness", lead: "Michelle Campos", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Begin the day with ten minutes of open awareness."),
+        .init(id: 8, category: .meditation, title: "Sleep Descent", lead: "Analu Chavez", mediaKind: .audio, storagePath: "", durationSeconds: 1200, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "A long, drifting body relaxation for falling asleep."),
+        .init(id: 9, category: .meditation, title: "Loving-Kindness", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 840, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "Cultivate warmth toward yourself and others."),
     ]
 
     static func mock(for category: PracticeCategory) -> [PracticeSession] {
@@ -751,11 +751,11 @@ struct JournalPrompt: Identifiable, Hashable {
 
 extension JournalPrompt {
     static let all: [JournalPrompt] = [
-        .init(id: 1, title: "What is your body asking for today?", prompt: "Close your eyes for a breath and scan from head to toe. Without fixing anything, name what you notice — tension, hunger, restlessness, ease. Let the answer come from sensation rather than thought.", theme: "Embodiment", imageUrl: "retreat-dolomites"),
-        .init(id: 2, title: "Name one thing you've outgrown.", prompt: "Think of a belief, a role, or a pattern that no longer fits who you're becoming. What would it feel like to set it down? Write to it as if saying goodbye.", theme: "Letting go", imageUrl: "retreat-sedona"),
-        .init(id: 3, title: "Where did you feel ease this week?", prompt: "Recall a moment — however small — when your shoulders dropped and time softened. Describe it in detail. What made it possible, and how might you invite more of it?", theme: "Gratitude", imageUrl: "retreat-bali"),
-        .init(id: 4, title: "What would self-compassion say right now?", prompt: "Picture the voice of someone who loves you unconditionally. Speak to yourself in their words about whatever you're carrying today. Notice how the body responds to kindness.", theme: "Self-compassion", imageUrl: "retreat-kyoto"),
-        .init(id: 5, title: "What are you ready to begin?", prompt: "Not the whole journey — just the first honest step. Name it, and name the smallest action you could take in the next 24 hours.", theme: "Intention", imageUrl: "retreat-mallorca"),
+        .init(id: 1, title: "What is your body asking for today?", prompt: "Close your eyes for a breath and scan from head to toe. Without fixing anything, name what you notice — tension, hunger, restlessness, ease. Let the answer come from sensation rather than thought.", theme: "Embodiment", imageUrl: "retreat-images/dolomites-2027-09.jpg"),
+        .init(id: 2, title: "Name one thing you've outgrown.", prompt: "Think of a belief, a role, or a pattern that no longer fits who you're becoming. What would it feel like to set it down? Write to it as if saying goodbye.", theme: "Letting go", imageUrl: "retreat-images/sedona-2026-06.jpg"),
+        .init(id: 3, title: "Where did you feel ease this week?", prompt: "Recall a moment — however small — when your shoulders dropped and time softened. Describe it in detail. What made it possible, and how might you invite more of it?", theme: "Gratitude", imageUrl: "retreat-images/bali-2026-07.jpg"),
+        .init(id: 4, title: "What would self-compassion say right now?", prompt: "Picture the voice of someone who loves you unconditionally. Speak to yourself in their words about whatever you're carrying today. Notice how the body responds to kindness.", theme: "Self-compassion", imageUrl: "retreat-images/kyoto-2026-05.jpg"),
+        .init(id: 5, title: "What are you ready to begin?", prompt: "Not the whole journey — just the first honest step. Name it, and name the smallest action you could take in the next 24 hours.", theme: "Intention", imageUrl: "retreat-images/mallorca-2027-07.jpg"),
     ]
 }
 
@@ -789,19 +789,19 @@ struct Exercise: Identifiable, Hashable {
 
 extension Exercise {
     static let all: [Exercise] = [
-        .init(id: 1, title: "Morning Mobility Flow", focus: "Mobility", durationSeconds: 600, imageUrl: "retreat-mallorca", blurb: "A gentle full-body sequence to wake the joints and spine.", steps: [
+        .init(id: 1, title: "Morning Mobility Flow", focus: "Mobility", durationSeconds: 600, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "A gentle full-body sequence to wake the joints and spine.", steps: [
             .init(id: 1, name: "Cat–Cow", detail: "8 slow reps"),
             .init(id: 2, name: "World's Greatest Stretch", detail: "5 reps each side"),
             .init(id: 3, name: "Hip Circles", detail: "10 each direction"),
             .init(id: 4, name: "Thoracic Rotations", detail: "8 each side"),
         ]),
-        .init(id: 2, title: "Core Foundations", focus: "Core", durationSeconds: 720, imageUrl: "retreat-sedona", blurb: "Build deep stability with slow, controlled holds.", steps: [
+        .init(id: 2, title: "Core Foundations", focus: "Core", durationSeconds: 720, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "Build deep stability with slow, controlled holds.", steps: [
             .init(id: 1, name: "Dead Bug", detail: "3 sets · 10 reps"),
             .init(id: 2, name: "Forearm Plank", detail: "3 sets · 30 sec"),
             .init(id: 3, name: "Bird Dog", detail: "3 sets · 8 each side"),
             .init(id: 4, name: "Glute Bridge", detail: "3 sets · 12 reps"),
         ]),
-        .init(id: 3, title: "Posture Reset", focus: "Alignment", durationSeconds: 480, imageUrl: "retreat-dolomites", blurb: "Undo the desk slump and reopen the chest.", steps: [
+        .init(id: 3, title: "Posture Reset", focus: "Alignment", durationSeconds: 480, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "Undo the desk slump and reopen the chest.", steps: [
             .init(id: 1, name: "Wall Angels", detail: "2 sets · 10 reps"),
             .init(id: 2, name: "Chin Tucks", detail: "2 sets · 12 reps"),
             .init(id: 3, name: "Doorway Chest Stretch", detail: "Hold 30 sec · 3x"),
@@ -829,13 +829,13 @@ struct Recipe: Identifiable, Hashable {
 
 extension Recipe {
     static let all: [Recipe] = [
-        .init(id: 1, title: "Golden Turmeric Lentils", lead: "Anti-inflammatory", minutes: 35, servings: 4, imageUrl: "retreat-bali", blurb: "A warming, grounding bowl built on turmeric, ginger, and red lentils.",
+        .init(id: 1, title: "Golden Turmeric Lentils", lead: "Anti-inflammatory", minutes: 35, servings: 4, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "A warming, grounding bowl built on turmeric, ginger, and red lentils.",
               ingredients: ["1 cup red lentils", "1 onion, diced", "3 cloves garlic", "1 tbsp grated ginger", "2 tsp turmeric", "1 can coconut milk", "2 cups vegetable broth", "Salt & black pepper", "Fresh cilantro to finish"],
               steps: ["Sauté onion, garlic, and ginger until soft.", "Stir in turmeric and toast for 30 seconds.", "Add lentils, coconut milk, and broth; bring to a simmer.", "Cook 20–25 minutes until lentils are tender.", "Season, then finish with fresh cilantro."]),
-        .init(id: 2, title: "Overnight Oats & Berries", lead: "Gut-friendly", minutes: 10, servings: 2, imageUrl: "retreat-kyoto", blurb: "Prep tonight, wake to a fiber-rich breakfast that loves your microbiome.",
+        .init(id: 2, title: "Overnight Oats & Berries", lead: "Gut-friendly", minutes: 10, servings: 2, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Prep tonight, wake to a fiber-rich breakfast that loves your microbiome.",
               ingredients: ["1 cup rolled oats", "1 cup milk of choice", "1/2 cup yogurt", "1 tbsp chia seeds", "1 tbsp maple syrup", "1 cup mixed berries"],
               steps: ["Combine oats, milk, yogurt, chia, and maple in a jar.", "Stir well and seal.", "Refrigerate overnight (at least 6 hours).", "Top with berries before serving."]),
-        .init(id: 3, title: "Miso Glazed Salmon", lead: "Omega-3 rich", minutes: 25, servings: 2, imageUrl: "retreat-mallorca", blurb: "A ten-minute glaze turns salmon into something restorative and bright.",
+        .init(id: 3, title: "Miso Glazed Salmon", lead: "Omega-3 rich", minutes: 25, servings: 2, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "A ten-minute glaze turns salmon into something restorative and bright.",
               ingredients: ["2 salmon fillets", "2 tbsp white miso", "1 tbsp honey", "1 tbsp rice vinegar", "1 tsp sesame oil", "Sliced scallions", "Steamed greens to serve"],
               steps: ["Whisk miso, honey, vinegar, and sesame oil.", "Coat salmon and rest 10 minutes.", "Roast at 200°C / 400°F for 12 minutes.", "Top with scallions; serve over steamed greens."]),
     ]
@@ -875,9 +875,9 @@ struct Massage: Identifiable, Hashable {
 
 extension Massage {
     static let all: [Massage] = [
-        .init(id: 1, title: "Neck & Shoulder Release", lead: "Lena Brooks", mediaKind: .video, storagePath: "", durationSeconds: 600, imageUrl: "retreat-kyoto", blurb: "Melt the tension that gathers between the shoulder blades and the base of the skull.", steps: ["Warm the area with flat palms for 30 seconds.", "Knead the upper traps with thumb and fingers.", "Make small circles at the base of the skull.", "Finish with long downward strokes along the neck."]),
-        .init(id: 2, title: "Foot Reflexology Basics", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 480, imageUrl: "retreat-bali", blurb: "Ground the whole nervous system through the soles of the feet.", steps: ["Press and roll the arch with both thumbs.", "Walk the thumbs across the ball of the foot.", "Rotate each toe gently.", "Sweep firmly from heel to toe to close."]),
-        .init(id: 3, title: "Jaw & Face Unwind", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-sedona", blurb: "Release the clench we hold without noticing.", steps: ["Place fingertips on the jaw hinge.", "Make slow circles as the mouth softens open.", "Sweep along the cheekbones to the temples.", "Rest palms over the eyes and breathe."]),
+        .init(id: 1, title: "Neck & Shoulder Release", lead: "Lena Brooks", mediaKind: .video, storagePath: "", durationSeconds: 600, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Melt the tension that gathers between the shoulder blades and the base of the skull.", steps: ["Warm the area with flat palms for 30 seconds.", "Knead the upper traps with thumb and fingers.", "Make small circles at the base of the skull.", "Finish with long downward strokes along the neck."]),
+        .init(id: 2, title: "Foot Reflexology Basics", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 480, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "Ground the whole nervous system through the soles of the feet.", steps: ["Press and roll the arch with both thumbs.", "Walk the thumbs across the ball of the foot.", "Rotate each toe gently.", "Sweep firmly from heel to toe to close."]),
+        .init(id: 3, title: "Jaw & Face Unwind", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "Release the clench we hold without noticing.", steps: ["Place fingertips on the jaw hinge.", "Make slow circles as the mouth softens open.", "Sweep along the cheekbones to the temples.", "Rest palms over the eyes and breathe."]),
     ]
 }
 

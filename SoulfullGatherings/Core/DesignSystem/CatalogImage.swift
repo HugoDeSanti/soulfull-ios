@@ -47,6 +47,13 @@ struct CatalogImage<Styled: View>: View {
         case .remote(let url):
             if let loaded {
                 style(Image(uiImage: loaded))
+                    // Crossfade rather than snap. A bundled image was simply
+                    // *there* on the first frame; a fetched one cannot be, so a
+                    // list of them pops in one by one as each download lands.
+                    // The fade turns that into something that reads as
+                    // deliberate. Opacity only — nothing moves, so this is
+                    // still calm under Reduce Motion.
+                    .transition(.opacity)
             } else if failed {
                 placeholder
             } else {
@@ -60,13 +67,16 @@ struct CatalogImage<Styled: View>: View {
     }
 
     private func load(_ url: URL) async {
-        // A cache hit paints on this frame instead of flashing the placeholder.
+        // A cache hit paints on this frame instead of flashing the placeholder,
+        // and is assigned without animation: it was effectively already here,
+        // so fading it in would only look like lag.
         if let hit = await RemoteImageCache.shared.cached(url) {
             loaded = hit
             return
         }
         do {
-            loaded = try await RemoteImageCache.shared.image(for: url)
+            let image = try await RemoteImageCache.shared.image(for: url)
+            withAnimation(.easeOut(duration: 0.32)) { loaded = image }
             failed = false
         } catch {
             guard !Task.isCancelled else { return }
