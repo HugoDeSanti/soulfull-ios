@@ -135,7 +135,16 @@ question text lives in `RetreatEnquiry.Question` and is used by both the form
 and the email body, so the two cannot drift; edit the copy on this card and it
 has to change there, not in the view.
 
-Two things on the card are **not** free text to restyle:
+Reaching it requires an account — `retreat-detail`'s CTA raises `account`
+first for a guest and opens the form once they are in. That is a gate on an
+*action*, not on browsing, so the 5.1.1(i) argument above is unchanged. It is
+there because the **Email question is shown, not asked**: the card renders it
+on the same glass surface as every other answer, at `--ink-soft` with a lock,
+because it is an answer already given rather than a field that has stopped
+working. Don't restyle it into an editable field — the server takes the address
+from the caller's token regardless of anything the app sends.
+
+Two other things on the card are **not** free text to restyle:
 
 - the four investment bands and the three decision answers are the retreat
   team's own answer labels (`RetreatEnquiry.Investment` / `.Decision`) —
@@ -144,8 +153,10 @@ Two things on the card are **not** free text to restyle:
   preselected to the retreat the guest came from. The four on the card are
   illustrative, not a list to maintain.
 
-The submitted answers go to the system mail composer, so the app has no "sent"
-spinner — the card ends at Submit, and the confirmation copy afterwards is the
+Submit posts to the `send-retreat-enquiry` Edge Function, which emails the
+answers to the team — so the button does have a **"Sending…"** state, and a
+failure shows a glass banner under it (same anatomy as `account`'s error
+banner) with every answer left in place. The confirmation afterwards is the
 website's own thank-you message.
 
 ### Mallorca post-purchase set (warm-espresso)

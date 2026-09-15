@@ -73,7 +73,10 @@ struct SoulfullGatheringsApp: App {
                 PreviewRetreat { RetreatGuidesView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
         } else if CommandLine.arguments.contains("-preview-enquiry") {
-            PreviewRetreat { RetreatEnquiryView(retreat: $0, initialName: "Hugo") }
+            PreviewRetreat {
+                RetreatEnquiryView(retreat: $0, initialName: "Hugo",
+                                   accountEmail: "hugo@soulfullgatherings.com")
+            }
         } else if CommandLine.arguments.contains("-preview-confirm-email") {
             AccountView(previewConfirmationFor: "hugo@soulfullgatherings.com")
         } else {

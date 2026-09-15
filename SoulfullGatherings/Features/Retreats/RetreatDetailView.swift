@@ -100,15 +100,21 @@ struct RetreatDetailView: View {
             guard AppFeatures.paymentsEnabled else { return }
             await vm.loadExistingBooking(userID: auth.userID)
         }
-        .sheet(isPresented: $showAccount) { AccountView() }
+        // Dismissing this having signed in replays the tap that raised it —
+        // the same bargain `AccountGate` strikes everywhere else in the app.
+        .sheet(isPresented: $showAccount, onDismiss: {
+            if auth.hasAccount { showEnquiry = true }
+        }) {
+            AccountView()
+        }
         .sheet(isPresented: $showEnquiry) {
-            // Seeded with what we already know, so the form asks for as
-            // little as it can. A guest has neither, and that is fine — no
-            // account is required to apply.
+            // Seeded with what we already know so the form asks for as little
+            // as it can. The address is the account's and is shown locked —
+            // the server takes the real one from the JWT either way.
             RetreatEnquiryView(
                 retreat: retreat,
                 initialName: settings.userName,
-                initialEmail: auth.email ?? ""
+                accountEmail: auth.email ?? ""
             )
         }
     }
@@ -249,6 +255,11 @@ struct RetreatDetailView: View {
     /// the guest to guess what the team needed to know and gave the team an
     /// inbox of applications that each answered something different.
     ///
+    /// Applying needs an account, so a guest gets `AccountView` first. That is
+    /// a gate on an *action*, not on browsing — the catalog and this whole
+    /// brochure stay open to a guest — and it is here because the application's
+    /// Email answer *is* the account's address.
+    ///
     /// A retreat that is already reserved opens its experience hub — that
     /// still works with no payment rail, because `bookings` is read from the
     /// server, not written here.
@@ -265,6 +276,10 @@ struct RetreatDetailView: View {
             return
         }
 
+        guard auth.hasAccount else {
+            showAccount = true
+            return
+        }
         showEnquiry = true
     }
 

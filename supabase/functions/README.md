@@ -5,6 +5,7 @@
 | `create-payment-intent` | Caller's Supabase JWT | Reads the authoritative retreat price, reuses/creates the Stripe customer, returns a PaymentIntent client secret + ephemeral key for the iOS PaymentSheet. |
 | `stripe-webhook` | Stripe signature (no Supabase JWT) | On `payment_intent.succeeded` / `…payment_failed`, writes a row to `bookings` with the service role. The only writer of payment state. |
 | `delete-account` | Caller's Supabase JWT | Deletes the caller's own account (App Store 5.1.1(v)): best-effort deletes their Stripe customer, **revokes their Sign in with Apple grant**, then deletes the auth user with the service role — cascading to `profiles` + `bookings` + `apple_credentials`. |
+| `send-retreat-enquiry` | Caller's Supabase JWT | Emails one retreat application to `info@soulfullgatherings.com` via Resend. The **applicant's address comes from the JWT, never the body** — it is the account's address, which is why the app shows that field locked. |
 | `store-apple-token` | Caller's Supabase JWT | Runs after every Sign in with Apple. Exchanges Apple's single-use authorization code for a refresh token and stores it in `apple_credentials`, so `delete-account` has something to revoke. |
 
 `_shared/apple.ts` holds the Apple client-secret JWT, the token exchange and the
@@ -33,6 +34,15 @@ revoke call, used by the last two.
    supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_ABCD123456.p8)"
    ```
 
+   And the Resend key, which is what lets a retreat application reach the team
+   — see [the section below](#retreat-applications-send-retreat-enquiry):
+   ```bash
+   supabase secrets set RESEND_API_KEY=re_...
+   # Optional overrides; the defaults are the ones below.
+   supabase secrets set ENQUIRY_TO=info@soulfullgatherings.com
+   supabase secrets set ENQUIRY_FROM="Soulfull Gatherings <applications@soulfullgatherings.com>"
+   ```
+
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
    **Use a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) (`rk_…`), not a secret key**, following least privilege. Minimum permissions:
@@ -47,12 +57,66 @@ revoke call, used by the last two.
    supabase functions deploy stripe-webhook --no-verify-jwt   # Stripe sends its own signature, not a Supabase JWT
    supabase functions deploy delete-account                   # keep JWT verification ON (default)
    supabase functions deploy store-apple-token                # keep JWT verification ON (default)
+   supabase functions deploy send-retreat-enquiry             # keep JWT verification ON (default)
    ```
 
 4. **Create the Stripe webhook endpoint** (Stripe dashboard → Developers → Webhooks):
    - URL: `https://<project-ref>.functions.supabase.co/stripe-webhook`
    - Events: `payment_intent.succeeded`, `payment_intent.payment_failed`
    - Copy its signing secret into `STRIPE_WEBHOOK_SECRET` (step 2) and redeploy if you set it after deploying.
+
+## Retreat applications (`send-retreat-enquiry`)
+
+While reservations are off (`AppFeatures.paymentsEnabled == false`), the retreat
+CTA reads **"Request a place"** and opens `RetreatEnquiryView` — the same
+questions the "Join a retreat" form on soulfullgatherings.com asks. This
+function turns the answers into an email to the team.
+
+**Until `RESEND_API_KEY` is set and this is deployed, every application fails.**
+The app says so and keeps the answers for a retry, but nothing reaches the
+inbox. It is the one piece of this feature that is not self-contained.
+
+### Why Resend rather than the SMTP already configured for auth
+
+The project has custom SMTP set for Supabase Auth's own emails (the branded
+confirm/change-email templates). Reusing those credentials here would work and
+is tempting, but:
+
+- **SMTP from a serverless function is the fragile option** — connection setup,
+  STARTTLS, and timeouts, all inside a request that has to finish fast. Sending
+  is one HTTPS POST instead, with no third-party Deno module in the path.
+- **Separate concerns want separate credentials.** Rotating the auth SMTP
+  password would silently stop retreat applications, and nothing would say so.
+- **A transactional API gives you the send back.** Each call returns a message
+  id, and bounces and deliverability live in a dashboard; SMTP from a function
+  gives you a log line and hope.
+
+### Setup
+
+1. Create a Resend account and **verify `soulfullgatherings.com`** as a sending
+   domain (DNS records, added wherever the domain is managed). Until the domain
+   verifies, every send is rejected.
+2. Create an API key with **Sending access** only, and set it as
+   `RESEND_API_KEY` (step 2 above).
+3. `ENQUIRY_FROM` must be an address **at that verified domain**
+   (`applications@soulfullgatherings.com` by default). It is not the
+   applicant's address — theirs goes in `Reply-To`, so hitting reply in the
+   inbox reaches them directly.
+4. Deploy, then apply for a place from a signed-in build and check the inbox.
+
+### What it will and won't do
+
+- **It validates.** Every question the website marks required must be present,
+  and each answer is capped — a modified client shouldn't be able to post a
+  megabyte into someone's inbox.
+- **It does not store the application.** A send that fails is offered back to
+  the applicant as a retry and is otherwise gone. If applications ever matter
+  enough to survive a Resend outage — or you want them listed somewhere other
+  than an inbox — the shape is a `retreat_enquiries` table written before the
+  send, with RLS allowing the owner to insert their own row and nothing else.
+- **It does not rate-limit.** JWT verification means only signed-in accounts
+  can reach it, which is the bulk of the protection; a per-user throttle needs
+  somewhere to count, i.e. the table above.
 
 ## Sign in with Apple: token revocation (Guideline 5.1.1(v))
 

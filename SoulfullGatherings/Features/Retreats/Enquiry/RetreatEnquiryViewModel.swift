@@ -6,7 +6,14 @@
 //  optionals, nothing validated), plus the rules that decide when it is ready
 //  to send. `makeEnquiry()` is the gate between the two — it returns a
 //  `RetreatEnquiry` only when every required question has a usable answer, so
-//  the email builder never has to think about empty values.
+//  the server never has to think about empty values.
+//
+//  The one answer that is not editable is the email address: it is the address
+//  of the account the applicant is signed in to, shown for confirmation and
+//  never typed. It isn't even in the payload — `send-retreat-enquiry` reads it
+//  from the JWT, so a modified client cannot put someone else's address on an
+//  application. `RetreatDetailView` gates the form on `auth.hasAccount`, which
+//  is what guarantees there is an address to show.
 //
 
 import Foundation
@@ -25,9 +32,12 @@ final class RetreatEnquiryViewModel {
     var selectedRetreat: String
     var about = ""
     var decision: RetreatEnquiry.Decision?
-    var email = ""
     var investment: RetreatEnquiry.Investment?
     var referral = ""
+
+    /// The signed-in account's address. Displayed, never edited, never sent —
+    /// see the note at the top of the file.
+    let accountEmail: String
 
     // MARK: - Retreat options
 
@@ -43,27 +53,29 @@ final class RetreatEnquiryViewModel {
     /// database read for the same reason (see docs/ADDING-A-RETREAT.md).
     private(set) var retreatOptions: [String]
 
-    /// True once the application has actually left the device.
+    /// True once the server has accepted the application.
     var didSend = false
+    /// A send is in flight — the button says so and can't be tapped twice.
+    var isSending = false
+    /// Set when a send fails. The answers stay exactly as they were, because
+    /// the only useful thing an applicant can do with a failed send is try it
+    /// again, and retyping eleven answers first is not that.
+    var sendFailure: String?
 
     private let retreat: Retreat
-    /// What the form was seeded with, so `hasContent` can tell a prefilled
-    /// field from an answered one.
+    /// What the name field was seeded with, so `hasContent` can tell a
+    /// prefilled field from an answered one.
     private let seededName: String
-    private let seededEmail: String
 
-    init(retreat: Retreat, name: String = "", email: String = "") {
+    init(retreat: Retreat, name: String = "", accountEmail: String = "") {
         self.retreat = retreat
         self.selectedRetreat = retreat.enquiryLabel
         self.retreatOptions = [retreat.enquiryLabel]
-        // Onboarding asked for a name and it is one word; the account, if there
-        // is one, knows the address. Neither is worth asking for twice.
+        self.accountEmail = accountEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Onboarding already asked for a name, and it is one word.
         let seededName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let seededEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         self.seededName = seededName
-        self.seededEmail = seededEmail
         self.firstName = seededName
-        self.email = seededEmail
     }
 
     /// Widen the retreat question to the whole upcoming catalog.
@@ -105,13 +117,6 @@ final class RetreatEnquiryViewModel {
         Calendar.current.date(byAdding: .year, value: -32, to: Date()) ?? latestDateOfBirth
     }()
 
-    var isEmailValid: Bool {
-        let trimmed = email.trimmingCharacters(in: .whitespaces)
-        guard let at = trimmed.firstIndex(of: "@"), at != trimmed.startIndex else { return false }
-        let domain = trimmed[trimmed.index(after: at)...]
-        return domain.contains(".") && !domain.hasSuffix(".") && !domain.contains(" ")
-    }
-
     /// Deliberately loose. Numbers arrive with country codes, spaces, dashes
     /// and parentheses from a dozen countries, and a strict pattern would
     /// reject more real numbers than fake ones. Enough digits to be dialable
@@ -131,7 +136,6 @@ final class RetreatEnquiryViewModel {
         if !isPhoneValid { missing.append(RetreatEnquiry.Question.phone) }
         if about.trimmed.isEmpty { missing.append("A little about you") }
         if decision == nil { missing.append("Where you are in your decision") }
-        if !isEmailValid { missing.append(RetreatEnquiry.Question.email) }
         if investment == nil { missing.append("Your usual investment") }
         return missing
     }
@@ -141,10 +145,10 @@ final class RetreatEnquiryViewModel {
     /// Whether anything has been typed or chosen **beyond what the form opened
     /// with**. Drives the discard guard — a swipe shouldn't take an application
     /// someone spent five minutes on, and a confirmation on a form nobody has
-    /// touched is just friction, which is why the seeded name and address are
-    /// compared rather than merely checked for emptiness.
+    /// touched is just friction, which is why the seeded name is compared
+    /// rather than merely checked for emptiness.
     var hasContent: Bool {
-        firstName.trimmed != seededName || email.trimmed != seededEmail
+        firstName.trimmed != seededName
             || !lastName.trimmed.isEmpty || dateOfBirth != nil
             || !basedIn.trimmed.isEmpty || !phone.trimmed.isEmpty || !instagram.trimmed.isEmpty
             || !about.trimmed.isEmpty || decision != nil || investment != nil
@@ -164,10 +168,39 @@ final class RetreatEnquiryViewModel {
             retreat: selectedRetreat,
             about: about.trimmed,
             decision: decision,
-            email: email.trimmed,
             investment: investment,
             referral: referral.trimmed
         )
+    }
+
+    // MARK: - Sending
+
+    /// Posts the application to `send-retreat-enquiry`, which emails it to the
+    /// team. Returns true once the server has accepted it.
+    ///
+    /// The app used to hand the answers to the iPhone's Mail composer instead.
+    /// That made delivery depend on the device having Mail configured and on
+    /// the applicant finding and tapping Send in a screen they could also just
+    /// abandon — and it put the application in *their* outbox rather than in
+    /// the team's inbox. An authenticated call to our own function sends it the
+    /// same way from every device.
+    func send() async -> Bool {
+        guard !isSending, let enquiry = makeEnquiry() else { return false }
+        isSending = true
+        sendFailure = nil
+        defer { isSending = false }
+
+        do {
+            try await SupabaseService.shared.sendRetreatEnquiry(enquiry)
+            didSend = true
+            return true
+        } catch {
+            Log.data.error("Retreat application failed to send: \(error.localizedDescription)")
+            sendFailure = error.isOffline
+                ? "You'll need to be online to send this. Your answers are still here."
+                : "That didn't send. Your answers are still here — please try again."
+            return false
+        }
     }
 }
 

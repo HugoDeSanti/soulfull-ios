@@ -9,13 +9,18 @@
 //  team an inbox of applications that each answered a different set of
 //  questions. This asks the same questions the website's "Join a retreat" form
 //  asks — same wording, same order, same options (`RetreatEnquiry.Question`) —
-//  and hands the finished answers to the system mail composer, addressed to
-//  the monitored inbox.
+//  and posts the finished answers to the `send-retreat-enquiry` Edge Function,
+//  which emails them to the monitored inbox. It sends the same way from every
+//  device — the earlier version handed the answers to the iPhone's Mail app,
+//  which needed Mail configured and needed the applicant to tap Send in a
+//  screen they could equally abandon.
 //
-//  No account is required. Applying is the start of a conversation with the
-//  retreat team, not a member action, and putting a sign-up wall in front of
-//  it would be both worse for the guest and a Guideline 5.1.1(i) argument we
-//  have already decided not to have (see the account-gate note in CLAUDE.md).
+//  **An account is required to apply**, which `RetreatDetailView` enforces
+//  before opening this sheet. That is not a registration wall on browsing —
+//  the catalog, the brochure and the whole Practice landing stay open to a
+//  guest, so the Guideline 5.1.1(i) argument is unchanged. It is here because
+//  the Email answer *is* the account's address: shown, locked, and taken from
+//  the JWT server-side rather than typed.
 //
 //  Type sits on the retreat's own photograph here, so the header follows the
 //  one rule: `topScrim` on the backdrop, `.onPhoto()` on the copy — and on the
@@ -32,16 +37,12 @@ struct RetreatEnquiryView: View {
     let retreat: Retreat
 
     @State private var vm: RetreatEnquiryViewModel
-    @State private var composed: RetreatEnquiry?
-    @State private var showComposer = false
-    @State private var showNoMailNotice = false
-    @State private var showSendFailure = false
     @State private var confirmDiscard = false
     @State private var showDateWheel = false
     @FocusState private var focus: Field?
 
     private enum Field: String {
-        case firstName, lastName, basedIn, phone, instagram, about, email, referral
+        case firstName, lastName, basedIn, phone, instagram, about, referral
 
         /// Accessibility identifier. Stable names so `RetreatEnquiryTests` can
         /// fill the form without matching on placeholder copy.
@@ -51,11 +52,13 @@ struct RetreatEnquiryView: View {
     /// - Parameters:
     ///   - initialName: onboarding already asked for a name; it is one word, so
     ///     it seeds the first-name field only.
-    ///   - initialEmail: the account's address, when there is an account.
-    init(retreat: Retreat, initialName: String = "", initialEmail: String = "") {
+    ///   - accountEmail: the signed-in account's address. Displayed on the
+    ///     Email question and never editable — the server stamps the real one
+    ///     from the caller's JWT regardless.
+    init(retreat: Retreat, initialName: String = "", accountEmail: String = "") {
         self.retreat = retreat
         _vm = State(initialValue: RetreatEnquiryViewModel(
-            retreat: retreat, name: initialName, email: initialEmail
+            retreat: retreat, name: initialName, accountEmail: accountEmail
         ))
     }
 
@@ -73,19 +76,6 @@ struct RetreatEnquiryView: View {
         }
         .preferredColorScheme(.dark)
         .task { await vm.loadOptions() }
-        // The composer is UIKit and must not be wrapped in anything — its own
-        // sheet, no effects, edge to edge.
-        .sheet(isPresented: $showComposer) {
-            if let composed {
-                MailComposeView(
-                    recipients: [RetreatEnquiry.recipient],
-                    subject: composed.mailSubject,
-                    body: composed.mailBody,
-                    onFinish: handle(_:)
-                )
-                .ignoresSafeArea()
-            }
-        }
         // A half-written application is worth more than a tidy gesture, so the
         // swipe is off while there is one and the X asks instead.
         .interactiveDismissDisabled(vm.hasContent && !vm.didSend)
@@ -94,18 +84,6 @@ struct RetreatEnquiryView: View {
             Button("Keep writing", role: .cancel) {}
         } message: {
             Text("Your answers won't be saved.")
-        }
-        .alert("Mail isn't set up on this iPhone", isPresented: $showNoMailNotice) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            // Short on purpose: SwiftUI truncates a long alert message, and a
-            // truncated instruction is no instruction.
-            Text("Your answers are copied — paste them into an email to \(RetreatEnquiry.recipient).")
-        }
-        .alert("That didn't send", isPresented: $showSendFailure) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Your answers are still here — try again, or email them to \(RetreatEnquiry.recipient).")
         }
     }
 
@@ -301,15 +279,33 @@ struct RetreatEnquiryView: View {
         }
     }
 
+    /// Shown, not asked. The address is the one on the account they are signed
+    /// in to, and the server reads it from the JWT rather than from anything
+    /// sent up here — so an editable field would be a control that changes
+    /// nothing. Rendered on the same glass surface as the other answers, at
+    /// reduced contrast with a lock, so it reads as an answer already given
+    /// rather than a field that has stopped working.
     private var emailQuestion: some View {
-        question(RetreatEnquiry.Question.email) {
-            textField("you@example.com", text: $vm.email, field: .email)
-                .keyboardType(.emailAddress)
-                .textContentType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.next)
-                .onSubmit { focus = .referral }
+        question(RetreatEnquiry.Question.email,
+                 help: "The address on your Soulfull account. We'll reply here.") {
+            HStack(spacing: 12) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.muted)
+                Text(vm.accountEmail.isEmpty ? "Your account email" : vm.accountEmail)
+                    .font(Theme.body(16))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fieldSurface(active: false)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Email, \(vm.accountEmail). From your account, not editable.")
+            .accessibilityIdentifier("enquiry-email")
         }
     }
 
@@ -338,8 +334,12 @@ struct RetreatEnquiryView: View {
 
     private var submitSection: some View {
         VStack(spacing: 12) {
-            SGPrimaryButton(title: "Submit", enabled: vm.canSubmit, filled: true) {
-                submit()
+            SGPrimaryButton(
+                title: vm.isSending ? "Sending…" : "Submit",
+                enabled: vm.canSubmit && !vm.isSending,
+                filled: true
+            ) {
+                Task { await submit() }
             }
             .accessibilityIdentifier("enquiry-submit")
 
@@ -355,7 +355,11 @@ struct RetreatEnquiryView: View {
                     .accessibilityIdentifier("enquiry-missing")
             }
 
-            Text("Sent to \(RetreatEnquiry.recipient) from your mail app, so our reply comes straight back to you.")
+            if let failure = vm.sendFailure {
+                errorBanner(failure)
+            }
+
+            Text("Sent to \(RetreatEnquiry.recipient), and we'll reply to your account's email.")
                 .font(Theme.body(11))
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
@@ -366,39 +370,29 @@ struct RetreatEnquiryView: View {
         .padding(.top, 4)
     }
 
-    private func submit() {
-        focus = nil
-        guard let enquiry = vm.makeEnquiry() else { return }
-
-        guard MailComposeView.canSend else {
-            // No mail account: the answers are still worth something, so hand
-            // them over rather than losing them to a dead end.
-            UIPasteboard.general.string = """
-            To: \(RetreatEnquiry.recipient)
-            Subject: \(enquiry.mailSubject)
-
-            \(enquiry.mailBody)
-            """
-            showNoMailNotice = true
-            return
-        }
-
-        composed = enquiry
-        showComposer = true
+    /// Glass rather than an alert: a failed send leaves the applicant on a
+    /// full form they may want to check, and an alert would cover it and then
+    /// need dismissing before they could reach the button again.
+    private func errorBanner(_ message: String) -> some View {
+        Text(message)
+            .font(Theme.body(13))
+            .foregroundStyle(Theme.ink)
+            .multilineTextAlignment(.center)
+            .lineSpacing(2)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.honey.opacity(0.5), lineWidth: 1)
+            )
+            .accessibilityIdentifier("enquiry-error")
     }
 
-    private func handle(_ outcome: MailComposeView.Outcome) {
-        showComposer = false
-        switch outcome {
-        case .sent:
-            Haptics.success()
-            vm.didSend = true
-        case .cancelled:
-            // Back to the form with every answer intact.
-            break
-        case .failed:
-            showSendFailure = true
-        }
+    private func submit() async {
+        focus = nil
+        if await vm.send() { Haptics.success() }
     }
 
     // MARK: - Sent
@@ -426,6 +420,7 @@ struct RetreatEnquiryView: View {
             SGPrimaryButton(title: "Back to the retreat") { dismiss() }
                 .padding(.top, 6)
         }
+        .accessibilityIdentifier("enquiry-sent")
         .padding(.horizontal, 30)
         .frame(maxWidth: 340)
     }
@@ -557,5 +552,6 @@ private extension View {
 }
 
 #Preview {
-    RetreatEnquiryView(retreat: Retreat.mock.first!, initialName: "Hugo")
+    RetreatEnquiryView(retreat: Retreat.mock.first!, initialName: "Hugo",
+                       accountEmail: "hugo@soulfullgatherings.com")
 }

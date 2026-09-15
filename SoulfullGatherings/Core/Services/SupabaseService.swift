@@ -231,6 +231,25 @@ actor SupabaseService {
     /// RLS guarantees only the caller's own rows are visible; the explicit
     /// `user_id` filter just makes intent obvious. Uncached — reservation state
     /// must always reflect the latest webhook write.
+    /// Sends one retreat application to the team, via the
+    /// `send-retreat-enquiry` Edge Function.
+    ///
+    /// Uncached and never retried here — a silent retry on an opaque failure
+    /// is how a team ends up with the same application three times. The form
+    /// keeps the answers and offers the retry to the person instead.
+    ///
+    /// The applicant's email address is deliberately absent from `enquiry`:
+    /// the function reads it from the caller's JWT, so the address on the
+    /// application is always the one on the account.
+    func sendRetreatEnquiry(_ enquiry: RetreatEnquiry) async throws {
+        struct SendResult: Decodable { let sent: Bool }
+        let result: SendResult = try await client.functions.invoke(
+            "send-retreat-enquiry",
+            options: FunctionInvokeOptions(body: enquiry)
+        )
+        guard result.sent else { throw AppError.unknown }
+    }
+
     func fetchBooking(retreatID: Int, userID: UUID) async throws -> Booking? {
         let rows: [BookingRow] = try await client
             .from("bookings")

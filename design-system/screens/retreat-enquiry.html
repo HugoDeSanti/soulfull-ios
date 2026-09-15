@@ -9,7 +9,9 @@
 <style>
   /* RetreatEnquiryView — the "Request a place" CTA opens this, not an email.
      Questions, order and option lists mirror the "Join a retreat" form on
-     soulfullgatherings.com; they live in Swift as RetreatEnquiry.Question. */
+     soulfullgatherings.com; they live in Swift as RetreatEnquiry.Question.
+     Reaching it requires an account: the Email answer IS the account's
+     address, so it is shown locked rather than asked for. */
   .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
   .scr { padding: 86px 24px 48px; position: relative; z-index: 3; }
 
@@ -36,6 +38,11 @@
   .fld.focus { border-color: var(--glass-border-high); }
   .fld .ph { color: var(--muted); }
   .fld .cal { margin-left: auto; color: var(--ink-soft); }
+  /* Email — shown, not asked. Same surface as every other answer, at reduced
+     contrast with a lock, so it reads as an answer already given rather than
+     a field that has stopped working. */
+  .fld.locked { color: var(--ink-soft); }
+  .fld.locked svg { color: var(--muted); }
   .pair { display: flex; gap: 12px; }
   .pair .fld { flex: 1; }
   .area { min-height: 136px; align-items: flex-start; }
@@ -142,7 +149,13 @@
 
       <div class="q">
         <div class="q-title">Email</div>
-        <div class="control"><span class="fld glass"><span class="ph">you@example.com</span></span></div>
+        <div class="q-help">The address on your Soulfull account. We'll reply here.</div>
+        <div class="control">
+          <span class="fld glass locked">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9h-2zM9 7a3 3 0 0 1 6 0v2H9V7z"/></svg>
+            hugo@soulfullgatherings.com
+          </span>
+        </div>
       </div>
 
       <div class="q">
@@ -163,7 +176,7 @@
       <button class="sg-btn sg-btn--filled submit">Submit</button>
       <!-- Shown only while something required is unanswered -->
       <div class="gaps">Still to answer — Date of Birth · Where you're based · Phone</div>
-      <div class="note">Sent to info@soulfullgatherings.com from your mail app, so our reply comes straight back to you.</div>
+      <div class="note">Sent to info@soulfullgatherings.com, and we'll reply to your account's email.</div>
     </div>
   </div>
 </div></div>

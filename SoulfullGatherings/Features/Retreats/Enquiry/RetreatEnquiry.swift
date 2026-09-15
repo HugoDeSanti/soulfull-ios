@@ -2,23 +2,32 @@
 //  RetreatEnquiry.swift
 //  Soulfull Gatherings
 //
-//  One completed retreat application, and the email it turns into.
+//  One completed retreat application, as it is sent to the server.
 //
 //  The questions here mirror the "Join a retreat" form on
 //  soulfullgatherings.com field for field, in the same order, with the same
 //  wording and the same option lists — so an application sent from the app
 //  and one sent from the website arrive in the same inbox describing the same
 //  person in the same terms. Squarespace names that form **"Retreats
-//  Application"**; the subject line below says the same thing.
+//  Application"**; the subject line the server builds says the same thing.
 //
-//  Keeping the question text in one place (`Question`) rather than typing it
-//  into the form and again into the email body is what stops the two drifting:
-//  the label a guest answered and the label the team reads are the same string.
+//  `Question` holds that wording once, for the form to label its controls
+//  with. The Edge Function repeats the same strings when it writes the email,
+//  so the team reads an application in the words it was asked in — there is no
+//  build-time link between the two, so change them together.
 //
 //  If the website form changes, change it here. The fields are not derivable
 //  from anything in the app — they are the retreat team's own intake
 //  questions, and the answers are only useful if they match what the team
 //  already reads on every other application.
+//
+//  **This type does not render the email.** The answers are POSTed to the
+//  `send-retreat-enquiry` Edge Function, which composes and sends it, so there
+//  is exactly one renderer and a modified client cannot dictate what lands in
+//  the team's inbox. Note what is *missing* from the payload as a result: the
+//  applicant's email address. The server reads it from the caller's JWT — it is
+//  the address of the account they are signed in to, which is why the form
+//  shows it locked rather than asking for it.
 //
 
 import Foundation
@@ -27,7 +36,11 @@ import Foundation
 /// is what a *complete* one looks like, which is why every required answer is
 /// non-optional here and the two optional questions are plain `String` that
 /// may be empty.
-struct RetreatEnquiry {
+///
+/// `Encodable` straight into the Edge Function's body — snake_case keys, and a
+/// date of birth as a plain `yyyy-MM-dd` string rather than whatever the
+/// encoder's date strategy happens to be that day.
+struct RetreatEnquiry: Encodable {
 
     var firstName: String
     var lastName: String
@@ -41,7 +54,6 @@ struct RetreatEnquiry {
     var retreat: String
     var about: String
     var decision: Decision
-    var email: String
     var investment: Investment
     /// Optional on the website too.
     var referral: String
@@ -50,10 +62,46 @@ struct RetreatEnquiry {
         "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
     }
 
+    // MARK: - Wire format
+
+    enum CodingKeys: String, CodingKey {
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case dateOfBirth = "date_of_birth"
+        case basedIn = "based_in"
+        case phone, instagram, retreat, about, decision, investment, referral
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(firstName, forKey: .firstName)
+        try c.encode(lastName, forKey: .lastName)
+        try c.encode(Self.dateFormatter.string(from: dateOfBirth), forKey: .dateOfBirth)
+        try c.encode(basedIn, forKey: .basedIn)
+        try c.encode(phone, forKey: .phone)
+        try c.encode(instagram, forKey: .instagram)
+        try c.encode(retreat, forKey: .retreat)
+        try c.encode(about, forKey: .about)
+        try c.encode(decision.rawValue, forKey: .decision)
+        try c.encode(investment.rawValue, forKey: .investment)
+        try c.encode(referral, forKey: .referral)
+    }
+
+    /// `en_US_POSIX` so a device set to a non-Gregorian calendar still sends a
+    /// date the server can read — the same reason `RetreatRow` pins its own.
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     // MARK: - The questions, verbatim
 
-    /// The form's question titles, exactly as the website asks them. Used by
-    /// the form UI *and* by the email body, so the two cannot disagree.
+    /// The form's question titles, exactly as the website asks them. The
+    /// `send-retreat-enquiry` Edge Function repeats them when it writes the
+    /// email — keep the two in step by hand.
     enum Question {
         static let name = "Name"
         static let dateOfBirth = "Date of Birth"
@@ -95,47 +143,12 @@ struct RetreatEnquiry {
         var id: String { rawValue }
     }
 
-    // MARK: - The email
+    // MARK: - Where it goes
 
-    /// Where every application goes. The same monitored inbox the website
-    /// form and the three published legal pages use.
+    /// The monitored inbox every application lands in. Shown on the form so
+    /// the applicant can see where their answers are going; the actual
+    /// addressing happens server-side, in `send-retreat-enquiry`.
     static let recipient = LegalLinks.supportEmail
-
-    var mailSubject: String {
-        "Retreats Application — \(fullName) — \(retreat)"
-    }
-
-    /// Plain text, one question per block. The questions are long enough that
-    /// a `Question: answer` line would wrap badly in Mail, so each answer sits
-    /// under its question — which also means a multi-line answer (the "about
-    /// you" paragraph) needs no special case.
-    var mailBody: String {
-        var blocks: [String] = [
-            block(Question.name, fullName),
-            block(Question.dateOfBirth, dateOfBirth.formatted(date: .long, time: .omitted)),
-            block(Question.basedIn, basedIn),
-            block(Question.phone, phone)
-        ]
-        if !instagram.isEmpty { blocks.append(block(Question.instagram, instagram)) }
-        blocks += [
-            block(Question.retreat, retreat),
-            block(Question.about, about),
-            block(Question.decision, decision.rawValue),
-            block(Question.email, email),
-            block(Question.investment, investment.rawValue)
-        ]
-        if !referral.isEmpty { blocks.append(block(Question.referral, referral)) }
-
-        return """
-        A new retreat application, sent from the Soulfull Gatherings iOS app.
-
-        \(blocks.joined(separator: "\n\n"))
-        """
-    }
-
-    private func block(_ question: String, _ answer: String) -> String {
-        "\(question)\n\(answer.trimmingCharacters(in: .whitespacesAndNewlines))"
-    }
 }
 
 // MARK: - Retreat → an option on the retreat question

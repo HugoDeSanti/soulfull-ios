@@ -84,14 +84,17 @@ final class RetreatEnquiryTests: XCTestCase {
         field.typeText(text)
     }
 
-    /// The entry point: the retreat detail CTA raises the form.
+    /// The entry point: the retreat detail CTA acts, and a guest is asked to
+    /// sign in before the form rather than after filling it.
     ///
-    /// Worth its own test because a control that silently does nothing is a
-    /// failure mode this codebase has actually shipped — see the
-    /// `CircleIconButton` hit-testing note in CLAUDE.md. The rest of the suite
-    /// runs against `-preview-enquiry` and would pass with the CTA wired to
-    /// nothing at all.
-    func testRequestAPlaceOpensTheApplication() {
+    /// Worth its own test twice over. A control that silently does nothing is
+    /// a failure mode this codebase has actually shipped (the
+    /// `CircleIconButton` hit-testing note in CLAUDE.md), and the rest of the
+    /// suite runs against `-preview-enquiry`, which would pass with the CTA
+    /// wired to nothing at all. And the gate itself is load-bearing: the
+    /// application's Email answer is the account's address, so an unsigned
+    /// applicant has nothing to put there.
+    func testRequestAPlaceAsksAGuestToSignIn() {
         let app = XCUIApplication()
         app.launchArguments = ["-uitest-reset", "-preview-retreat"]
         app.launch()
@@ -103,12 +106,14 @@ final class RetreatEnquiryTests: XCTestCase {
         shot(app, "00-retreat-cta")
         cta.tap()
 
-        // The form's Submit, by identifier: "Request a place" is also the CTA's
-        // own label, and the eyebrow reads JOIN A RETREAT once `.sgEyebrow()`
-        // uppercases it — neither makes a clean assertion.
-        XCTAssertTrue(app.buttons["enquiry-submit"].waitForExistence(timeout: 10),
-                      "\"Request a place\" did not open the application form")
-        shot(app, "00-retreat-application-open")
+        // `-uitest-reset` leaves an anonymous guest, so the account sheet is
+        // what should arrive — and the form should NOT, because eleven answers
+        // written before being told to sign up is the worse order.
+        XCTAssertTrue(app.buttons["account-close"].waitForExistence(timeout: 10),
+                      "\"Request a place\" did not ask a guest to sign in")
+        XCTAssertFalse(app.buttons["enquiry-submit"].exists,
+                       "The application form opened without an account behind it")
+        shot(app, "00-retreat-account-gate")
     }
 
     /// Every question the website asks, in the app, in the same words.
@@ -142,6 +147,16 @@ final class RetreatEnquiryTests: XCTestCase {
         reveal(app, app.staticTexts["What retreat are you interested in attending?"])
         shot(app, "02-enquiry-middle")
 
+        // Email is shown, not asked: no editable field, and the address on
+        // screen is the account's. An editable one would be a control that
+        // changes nothing — the server stamps the address from the JWT.
+        XCTAssertFalse(app.textFields["enquiry-email"].exists,
+                       "The email field is editable; it must be the account's address")
+        let email = app.descendants(matching: .any)["enquiry-email"].firstMatch
+        XCTAssertTrue(email.exists, "The Email question no longer shows an address")
+        XCTAssertTrue(email.label.contains("hugo@soulfullgatherings.com"),
+                      "Email shows \(email.label) rather than the signed-in account's address")
+
         // The investment question is long enough to be worth matching loosely.
         let investment = app.staticTexts.matching(
             NSPredicate(format: "label BEGINSWITH %@", "What's the investment")
@@ -159,9 +174,14 @@ final class RetreatEnquiryTests: XCTestCase {
     }
 
     /// Submit stays inert until every required question is answered, and says
-    /// which ones are still open. With no mail account on the simulator the
-    /// completed application falls back to the pasteboard — which is the path
-    /// a guest without Mail actually takes, so it is the one worth proving.
+    /// which ones are still open — then it actually goes somewhere.
+    ///
+    /// The send is a call to the `send-retreat-enquiry` Edge Function, so this
+    /// asserts the form *settles*: either the thank-you panel or a failure it
+    /// can explain. Both are passes. What would not be is a Submit that spins
+    /// or silently does nothing, which is the regression worth catching — and
+    /// the one a preview session (no permanent account, and the function may
+    /// not be deployed yet) can still catch without a live send.
     func testSubmitWaitsForEveryRequiredAnswer() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["Request a place"].waitForExistence(timeout: 20))
@@ -192,8 +212,6 @@ final class RetreatEnquiryTests: XCTestCase {
         reveal(app, decision)
         decision.tap()
 
-        fill(app, "enquiry-email", "hugo@example.com")
-
         let band = app.buttons["€4,500+"]
         reveal(app, band)
         band.tap()
@@ -204,10 +222,14 @@ final class RetreatEnquiryTests: XCTestCase {
         reveal(app, submit)
         submit.tap()
 
-        // No Mail account on a simulator, so the application is copied and the
-        // address handed over rather than lost.
-        let notice = app.alerts["Mail isn't set up on this iPhone"]
-        XCTAssertTrue(notice.waitForExistence(timeout: 10), "A completed application had nowhere to go")
-        shot(app, "04-enquiry-no-mail")
+        // One query matching either outcome — XCTest has no "wait for any of
+        // these", and waiting on them in turn pays the full timeout whenever
+        // the first one isn't what happened.
+        let settled = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier IN %@", ["enquiry-sent", "enquiry-error"])
+        ).firstMatch
+        XCTAssertTrue(settled.waitForExistence(timeout: 30),
+                      "Submit neither sent the application nor said why it couldn't")
+        shot(app, "04-enquiry-submitted")
     }
 }
