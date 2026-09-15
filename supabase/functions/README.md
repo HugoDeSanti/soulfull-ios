@@ -96,12 +96,27 @@ is tempting, but:
 1. Create a Resend account and **verify `soulfullgatherings.com`** as a sending
    domain (DNS records, added wherever the domain is managed). Until the domain
    verifies, every send is rejected.
-2. Create an API key with **Sending access** only, and set it as
-   `RESEND_API_KEY` (step 2 above).
+2. Create an API key with **Sending access**, restricted to that domain, and
+   set it as `RESEND_API_KEY` (step 2 above).
+
+   **Not full access.** This function makes exactly one call —
+   `POST /emails` — and never looks up a domain, reads an audience, or
+   fetches an email's status afterwards (the message id it logs comes back
+   in the send response). Sending access covers all of that. What full
+   access adds is blast radius: the key lives in a function secret, and a
+   secret's threat model is *someday this leaks*. A full-access key can then
+   delete the verified domain, mint new API keys, read contacts and send as
+   any domain on the account; a sending key can send email. Both are bad,
+   but only one is recoverable by rotating one secret.
 3. `ENQUIRY_FROM` must be an address **at that verified domain**
    (`applications@soulfullgatherings.com` by default). It is not the
    applicant's address — theirs goes in `Reply-To`, so hitting reply in the
    inbox reaches them directly.
+
+   ⚠️ **A domain-restricted key and `ENQUIRY_FROM` are one setting in two
+   places.** Point `ENQUIRY_FROM` at an address outside the key's domain and
+   Resend answers 403, applications start failing, and nothing about the
+   failure points at the API key. Change them together.
 4. Deploy, then apply for a place from a signed-in build and check the inbox.
 
 ### What it will and won't do
