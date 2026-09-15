@@ -28,7 +28,7 @@ struct WelcomeView: View {
               eyebrow: "Digital & Physical Retreats",
               firstHalf: "Wellness retreats,",
               accentHalf: "online and around the world.",
-              body: "Luxurious in-person gatherings and live digital retreats — fitness, breathwork, meditation, somatic therapy, and recovery."),
+              body: "Luxurious in-person gatherings and live digital retreats — fitness, breathwork, meditation, somatic exercises, and recovery."),
         Slide(id: "community",
               eyebrow: "A Conscious Community",
               firstHalf: "A worldwide community",

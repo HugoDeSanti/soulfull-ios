@@ -394,7 +394,7 @@ enum PracticeCategory: String, Identifiable, Hashable, CaseIterable {
 
     var title: String {
         switch self {
-        case .somatic:    return "Somatic Therapy"
+        case .somatic:    return "Somatic Exercises"
         case .breathwork: return "Breathwork"
         case .meditation: return "Meditation"
         }
@@ -436,7 +436,7 @@ enum MediaKind: String, Hashable {
 }
 
 /// A playable piece of media, decoupled from the content type that owns it, so
-/// `PracticePlayerView` can serve sessions and massages alike.
+/// `PracticePlayerView` can serve any library that grows media.
 struct MediaItem: Identifiable, Hashable {
     let id: Int
     let title: String
@@ -447,10 +447,10 @@ struct MediaItem: Identifiable, Hashable {
     let storagePath: String
     let durationSeconds: Int
     /// Which library this came from. The player records playback against it, so
-    /// a massage and a session with the same numeric id stay distinct in the
+    /// two libraries' items with the same numeric id stay distinct in the
     /// ledger that creator payouts are drawn from.
     var contentKind: PracticeContentKind = .session
-    /// Media track, for sessions; `nil` for massages.
+    /// Media track, for sessions; `nil` for other libraries.
     var category: PracticeCategory? = nil
 
     var durationLabel: String {
@@ -501,7 +501,7 @@ extension PracticeSession {
     ///
     /// Real rows carry a bucket-relative `storagePath` resolved via a signed URL.
     static let mock: [PracticeSession] = [
-        // Somatic Therapy
+        // Somatic Exercises
         .init(id: 1, category: .somatic, title: "Grounding Body Scan", lead: "Dr. Anya Iyer", mediaKind: .audio, storagePath: "", durationSeconds: 720, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "A slow head-to-toe scan to settle the nervous system."),
         .init(id: 2, category: .somatic, title: "Shake & Release", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 480, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "Discharge held tension through gentle, guided movement."),
         .init(id: 3, category: .somatic, title: "Orienting to Safety", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 900, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "A trauma-informed practice for re-establishing felt safety."),
@@ -526,17 +526,19 @@ extension PracticeSession {
 
 /// Which library a tracked practice came from. Mirrors the `content_kind`
 /// column on `practice_plays`; the raw values are the contract with the DB
-/// check constraint, so don't rename them casually.
+/// check constraint, so don't rename them casually — and if you drop one, drop
+/// it from the constraint too or the schema keeps accepting a value no client
+/// can produce (`massage` went both ways in 0012).
 enum PracticeContentKind: String, Hashable, Codable, Sendable {
-    case session, massage, journal, exercise, recipe
+    case session, journal, exercise, recipe
 
-    /// Whether this library credits a named creator. Sessions and massages name
-    /// a real guide who gets paid; the written libraries are house content for
-    /// now, so they record a null creator and simply don't appear in a payout
-    /// run until that changes.
+    /// Whether this library credits a named creator. Sessions name a real guide
+    /// who gets paid; the written libraries are house content for now, so they
+    /// record a null creator and simply don't appear in a payout run until that
+    /// changes.
     var creditsCreator: Bool {
         switch self {
-        case .session, .massage:            return true
+        case .session:                      return true
         case .journal, .exercise, .recipe:  return false
         }
     }
@@ -579,14 +581,6 @@ extension PracticePlay {
         PracticePlay(kind: item.contentKind, contentID: item.id, title: item.title,
                      creator: item.lead, category: item.category,
                      durationSeconds: item.durationSeconds)
-    }
-
-    /// Reading a massage's written technique, for the ones with no media yet.
-    /// When media *does* exist the player reports it instead — see the
-    /// `enabled:` flag on `.practiceActivity`.
-    static func massage(_ massage: Massage) -> PracticePlay {
-        PracticePlay(kind: .massage, contentID: massage.id, title: massage.title,
-                     creator: massage.lead, durationSeconds: massage.durationSeconds)
     }
 
     /// A prompt has no intrinsic length, but it needs a nominal one: it is the
@@ -651,13 +645,15 @@ struct PracticeProgress: Identifiable, Hashable, Sendable {
     }
 
     /// Where this practice lives on the Practice tab, so a "Continue" tap can
-    /// route to it.
+    /// route to it. Total by design: every kind the ledger can hold has a
+    /// section that opens it, and the exhaustive switch is what keeps that true
+    /// — retiring a library again won't compile until someone decides where its
+    /// history should land.
     var menuItem: PracticeMenuItem {
         switch kind {
         case .session:  return category.map(PracticeMenuItem.init(category:)) ?? .somatic
-        case .massage:  return .massages
         case .journal:  return .journal
-        case .exercise: return .exercises
+        case .exercise: return .movement
         case .recipe:   return .recipes
         }
     }
@@ -667,9 +663,13 @@ struct PracticeProgress: Identifiable, Hashable, Sendable {
 
 /// Every card on `PracticeView`. The first three are audio/video tracks backed
 /// by `PracticeCategory`; the rest are bespoke content sections.
+///
+/// `movement` is the section the `Exercise` library lives in — the card reads
+/// "Movement" while the items on it are still exercises. The content type keeps
+/// its own name because `PracticeContentKind.exercise` is a DB contract.
 enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
     case somatic, breathwork, meditation
-    case journal, exercises, recipes, massages
+    case journal, movement, recipes
 
     var id: String { rawValue }
 
@@ -695,40 +695,36 @@ enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
     var title: String {
         switch self {
         case .somatic, .breathwork, .meditation: return mediaCategory!.title
-        case .journal:   return "Journal Prompts"
-        case .exercises: return "Exercises"
-        case .recipes:   return "Food Recipes"
-        case .massages:  return "Personal Massages"
+        case .journal:  return "Journal Prompts"
+        case .movement: return "Movement"
+        case .recipes:  return "Food Recipes"
         }
     }
 
     var blurb: String {
         switch self {
         case .somatic, .breathwork, .meditation: return mediaCategory!.blurb
-        case .journal:   return "Sit with a question. Short prompts to move what words can reach."
-        case .exercises: return "Move with intention. Guided sequences for strength and mobility."
-        case .recipes:   return "Eat to feel whole. Nourishing recipes for body and mind."
-        case .massages:  return "Touch as medicine. Self-massage guides to release and restore."
+        case .journal:  return "Sit with a question. Short prompts to move what words can reach."
+        case .movement: return "Move with intention. Guided sequences for strength and mobility."
+        case .recipes:  return "Eat to feel whole. Nourishing recipes for body and mind."
         }
     }
 
     var systemImage: String {
         switch self {
         case .somatic, .breathwork, .meditation: return mediaCategory!.systemImage
-        case .journal:   return "pencil.and.scribble"
-        case .exercises: return "figure.strengthtraining.functional"
-        case .recipes:   return "fork.knife"
-        case .massages:  return "hands.and.sparkles"
+        case .journal:  return "pencil.and.scribble"
+        case .movement: return "figure.strengthtraining.functional"
+        case .recipes:  return "fork.knife"
         }
     }
 
     var imageName: String {
         switch self {
         case .somatic, .breathwork, .meditation: return mediaCategory!.imageName
-        case .journal:   return "practice-journals"
-        case .exercises: return "practice-exercises"
-        case .recipes:   return "practice-recipes"
-        case .massages:  return "practice-massage"
+        case .journal:  return "practice-journals"
+        case .movement: return "practice-exercises"
+        case .recipes:  return "practice-recipes"
         }
     }
 }
@@ -759,7 +755,7 @@ extension JournalPrompt {
     ]
 }
 
-// MARK: - Exercises (guided movement)
+// MARK: - Movement (guided exercise sequences)
 
 struct ExerciseStep: Identifiable, Hashable {
     let id: Int
@@ -838,46 +834,6 @@ extension Recipe {
         .init(id: 3, title: "Miso Glazed Salmon", lead: "Omega-3 rich", minutes: 25, servings: 2, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "A ten-minute glaze turns salmon into something restorative and bright.",
               ingredients: ["2 salmon fillets", "2 tbsp white miso", "1 tbsp honey", "1 tbsp rice vinegar", "1 tsp sesame oil", "Sliced scallions", "Steamed greens to serve"],
               steps: ["Whisk miso, honey, vinegar, and sesame oil.", "Coat salmon and rest 10 minutes.", "Roast at 200°C / 400°F for 12 minutes.", "Top with scallions; serve over steamed greens."]),
-    ]
-}
-
-// MARK: - Personal massages (guided self-massage)
-
-struct Massage: Identifiable, Hashable {
-    let id: Int
-    let title: String
-    let lead: String
-    let mediaKind: MediaKind
-    let storagePath: String
-    let durationSeconds: Int
-    let imageUrl: String
-    let blurb: String
-    let steps: [String]
-
-    var durationLabel: String {
-        let minutes = max(0, durationSeconds) / 60
-        return minutes == 0 ? "\(durationSeconds) sec" : "\(minutes) min"
-    }
-
-    /// The playable guide, or `nil` when no media has been uploaded for this
-    /// technique yet. The written `steps` stand on their own, so the detail
-    /// screen simply omits the player rather than offering a dead button.
-    var media: MediaItem? {
-        guard !storagePath.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
-                         mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds,
-                         contentKind: .massage, category: nil)
-    }
-
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: Massage, rhs: Massage) -> Bool { lhs.id == rhs.id }
-}
-
-extension Massage {
-    static let all: [Massage] = [
-        .init(id: 1, title: "Neck & Shoulder Release", lead: "Lena Brooks", mediaKind: .video, storagePath: "", durationSeconds: 600, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Melt the tension that gathers between the shoulder blades and the base of the skull.", steps: ["Warm the area with flat palms for 30 seconds.", "Knead the upper traps with thumb and fingers.", "Make small circles at the base of the skull.", "Finish with long downward strokes along the neck."]),
-        .init(id: 2, title: "Foot Reflexology Basics", lead: "Theo Park", mediaKind: .video, storagePath: "", durationSeconds: 480, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "Ground the whole nervous system through the soles of the feet.", steps: ["Press and roll the arch with both thumbs.", "Walk the thumbs across the ball of the foot.", "Rotate each toe gently.", "Sweep firmly from heel to toe to close."]),
-        .init(id: 3, title: "Jaw & Face Unwind", lead: "Mara Solé", mediaKind: .audio, storagePath: "", durationSeconds: 360, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "Release the clench we hold without noticing.", steps: ["Place fingertips on the jaw hinge.", "Make slow circles as the mouth softens open.", "Sweep along the cheekbones to the temples.", "Rest palms over the eyes and breathe."]),
     ]
 }
 
@@ -974,31 +930,34 @@ extension MoodChip {
     )
 
     // Every mood points at a section that actually has content in v1
-    // (journal / exercises / recipes / massages). The three media tracks are
-    // deliberately absent — they read "Coming soon" until `practice_sessions`
-    // is seeded, and a suggestion that lands on a locked card is a dead end.
+    // (journal / movement / recipes). The three media tracks are deliberately
+    // absent — they read "Coming soon" until `practice_sessions` is seeded, and
+    // a suggestion that lands on a locked card is a dead end. Each `ritual` /
+    // `ritualLead` pair names something really in that section, so retiring a
+    // library means rewriting the chips that point into it, not just repointing
+    // them — Anxious and Tender both needed new copy when Personal Massages went.
     static let all: [MoodChip] = [
-        .init(id: "anxious",  label: "Anxious",  suggests: .massages,
-              ritual: "Unwind the jaw",        ritualLead: "Release the clench we hold without noticing"),
+        .init(id: "anxious",  label: "Anxious",  suggests: .movement,
+              ritual: "Move it through",       ritualLead: "Gentle movement to settle a racing body"),
         .init(id: "grateful", label: "Grateful", suggests: .journal,
               ritual: "Name it while it's here", ritualLead: "A prompt for what's already good"),
         .init(id: "tired",    label: "Tired",    suggests: .recipes,
               ritual: "Eat something warm",    ritualLead: "Nourishment that asks nothing of you"),
-        .init(id: "joyful",   label: "Joyful",   suggests: .exercises,
+        .init(id: "joyful",   label: "Joyful",   suggests: .movement,
               ritual: "Move with it",          ritualLead: "Let the body spend some of that"),
-        .init(id: "tender",   label: "Tender",   suggests: .massages,
-              ritual: "A gentler touch",       ritualLead: "Self-massage for a soft day"),
+        .init(id: "tender",   label: "Tender",   suggests: .journal,
+              ritual: "Speak to yourself kindly", ritualLead: "A prompt for a soft day"),
         .init(id: "calm",     label: "Calm",     suggests: .journal,
               ritual: "Stay a while",          ritualLead: "A prompt to sit with the quiet"),
         .init(id: "lost",     label: "Lost",     suggests: .journal,
               ritual: "Find one true thing",   ritualLead: "Short questions for when the map is gone"),
-        .init(id: "hopeful",  label: "Hopeful",  suggests: .exercises,
+        .init(id: "hopeful",  label: "Hopeful",  suggests: .movement,
               ritual: "Build on it",           ritualLead: "A sequence for strength and momentum"),
         .init(id: "sad",      label: "Sad",      suggests: .journal,
               ritual: "Let it have room",      ritualLead: "A prompt that doesn't rush you"),
         .init(id: "peaceful", label: "Peaceful", suggests: .recipes,
               ritual: "Make something slow",   ritualLead: "Cooking as the practice"),
-        .init(id: "angry",    label: "Angry",    suggests: .exercises,
+        .init(id: "angry",    label: "Angry",    suggests: .movement,
               ritual: "Put it somewhere",      ritualLead: "Move the heat out through the body"),
         .init(id: "inspired", label: "Inspired", suggests: .journal,
               ritual: "Catch it in writing",   ritualLead: "Before the thought moves on"),

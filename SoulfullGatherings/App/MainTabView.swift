@@ -223,18 +223,16 @@ private struct PracticeRoot: View {
         case journalList
         case exerciseList
         case recipeList
-        case massageList
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
         case recipeDetail(Recipe)
-        case massageDetail(Massage)
     }
     @Binding var navHidden: Bool
     /// A section another tab asked to open. Consumed once, then cleared.
     @Binding var pending: PracticeMenuItem?
     /// Runs the action once an account exists, raising the account sheet first
     /// if the user is still a guest. Wraps only the *doing* — playing a
-    /// session, opening a prompt, an exercise, a recipe, a massage. The landing
+    /// session, opening a prompt, a movement sequence, a recipe. The landing
     /// and every list stay open, so a guest can always see what's on offer.
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
     @State private var path: [Route] = []
@@ -268,10 +266,9 @@ private struct PracticeRoot: View {
         switch item {
         case .somatic, .breathwork, .meditation:
             if let category = item.mediaCategory { path.append(.sessions(category)) }
-        case .journal:   path.append(.journalList)
-        case .exercises: path.append(.exerciseList)
-        case .recipes:   path.append(.recipeList)
-        case .massages:  path.append(.massageList)
+        case .journal:  path.append(.journalList)
+        case .movement: path.append(.exerciseList)
+        case .recipes:  path.append(.recipeList)
         }
     }
 
@@ -281,9 +278,8 @@ private struct PracticeRoot: View {
         switch route {
         case .sessions(let category): return category.rawValue
         case .journalList:            return PracticeMenuItem.journal.rawValue
-        case .exerciseList:           return PracticeMenuItem.exercises.rawValue
+        case .exerciseList:           return PracticeMenuItem.movement.rawValue
         case .recipeList:             return PracticeMenuItem.recipes.rawValue
-        case .massageList:            return PracticeMenuItem.massages.rawValue
         default:                      return nil
         }
     }
@@ -309,16 +305,12 @@ private struct PracticeRoot: View {
             ExerciseListView(onOpen: { e in requireAccount { path.append(.exerciseDetail(e)) } })
         case .recipeList:
             RecipeListView(onOpen: { r in requireAccount { path.append(.recipeDetail(r)) } })
-        case .massageList:
-            MassageListView(onOpen: { m in requireAccount { path.append(.massageDetail(m)) } })
         case .journalDetail(let prompt):
             JournalDetailView(prompt: prompt)
         case .exerciseDetail(let exercise):
             ExerciseDetailView(exercise: exercise)
         case .recipeDetail(let recipe):
             RecipeDetailView(recipe: recipe)
-        case .massageDetail(let massage):
-            MassageDetailView(massage: massage)
         }
     }
 }

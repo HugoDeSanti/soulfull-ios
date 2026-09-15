@@ -229,9 +229,8 @@ struct PracticePlayerView: View {
     private func resolveAndPlay() async {
         guard player == nil else { return }
         // History has to be in hand before the resume point is read, and this
-        // view is reachable from the massage detail screen as well as the
-        // session list — so don't assume a caller already loaded it. No-ops
-        // when it's current.
+        // view is presented as a sheet from wherever media lives — so don't
+        // assume a caller already loaded it. No-ops when it's current.
         await PracticeProgressStore.shared.refresh()
         let reporter = PlaybackReporter(play: .media(media))
         self.reporter = reporter

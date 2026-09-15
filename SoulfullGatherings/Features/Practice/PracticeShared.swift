@@ -88,7 +88,7 @@ struct PracticeListScaffold<Content: View>: View {
     }
 }
 
-// MARK: - Numbered step row (shared by exercises, recipes, massages)
+// MARK: - Numbered step row (shared by movement sequences and recipes)
 
 struct NumberedStepRow: View {
     let index: Int

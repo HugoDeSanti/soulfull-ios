@@ -15,7 +15,7 @@ Paste the **Review notes** block below into App Store Connect → your build →
 Browsing is open to an anonymous guest: the retreat catalog, retreat detail, the
 Practice landing and every list screen. An account is asked for only when the
 user opens an actual practice — a session player, a journal prompt, an exercise,
-a recipe, a massage. The sheet appears at that moment and, on success, the app
+or a recipe. The sheet appears at that moment and, on success, the app
 continues into whatever they tapped.
 
 Three consequences for review:
@@ -166,7 +166,7 @@ as a guest, with no sign-in at all.
 DEMO ACCOUNT (needed only to open a practice)
   Email:    <fill in>
   Password: <fill in>
-Opening a guided session, journal prompt, exercise, recipe or massage saves it
+Opening a guided session, journal prompt, movement sequence or recipe saves it
 to your practice history, so those ask you to sign in first. Use the account
 above via "or / Email", or Sign in with Apple. After signing in the app
 continues straight into whatever you tapped.
@@ -201,9 +201,9 @@ The app contains no AI features, no chatbot and no generative content. Every
 piece of text in it was written by our team.
 
 CONTENT NOTE
-"Coming soon" on the Somatic, Breathwork and Meditation cards is intentional:
+"Coming soon" on the Somatic Exercises, Breathwork and Meditation cards is intentional:
 those guided audio/video tracks are being recorded and will be enabled from the
-server. The Journal, Exercises, Recipes and Massage sections are complete and
+server. The Journal, Movement and Recipes sections are complete and
 fully browsable.
 
 CONTACT

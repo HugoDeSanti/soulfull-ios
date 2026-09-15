@@ -11,7 +11,7 @@
 //    • `PlaybackReporter` for audio/video. It counts MEDIA time, not wall-clock
 //      and not the scrubber position: seeking to the end of a track banks
 //      nothing, and a paused player accrues nothing.
-//    • `.practiceActivity(_:)` for the written libraries (journal, exercises,
+//    • `.practiceActivity(_:)` for the written libraries (journal, movement,
 //      recipes), which have no transport — there, time on screen is the only
 //      honest signal available.
 //
@@ -137,7 +137,7 @@ final class PlaybackReporter {
     }
 }
 
-// MARK: - Written practices (journal / exercises / recipes)
+// MARK: - Written practices (journal / movement / recipes)
 
 /// Records time-on-screen for a practice that has no transport to measure.
 private struct PracticeActivityModifier: ViewModifier {
@@ -149,9 +149,9 @@ private struct PracticeActivityModifier: ViewModifier {
     /// one sitting across many ledger rows and bill a creator for the sum of
     /// them. `eventID` below is the stable one.
     let play: PracticePlay
-    /// Off when something else is already measuring this content — a massage
-    /// with media reports through `PlaybackReporter`, and recording dwell as
-    /// well would pay its creator twice for one sitting.
+    /// Off when something else is already measuring this content — a written
+    /// practice that also carries media reports through `PlaybackReporter`, and
+    /// recording dwell as well would pay its creator twice for one sitting.
     let enabled: Bool
     /// Whether the practice counts as done. Evaluated at write time so a view
     /// can answer from its own state — a journal reflection with words in it,

@@ -318,7 +318,7 @@
 .onb-bottom { position: absolute; left: 0; right: 0; bottom: 36px; padding: 0 22px; z-index: 5; }
 
 /* ---------------------------------------------------------------------------
-   NumberedStepRow  (PracticeShared.swift) — used by Exercise / Recipe / Massage
+   NumberedStepRow  (PracticeShared.swift) — used by Movement / Recipe
    --------------------------------------------------------------------------- */
 .steps { display: flex; flex-direction: column; gap: 14px; }
 .num-step { display: flex; gap: 14px; align-items: flex-start; }

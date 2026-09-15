@@ -5,8 +5,8 @@
 //  Just-in-time account gating. Browsing is free — the retreat catalog, the
 //  Practice landing and every list screen open for an anonymous guest. An
 //  account is only asked for at the moment the user reaches for something
-//  personal: playing a session, opening a journal prompt, an exercise, a
-//  recipe or a massage.
+//  personal: playing a session, opening a journal prompt, a movement
+//  sequence or a recipe.
 //
 //  This replaced a hard gate at the end of onboarding (2026-09-03), which put
 //  the app in scope for App Store Guideline 5.1.1(i) — registration may not be

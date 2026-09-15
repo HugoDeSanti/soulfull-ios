@@ -36,7 +36,7 @@ struct PracticeView: View {
     /// behind it lands on `PracticeListView`, which has a real error state and
     /// a retry; a pessimistic one tells a user on a train that content they
     /// paid for doesn't exist.
-    /// Bespoke sections (journal, exercises, recipes, massages) are always live.
+    /// Bespoke sections (journal, movement, recipes) are always live.
     private func isAvailable(_ item: PracticeMenuItem) -> Bool {
         guard let category = item.mediaCategory else { return true }
         switch availability {
@@ -82,7 +82,7 @@ struct PracticeView: View {
     /// contradict them by saying sessions are still on the way.
     private var headerBlurb: String {
         if case .known(let set) = availability, set.isEmpty {
-            return "Choose a way in. Prompts to sit with, movement, food and touch — guided sessions on the way."
+            return "Choose a way in. Prompts to sit with, movement and food — guided sessions on the way."
         }
         return "Choose a way in. Sessions for every state — listen or watch, anytime."
     }

@@ -64,7 +64,7 @@ only — feature code never branches on OS.
   play/pause icon morph. Video keeps AVKit inside custom chrome.
 - **Detail screens** — Journal: writing room (prompt as pull-quote, focused editor);
   Recipe: magazine spread (hero, meta folio, ingredient checklist with spring checks);
-  Exercise/Massage: numbered editorial steps; placeholders get aurora + grain.
+  Movement/Recipe: numbered editorial steps; placeholders get aurora + grain.
 
 ## Decisions
 

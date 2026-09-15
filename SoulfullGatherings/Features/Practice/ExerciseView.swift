@@ -2,7 +2,7 @@
 //  ExerciseView.swift
 //  Soulfull Gatherings
 //
-//  Exercises section: guided movement sequences. The list shows each routine;
+//  Movement section: guided exercise sequences. The list shows each routine;
 //  the detail screen lays out its numbered steps with sets/reps.
 //  Mock-driven until an `exercises` table is seeded.
 //
@@ -15,10 +15,10 @@ struct ExerciseListView: View {
 
     var body: some View {
         PracticeListScaffold(
-            title: PracticeMenuItem.exercises.title,
-            blurb: PracticeMenuItem.exercises.blurb,
-            systemImage: PracticeMenuItem.exercises.systemImage,
-            backdrop: PracticeMenuItem.exercises.imageName
+            title: PracticeMenuItem.movement.title,
+            blurb: PracticeMenuItem.movement.blurb,
+            systemImage: PracticeMenuItem.movement.systemImage,
+            backdrop: PracticeMenuItem.movement.imageName
         ) {
             VStack(spacing: 10) {
                 ForEach(exercises) { exercise in
@@ -76,7 +76,7 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PracticeBackBar(label: "Exercises")
+                PracticeBackBar(label: "Movement")
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
