@@ -72,6 +72,10 @@ struct JournalDetailView: View {
     /// Debounces the save so a long reflection isn't rewritten per keystroke.
     @State private var saveTask: Task<Void, Never>?
     @FocusState private var writing: Bool
+    /// A tap on the receded question brings it back mid-sentence, without
+    /// touching the keyboard. Reset on every new sitting and as soon as
+    /// writing resumes, so the default is always "the words take the room".
+    @State private var peeking = false
 
     /// Reflections are private, device-local notes (per CLAUDE.md) — one entry
     /// per prompt, namespaced to the signed-in member by `LocalUserStore`.
@@ -79,42 +83,42 @@ struct JournalDetailView: View {
     /// sharing a phone read each other's writing.
     private var storageKey: String { "journal.\(prompt.id)" }
 
+    /// The question is out of the way only while writing *and* not being
+    /// peeked at — one value so the fade animates the same whichever of the
+    /// two changed.
+    private var receded: Bool { writing && !peeking }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 PracticeBackBar(label: "Journal")
 
-                // The question recedes while writing so the words take the room.
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(prompt.theme.uppercased())
-                        .font(Theme.eyebrow(11))
-                        .tracking(3)
-                        .foregroundStyle(Theme.inkSoft)
-                        .onPhoto()
-                    Text(prompt.title)
-                        .font(Theme.headline(30))
-                        .foregroundStyle(Theme.ink)
-                        .kerning(-0.3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .onPhoto()
-
-                    // Framing as a pull-quote against a honey rule.
-                    HStack(alignment: .top, spacing: 14) {
-                        Rectangle()
-                            .fill(Theme.honey.opacity(0.65))
-                            .frame(width: 2)
-                        Text(prompt.prompt)
-                            .font(Theme.body(15))
-                            .foregroundStyle(Theme.inkOnPhoto)
-                            .lineSpacing(5)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .onPhoto()
+                // The question recedes while writing so the words take the
+                // room — but it stays one tap away. Forgetting what you were
+                // answering used to mean dismissing the keyboard to re-read it.
+                Button { peeking.toggle() } label: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        promptBlock
+                            .opacity(receded ? 0.45 : 1)
+                            .blur(radius: receded ? 1.5 : 0)
+                        if writing {
+                            // Held in the layout through a peek: if the hint
+                            // left, revealing the question would shunt the
+                            // editor — and the cursor — down under the reader.
+                            peekHint
+                                .opacity(receded ? 1 : 0)
+                                .accessibilityHidden(!receded)
+                        }
                     }
-                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Gotcha #5: text hit-tests its glyphs, so the gaps between
+                    // these lines would be dead without a shape to fill them.
+                    .contentShape(Rectangle())
                 }
-                .opacity(writing ? 0.45 : 1)
-                .blur(radius: writing ? 1.5 : 0)
-                .animation(.easeInOut(duration: 0.35), value: writing)
+                .buttonStyle(SoulPressableStyle(scale: 0.99, dim: false))
+                .disabled(!writing)
+                .accessibilityHint("Brings the prompt back while you write")
+                .animation(.easeInOut(duration: 0.35), value: receded)
 
                 GlassCard(radius: 18, padding: 16) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -164,9 +168,16 @@ struct JournalDetailView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .onAppear { entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? "" }
+        // A peek belongs to one sitting: tapping back into the editor starts
+        // receded again rather than inheriting the last reveal.
+        .onChange(of: writing) { _, isWriting in
+            if isWriting { peeking = false }
+        }
         // Debounced: this wrote the whole entry on every keystroke, which for a
         // long reflection is a plist/file write per character.
         .onChange(of: entry) {
+            // Typing again puts the question back where it was.
+            peeking = false
             saveTask?.cancel()
             saveTask = Task {
                 try? await Task.sleep(for: .milliseconds(600))
@@ -193,6 +204,53 @@ struct JournalDetailView: View {
                 }
             }
         }
+    }
+
+    /// The question itself — eyebrow, title, and the prompt as a pull-quote
+    /// against a honey rule.
+    private var promptBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(prompt.theme.uppercased())
+                .font(Theme.eyebrow(11))
+                .tracking(3)
+                .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
+            Text(prompt.title)
+                .font(Theme.headline(30))
+                .foregroundStyle(Theme.ink)
+                .kerning(-0.3)
+                .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
+
+            HStack(alignment: .top, spacing: 14) {
+                Rectangle()
+                    .fill(Theme.honey.opacity(0.65))
+                    .frame(width: 2)
+                Text(prompt.prompt)
+                    .font(Theme.body(15))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    /// Says the receded question can be tapped. It sits *outside* the blur —
+    /// a hint you have to defocus to read would be no hint at all.
+    private var peekHint: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "eye")
+                .font(.system(size: 9, weight: .semibold))
+            Text("TAP TO RE-READ")
+                .font(Theme.eyebrow(9))
+                .tracking(2)
+        }
+        .foregroundStyle(Theme.inkSoft)
+        .onPhoto()
+        .padding(.top, 10)
+        .transition(.opacity)
     }
 }
 
