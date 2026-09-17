@@ -18,6 +18,14 @@
   .moods { display: flex; gap: 10px; overflow-x: auto; padding: 0 24px; scrollbar-width: none; }
   .moods::-webkit-scrollbar { display: none; }
 
+  .day-open { margin: 0 20px; display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--honey) 38%, transparent); }
+  .day-open .thumb { width: 64px; height: 64px; border-radius: 14px; flex: none; background-size: cover; background-position: center; border: 1px solid var(--glass-border); }
+  .day-open .left { flex: 1; }
+  .day-open .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--honey); margin: 0; }
+  .day-open h3 { font-size: 19px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
+  .day-open .prog-name { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  .day-open .chev { color: var(--ink-soft); margin-top: 6px; }
+
   .ritual { margin: 0 20px; position: relative; border-radius: 22px; overflow: hidden; padding: 18px; border: 1px solid var(--glass-border); }
   .ritual .aurora { opacity: .55; }
   .ritual .body { position: relative; }
@@ -80,6 +88,20 @@
         <span class="mood-chip">Heavy</span>
         <span class="mood-chip">Hopeful</span>
       </div>
+    </div>
+
+    <!-- The in-app half of the day-unlock nudge, for everyone who declined
+         notifications — and for everyone who has them but opened the app
+         before 8am. Present only while an enrolled program has an OPEN,
+         unfinished day; nothing is invented. -->
+    <div class="sec day-open glass">
+      <div class="thumb" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
+      <div class="left">
+        <p class="eb">Day 3 is open</p>
+        <h3>Letting go</h3>
+        <p class="prog-name">Finding Ground</p>
+      </div>
+      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
     </div>
 
     <!-- Continue where you left off. Sits ABOVE the ritual: picking up

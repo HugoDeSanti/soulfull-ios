@@ -1,0 +1,101 @@
+<!-- @dsCard group="Screens · Programs" name="Program — detail & days" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program — detail</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .scr { padding-bottom: 60px; }
+  .hero { height: 330px; position: relative; background-size: cover; background-position: center; }
+  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.22) 45%, var(--bg) 100%); }
+  .hero .backbar { position: absolute; top: 46px; left: 20px; }
+  .hero .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .hero .body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+  .hero .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .hero h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 6px 0 0; }
+  .hero .with { font-size: 14px; color: var(--ink-on-photo); margin: 6px 0 0; }
+  .body-pad { padding: 22px 20px 0; }
+  .over { font-size: 15px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 22px; }
+  .days { margin-top: 22px; }
+  .day { display: flex; gap: 14px; padding: 16px; border-radius: 22px; margin-top: 10px; border: 1px solid var(--glass-border); }
+  .day.is-open { border-color: color-mix(in srgb, var(--honey) 40%, transparent); }
+  .day.is-locked { opacity: .72; }
+  .day .mark { width: 38px; height: 38px; border-radius: 999px; flex: none; display: grid; place-items: center; font-size: 14px; font-weight: var(--w-semibold); background: rgba(245,243,232,.08); border: 1px solid var(--glass-border); color: var(--ink-soft); }
+  .day .mark.done { background: color-mix(in srgb, var(--accent-soft) 22%, transparent); border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent); color: var(--accent-soft); }
+  .day .mark.open { color: var(--honey); }
+  .day h4 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .day.is-locked h4 { color: var(--ink-soft); }
+  .day p { font-size: 13px; line-height: 1.45; color: var(--muted); margin: 4px 0 0; }
+  .day .status { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+  .day .status.open { color: var(--honey); }
+  .leave { display: block; text-align: center; margin-top: 22px; font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')">
+      <div class="ov"></div>
+      <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Programs</a></div>
+      <div class="body on-photo">
+        <p class="eb">7 days · Self-paced</p>
+        <h1>Finding Ground</h1>
+        <p class="with">with Alma Guerra</p>
+      </div>
+    </div>
+
+    <div class="body-pad">
+      <p class="over">A week of small, repeatable returns. Each day asks for twenty minutes and gives back a little more room than you had.</p>
+
+      <!-- Guest-visible all the way down to this list. The gate is on JOINING
+           (AccountGate), which is where browsing stops and it becomes theirs.
+           Once enrolled this button becomes "Open day 3", or a glass panel
+           reading "Day 4 opens tomorrow · Rest is part of it." -->
+      <button class="sg-btn sg-btn--filled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        Start this program
+      </button>
+
+      <div class="days">
+        <div class="section-label"><span class="title">The days</span></div>
+
+        <div class="day glass">
+          <span class="mark done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></span>
+          <div><h4>Arriving</h4><p>Land before you ask anything of the body.</p>
+            <div class="status">Completed Sep 15</div></div>
+        </div>
+
+        <div class="day glass">
+          <span class="mark done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></span>
+          <div><h4>Steadiness</h4><p>Find the floor. Everything else is built on it.</p>
+            <div class="status">Completed Sep 16</div></div>
+        </div>
+
+        <div class="day glass is-open">
+          <span class="mark open">3</span>
+          <div><h4>Letting go</h4><p>Set down one thing you have been carrying out of habit.</p>
+            <div class="status open">2 practices · open now</div></div>
+        </div>
+
+        <!-- Locked by the CALENDAR half of the rule: day 3 isn't finished, so
+             day 4 has no unlock date yet. Once it is, this reads "Opens
+             tomorrow" with the moon glyph instead of the lock. -->
+        <div class="day glass is-locked">
+          <span class="mark">4</span>
+          <div><h4>Strength</h4><p>Steadiness you can stand on when it is asked for.</p>
+            <div class="status"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4"/></svg>Finish day 3 first</div></div>
+        </div>
+      </div>
+
+      <a class="leave">Leave this program</a>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

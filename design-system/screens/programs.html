@@ -1,0 +1,129 @@
+<!-- @dsCard group="Screens · Programs" name="Programs — tab landing" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programs</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .scr { padding-top: 50px; padding-bottom: 130px; }
+  .hdr { padding: 12px 20px 0; }
+  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .hdr h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 8px; }
+  .hdr p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 0; }
+  .sec { margin-top: 26px; }
+
+  /* Continue card — the program in flight leads the screen. */
+  .cont { margin: 0 20px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border-high); }
+  .cont .hero { height: 200px; position: relative; background-size: cover; background-position: center; }
+  .cont .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.2) 55%, rgba(0,0,0,.78) 100%); }
+  .cont .hero .body { position: absolute; left: 18px; right: 18px; bottom: 16px; }
+  .cont .hero .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
+  .cont .hero h2 { font-size: 27px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .cont .hero .dayline { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .cont .hero .dayline .n { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
+  .cont .foot { padding: 18px; }
+  .cont .foot h3 { font-size: 19px; letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .cont .foot p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 8px 0 0; }
+  .cont .foot .cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; font-weight: var(--w-medium); color: var(--honey); }
+
+  /* Catalog card */
+  .pcat { margin: 0 20px 14px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); }
+  .pcat .hero { height: 150px; position: relative; background-size: cover; background-position: center; }
+  .pcat .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), transparent 50%); }
+  .pcat .chip { position: absolute; top: 12px; right: 12px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; }
+  .pcat .chip.honey { color: var(--honey); }
+  .pcat .chip.done { color: var(--accent-soft); }
+  .pcat .body { padding: 16px; }
+  .pcat .body h3 { font-size: 21px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .pcat .body p { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 6px 0 0; }
+  .pcat .body .meta { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 8px 0 0; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <!-- Backdrop follows the program in flight; "onb-bg" when nothing is
+         started. PhotoBackdrop(blur: 26, darken: 0.8). -->
+    <div class="photo" style="background-image:url('../assets/retreat-dolomites.jpg');filter:saturate(1.1) brightness(.72) blur(26px);transform:scale(1.2)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
+
+    <div class="hdr on-photo">
+      <p class="eb">Self-paced</p>
+      <h1>Programs</h1>
+      <p>Guided journeys you walk one day at a time. Take them at whatever speed your life allows.</p>
+    </div>
+
+    <!-- Continue on top. Absent entirely when nothing is enrolled — no
+         invented state, same rule as Home's continue card. -->
+    <div class="sec cont glass">
+      <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')">
+        <div class="ov"></div>
+        <div class="body on-photo">
+          <p class="eb">Continue</p>
+          <h2>Finding Ground</h2>
+          <div class="dayline">
+            <span class="n">Day 3 of 7</span>
+            <span class="prog-rule" style="width:80px"><i style="width:29%"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <h3>Letting go</h3>
+        <p>Set down one thing you have been carrying out of habit.</p>
+        <!-- Three states, three different sentences. OPEN: "Begin day 3" or
+             "1 of 2 done — keep going". LOCKED BY DATE: "Opens tomorrow".
+             LOCKED BY PROGRESS: "Finish the previous day first". They are
+             genuinely different messages and must not collapse into one. -->
+        <span class="cta">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 5l5 5-5 5v-3H7v-4h4z"/></svg>
+          Begin day 3
+        </span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">More programs</span></div>
+      <div class="pcat glass">
+        <div class="hero" style="background-image:url('../assets/retreat-bali.jpg')">
+          <div class="ov"></div>
+          <span class="chip glass honey">Day 2 of 5</span>
+        </div>
+        <div class="body">
+          <h3>Breath & Stillness</h3>
+          <p>Five days of settling the nervous system, one short sit at a time.</p>
+          <p class="meta">5 days · Self-paced · With Rodrigo Peán</p>
+        </div>
+      </div>
+      <div class="pcat glass">
+        <div class="hero" style="background-image:url('../assets/retreat-kyoto.jpg')">
+          <div class="ov"></div>
+          <span class="chip glass done">Complete</span>
+        </div>
+        <div class="body">
+          <h3>Morning Light</h3>
+          <p>A gentle fourteen-day return to moving before the day starts asking.</p>
+          <p class="meta">14 days · Self-paced · With Alma Guerra</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg></button>
+    <button class="nav-item is-active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg>
+      <span class="nav-label">Programs</span>
+    </button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
+  </nav>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

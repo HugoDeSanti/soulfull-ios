@@ -26,16 +26,17 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg>
         <span class="nav-label">Home</span>
       </button>
+      <button class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg><span class="nav-label">Programs</span></button>
       <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg><span class="nav-label">Practice</span></button>
-      <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.6"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14c2.6 0 4.5 1.8 4.5 4.5"/></svg><span class="nav-label">Circle</span></button>
       <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg><span class="nav-label">You</span></button>
     </nav>
   </div>
   <div class="caps"><span class="lab">Active = ink capsule + label + bounce</span><span class="lab">Idle = icon only, white 0.85</span></div>
   <p class="swiftnote">
     Glass capsule floats 18 above the home indicator with an 0.28 drop shadow. Active tab grows an ink-filled lens (matched geometry)
-    with its label and a <code>.bounce.down</code> symbol effect; spring (response 0.42, damping 0.72). Tabs: Home · Practice · Circle · You.
-    The bar bows out (offset +140, fade) on detail pushes.
+    with its label and a <code>.bounce.down</code> symbol effect; spring (response 0.42, damping 0.72). Tabs: Home · Programs · Practice · You.
+    The bar bows out (offset +140, fade) on detail pushes. The bar builds itself from <code>MainTab.allCases</code>, so a tab is added or
+    removed by touching the enum alone — which is how Circle left and Programs arrived.
   </p>
 </div></div>
 </body></html>

@@ -1,0 +1,104 @@
+<!-- @dsCard group="Screens · Programs" name="Program — one day" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program — day</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .scr { padding-bottom: 60px; }
+  .hero { height: 300px; position: relative; background-size: cover; background-position: center; }
+  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.2) 45%, var(--bg) 100%); }
+  .hero .backbar { position: absolute; top: 46px; left: 20px; }
+  .hero .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .hero .body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+  .hero .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
+  .hero h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .hero .int { font-size: 15px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px 0 0; }
+  .pad { padding: 20px 20px 0; }
+  .prog { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: var(--w-medium); color: var(--ink); }
+  .acts { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .act { display: flex; gap: 14px; padding: 14px; border-radius: 22px; border: 1px solid var(--glass-border); }
+  .act.done { border-color: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
+  .act .thumb { width: 68px; height: 68px; border-radius: 14px; flex: none; position: relative; overflow: hidden; background-size: cover; background-position: center; border: 1px solid var(--glass-border); }
+  .act.done .thumb { border-color: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+  .act .thumb .gl { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
+  .act.done .thumb .gl { background: rgba(0,0,0,.45); color: var(--accent-soft); }
+  .act h4 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .act .meta { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 4px 0 0; }
+  .act.done .meta { color: var(--accent-soft); }
+  .act .note { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 6px 0 0; }
+  .next { margin-top: 22px; padding: 18px; border-radius: 22px; border: 1px solid var(--glass-border); }
+  .next .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; display: flex; align-items: center; gap: 6px; }
+  .next h4 { font-size: 19px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 8px 0 0; }
+  .next p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 6px 0 0; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="hero" style="background-image:url('../assets/retreat-kyoto.jpg')">
+      <div class="ov"></div>
+      <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Finding Ground</a></div>
+      <div class="body on-photo">
+        <p class="eb">Day 3 of 7</p>
+        <h1>Letting go</h1>
+        <p class="int">Set down one thing you have been carrying out of habit.</p>
+      </div>
+    </div>
+
+    <div class="pad">
+      <div class="prog">
+        <span>1 of 2 done</span>
+        <span class="prog-rule" style="width:90px"><i style="width:50%"></i></span>
+      </div>
+
+      <!-- Each row opens the SAME screen the Practice tab opens — the player,
+           a journal prompt, a movement sequence, a recipe — and records to
+           `practice_plays` identically, so a creator is paid the same whether
+           their session was found in the library or inside a program. Nothing
+           on this screen records anything itself. -->
+      <div class="acts">
+        <div class="act glass done">
+          <div class="thumb" style="background-image:url('../assets/practice-journals.jpg')">
+            <div class="gl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></div>
+          </div>
+          <div style="flex:1">
+            <h4>Name one thing you've outgrown.</h4>
+            <div class="meta">Journal · A few minutes</div>
+          </div>
+        </div>
+
+        <div class="act glass">
+          <div class="thumb" style="background-image:url('../assets/practice-exercises.jpg')">
+            <div class="gl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></div>
+          </div>
+          <div style="flex:1">
+            <h4>Posture Reset</h4>
+            <div class="meta">Alignment · 8 min</div>
+            <p class="note">Undo the shape the week put you in.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shown once the day closes. The next day is ALREADY open at local
+           midnight; the notification announcing it fires at 08:00, which is a
+           separate decision — see ProgramNotifications. -->
+      <div class="next glass">
+        <p class="eb">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
+          Next
+        </p>
+        <h4>Day 4 · Strength</h4>
+        <p>Opens tomorrow. Rest is part of it — we'll let you know when it's ready.</p>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

@@ -79,6 +79,20 @@ struct SoulfullGatheringsApp: App {
             }
         } else if CommandLine.arguments.contains("-preview-confirm-email") {
             AccountView(previewConfirmationFor: "hugo@soulfullgatherings.com")
+        } else if CommandLine.arguments.contains("-preview-program") {
+            NavigationStack {
+                PreviewProgram { ProgramDetailView(program: $0).toolbar(.hidden, for: .navigationBar) }
+            }
+        } else if CommandLine.arguments.contains("-preview-program-day") {
+            NavigationStack {
+                PreviewProgram { program in
+                    // Day 1 — the only one a not-yet-enrolled preview can show.
+                    if let day = program.authoredDays.first {
+                        ProgramDayView(program: program, day: day)
+                            .toolbar(.hidden, for: .navigationBar)
+                    }
+                }
+            }
         } else {
             RootView()
         }
@@ -89,6 +103,34 @@ struct SoulfullGatheringsApp: App {
 }
 
 #if DEBUG
+/// Supplies a **real** program to the `-preview-program*` screens, falling back
+/// to the fixture.
+///
+/// The fallback is what `PreviewRetreat` learned the hard way and is why this
+/// exists at all: the day-by-day content lives in `programs.curriculum`, so a
+/// preview pinned to `Program.mock` would stop reflecting the real thing the
+/// moment someone edits the dashboard. Prefers a program that actually has
+/// authored days.
+private struct PreviewProgram<Content: View>: View {
+    @ViewBuilder var content: (Program) -> Content
+    @State private var program: Program?
+
+    var body: some View {
+        Group {
+            if let program {
+                content(program)
+            } else {
+                Theme.bg.ignoresSafeArea().overlay(ProgressView().tint(Theme.ink))
+            }
+        }
+        .task {
+            let all = (try? await SupabaseService.shared.fetchPrograms()) ?? []
+            program = all.first(where: \.isStartable) ?? all.first ?? Program.mock.first
+            if let program { await ProgramStore.shared.resolveContent(for: program) }
+        }
+    }
+}
+
 /// Supplies a **real** retreat to the `-preview-*` screens.
 ///
 /// They used to render `Retreat.mock[0]`, which stopped being useful the moment

@@ -91,7 +91,8 @@ mirror matching the **shipping** app; parked work stays under
 
 | Change | Mirror effect |
 |---|---|
-| **Circle tab cut** (Guideline 4.2 — a primary tab advertising unbuilt features) | `bottom-nav` is **three** items everywhere: Home · Practice · You. `community.html` moved to `Screens · Parked (post-v1)`. |
+| **Circle tab cut** (Guideline 4.2 — a primary tab advertising unbuilt features) | `community.html` sits in `Screens · Parked (post-v1)` and nothing routes to it. `bottom-nav` was three items while it was the only change; it is **four** again now that Programs has landed — Home · Programs · Practice · You. |
+| **Programs tab added** | A fourth tab of self-paced, multi-day journeys — three new cards in `Screens · Programs`, and a "Day N is open" card on `home`. Free to browse, free to join, but joining needs an account (`AccountGate`), which is why `program-detail` is readable end to end while its CTA is the gate. |
 | **Reservations off, Stripe dependency dropped** | `retreat-detail` CTA reads **"Request a place"** and opens `retreat-enquiry` (the retreat application form), with no other state: there is no client-side checkout left to push to. `retreat-checkout` is **deleted** from the mirror along with `RetreatCheckoutView.swift` and `PaymentService.swift`; recover both from git history if payments return. The Mallorca post-purchase cards (hub, to-dos, packing, guides) stay — they are trip logistics, not payment. |
 | **No offline fallback for retreats** | The app no longer substitutes sample retreats when a fetch fails — it renders an explicit *"No internet connection"* or *"Couldn't load retreats"* state instead (Guideline 2.1(a): placeholder content must be scrubbed). **Not modelled here**: this mirror shows happy-path screens only, and has never carried error, empty or offline states — `ConnectionBanner` has no card either. If the UX team wants to design these, they are `RetreatsLoadFailure` in `RetreatsViewModel.swift` (a two-line card on `home`, a full-screen state on `retreats-stack`). |
 | **Catalog photos come from Storage** | Retreat photography is fetched from the public `retreat-images` bucket, not bundled, so a new retreat needs no release. While a photo loads — or if it fails — the app paints a quiet two-stop gradient (`Theme.surface` → `Theme.bgDeep`) rather than a blank. **Not modelled here**, like the other loading states; the mirror shows loaded screens. |
@@ -120,11 +121,38 @@ guest opens an actual practice, then replays the tap they were making.
 ## Card groups in Claude Design
 
 `Overview` · `Foundations` · `Components` · `Screens · Welcome` ·
-`Screens · Onboarding` · `Screens · Home` · `Screens · Retreats` ·
-`Screens · Practice` · `Screens · Tabs` · `Screens · Parked (post-v1)`
+`Screens · Onboarding` · `Screens · Home` · `Screens · Programs` ·
+`Screens · Retreats` · `Screens · Practice` · `Screens · Tabs` ·
+`Screens · Parked (post-v1)`
 
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.
+
+### Programs (`programs`, `program-detail`, `program-day`)
+
+Self-paced, multi-day journeys. Mapped to `Features/Programs/**` and
+`Core/Services/ProgramStore.swift`; the full spec is
+`docs/PLAN-digital-programs.md`.
+
+**The one thing not to flatten when redesigning these.** A day can be
+unavailable for two different reasons, and they need two different sentences:
+
+| State | Copy | Why it is its own state |
+|---|---|---|
+| `open` | "Begin day 3" / "1 of 2 done — keep going" | Available now. |
+| `opens(date)` | "Opens tomorrow" + moon glyph | The previous day is **finished**; the calendar simply hasn't turned over. Day N+1 needs both its activities done *and* the local date to have moved past the day N was completed. |
+| `awaitingPreviousDay` | "Finish day 2 first" + lock glyph | Nothing to wait for but the member. |
+| `complete(date)` | "Completed Sep 15" + seal | Latched forever. |
+
+Collapsing the middle two into one "Locked" chip is the obvious tidy-up and it
+is wrong — "come back tomorrow" and "you're not done yet" send someone to
+completely different actions. `ProgramDayState` in `Models.swift` carries all
+four cases for exactly this reason.
+
+Note also that **the day opens at local midnight but the notification fires at
+08:00**. That gap is deliberate (`ProgramNotifications`), so a card promising
+"opens tomorrow" and a notification arriving mid-morning are consistent, not a
+bug.
 
 ### The retreat application (`retreat-enquiry`)
 
