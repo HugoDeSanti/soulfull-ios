@@ -136,6 +136,7 @@ struct ProgramDayView: View {
                 PressableCard(action: { open(item) }) {
                     activityRow(item, index: index + 1)
                 }
+                .accessibilityIdentifier("program-activity-row")
                 .listReveal()
             }
         }

@@ -65,6 +65,13 @@ struct GlassCard<Content: View>: View {
 struct SectionLabel: View {
     let title: String
     var action: String? = nil
+    /// What the action button is *called*, as distinct from what it says.
+    ///
+    /// Every one of these reads "ALL", which is fine to look at under its own
+    /// heading and useless to hear: a screen with two of them announces "ALL,
+    /// button" twice with nothing to tell them apart. Falls back to the visible
+    /// text, so a screen with only one is unaffected.
+    var actionLabel: String? = nil
     var onAction: (() -> Void)? = nil
 
     var body: some View {
@@ -86,6 +93,7 @@ struct SectionLabel: View {
                         .foregroundStyle(Theme.inkSoft)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(actionLabel ?? action)
             }
         }
         .padding(.horizontal, 24)

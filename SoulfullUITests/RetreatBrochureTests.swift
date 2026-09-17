@@ -32,7 +32,10 @@ final class RetreatBrochureTests: XCTestCase {
         // horizontally and Mallorca is its third card, so it exists but has no
         // valid activation point — even `isHittable` throws on it. The stack is
         // a vertical list of every retreat.
-        let all = app.buttons["ALL"]
+        // "All gatherings", not "ALL": Home has two of these now (gatherings and
+        // programs) and they were indistinguishable to this query — and to
+        // VoiceOver — until `SectionLabel` gained an accessibility label.
+        let all = app.buttons["All gatherings"]
         XCTAssertTrue(all.waitForExistence(timeout: 30), "Home never finished loading")
         shot(app, "01-home")
         all.tap()

@@ -289,7 +289,8 @@ struct HomeView: View {
 
     private var upcomingGatherings: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: "Upcoming gatherings", action: "ALL") {
+            SectionLabel(title: "Upcoming gatherings", action: "ALL",
+                         actionLabel: "All gatherings") {
                 onOpenRetreats()
             }
 
@@ -391,7 +392,8 @@ struct HomeView: View {
             // Both the "ALL" action and pressable cards came back when the
             // Programs tab gave them somewhere to go — see the note that used
             // to sit here about the shelf being informational.
-            SectionLabel(title: "Digital Retreats", action: "ALL") { onOpenProgram(nil) }
+            SectionLabel(title: "Digital Retreats", action: "ALL",
+                         actionLabel: "All programs") { onOpenProgram(nil) }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {

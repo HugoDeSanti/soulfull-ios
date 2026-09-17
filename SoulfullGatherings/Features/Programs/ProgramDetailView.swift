@@ -247,6 +247,7 @@ struct ProgramDetailView: View {
             .opacity(enrolled && !state.isComplete && !state.isOpen ? 0.72 : 1)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("program-day-row")
         .accessibilityLabel("Day \(day.day), \(day.title)")
     }
 

@@ -266,6 +266,7 @@ struct ProgramsView: View {
                         programCard(program)
                     }
                     .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
+                    .accessibilityIdentifier("program-card")
                     .listReveal()
                 }
             }

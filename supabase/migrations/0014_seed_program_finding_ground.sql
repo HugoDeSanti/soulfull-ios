@@ -11,6 +11,13 @@
 -- table is empty and an activity that cannot be opened cannot be completed —
 -- which, under the unlock rule, would stall the program permanently.
 --
+-- APPLIED 2026-09-17 and verified: `days` = 7 and the curriculum authors 7,
+-- which is the check at the bottom of this file — they can drift apart and the
+-- catalog card would then disagree with the detail screen. 14 activities across
+-- the 7 days. The document round-tripped through `ProgramCurriculum` and
+-- rendered on device, which is the only way to catch a decode failure: it
+-- FAILS SOFT, so a broken curriculum looks exactly like an unauthored one.
+--
 -- To add a guided audio/video day later: upload the media, insert the
 -- practice_sessions row (set `program_only` true if it should not appear on the
 -- Practice tab), then add {"kind":"session","content_id":<id>} to a day here.

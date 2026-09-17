@@ -14,8 +14,24 @@
 -- a payable event; the activities *inside* a day record to the payout ledger
 -- exactly as they do from the Practice tab, so creator earnings are unaffected.
 --
--- How to apply: Supabase dashboard → SQL Editor, `supabase db push`, or the
--- Management API (`POST /v1/projects/<ref>/database/query`).
+-- APPLIED to the live project 2026-09-17 via the Management API, and recorded
+-- in supabase_migrations.schema_migrations (0013) so the CLI stays in step.
+--
+-- Verified the same day, as a real member and as an anonymous guest:
+--   • 7 policies, all `to authenticated`, none to `anon`.
+--   • An ANONYMOUS GUEST (role=authenticated, is_anonymous=true — 0003's trap)
+--     is refused with 42501 on insert. That is the server saying what
+--     AccountGate says; a guest reaching this table means the gate failed open.
+--   • A confirmed member enrols (201), completes a day, and CANNOT move the
+--     completion date: re-inserting the way the app does (ignore-duplicates)
+--     leaves `completed_at` untouched, and a PATCH matches zero rows because
+--     no update policy exists. Both matter — that timestamp IS the next day's
+--     unlock, so a writable one would let anyone hand themselves tomorrow.
+--   • Another member's rows read back as [].
+--   • Leaving deletes the enrolment and its day rows, and nothing else.
+--
+-- How to apply elsewhere: Supabase dashboard → SQL Editor, `supabase db push`,
+-- or the Management API (`POST /v1/projects/<ref>/database/query`).
 
 -- ---------------------------------------------------------------------------
 -- 1. programs: the curriculum lives here
