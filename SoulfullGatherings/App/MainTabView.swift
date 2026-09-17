@@ -22,11 +22,12 @@ import SwiftUI
 /// Circle case back is all that's needed to restore the tab — see
 /// `AppFeatures.circleTabEnabled` for why it's out of v1.
 enum MainTab: String, Hashable, CaseIterable {
-    case home, practice, you
+    case home, programs, practice, you
 
     var label: String {
         switch self {
         case .home:     return "Home"
+        case .programs: return "Programs"
         case .practice: return "Practice"
         case .you:      return "You"
         }
@@ -35,6 +36,7 @@ enum MainTab: String, Hashable, CaseIterable {
     var systemImage: String {
         switch self {
         case .home:     return "house"
+        case .programs: return "mountain.2"
         case .practice: return "sparkles"
         case .you:      return "person.crop.circle"
         }
@@ -44,6 +46,7 @@ enum MainTab: String, Hashable, CaseIterable {
     var activeSystemImage: String {
         switch self {
         case .home:     return "house.fill"
+        case .programs: return "mountain.2.fill"
         case .practice: return "sparkles"
         case .you:      return "person.crop.circle.fill"
         }
@@ -82,6 +85,9 @@ struct MainTabView: View {
     /// card). `PracticeRoot` consumes and clears it, which is what makes the
     /// jump land on the right screen rather than just the Practice landing.
     @State private var pendingPractice: PracticeMenuItem?
+    /// Set when Home's "Day N is open" card asks to open a program. Consumed by
+    /// `ProgramsRoot` on appear, the same handshake `pendingPractice` uses.
+    @State private var pendingProgram: String?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -89,10 +95,20 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .home:
-                    HomeRoot(navHidden: $navHidden) { item in
+                    HomeRoot(navHidden: $navHidden, onOpenPractice: { item in
                         pendingPractice = item
                         tab = .practice
-                    }
+                    }, onOpenProgram: { programID in
+                        pendingProgram = programID
+                        tab = .programs
+                    })
+                case .programs:
+                    ProgramsRoot(navHidden: $navHidden, pending: $pendingProgram,
+                                 requireAccount: { action in
+                                     if gate.require(signedIn: auth.hasAccount, action) {
+                                         showAccount = true
+                                     }
+                                 })
                 case .practice:
                     PracticeRoot(navHidden: $navHidden, pending: $pendingPractice,
                                  requireAccount: { action in
@@ -150,6 +166,8 @@ private struct HomeRoot: View {
     @Binding var navHidden: Bool
     /// Switch to the Practice tab and open a section there.
     var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
+    /// Switch to the Programs tab. A non-nil id opens that program.
+    var onOpenProgram: (String?) -> Void = { _ in }
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
@@ -159,6 +177,7 @@ private struct HomeRoot: View {
                 onOpenRetreats: { path.append(.retreatsStack) },
                 onOpenRetreat: { r in path.append(.retreatDetail(r, zoom: true)) },
                 onOpenPractice: onOpenPractice,
+                onOpenProgram: onOpenProgram,
                 zoomNamespace: zoomNS
             )
             .navigationDestination(for: Route.self) { route in
@@ -212,6 +231,81 @@ private struct HomeRoot: View {
             retreat: r,
             onOpenExperience: { path.append(.retreatExperience($0)) }
         )
+    }
+}
+
+// MARK: - Programs wrapped in its own NavigationStack.
+
+/// The Programs tab. Browsing is open to a guest all the way down to the day
+/// list; `requireAccount` wraps **joining** only — the moment a program stops
+/// being something you're reading about and starts being yours.
+private struct ProgramsRoot: View {
+    enum Route: Hashable {
+        case detail(Program)
+        /// The day by NUMBER rather than by value: `ProgramDay` is content that
+        /// can be re-authored under a live member, and a stale copy sitting in
+        /// the navigation path would keep rendering the old one.
+        case day(Program, Int)
+        case journalDetail(JournalPrompt)
+        case exerciseDetail(Exercise)
+        case recipeDetail(Recipe)
+    }
+    @Binding var navHidden: Bool
+    /// A program another tab asked to open. Consumed once, then cleared.
+    @Binding var pending: String?
+    var requireAccount: (@escaping () -> Void) -> Void = { $0() }
+    @State private var path: [Route] = []
+    @Namespace private var zoomNS
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            ProgramsView(
+                onOpenProgram: { path.append(.detail($0)) },
+                onOpenDay: { program, day in path.append(.day(program, day.day)) },
+                pending: $pending,
+                zoomNamespace: zoomNS
+            )
+            .navigationDestination(for: Route.self) { route in
+                destination(route)
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    @ViewBuilder
+    private func destination(_ route: Route) -> some View {
+        switch route {
+        case .detail(let program):
+            ProgramDetailView(
+                program: program,
+                onOpenDay: { path.append(.day(program, $0.day)) },
+                requireAccount: requireAccount
+            )
+            .navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
+
+        case .day(let program, let number):
+            if let day = program.authoredDays.first(where: { $0.day == number }) {
+                ProgramDayView(program: program, day: day, onOpen: open)
+            }
+
+        case .journalDetail(let prompt):  JournalDetailView(prompt: prompt)
+        case .exerciseDetail(let exercise): ExerciseDetailView(exercise: exercise)
+        case .recipeDetail(let recipe):   RecipeDetailView(recipe: recipe)
+        }
+    }
+
+    /// A day's activity opens the *same* screen the Practice tab would open, so
+    /// it records to the same ledger and a creator is paid identically either
+    /// way. Sessions are a sheet and stay inside `ProgramDayView`.
+    private func open(_ content: ProgramActivityContent) {
+        switch content {
+        case .journal(let prompt):    path.append(.journalDetail(prompt))
+        case .exercise(let exercise): path.append(.exerciseDetail(exercise))
+        case .recipe(let recipe):     path.append(.recipeDetail(recipe))
+        case .session:                break   // handled as a sheet by the day view
+        }
     }
 }
 

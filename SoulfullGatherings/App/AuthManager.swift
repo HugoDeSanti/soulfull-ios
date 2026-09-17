@@ -443,6 +443,10 @@ final class AuthManager {
         // switches the scope out from under us.
         LocalUserStore.shared.purgeCurrentScope()
         PracticeProgressStore.shared.clear()
+        ProgramStore.shared.clear()
+        // A "Day 3 is open" nudge for a program belonging to an account that no
+        // longer exists is the kind of thing people delete an app over.
+        ProgramNotifications.cancelAll()
         // The session is now invalid server-side; drop it and open a fresh
         // anonymous one so the app stays usable.
         await signOut()
@@ -486,6 +490,9 @@ final class AuthManager {
             // Server-side practice history belongs to the previous member;
             // drop it so their continue card can't flash up for someone else.
             PracticeProgressStore.shared.clear()
+            // Same for program enrolment — and the scheduled nudges with it.
+            ProgramStore.shared.clear()
+            ProgramNotifications.cancelAll()
         }
     }
 }

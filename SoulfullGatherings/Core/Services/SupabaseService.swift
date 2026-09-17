@@ -120,6 +120,10 @@ actor SupabaseService {
         let rows: [ProgramRow] = try await client
             .from("programs")
             .select()
+            // Draft programs stay invisible, so a curriculum can be authored in
+            // the dashboard over several sittings without appearing half-built.
+            .eq("published", value: true)
+            .order("sort_order", ascending: true, nullsFirst: false)
             .order("title", ascending: true)
             .limit(50)
             .execute()
@@ -158,6 +162,9 @@ actor SupabaseService {
             let rows: [CategoryRow] = try await client
                 .from("practice_sessions")
                 .select("category")
+                // Program-only media must not light up a Practice track the
+                // user can then open and find empty.
+                .eq("program_only", value: false)
                 .limit(500)
                 .execute()
                 .value
@@ -183,6 +190,9 @@ actor SupabaseService {
             .from("practice_sessions")
             .select()
             .eq("category", value: category.rawValue)
+            // See `program_only` in 0013: media that belongs to a program
+            // curriculum only, and is reachable from there.
+            .eq("program_only", value: false)
             .order("title", ascending: true)
             .limit(100)
             .execute()
@@ -191,6 +201,179 @@ actor SupabaseService {
         practiceCache[category] = sessions
         practiceCacheDate[category] = Date()
         return sessions
+    }
+
+    /// Specific sessions by id, for a program curriculum.
+    ///
+    /// Deliberately **not** filtered on `program_only`: a curriculum is allowed
+    /// to reference both shared library sessions and its own exclusive ones —
+    /// that flag hides media from the Practice tab, it does not hide it from
+    /// the program that owns it.
+    ///
+    /// Uncached. A curriculum resolves once per screen and the per-category
+    /// caches are keyed the wrong way to help here.
+    func fetchPracticeSessions(ids: [Int]) async throws -> [PracticeSession] {
+        guard !ids.isEmpty else { return [] }
+        let rows: [PracticeSessionRow] = try await client
+            .from("practice_sessions")
+            .select()
+            .in("id", values: ids)
+            .limit(200)
+            .execute()
+            .value
+        return rows.map(\.session)
+    }
+
+    // MARK: - Programs (enrolment + day completion)
+
+    /// Every program this member has joined. Uncached — it changes the moment
+    /// they enrol, and a stale enrolment shows the wrong CTA.
+    func fetchProgramEnrollments(userID: UUID) async throws -> [ProgramEnrollment] {
+        let rows: [ProgramEnrollmentRow] = try await client
+            .from("program_enrollments")
+            .select()
+            .eq("user_id", value: userID)
+            .order("enrolled_at", ascending: false)
+            .limit(50)
+            .execute()
+            .value
+        return rows.map(\.enrollment)
+    }
+
+    /// Every day this member has finished, across every program.
+    func fetchProgramDayCompletions(userID: UUID) async throws -> [ProgramDayCompletion] {
+        let rows: [ProgramDayCompletionRow] = try await client
+            .from("program_day_completions")
+            .select()
+            .eq("user_id", value: userID)
+            .order("day_number", ascending: true)
+            .limit(500)
+            .execute()
+            .value
+        return rows.map(\.completion)
+    }
+
+    /// Joins a program, returning the row the server wrote.
+    ///
+    /// `enrolled_at` matters beyond bookkeeping: it is **day 1's unlock
+    /// moment**, and every activity is judged complete or not by whether it was
+    /// finished after it. So the server's clock sets it, not the device's —
+    /// the same clock that stamps `practice_plays.started_at`, which is what it
+    /// gets compared against.
+    func enrollInProgram(id programID: String, userID: UUID) async throws -> ProgramEnrollment {
+        struct Insert: Encodable {
+            let userId: UUID
+            let programId: String
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id", programId = "program_id"
+            }
+        }
+        let rows: [ProgramEnrollmentRow] = try await client
+            .from("program_enrollments")
+            // Re-joining a program keeps the original enrolment — leaving is an
+            // explicit act, and an accidental double tap must not silently
+            // restart someone's week.
+            .upsert(Insert(userId: userID, programId: programID),
+                    onConflict: "user_id,program_id",
+                    ignoreDuplicates: true)
+            .execute()
+            .value
+        if let existing = rows.first?.enrollment { return existing }
+        // `ignoreDuplicates` returns nothing when the row was already there.
+        let current: [ProgramEnrollmentRow] = try await client
+            .from("program_enrollments")
+            .select()
+            .eq("user_id", value: userID)
+            .eq("program_id", value: programID)
+            .limit(1)
+            .execute()
+            .value
+        guard let enrollment = current.first?.enrollment else {
+            throw AppError.unknown
+        }
+        return enrollment
+    }
+
+    /// Leaves a program: the enrolment and every day completion for it.
+    ///
+    /// Note what is **not** deleted — `practice_plays`. The practices were
+    /// genuinely done and their creators genuinely earned from them; leaving a
+    /// program is the member withdrawing from a schedule, not rewriting
+    /// history. Re-joining later starts the days again from an empty slate,
+    /// which is the point.
+    func leaveProgram(id programID: String, userID: UUID) async throws {
+        try await client
+            .from("program_day_completions")
+            .delete()
+            .eq("user_id", value: userID)
+            .eq("program_id", value: programID)
+            .execute()
+        try await client
+            .from("program_enrollments")
+            .delete()
+            .eq("user_id", value: userID)
+            .eq("program_id", value: programID)
+            .execute()
+    }
+
+    /// Marks one day finished and returns the moment the server recorded.
+    ///
+    /// That timestamp is the input to the next day's unlock, so it comes back
+    /// from the database rather than being assumed — and it is **latched**: an
+    /// existing row is left exactly as it was. Re-completing a day (replaying
+    /// its activities, say) must not push tomorrow further away.
+    @discardableResult
+    func completeProgramDay(programID: String, day: Int, userID: UUID) async throws -> Date {
+        struct Insert: Encodable {
+            let userId: UUID
+            let programId: String
+            let dayNumber: Int
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id", programId = "program_id", dayNumber = "day_number"
+            }
+        }
+        do {
+            let rows: [ProgramDayCompletionRow] = try await client
+                .from("program_day_completions")
+                .upsert(Insert(userId: userID, programId: programID, dayNumber: day),
+                        onConflict: "user_id,program_id,day_number",
+                        ignoreDuplicates: true)
+                .execute()
+                .value
+            if let completed = rows.first?.completedAt { return completed }
+        } catch {
+            // Already recorded is the common case here, and it is not a
+            // failure — fall through and read back what is stored.
+            Log.data.info("Program day insert fell through: \(error.localizedDescription)")
+        }
+        let current: [ProgramDayCompletionRow] = try await client
+            .from("program_day_completions")
+            .select()
+            .eq("user_id", value: userID)
+            .eq("program_id", value: programID)
+            .eq("day_number", value: day)
+            .limit(1)
+            .execute()
+            .value
+        guard let completed = current.first?.completedAt else {
+            throw AppError.unknown
+        }
+        return completed
+    }
+
+    /// Stamps the enrolment as finished, once the last day is done.
+    func markProgramCompleted(id programID: String, userID: UUID, at date: Date = .now) async throws {
+        struct Update: Encodable {
+            let completedAt: Date
+            enum CodingKeys: String, CodingKey { case completedAt = "completed_at" }
+        }
+        try await client
+            .from("program_enrollments")
+            .update(Update(completedAt: date))
+            .eq("user_id", value: userID)
+            .eq("program_id", value: programID)
+            .is("completed_at", value: nil)
+            .execute()
     }
 
     // MARK: - Profiles
@@ -527,18 +710,48 @@ private struct ProgramRow: Codable {
     let id: String
     let title: String
     let lead: String
-    let dateRange: String
+    /// Nullable since 0013 — a self-paced program has no calendar window.
+    let dateRange: String?
     let days: Int
     let imageUrl: String
+    let blurb: String?
+    /// Decoded loosely, exactly like `RetreatRow.experience`, so one malformed
+    /// curriculum can't take the whole catalog down with it.
+    let curriculum: AnyJSON?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, lead, days
+        case id, title, lead, days, blurb, curriculum
         case dateRange = "date_range"
         case imageUrl  = "image_url"
     }
 
+    /// The curriculum document, or `nil` if there isn't one **or it's
+    /// malformed**.
+    ///
+    /// Fails soft for the same reason the brochure does: this is content a
+    /// human authors in the dashboard, and a missing comma must not blank the
+    /// Programs tab. ⚠️ The cost is that a *broken* curriculum is
+    /// indistinguishable on screen from an *unauthored* one — the program
+    /// appears in the catalog and simply can't be started. When someone reports
+    /// that, read the log before assuming the column is empty.
+    var decodedCurriculum: ProgramCurriculum? {
+        guard let curriculum, curriculum != .null else { return nil }
+        do {
+            let data = try JSONEncoder().encode(curriculum)
+            // NOTE: a plain decoder, not `.convertFromSnakeCase`. The curriculum
+            // types spell their own CodingKeys ("image_url", "content_id"), and
+            // the two mechanisms together would look for "imageUrl" in a
+            // document that says "image_url".
+            return try JSONDecoder().decode(ProgramCurriculum.self, from: data)
+        } catch {
+            Log.data.error("Program \(self.id, privacy: .public) has an unreadable curriculum: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     var program: Program {
-        Program(id: id, title: title, lead: lead, when: dateRange, days: days, imageUrl: imageUrl)
+        Program(id: id, title: title, lead: lead, when: dateRange, days: days,
+                imageUrl: imageUrl, blurb: blurb, curriculum: decodedCurriculum)
     }
 }
 
@@ -646,5 +859,37 @@ private struct PracticeProgressRow: Decodable {
             playCount: playCount,
             lastPlayedAt: lastPlayedAt
         )
+    }
+}
+
+private struct ProgramEnrollmentRow: Decodable {
+    let programId: String
+    let enrolledAt: Date
+    let completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case programId   = "program_id"
+        case enrolledAt  = "enrolled_at"
+        case completedAt = "completed_at"
+    }
+
+    var enrollment: ProgramEnrollment {
+        ProgramEnrollment(programID: programId, enrolledAt: enrolledAt, completedAt: completedAt)
+    }
+}
+
+private struct ProgramDayCompletionRow: Decodable {
+    let programId: String
+    let dayNumber: Int
+    let completedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case programId   = "program_id"
+        case dayNumber   = "day_number"
+        case completedAt = "completed_at"
+    }
+
+    var completion: ProgramDayCompletion {
+        ProgramDayCompletion(programID: programId, day: dayNumber, completedAt: completedAt)
     }
 }

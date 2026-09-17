@@ -17,11 +17,16 @@ struct HomeView: View {
     /// Server-held practice history — the continue card and the streak line.
     /// Read inside `body`, which is what registers the observation.
     private let history = PracticeProgressStore.shared
+    /// Program enrolment, for the "Day N is open" line. Read inside `body`.
+    private let programs = ProgramStore.shared
 
     let onOpenRetreats: () -> Void
     let onOpenRetreat: (Retreat) -> Void
     /// Jump to a section of the Practice library (from the ritual card).
     var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
+    /// Jump to the Programs tab. A non-nil id opens that program; nil just
+    /// switches to the tab.
+    var onOpenProgram: (String?) -> Void = { _ in }
     /// Zoom-hero namespace owned by HomeRoot; retreat cards register as sources.
     var zoomNamespace: Namespace.ID? = nil
 
@@ -33,6 +38,12 @@ struct HomeView: View {
                 // Picking up something already begun beats being handed
                 // something new, so it sits above the ritual. Absent entirely
                 // when there's nothing under way — no invented state.
+                // The in-app half of the day-unlock nudge, for everyone who
+                // declined notifications — and for everyone who has them and
+                // opened the app before 8am anyway.
+                if let open = openProgramDay {
+                    section { programDayCard(open.0, day: open.1) }
+                }
                 if let resume = history.resumable {
                     section { continueCard(resume) }
                 }
@@ -52,6 +63,18 @@ struct HomeView: View {
         }
         .task { await vm.load() }
         .task { await history.refresh() }
+        .task { await programs.refresh() }
+    }
+
+    /// The program day that is open right now, if any. Nothing is invented:
+    /// with no enrolment, or with the next day still locked, there is no card.
+    private var openProgramDay: (Program, ProgramDay)? {
+        for program in vm.programs where programs.isEnrolled(program.id) {
+            guard let day = programs.currentDay(program),
+                  programs.state(program, day: day.day).isOpen else { continue }
+            return (program, day)
+        }
+        return nil
     }
 
     /// Shared scroll-in reveal: sections rise out of a blur as they enter
@@ -365,15 +388,17 @@ struct HomeView: View {
 
     private var digitalRetreats: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Informational shelf: there is no program detail screen yet, so
-            // it deliberately offers no "ALL" action and the cards don't press.
-            // Give both back when program detail exists.
-            SectionLabel(title: "Digital Retreats")
+            // Both the "ALL" action and pressable cards came back when the
+            // Programs tab gave them somewhere to go — see the note that used
+            // to sit here about the shelf being informational.
+            SectionLabel(title: "Digital Retreats", action: "ALL") { onOpenProgram(nil) }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(vm.programs) { p in
-                        programCard(p)
+                        PressableCard(action: { onOpenProgram(p.id) }) {
+                            programCard(p)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -400,7 +425,7 @@ struct HomeView: View {
                     startPoint: .top, endPoint: .bottom
                 )
 
-                Text("\(p.days) DAYS · DIGITAL · \(p.when)".uppercased())
+                Text("\(p.metaLine) · DIGITAL".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2)
                     .foregroundStyle(.white)
@@ -430,7 +455,58 @@ struct HomeView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program, \(p.when)")
+        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program")
+        .accessibilityHint("Opens the program")
+    }
+
+    // MARK: - "Day N is open"
+
+    /// The in-app half of the unlock nudge. Deliberately quiet and specific:
+    /// it names the day and its intention, so it reads as an invitation rather
+    /// than a notification badge.
+    private func programDayCard(_ program: Program, day: ProgramDay) -> some View {
+        PressableCard(action: { onOpenProgram(program.id) }) {
+            HStack(alignment: .top, spacing: 14) {
+                CatalogImage(day.imageUrl ?? program.imageUrl) { $0.resizable().scaledToFill() }
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DAY \(day.day) IS OPEN")
+                        .font(Theme.eyebrow(10))
+                        .tracking(2)
+                        .foregroundStyle(Theme.honey)
+                    Text(day.title)
+                        .font(Theme.headline(19))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(program.title)
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.muted)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                    .padding(.top, 6)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .soulGlassCard()
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Theme.honey.opacity(0.38), lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Day \(day.day) of \(program.title) is open: \(day.title)")
+        .accessibilityHint("Opens the day")
     }
 
 }
