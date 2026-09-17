@@ -241,7 +241,11 @@ private struct HomeRoot: View {
 /// being something you're reading about and starts being yours.
 private struct ProgramsRoot: View {
     enum Route: Hashable {
-        case detail(Program)
+        /// `zoom` is true only when pushed from a catalog card that registered
+        /// a matched source. The continue card and the cross-tab hand-off
+        /// register none, and a zoom transition with no source to grow from is
+        /// a worse push than a plain one.
+        case detail(Program, zoom: Bool)
         /// The day by NUMBER rather than by value: `ProgramDay` is content that
         /// can be re-authored under a live member, and a stale copy sitting in
         /// the navigation path would keep rendering the old one.
@@ -260,7 +264,7 @@ private struct ProgramsRoot: View {
     var body: some View {
         NavigationStack(path: $path) {
             ProgramsView(
-                onOpenProgram: { path.append(.detail($0)) },
+                onOpenProgram: { path.append(.detail($0, zoom: $1)) },
                 onOpenDay: { program, day in path.append(.day(program, day.day)) },
                 pending: $pending,
                 zoomNamespace: zoomNS
@@ -277,13 +281,17 @@ private struct ProgramsRoot: View {
     @ViewBuilder
     private func destination(_ route: Route) -> some View {
         switch route {
-        case .detail(let program):
-            ProgramDetailView(
+        case .detail(let program, let zoom):
+            let detail = ProgramDetailView(
                 program: program,
                 onOpenDay: { path.append(.day(program, $0.day)) },
                 requireAccount: requireAccount
             )
-            .navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
+            if zoom {
+                detail.navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
+            } else {
+                detail
+            }
 
         case .day(let program, let number):
             if let day = program.authoredDays.first(where: { $0.day == number }) {

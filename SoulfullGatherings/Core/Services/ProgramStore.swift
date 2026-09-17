@@ -224,7 +224,11 @@ final class ProgramStore {
         let enrollment = try await SupabaseService.shared.enrollInProgram(id: program.id, userID: userID)
         enrollments[program.id] = enrollment
         loadedFor = userID
-        await ProgramNotifications.requestAuthorizationIfNeeded()
+        // Deliberately NOT awaited. `requestAuthorizationIfNeeded` doesn't
+        // return until the member answers the system dialog, and awaiting it
+        // here would hold the push to day 1 behind a prompt about something
+        // that hasn't happened yet.
+        Task { await ProgramNotifications.requestAuthorizationIfNeeded() }
     }
 
     /// Leaves a program: the enrolment and its day completions. Practice

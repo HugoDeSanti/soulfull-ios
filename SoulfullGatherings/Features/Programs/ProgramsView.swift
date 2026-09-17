@@ -12,7 +12,10 @@
 import SwiftUI
 
 struct ProgramsView: View {
-    var onOpenProgram: (Program) -> Void = { _ in }
+    /// The Bool says whether this push has a matched zoom source behind it —
+    /// catalog cards register one, the continue card and the cross-tab hand-off
+    /// do not.
+    var onOpenProgram: (Program, Bool) -> Void = { _, _ in }
     var onOpenDay: (Program, ProgramDay) -> Void = { _, _ in }
     /// A program another tab asked to open (Home's "Day N is open" card).
     /// Consumed once the catalog has actually loaded, then cleared.
@@ -96,7 +99,7 @@ struct ProgramsView: View {
         if let day = store.currentDay(program), store.state(program, day: day.day).isOpen {
             onOpenDay(program, day)
         } else {
-            onOpenProgram(program)
+            onOpenProgram(program, false)
         }
     }
 
@@ -133,7 +136,7 @@ struct ProgramsView: View {
             if state.isOpen {
                 onOpenDay(program, day)
             } else {
-                onOpenProgram(program)
+                onOpenProgram(program, false)
             }
         }) {
             VStack(alignment: .leading, spacing: 0) {
@@ -259,7 +262,7 @@ struct ProgramsView: View {
 
             VStack(spacing: 14) {
                 ForEach(vm.programs.filter { $0.id != active?.id }) { program in
-                    PressableCard(action: { onOpenProgram(program) }) {
+                    PressableCard(action: { onOpenProgram(program, true) }) {
                         programCard(program)
                     }
                     .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
