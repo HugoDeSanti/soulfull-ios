@@ -286,7 +286,7 @@ final class PracticeProgressStore {
 struct PracticeStats: Equatable {
     let currentStreak: Int
     let bestStreak: Int
-    /// Whether today already counts toward the streak — something was
+    /// Whether today already counts toward the streak — a practice was
     /// FINISHED today. A streak carried by yesterday alone is still alive, but
     /// today is what keeps it.
     let keptToday: Bool

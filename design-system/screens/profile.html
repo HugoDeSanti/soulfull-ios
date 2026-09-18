@@ -30,7 +30,7 @@
   .tile.accent .ic { color: var(--honey); }
   .tile .n { font-size: 40px; font-weight: var(--w-light); letter-spacing: -1px; color: var(--ink); line-height: 1; margin-top: auto; padding-top: 12px; }
   .tile .lbl { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--ink-soft); margin-top: 8px; }
-  .tile .cap { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .tile .cap { font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 6px; min-height: 2.7em; }
   .tile.accent .cap { color: var(--honey); }
 
   /* HistoryRow — 60pt thumbnail + two lines on glass; chevron only when the
@@ -98,12 +98,13 @@
           <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>
           <span class="n">4</span>
           <span class="lbl">Day streak</span>
-          <!-- "Kept today" (finished something today) / "Finish one today to
-               keep it" (practised today, nothing finished — only finished
-               practice counts, but never tell them to "practice today" after
-               they have) / "Practice today to keep it" (nothing yet) /
-               "Finish a practice to begin" (no streak). -->
-          <span class="cap">Kept today</span>
+          <!-- "You've completed a practice today" (finished one today) /
+               "Finish a practice today to keep your streak" (practised today,
+               nothing finished — only finished practice counts, but never tell
+               them to "practice today" after they have) / "Practice today to
+               keep it" (nothing yet) / "Finish a practice to begin" (no
+               streak). Two lines reserved on every tile. -->
+          <span class="cap">You've completed a practice today</span>
         </div>
         <div class="tile glass">
           <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c-5-2-8-6-8-11M6 14c-2 0-3-1-3.5-2.5M5 10C3.5 9.5 3 8 3 6.5M8 17.5c-1.5.5-3 0-4-1"/></svg>

@@ -241,12 +241,14 @@ struct ProfileView: View {
     /// practice counts toward the streak, but someone who opened a prompt and
     /// didn't write, or stopped a session short, has still practised. Telling
     /// them "practice today" contradicts what they just did; what's true is
-    /// that one needs finishing.
+    /// that a practice needs finishing — and the words name the practice and
+    /// the streak outright ("finish one" left people asking one what).
     private func streakCaption(_ stats: PracticeStats) -> String {
         guard history.ledgerStatus == .loaded else { return " " }
-        if stats.keptToday { return "Kept today" }
+        if stats.keptToday { return "You've completed a practice today" }
         if stats.currentStreak > 0 {
-            return stats.practicedToday ? "Finish one today to keep it" : "Practice today to keep it"
+            return stats.practicedToday ? "Finish a practice today to keep your streak"
+                                        : "Practice today to keep it"
         }
         return "Finish a practice to begin"
     }
@@ -637,11 +639,14 @@ private struct StatTile: View {
                 .minimumScaleFactor(0.8)
                 .padding(.top, 4)
 
+            // Two lines, reserved on every tile: the streak captions need the
+            // room to say plainly what happened, and reserving it keeps all
+            // four tiles the same height whichever caption is showing.
             Text(caption)
                 .font(Theme.body(12))
                 .foregroundStyle(accent ? Theme.honey : Theme.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .lineLimit(2, reservesSpace: true)
+                .lineSpacing(1)
                 .padding(.top, 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -653,7 +658,7 @@ private struct StatTile: View {
         .onChange(of: value) { _, new in roll(to: new) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
-        // The caption is part of what the tile says ("Kept today", what counts
+        // The caption is part of what the tile says (that today is done, what counts
         // as a class), so VoiceOver reads it too.
         .accessibilityValue(spokenValue.map { value in
             let note = caption.trimmingCharacters(in: .whitespaces)

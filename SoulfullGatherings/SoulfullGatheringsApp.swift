@@ -56,6 +56,8 @@ struct SoulfullGatheringsApp: App {
             NavigationStack {
                 PreviewRetreat { RetreatDetailView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
             }
+        } else if CommandLine.arguments.contains("-preview-retreats") {
+            PreviewRetreatsStack()
         } else if CommandLine.arguments.contains("-preview-experience") {
             NavigationStack {
                 PreviewRetreat { RetreatExperienceHubView(retreat: $0).toolbar(.hidden, for: .navigationBar) }
@@ -127,6 +129,23 @@ private struct PreviewProgram<Content: View>: View {
             let all = (try? await SupabaseService.shared.fetchPrograms()) ?? []
             program = all.first(where: \.isStartable) ?? all.first ?? Program.mock.first
             if let program { await ProgramStore.shared.resolveContent(for: program) }
+        }
+    }
+}
+
+/// The retreats stack (`-preview-retreats`) against the live catalog, with the
+/// detail push wired so a tap on the focused name goes somewhere — the same
+/// hand-off `HomeRoot` makes, minus the rest of Home.
+private struct PreviewRetreatsStack: View {
+    @State private var path: [Retreat] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            RetreatsStackView(onSelect: { path.append($0) })
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: Retreat.self) {
+                    RetreatDetailView(retreat: $0).toolbar(.hidden, for: .navigationBar)
+                }
         }
     }
 }

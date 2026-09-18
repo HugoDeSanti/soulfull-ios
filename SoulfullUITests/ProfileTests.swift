@@ -85,7 +85,7 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared")
         shot(app, "02-you-member-top")
 
-        XCTAssertEqual(value(streak), "4 days, Kept today",
+        XCTAssertEqual(value(streak), "4 days, You've completed a practice today",
                        "Current streak: today and the three days before")
         XCTAssertEqual(value(element(app, "stat-best-streak")), "9 days, Days in a row",
                        "Best streak: the 9-day run a month back — longer than the current one")
@@ -109,7 +109,7 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared")
         shot(app, "05-you-unfinished-today")
 
-        XCTAssertEqual(value(streak), "3 days, Finish one today to keep it", """
+        XCTAssertEqual(value(streak), "3 days, Finish a practice today to keep your streak", """
             Today's practice is unfinished, so the streak rests on the three days             before it — and the caption must acknowledge today's practice rather             than tell them to practise.
             """)
         XCTAssertFalse(value(streak)?.contains("Practice today") ?? true,

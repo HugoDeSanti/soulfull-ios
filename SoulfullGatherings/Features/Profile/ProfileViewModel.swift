@@ -221,8 +221,9 @@ final class ProfileViewModel {
     /// With `-preview-you-unfinished` as well, today's two practices are left
     /// unfinished: today no longer counts, so the streak falls back to the
     /// three days before it (3), classes drop to 12, minutes stay 250 (time
-    /// spent counts, finished or not), and the streak tile must say "Finish one
-    /// today to keep it" — never "Practice today", to someone who just did.
+    /// spent counts, finished or not), and the streak tile must say "Finish a
+    /// practice today to keep your streak" — never "Practice today", to someone
+    /// who just did.
     private func installPreviewFixture() {
         let finishedToday = !CommandLine.arguments.contains("-preview-you-unfinished")
         let calendar = Calendar.current
