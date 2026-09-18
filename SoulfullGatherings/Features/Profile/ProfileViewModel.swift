@@ -217,7 +217,14 @@ final class ProfileViewModel {
     ///   recipe time is not counted; unfinished class time is.
     ///
     /// Plus one program in progress, one completed, and two past retreats.
+    ///
+    /// With `-preview-you-unfinished` as well, today's two practices are left
+    /// unfinished: today no longer counts, so the streak falls back to the
+    /// three days before it (3), classes drop to 12, minutes stay 250 (time
+    /// spent counts, finished or not), and the streak tile must say "Finish one
+    /// today to keep it" — never "Practice today", to someone who just did.
     private func installPreviewFixture() {
+        let finishedToday = !CommandLine.arguments.contains("-preview-you-unfinished")
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
         func day(_ offset: Int) -> Date {
@@ -231,10 +238,10 @@ final class ProfileViewModel {
         }
 
         var ledger: [PracticePlayRecord] = []
-        ledger += (0...3).map { play(.exercise, -$0, seconds: 900) }
+        ledger += (0...3).map { play(.exercise, -$0, seconds: 900, done: $0 != 0 || finishedToday) }
         ledger += (22...30).map { play(.session, -$0, seconds: 1200) }
         ledger.append(play(.session, -25, seconds: 600, done: false))
-        ledger.append(play(.journal, 0, seconds: 300))
+        ledger.append(play(.journal, 0, seconds: 300, done: finishedToday))
         ledger.append(play(.recipe, -10, seconds: 400))
         ledger.append(play(.journal, -5, seconds: 20, done: false))
         PracticeProgressStore.shared.installPreviewLedger(ledger)

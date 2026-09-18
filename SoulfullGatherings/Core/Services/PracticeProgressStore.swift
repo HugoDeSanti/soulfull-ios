@@ -286,8 +286,16 @@ final class PracticeProgressStore {
 struct PracticeStats: Equatable {
     let currentStreak: Int
     let bestStreak: Int
-    /// Whether today already counts. A streak carried by yesterday alone is
-    /// still alive, but today is what keeps it.
+    /// Whether today already counts toward the streak — something was
+    /// FINISHED today. A streak carried by yesterday alone is still alive, but
+    /// today is what keeps it.
+    let keptToday: Bool
+    /// Whether anything was practised today at all, finished or not. Not the
+    /// same as `keptToday`, and the difference is the one a member notices: a
+    /// prompt opened and not written in, or a session stopped short, is real
+    /// practice — telling them "practice today" after it reads as though it
+    /// never happened. The ledger only holds a sitting once there was real
+    /// activity (5s on screen, or media actually played), so any row counts.
     let practicedToday: Bool
     let classesTaken: Int
     let minutesPracticed: Int
@@ -295,11 +303,15 @@ struct PracticeStats: Equatable {
     init(_ plays: some Sequence<PracticePlayRecord>,
          calendar: Calendar = .current,
          now: Date = .now) {
+        let today = calendar.startOfDay(for: now)
         var days = Set<Date>()
+        var touchedToday = false
         var classes = 0
         var seconds = 0
         for play in plays {
-            if play.completed { days.insert(calendar.startOfDay(for: play.startedAt)) }
+            let day = calendar.startOfDay(for: play.startedAt)
+            if day == today { touchedToday = true }
+            if play.completed { days.insert(day) }
             guard play.kind.countsAsClass else { continue }
             if play.completed { classes += 1 }
             seconds += max(0, play.secondsPlayed)
@@ -307,8 +319,8 @@ struct PracticeStats: Equatable {
         classesTaken = classes
         minutesPracticed = seconds / 60
 
-        let today = calendar.startOfDay(for: now)
-        practicedToday = days.contains(today)
+        keptToday = days.contains(today)
+        practicedToday = touchedToday
         currentStreak = Self.run(endingOn: today, in: days, calendar: calendar)
             // Yesterday still counts as a live streak — today isn't over yet.
             ?? Self.step(today, by: -1, calendar)

@@ -85,14 +85,39 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared")
         shot(app, "02-you-member-top")
 
-        XCTAssertEqual(value(streak), "4 days",
+        XCTAssertEqual(value(streak), "4 days, Kept today",
                        "Current streak: today and the three days before")
-        XCTAssertEqual(value(element(app, "stat-best-streak")), "9 days",
+        XCTAssertEqual(value(element(app, "stat-best-streak")), "9 days, Days in a row",
                        "Best streak: the 9-day run a month back — longer than the current one")
-        XCTAssertEqual(value(element(app, "stat-classes")), "13",
+        XCTAssertEqual(value(element(app, "stat-classes")), "13, Sessions & movement",
                        "Classes: 4 movement + 9 sessions. A journal entry, a recipe or an unfinished sitting is not a class")
-        XCTAssertEqual(value(element(app, "stat-minutes")), "250",
+        XCTAssertEqual(value(element(app, "stat-minutes")), "250, 4 hr, 10 min",
                        "Minutes: 60 + 180 + the unfinished session's 10. Journal and recipe time don't count")
+    }
+
+    /// Practised today but finished nothing. Only a finished practice keeps a
+    /// streak, so today doesn't count yet — but the member DID practise, and
+    /// being told "Practice today to keep it" straight after reads as though it
+    /// never happened. The caption has to say what's actually true.
+    func testStreakCaptionAcknowledgesAnUnfinishedPracticeToday() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset", "-uitest-onboarded",
+                               "-preview-you", "-preview-you-unfinished"]
+        app.launch()
+
+        let streak = element(app, "stat-current-streak")
+        XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared")
+        shot(app, "05-you-unfinished-today")
+
+        XCTAssertEqual(value(streak), "3 days, Finish one today to keep it", """
+            Today's practice is unfinished, so the streak rests on the three days             before it — and the caption must acknowledge today's practice rather             than tell them to practise.
+            """)
+        XCTAssertFalse(value(streak)?.contains("Practice today") ?? true,
+                       "Told someone who practised today to practise today")
+        XCTAssertEqual(value(element(app, "stat-classes")), "12, Sessions & movement",
+                       "An unfinished movement sitting is not a class")
+        XCTAssertEqual(value(element(app, "stat-minutes")), "250, 4 hr, 10 min",
+                       "Unfinished time still counts as minutes practiced")
     }
 
     /// One program in progress, one completed; two retreats whose last day has

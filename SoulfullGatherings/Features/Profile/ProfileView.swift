@@ -197,7 +197,7 @@ struct ProfileView: View {
                              caption: streakCaption(stats),
                              systemImage: "flame.fill",
                              accent: known && stats.currentStreak > 0,
-                             breathes: known && stats.practicedToday,
+                             breathes: known && stats.keptToday,
                              spoken: "Current streak",
                              spokenValue: known ? days(stats.currentStreak) : nil)
                         .accessibilityIdentifier("stat-current-streak")
@@ -234,12 +234,20 @@ struct ProfileView: View {
         }
     }
 
-    /// The one line on the streak tile that says what to do next. All three
-    /// read off real history — nothing here is a nudge for its own sake.
+    /// The one line on the streak tile that says what to do next. All of it
+    /// reads off real history — nothing here is a nudge for its own sake.
+    ///
+    /// "Practiced today" and "kept today" are different: only a FINISHED
+    /// practice counts toward the streak, but someone who opened a prompt and
+    /// didn't write, or stopped a session short, has still practised. Telling
+    /// them "practice today" contradicts what they just did; what's true is
+    /// that one needs finishing.
     private func streakCaption(_ stats: PracticeStats) -> String {
         guard history.ledgerStatus == .loaded else { return " " }
-        if stats.practicedToday { return "Kept today" }
-        if stats.currentStreak > 0 { return "Practice today to keep it" }
+        if stats.keptToday { return "Kept today" }
+        if stats.currentStreak > 0 {
+            return stats.practicedToday ? "Finish one today to keep it" : "Practice today to keep it"
+        }
         return "Finish a practice to begin"
     }
 
@@ -645,7 +653,12 @@ private struct StatTile: View {
         .onChange(of: value) { _, new in roll(to: new) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
-        .accessibilityValue(spokenValue ?? "Loading")
+        // The caption is part of what the tile says ("Kept today", what counts
+        // as a class), so VoiceOver reads it too.
+        .accessibilityValue(spokenValue.map { value in
+            let note = caption.trimmingCharacters(in: .whitespaces)
+            return note.isEmpty ? value : "\(value), \(note)"
+        } ?? "Loading")
     }
 
     private func roll(to target: Int?) {
