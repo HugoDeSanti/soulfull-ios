@@ -111,6 +111,25 @@ actor SupabaseService {
         return retreats
     }
 
+    /// Specific retreats, **whatever their dates** — the ones a member's
+    /// bookings point at. `fetchRetreats()` keeps only what hasn't started, so
+    /// it can never answer "which retreats have I been on"; this can.
+    ///
+    /// Uncached: it's keyed by the member's own history rather than shared,
+    /// and a cache keyed the catalog's way would never hit.
+    func fetchRetreats(ids: [Int]) async throws -> [Retreat] {
+        guard !ids.isEmpty else { return [] }
+        let rows: [RetreatRow] = try await client
+            .from("retreats")
+            .select()
+            .in("id", values: ids)
+            .order("start_date", ascending: false)
+            .limit(50)
+            .execute()
+            .value
+        return rows.map(\.retreat)
+    }
+
     func fetchPrograms() async throws -> [Program] {
         if let cache = programsCache,
            let date = programsCacheDate,
@@ -132,6 +151,23 @@ actor SupabaseService {
         programsCache = programs
         programsCacheDate = Date()
         return programs
+    }
+
+    /// Specific programs, **published or not** — the ones a member has joined.
+    /// A program taken down after someone finished it is still part of their
+    /// history; the row's `published` flag says whether it can still be opened.
+    /// The select policy is `using (true)`, so drafts are readable; the catalog
+    /// hides them client-side, and so does everything but the You tab.
+    func fetchPrograms(ids: [String]) async throws -> [Program] {
+        guard !ids.isEmpty else { return [] }
+        let rows: [ProgramRow] = try await client
+            .from("programs")
+            .select()
+            .in("id", values: ids)
+            .limit(50)
+            .execute()
+            .value
+        return rows.map(\.program)
     }
 
     /// Which media tracks actually have sessions behind them.
@@ -446,6 +482,23 @@ actor SupabaseService {
         return rows.first?.booking
     }
 
+    /// Every retreat this member has **paid** for, newest first. A pending,
+    /// failed or refunded booking is not a retreat they were on. RLS (select
+    /// for the owner only) is the real filter; the `user_id` match is belt and
+    /// braces, as everywhere else. Uncached.
+    func fetchPaidBookings(userID: UUID) async throws -> [Booking] {
+        let rows: [BookingRow] = try await client
+            .from("bookings")
+            .select()
+            .eq("user_id", value: userID)
+            .eq("status", value: "paid")
+            .order("created_at", ascending: false)
+            .limit(100)
+            .execute()
+            .value
+        return rows.map(\.booking)
+    }
+
     // MARK: - Practice progress
 
     /// Records (or tops up) one playback/reading session in `practice_plays`.
@@ -501,6 +554,42 @@ actor SupabaseService {
             .execute()
             .value
         return rows.map(\.progress)
+    }
+
+    /// Every sitting this member has recorded — the raw ledger rows rather than
+    /// the per-practice aggregate — reduced to the four columns the You tab's
+    /// numbers need.
+    ///
+    /// The aggregate can't answer these questions. `practice_progress` keeps
+    /// one `last_played_at` per practice, so a meditation done every morning
+    /// for a week looks like one day of practice, and a best streak can't be
+    /// recovered from it at all. The days are bucketed on the device, not in
+    /// SQL, because "which day" depends on the member's time zone.
+    ///
+    /// Paged, since PostgREST caps a response at 1,000 rows and a daily
+    /// practitioner passes that in a year. Bounded, so a runaway can't page
+    /// forever. RLS returns only the caller's rows. Uncached.
+    func fetchPracticeLedger(userID: UUID) async throws -> [PracticePlayRecord] {
+        let pageSize = 1000
+        let maxPages = 20
+        var records: [PracticePlayRecord] = []
+        for page in 0..<maxPages {
+            let from = page * pageSize
+            let rows: [PracticePlayRecordRow] = try await client
+                .from("practice_plays")
+                .select("client_event_id, content_kind, seconds_played, completed, started_at")
+                .eq("user_id", value: userID)
+                // A total order, so a row can't straddle two pages and be
+                // counted twice or not at all.
+                .order("started_at", ascending: true)
+                .order("client_event_id", ascending: true)
+                .range(from: from, to: from + pageSize - 1)
+                .execute()
+                .value
+            records.append(contentsOf: rows.compactMap(\.record))
+            if rows.count < pageSize { break }
+        }
+        return records
     }
 
     /// Resolves a private Storage object path into a time-limited playable URL.
@@ -718,9 +807,10 @@ private struct ProgramRow: Codable {
     /// Decoded loosely, exactly like `RetreatRow.experience`, so one malformed
     /// curriculum can't take the whole catalog down with it.
     let curriculum: AnyJSON?
+    let published: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, title, lead, days, blurb, curriculum
+        case id, title, lead, days, blurb, curriculum, published
         case dateRange = "date_range"
         case imageUrl  = "image_url"
     }
@@ -751,7 +841,8 @@ private struct ProgramRow: Codable {
 
     var program: Program {
         Program(id: id, title: title, lead: lead, when: dateRange, days: days,
-                imageUrl: imageUrl, blurb: blurb, curriculum: decodedCurriculum)
+                imageUrl: imageUrl, blurb: blurb, curriculum: decodedCurriculum,
+                published: published)
     }
 }
 
@@ -859,6 +950,36 @@ private struct PracticeProgressRow: Decodable {
             playCount: playCount,
             lastPlayedAt: lastPlayedAt
         )
+    }
+}
+
+/// Read model for the four `practice_plays` columns `fetchPracticeLedger`
+/// selects.
+private struct PracticePlayRecordRow: Decodable {
+    let clientEventId: UUID
+    let contentKind: String
+    let secondsPlayed: Int
+    let completed: Bool
+    let startedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case completed
+        case clientEventId = "client_event_id"
+        case contentKind   = "content_kind"
+        case secondsPlayed = "seconds_played"
+        case startedAt     = "started_at"
+    }
+
+    /// Nil for a kind this build doesn't know. Unlike `PracticeProgressRow`,
+    /// which falls back to `.session` so a resume card still has somewhere to
+    /// go, a stat must not guess: counting an unknown kind as a class would
+    /// inflate the number, and the check constraint means it can't happen
+    /// today anyway.
+    var record: PracticePlayRecord? {
+        guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
+        return PracticePlayRecord(eventID: clientEventId, kind: kind,
+                                  secondsPlayed: secondsPlayed, completed: completed,
+                                  startedAt: startedAt)
     }
 }
 

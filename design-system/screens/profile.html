@@ -7,18 +7,50 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .wrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 90px 28px 120px; }
-  .wrap img { width: 88px; }
+  /* Features/Profile/ProfileView.swift. Scrolls: header, Your practice (2x2
+     stat tiles), Digital retreats, In-person retreats, account actions. */
+  .scr { padding-top: 50px; padding-bottom: 130px; }
+  .hdr { display: flex; flex-direction: column; align-items: center; padding: 28px 28px 0; }
+  .hdr img { width: 88px; }
   .eb { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 18px 0 0; }
   h1 { font-size: 36px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 8px 0 0; }
-  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); margin: 16px 0 0; }
-  .status svg { color: var(--honey); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-on-photo); margin: 16px 0 0; }
+  .status svg { color: var(--ink); }
   .intentions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 18px 0 0; }
+  .sec { margin-top: 36px; }
+  .sec:first-of-type { margin-top: 38px; }
+
+  /* StatTile — glass, 118pt min, figure 40 Light, eyebrow, one caption line.
+     The current-streak tile is honey-tinted while a streak is alive; its flame
+     breathes once today is kept. */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 20px; }
+  .tile { border-radius: 22px; padding: 16px; min-height: 118px; display: flex; flex-direction: column; }
+  .tile.accent { background: color-mix(in srgb, var(--honey) 8%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
+  .tile .ic { height: 18px; color: var(--ink-soft); }
+  .tile.accent .ic { color: var(--honey); }
+  .tile .n { font-size: 40px; font-weight: var(--w-light); letter-spacing: -1px; color: var(--ink); line-height: 1; margin-top: auto; padding-top: 12px; }
+  .tile .lbl { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--ink-soft); margin-top: 8px; }
+  .tile .cap { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .tile.accent .cap { color: var(--honey); }
+
+  /* HistoryRow — 60pt thumbnail + two lines on glass; chevron only when the
+     row opens something (programs do; past retreats don't). */
+  .rows { display: flex; flex-direction: column; gap: 10px; margin: 0 20px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border-radius: 22px; }
+  .row .th { width: 60px; height: 60px; border-radius: 14px; background-size: cover; background-position: center; flex: none; }
+  .row .tx { flex: 1; min-width: 0; }
+  .row h3 { font-size: 18px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .row .line { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .row .day { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--honey); }
+  .row .done { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: var(--w-medium); color: var(--accent-soft); }
+  .row .where { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink-soft); }
+  .row .chev { color: var(--muted); }
+
+  .actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: 44px 28px 0; }
+  .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: #d95c54; cursor: pointer; }
   .legal { display:flex; align-items:center; justify-content:center; margin-top:4px; }
   .legal a { font-size:12px; color:var(--ink-soft); padding:8px 0; text-decoration:none; }
   .legal .sep { font-size:12px; color:var(--muted); padding:0 7px; }
-  .actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-  .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: #d95c54; cursor: pointer; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -27,13 +59,13 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <div class="screen">
+  <div class="screen screen--scroll scr">
     <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.7) blur(4px);transform:scale(1.06)"></div>
     <div class="vignette vignette--deep"></div>
     <div class="top-scrim"></div>
     <div class="aurora" style="opacity:.35;mix-blend-mode:plus-lighter"></div>
 
-    <div class="wrap on-photo">
+    <div class="hdr on-photo">
       <img class="breathing" src="../assets/logo.png" alt="">
       <p class="eb">Hugo</p>
       <h1>Welcome back.</h1>
@@ -46,24 +78,121 @@
         <span class="chip">Connection</span>
         <span class="chip">Adventure</span>
       </div>
+    </div>
 
-      <div class="actions">
-        <button class="sg-btn sg-btn--filled">Sign out</button>
-        <button class="delete">Delete account</button>
-        <!-- App Store Connect requires a resolving privacy policy URL and a
-             support URL; an app that creates accounts needs both reachable
-             in-app. Destinations live in Core/Services/LegalLinks.swift.
-             The retreat policy sits here because v1 has payments off, so
-             checkout - which would normally carry it - is unreachable. -->
-        <div class="legal">
-          <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-retreat-policy">Retreat policy</a><span class="sep">&middot;</span><a href="mailto:info@soulfullgatherings.com">Support</a>
+    <!-- GUEST: the three sections below are replaced by one glass card —
+         eyebrow "YOUR PRACTICE" (honey), headline "Keep it with you", body
+         "With an account, your streaks, classes and minutes gather here —
+         alongside every retreat you join, digital or in person." — followed by
+         Create account / Sign in. Every practice is behind the account gate,
+         so a guest has no history; four zeros would read as a verdict. -->
+
+    <!-- Numbers come from the member's practice_plays ledger (PracticeStats):
+         a DAY counts once any practice is FINISHED that day; a CLASS is a
+         finished session or movement sitting; MINUTES are time actually spent
+         in those. A dash, never a zero, until the ledger has loaded. -->
+    <div class="sec">
+      <div class="section-label"><span class="title">Your practice</span></div>
+      <div class="stats">
+        <div class="tile glass accent">
+          <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>
+          <span class="n">4</span>
+          <span class="lbl">Day streak</span>
+          <!-- "Kept today" / "Practice today to keep it" / "Finish a practice to begin" -->
+          <span class="cap">Kept today</span>
         </div>
+        <div class="tile glass">
+          <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c-5-2-8-6-8-11M6 14c-2 0-3-1-3.5-2.5M5 10C3.5 9.5 3 8 3 6.5M8 17.5c-1.5.5-3 0-4-1"/></svg>
+          <span class="n">9</span>
+          <span class="lbl">Best streak</span>
+          <!-- "You're on it now" when the best IS the current run -->
+          <span class="cap">Days in a row</span>
+        </div>
+        <div class="tile glass">
+          <svg class="ic" width="16" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.4"/><path d="M4 12.5c2.6.2 4.9-.6 6.5-2h3c1.6 1.4 3.9 2.2 6.5 2v1.8c-2.4.1-4.4-.4-6-1.5V15l4 3.5-1.2 1.4L12 17l-4.8 2.9L6 18.5l4-3.5v-2.2c-1.6 1.1-3.6 1.6-6 1.5z"/></svg>
+          <span class="n">13</span>
+          <span class="lbl">Classes taken</span>
+          <span class="cap">Sessions &amp; movement</span>
+        </div>
+        <div class="tile glass">
+          <svg class="ic" width="12" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/></svg>
+          <span class="n">250</span>
+          <span class="lbl">Minutes practiced</span>
+          <span class="cap">4 hr, 10 min</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Programs joined: in progress first (most recently joined), then
+         completed (most recently finished). Rows open the program in the
+         Programs tab. EMPTY: glass card "Nothing joined yet" / "Programs are
+         free, and walked one day at a time." / honey "Browse programs →". -->
+    <div class="sec">
+      <div class="section-label"><span class="title">Digital retreats</span></div>
+      <div class="rows">
+        <div class="row glass">
+          <div class="th" style="background-image:url('../assets/retreat-dolomites.jpg')"></div>
+          <div class="tx">
+            <h3>Finding Ground</h3>
+            <div class="line"><span class="day">Day 3 of 7</span><span class="prog-rule" style="width:56px"><i style="width:29%"></i></span></div>
+          </div>
+          <svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg>
+        </div>
+        <div class="row glass">
+          <div class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
+          <div class="tx">
+            <h3>Morning Light</h3>
+            <div class="line"><span class="done">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 22l-2.4-1.7-2.9.2-1-2.8L3.3 16l.9-2.8L3.3 10.4l2.4-1.7 1-2.8 2.9.2z"/></svg>
+              Completed · Aug 2026</span></div>
+          </div>
+          <svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paid bookings whose retreat has ENDED. Not links — a past retreat's
+         detail screen is a booking page. EMPTY (everyone, while payments are
+         off in v1): "Your first gathering is ahead" / "Once you've joined us
+         in person, your retreats are kept here." / honey "Explore retreats →",
+         which opens the retreats stack on Home. -->
+    <div class="sec">
+      <div class="section-label"><span class="title">In-person retreats</span></div>
+      <div class="rows">
+        <div class="row glass">
+          <div class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
+          <div class="tx">
+            <h3>Kyoto</h3>
+            <div class="line"><span class="where">Japan · May 9–15, 2026</span></div>
+          </div>
+        </div>
+        <div class="row glass">
+          <div class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></div>
+          <div class="tx">
+            <h3>Sedona</h3>
+            <div class="line"><span class="where">United States · June 6–11, 2026</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="sg-btn">Sign out</button>
+      <button class="delete">Delete account</button>
+      <!-- App Store Connect requires a resolving privacy policy URL and a
+           support URL; an app that creates accounts needs both reachable
+           in-app. Destinations live in Core/Services/LegalLinks.swift.
+           The retreat policy sits here because v1 has payments off, so
+           checkout - which would normally carry it - is unreachable. -->
+      <div class="legal">
+        <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a><span class="sep">&middot;</span><a href="https://www.soulfullgatherings.com/soulfull-retreat-policy">Retreat policy</a><span class="sep">&middot;</span><a href="mailto:info@soulfullgatherings.com">Support</a>
       </div>
     </div>
   </div>
 
   <nav class="bottom-nav">
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V10z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
     <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="nav-label">You</span></button>
   </nav>

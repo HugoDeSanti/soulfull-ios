@@ -14,6 +14,20 @@
 
 import SwiftUI
 
+/// Whether a member's own history has been read — shared by this store's
+/// ledger and by `ProgramStore`, whose `refresh` swallows its errors.
+///
+/// Exists so "nothing here" and "couldn't find out" never render the same:
+/// telling someone on a train they have no digital retreats is the same
+/// mistake the catalog made before `RetreatsLoadFailure`.
+enum HistoryLoadStatus: Equatable {
+    case notLoaded
+    case loaded
+    /// Couldn't be read, and there's nothing from earlier to show instead.
+    /// `offline` picks the words — see `Error.isOffline`.
+    case unavailable(offline: Bool)
+}
+
 @Observable @MainActor
 final class PracticeProgressStore {
 
@@ -26,6 +40,14 @@ final class PracticeProgressStore {
     /// rather than showing the previous member's history.
     private(set) var loadedFor: UUID?
 
+    /// Every sitting this member has recorded, keyed by `client_event_id` —
+    /// the raw ledger the You tab's numbers and the streak are computed from.
+    /// `progress` can't serve: it keeps one date per practice, so the same
+    /// meditation done daily for a week reads as a single day.
+    private(set) var ledger: [UUID: PracticePlayRecord] = [:]
+    private(set) var ledgerStatus: HistoryLoadStatus = .notLoaded
+    private var ledgerLoadedFor: UUID?
+
     /// Read straight from the live session rather than threaded through the
     /// view tree: the player is a sheet and the detail screens are deep in a
     /// stack, and every one of them would otherwise need an `AuthManager`.
@@ -35,8 +57,30 @@ final class PracticeProgressStore {
 
     /// Loads (or reloads) this member's history. Cheap to call on appear —
     /// it no-ops when the same member's data is already in hand.
+    ///
+    /// `force` re-reads the per-practice progress, which the players do after
+    /// every sitting. It does NOT re-page the whole ledger: that is kept current
+    /// by `record` as sittings happen, so it is only fetched once per member
+    /// (and retried while it has never loaded) — see `reloadAll` for the
+    /// deliberate refresh.
     func refresh(force: Bool = false) async {
         guard let userID else { clear(); return }
+        async let progressLoad: Void = refreshProgress(for: userID, force: force)
+        async let ledgerLoad: Void = refreshLedger(for: userID, force: false)
+        _ = await (progressLoad, ledgerLoad)
+    }
+
+    /// Everything, from the server — pull to refresh on the You tab, which is
+    /// where a sitting recorded on another device would otherwise stay
+    /// invisible until the next launch.
+    func reloadAll() async {
+        guard let userID else { clear(); return }
+        async let progressLoad: Void = refreshProgress(for: userID, force: true)
+        async let ledgerLoad: Void = refreshLedger(for: userID, force: true)
+        _ = await (progressLoad, ledgerLoad)
+    }
+
+    private func refreshProgress(for userID: UUID, force: Bool) async {
         guard force || loadedFor != userID else { return }
         isLoading = true
         defer { isLoading = false }
@@ -54,6 +98,28 @@ final class PracticeProgressStore {
         }
     }
 
+    private func refreshLedger(for userID: UUID, force: Bool) async {
+        guard force || ledgerLoadedFor != userID || ledgerStatus != .loaded else { return }
+        do {
+            let rows = try await SupabaseService.shared.fetchPracticeLedger(userID: userID)
+            // The session can change while the pages load; don't hand one
+            // member's history to the next.
+            guard self.userID == userID else { return }
+            ledger = Dictionary(rows.map { ($0.eventID, $0) }, uniquingKeysWith: { $1 })
+            ledgerLoadedFor = userID
+            ledgerStatus = .loaded
+        } catch where error.isCancellation {
+        } catch {
+            Log.data.info("Practice ledger unavailable: \(error.localizedDescription)")
+            // Numbers already on screen for this member are better than none;
+            // only a member with nothing loaded yet is told it failed.
+            if ledgerLoadedFor != userID {
+                ledger = [:]
+                ledgerStatus = .unavailable(offline: error.isOffline)
+            }
+        }
+    }
+
     /// The member the current session belongs to. Capture this when a practice
     /// opens and hand it back to `record` — see that method.
     var currentUserID: UUID? { userID }
@@ -63,8 +129,21 @@ final class PracticeProgressStore {
     func clear() {
         progress = [:]
         loadedFor = nil
+        ledger = [:]
+        ledgerLoadedFor = nil
+        ledgerStatus = .notLoaded
         foldedSeconds.removeAll()
     }
+
+    #if DEBUG
+    /// `-preview-you` only: stands a fixture ledger in for the member's own,
+    /// and marks it loaded for this session so a `refresh` can't replace it.
+    func installPreviewLedger(_ records: [PracticePlayRecord]) {
+        ledger = Dictionary(records.map { ($0.eventID, $0) }, uniquingKeysWith: { $1 })
+        ledgerLoadedFor = userID
+        ledgerStatus = .loaded
+    }
+    #endif
 
     // MARK: - Reading
 
@@ -85,26 +164,14 @@ final class PracticeProgressStore {
             .max { $0.lastPlayedAt < $1.lastPlayedAt }
     }
 
-    /// Distinct days practised in a row, counting back from today. Yesterday
-    /// still counts as a live streak — today isn't over yet.
-    var streakDays: Int {
-        let calendar = Calendar.current
-        let days = Set(progress.values.map { calendar.startOfDay(for: $0.lastPlayedAt) })
-        guard !days.isEmpty else { return 0 }
+    /// The You tab's numbers, and the streak Home names. Computed from the
+    /// ledger on each read; read it once per `body`.
+    var stats: PracticeStats { PracticeStats(ledger.values) }
 
-        let today = calendar.startOfDay(for: .now)
-        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today) else { return 0 }
-        var cursor = days.contains(today) ? today : yesterday
-        guard days.contains(cursor) else { return 0 }
-
-        var streak = 0
-        while days.contains(cursor) {
-            streak += 1
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
-            cursor = previous
-        }
-        return streak
-    }
+    /// The current streak — see `PracticeStats` for what makes a day count.
+    /// Home's "N days in a row" and the You tab read the same figure, so the
+    /// two can never disagree.
+    var streakDays: Int { stats.currentStreak }
 
     /// Practices touched in the last seven days.
     var practicesThisWeek: Int {
@@ -130,6 +197,7 @@ final class PracticeProgressStore {
                 completed: Bool) async {
         guard let userID, let owner, owner == userID else { return }
         applyLocally(play, secondsPlayed: secondsPlayed, positionSeconds: positionSeconds, completed: completed)
+        applyToLedger(play, secondsPlayed: secondsPlayed, completed: completed)
         do {
             try await SupabaseService.shared.recordPracticePlay(
                 play,
@@ -180,4 +248,106 @@ final class PracticeProgressStore {
     /// Seconds already folded into the optimistic mirror for an in-flight play.
     /// Bounded by the number of practices opened in one app session.
     private var foldedSeconds: [UUID: Int] = [:]
+
+    /// Mirrors the ledger row this heartbeat upserts, applying the same rules
+    /// the DB trigger does — seconds never go backwards and are clamped to the
+    /// practice's length, completion latches, `started_at` is fixed by the
+    /// first write — so finishing a practice moves the streak and the class
+    /// count at once, not at the next launch.
+    private func applyToLedger(_ play: PracticePlay, secondsPlayed: Int, completed: Bool) {
+        let existing = ledger[play.eventID]
+        var seconds = max(secondsPlayed, existing?.secondsPlayed ?? 0)
+        if let duration = play.durationSeconds { seconds = min(seconds, duration) }
+        ledger[play.eventID] = PracticePlayRecord(
+            eventID: play.eventID,
+            kind: play.kind,
+            secondsPlayed: seconds,
+            completed: completed || (existing?.completed ?? false),
+            startedAt: existing?.startedAt ?? .now
+        )
+    }
+}
+
+// MARK: - Stats
+
+/// A member's practice, in the four numbers the You tab shows.
+///
+/// **What counts, decided 2026-09-18:**
+/// - A **practice day** is a local calendar day on which *any* practice was
+///   finished — a journal entry or a recipe included. Opening one isn't
+///   enough: the ledger records a sitting after five seconds on screen, and a
+///   glance is not a day of practice.
+/// - A **class** is a finished sitting of a session or a Movement sequence
+///   (`PracticeContentKind.countsAsClass`). Each sitting counts, so doing the
+///   same class twice is two.
+/// - **Minutes** are the time actually spent in those same classes — media
+///   time for audio/video, foreground time on screen for movement — whether or
+///   not the sitting was finished. Not the length of what was opened.
+struct PracticeStats: Equatable {
+    let currentStreak: Int
+    let bestStreak: Int
+    /// Whether today already counts. A streak carried by yesterday alone is
+    /// still alive, but today is what keeps it.
+    let practicedToday: Bool
+    let classesTaken: Int
+    let minutesPracticed: Int
+
+    init(_ plays: some Sequence<PracticePlayRecord>,
+         calendar: Calendar = .current,
+         now: Date = .now) {
+        var days = Set<Date>()
+        var classes = 0
+        var seconds = 0
+        for play in plays {
+            if play.completed { days.insert(calendar.startOfDay(for: play.startedAt)) }
+            guard play.kind.countsAsClass else { continue }
+            if play.completed { classes += 1 }
+            seconds += max(0, play.secondsPlayed)
+        }
+        classesTaken = classes
+        minutesPracticed = seconds / 60
+
+        let today = calendar.startOfDay(for: now)
+        practicedToday = days.contains(today)
+        currentStreak = Self.run(endingOn: today, in: days, calendar: calendar)
+            // Yesterday still counts as a live streak — today isn't over yet.
+            ?? Self.step(today, by: -1, calendar)
+                .flatMap { Self.run(endingOn: $0, in: days, calendar: calendar) }
+            ?? 0
+
+        // Longest run: walk forward from every day that starts one.
+        var best = 0
+        for day in days {
+            guard let previous = Self.step(day, by: -1, calendar),
+                  !days.contains(previous) else { continue }
+            var length = 0
+            var cursor: Date? = day
+            while let current = cursor, days.contains(current) {
+                length += 1
+                cursor = Self.step(current, by: 1, calendar)
+            }
+            best = max(best, length)
+        }
+        bestStreak = max(best, currentStreak)
+    }
+
+    /// Consecutive days ending on `day`, or nil if `day` itself wasn't one.
+    private static func run(endingOn day: Date, in days: Set<Date>, calendar: Calendar) -> Int? {
+        guard days.contains(day) else { return nil }
+        var length = 0
+        var cursor: Date? = day
+        while let current = cursor, days.contains(current) {
+            length += 1
+            cursor = step(current, by: -1, calendar)
+        }
+        return length
+    }
+
+    /// The start of the day `offset` days away. By calendar day rather than
+    /// 86,400 seconds, and re-normalised, so a clock change can't split a run —
+    /// in a zone whose DST skips midnight, "start of day + 1 day" lands at 1am
+    /// and would miss the set.
+    private static func step(_ day: Date, by offset: Int, _ calendar: Calendar) -> Date? {
+        calendar.date(byAdding: .day, value: offset, to: day).map(calendar.startOfDay(for:))
+    }
 }

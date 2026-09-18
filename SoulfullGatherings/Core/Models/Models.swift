@@ -282,6 +282,22 @@ extension Retreat {
         return utc.startOfDay(for: startDate) <= today
     }
 
+    /// The retreat's last day is behind us — what the You tab needs before it
+    /// calls a retreat one the member has *been on*. Compared in the device's
+    /// calendar, the same one `RetreatRow` parsed the date in: this is a
+    /// question about the member's own past, not about keeping a shared catalog
+    /// consistent across time zones, which is what `hasBegun`'s UTC is for.
+    var hasEnded: Bool {
+        let calendar = Calendar.current
+        return calendar.startOfDay(for: endDate) < calendar.startOfDay(for: .now)
+    }
+
+    /// "July 21–26, 2027". `when` omits the year because the catalog only ever
+    /// shows the months ahead; a retreat in someone's history needs it.
+    var whenWithYear: String {
+        "\(when), \(Calendar.current.component(.year, from: endDate))"
+    }
+
     /// Sample retreats, used as a graceful fallback when Supabase is
     /// unreachable (same pattern as `PracticeSession.mock`).
     ///
@@ -388,9 +404,15 @@ struct Program: Identifiable, Hashable {
     /// program with no curriculum is shown in the catalog but cannot be
     /// started, because there is nothing to start.
     let curriculum: ProgramCurriculum?
+    /// False for a draft, or for a program taken down after members joined it.
+    /// The catalog never sees one (`fetchPrograms` filters on it); the You tab
+    /// can, because a program someone finished is still part of their history
+    /// even once it's gone from the shelf — it just can't be opened any more.
+    let published: Bool
 
     init(id: String, title: String, lead: String, when: String? = nil, days: Int,
-         imageUrl: String, blurb: String? = nil, curriculum: ProgramCurriculum? = nil) {
+         imageUrl: String, blurb: String? = nil, curriculum: ProgramCurriculum? = nil,
+         published: Bool = true) {
         self.id = id
         self.title = title
         self.lead = lead
@@ -399,6 +421,7 @@ struct Program: Identifiable, Hashable {
         self.imageUrl = imageUrl
         self.blurb = blurb
         self.curriculum = curriculum
+        self.published = published
     }
 
     /// What the catalog card and the detail header say about length.
@@ -785,6 +808,33 @@ enum PracticeContentKind: String, Hashable, Codable, Sendable {
         case .journal, .exercise, .recipe:  return false
         }
     }
+
+    /// Whether a finished sitting counts as a **class** on the You tab, and
+    /// whether its time counts toward minutes practised. Guided practice does —
+    /// the three media tracks and the Movement library, where yoga lives.
+    /// Writing against a prompt and reading a recipe are practice, and they keep
+    /// a streak alive, but they are not a class. Exhaustive on purpose, like
+    /// `creditsCreator`: a new library won't compile until someone decides.
+    var countsAsClass: Bool {
+        switch self {
+        case .session, .exercise:  return true
+        case .journal, .recipe:    return false
+        }
+    }
+}
+
+/// One row of the member's own `practice_plays` ledger, reduced to what the
+/// You tab's numbers are computed from. Keyed by `eventID` — the row's
+/// `client_event_id`, the same key the ledger upserts on — so a sitting that
+/// is still heartbeating replaces its own entry rather than adding another.
+struct PracticePlayRecord: Hashable, Sendable {
+    let eventID: UUID
+    let kind: PracticeContentKind
+    let secondsPlayed: Int
+    let completed: Bool
+    /// Server-stamped. Which local calendar day it falls on is what a streak
+    /// counts.
+    let startedAt: Date
 }
 
 /// One playback / reading session, addressed by a client-generated `eventID` so

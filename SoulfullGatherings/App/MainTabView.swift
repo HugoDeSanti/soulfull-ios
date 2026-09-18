@@ -9,7 +9,8 @@
 //
 //  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
 //  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
-//  request on appear.
+//  request on appear. `pendingProgram` and `pendingRetreats` work the same way
+//  (Home and the You tab open a program; the You tab opens the retreats stack).
 //
 //  Browsing needs no account. `AccountGate` lives here (one sheet for the whole
 //  shell) and is handed to PracticeRoot, which asks for an account only when a
@@ -75,6 +76,7 @@ struct MainTabView: View {
            let tab = MainTab(rawValue: args[i + 1]) {
             return tab
         }
+        if args.contains("-preview-you") { return .you }
         #endif
         return .home
     }
@@ -88,6 +90,9 @@ struct MainTabView: View {
     /// Set when Home's "Day N is open" card asks to open a program. Consumed by
     /// `ProgramsRoot` on appear, the same handshake `pendingPractice` uses.
     @State private var pendingProgram: String?
+    /// Set when the You tab's "Explore retreats" asks for the retreats stack.
+    /// Consumed by `HomeRoot` on appear — the same handshake again.
+    @State private var pendingRetreats = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -95,7 +100,8 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .home:
-                    HomeRoot(navHidden: $navHidden, onOpenPractice: { item in
+                    HomeRoot(navHidden: $navHidden, openRetreats: $pendingRetreats,
+                             onOpenPractice: { item in
                         pendingPractice = item
                         tab = .practice
                     }, onOpenProgram: { programID in
@@ -116,7 +122,14 @@ struct MainTabView: View {
                                          showAccount = true
                                      }
                                  })
-                case .you:      ProfilePlaceholder()
+                case .you:
+                    ProfileView(onOpenProgram: { programID in
+                        pendingProgram = programID
+                        tab = .programs
+                    }, onOpenRetreats: {
+                        pendingRetreats = true
+                        tab = .home
+                    })
                 }
             }
             .ignoresSafeArea(.keyboard)
@@ -164,6 +177,8 @@ private struct HomeRoot: View {
         case retreatPacking(Retreat)
     }
     @Binding var navHidden: Bool
+    /// Another tab asked for the retreats stack. Consumed once, then cleared.
+    @Binding var openRetreats: Bool
     /// Switch to the Practice tab and open a section there.
     var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
     /// Switch to the Programs tab. A non-nil id opens that program.
@@ -180,6 +195,8 @@ private struct HomeRoot: View {
                 onOpenProgram: onOpenProgram,
                 zoomNamespace: zoomNS
             )
+            .onAppear(perform: consumeOpenRetreats)
+            .onChange(of: openRetreats) { consumeOpenRetreats() }
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .retreatsStack:
@@ -223,6 +240,12 @@ private struct HomeRoot: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    private func consumeOpenRetreats() {
+        guard openRetreats else { return }
+        openRetreats = false
+        path = [.retreatsStack]
     }
 
     /// Detail screen wired to push the post-purchase flow (checkout / hub).

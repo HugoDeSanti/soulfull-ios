@@ -39,6 +39,11 @@ final class ProgramStore {
     /// Whose state is loaded, so a session change forces a reload instead of
     /// showing the previous member's programs.
     private(set) var loadedFor: UUID?
+    /// Whether `enrollments` is an answer or a shrug. The tab can treat a
+    /// failed read as "nothing joined" — it renders the catalog either way —
+    /// but the You tab lists what was joined and must not call a dropped
+    /// connection an empty history.
+    private(set) var status: HistoryLoadStatus = .notLoaded
 
     /// Sessions referenced by a curriculum, resolved on demand. Keyed by
     /// `practice_sessions.id`.
@@ -69,6 +74,7 @@ final class ProgramStore {
             for row in dayRows { byProgram[row.programID, default: [:]][row.day] = row.completedAt }
             completions = byProgram
             loadedFor = userID
+            status = .loaded
         } catch where error.isCancellation {
         } catch {
             // Missing tables (before 0013) or no connection both mean "nothing
@@ -77,6 +83,7 @@ final class ProgramStore {
             if loadedFor != userID {
                 enrollments = [:]
                 completions = [:]
+                status = .unavailable(offline: error.isOffline)
             }
         }
     }
@@ -87,9 +94,23 @@ final class ProgramStore {
         enrollments = [:]
         completions = [:]
         loadedFor = nil
+        status = .notLoaded
         sessionCache = [:]
         missingSessionIDs = []
     }
+
+    #if DEBUG
+    /// `-preview-you` only: fixture enrolments in place of the member's own,
+    /// marked loaded for this session so a `refresh` can't replace them.
+    func installPreview(enrollments: [ProgramEnrollment], completions: [ProgramDayCompletion]) {
+        self.enrollments = Dictionary(uniqueKeysWithValues: enrollments.map { ($0.programID, $0) })
+        var byProgram: [String: [Int: Date]] = [:]
+        for row in completions { byProgram[row.programID, default: [:]][row.day] = row.completedAt }
+        self.completions = byProgram
+        loadedFor = userID
+        status = .loaded
+    }
+    #endif
 
     // MARK: - Reading
 
@@ -224,6 +245,7 @@ final class ProgramStore {
         let enrollment = try await SupabaseService.shared.enrollInProgram(id: program.id, userID: userID)
         enrollments[program.id] = enrollment
         loadedFor = userID
+        status = .loaded
         // Deliberately NOT awaited. `requestAuthorizationIfNeeded` doesn't
         // return until the member answers the system dialog, and awaiting it
         // here would hold the push to day 1 behind a prompt about something
