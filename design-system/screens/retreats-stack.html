@@ -6,26 +6,46 @@
 <link rel="stylesheet" href="../shared/tokens.css">
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
+<!--
+  RetreatsStackView (stack mode). Maps 1:1:
+  - .topbar   → topBar: "‹ Back" (same anatomy as retreat-detail) + the ONE mode
+                toggle (grid ↔ list). Shared by both modes; never scales or blurs.
+  - .intro    → stackIntro: eyebrow in --ink-soft, the folio, a 14px subline in
+                --ink-on-photo. The folio ("03 / 04") follows the centred name and
+                replaces the old static "07" count circle.
+  - .item     → row(): the NAME ONLY. The trailing guest count was removed — it
+                read as a bare footnote number. Size lives on retreat-detail.
+                In the app every name is 54px and a scroll-driven "focus lens"
+                scales it (0.8 → 1) and inks it (0.4 → 1) as it nears the centre
+                line; only the weight (Light → SemiBold) switches discretely.
+  - .botcard  → bottomCard: one fact per line (country / dates / tags) + the
+                "Explore" pill. The whole card is the tap target. It read
+                "Reserve", which it never did — it opens the retreat.
+-->
 <style>
-  .hdr { position: relative; z-index: 5; display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 24px 0; }
-  .hdr .eb { font-size: 14px; font-weight: 500; letter-spacing: 4px; color: #fff; margin: 0; }
-  .hdr p { font-size: 12px; line-height: 1.45; color: rgba(255,255,255,0.86); margin: 8px 0 0; max-width: 230px; }
-  .hdr .ctrls { display: flex; gap: 10px; align-items: center; }
-  .count { width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.4); display: grid; place-items: center; font-size: 12px; color: #fff; }
+  .topbar { position: relative; z-index: 6; display: flex; justify-content: space-between; align-items: center; padding: 4px 24px 0; }
+  .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 
-  .stack { position: relative; z-index: 5; padding: 36px 24px 0; }
-  .item { padding: 12px 0; }
-  .item .name { font-weight: 300; letter-spacing: -1.4px; color: #fff; line-height: 1; }
-  .item .g { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); margin-top: 6px; }
-  .item.dim { opacity: .42; }
-  .item.active .name { font-size: 54px; font-weight: 600; letter-spacing: -2px; }
-  .item.active .g { color: var(--honey); }
-  .item .name.s { font-size: 44px; }
+  .intro { position: relative; z-index: 5; padding: 18px 24px 10px; }
+  .intro .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .intro .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .intro .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: pre; }
+  .intro .folio b { font-weight: 500; color: var(--ink); }
+  .intro p { font-size: 14px; line-height: 1.45; color: var(--ink-on-photo); margin: 8px 0 0; }
 
-  .botcard { position: absolute; left: 16px; right: 16px; bottom: 30px; z-index: 6; display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 22px; }
-  .botcard .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.75); margin: 0; }
-  .botcard .tags { font-size: 15px; font-weight: 500; letter-spacing: -0.2px; color: #fff; margin-top: 6px; }
-  .botcard .go { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #000; font-size: 13px; font-weight: 500; padding: 11px 16px; border-radius: 999px; }
+  .stack { position: relative; z-index: 5; padding: 64px 24px 0;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 72%, transparent 100%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 72%, transparent 100%); }
+  .item { height: 84px; display: flex; align-items: center; }
+  .item .name { font-size: 54px; font-weight: 300; letter-spacing: -1.6px; color: #fff; line-height: 1; white-space: nowrap;
+    transform-origin: left center; transform: scale(.8); opacity: .4; }
+  .item.active .name { font-weight: 600; transform: none; opacity: 1; }
+
+  .botcard { position: absolute; left: 16px; right: 16px; bottom: 30px; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border-radius: 22px; }
+  .botcard .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .botcard .when { font-size: 16px; font-weight: 500; letter-spacing: -0.2px; color: var(--ink); margin-top: 5px; }
+  .botcard .tags { font-size: 13px; color: var(--ink-soft); margin-top: 5px; white-space: nowrap; }
+  .botcard .go { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #000; font-size: 13px; font-weight: 500; padding: 11px 18px; border-radius: 999px; flex: none; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -35,35 +55,37 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen safe-top">
-    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg');filter:saturate(1.1) brightness(.78)"></div>
+    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg')"></div>
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.15),rgba(0,0,0,.45),rgba(0,0,0,.78))"></div>
     <div class="top-scrim"></div>
 
-    <div class="hdr on-photo">
-      <div>
-        <p class="eb">SOULFULL</p>
-        <p>Intimate, luxurious gatherings around the world — twelve seats, one table.</p>
-      </div>
-      <div class="ctrls">
-        <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
-        <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-        <span class="count">07</span>
-      </div>
+    <div class="topbar">
+      <span class="back on-photo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+      <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
     </div>
 
-    <div class="stack">
-      <div class="item dim"><div class="name s">Sedona</div><div class="g">10 guests</div></div>
-      <div class="item active"><div class="name">Mallorca</div><div class="g">12 guests</div></div>
-      <div class="item dim"><div class="name s">Kyoto</div><div class="g">10 guests</div></div>
-      <div class="item dim"><div class="name s">Bali</div><div class="g">14 guests</div></div>
+    <div class="intro on-photo">
+      <div class="row">
+        <p class="eb">Upcoming gatherings</p>
+        <span class="folio"><b>03</b>  /  04</span>
+      </div>
+      <p>Small groups, in carefully chosen places.</p>
+    </div>
+
+    <div class="stack on-photo">
+      <div class="item"><div class="name">Lapland</div></div>
+      <div class="item"><div class="name">Chamonix</div></div>
+      <div class="item active"><div class="name">Mallorca</div></div>
+      <div class="item"><div class="name">Dolomites</div></div>
     </div>
 
     <div class="botcard glass glass-strong">
       <div>
-        <p class="eb">Sep 2026 · Spain</p>
-        <div class="tags">Coastal · Somatic · Slow living</div>
+        <p class="eb">Spain</p>
+        <div class="when">July 21–26, 2027</div>
+        <div class="tags">Hyrox · Recovery · Wellness</div>
       </div>
-      <span class="go">Open <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <span class="go">Explore <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </div>
   </div>
   <div class="home-indicator"></div>

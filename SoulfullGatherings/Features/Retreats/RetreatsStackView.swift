@@ -188,26 +188,26 @@ struct RetreatsStackView: View {
         .onPhoto()
         .padding(.horizontal, 24)
         .padding(.top, 18)
+        .padding(.bottom, 10)
     }
 
     /// "01 / 04" — the magazine folio, following the centred name. Replaces a
     /// static count in a circle that looked like a button and wasn't one.
+    ///
+    /// One `Text`, so VoiceOver meets one element ("Retreat 1 of 4"). As an
+    /// HStack of three the digits were still exposed as bare numbers beneath
+    /// the combined label.
     private var folio: some View {
-        HStack(spacing: 5) {
-            Text(String(format: "%02d", vm.activeIndex + 1))
-                .foregroundStyle(Theme.ink)
-                .contentTransition(.numericText(value: Double(vm.activeIndex)))
-            Text("/")
-                .foregroundStyle(Theme.inkSoft)
-            Text(String(format: "%02d", vm.retreats.count))
-                .foregroundStyle(Theme.inkSoft)
-        }
-        .font(Theme.body(12, weight: .medium))
-        .monospacedDigit()
-        .tracking(1)
-        .animation(.snappy(duration: 0.3), value: vm.activeIndex)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Retreat \(vm.activeIndex + 1) of \(vm.retreats.count)")
+        let current = Text(String(format: "%02d", vm.activeIndex + 1))
+            .foregroundStyle(Theme.ink)
+        return Text("\(current)  /  \(String(format: "%02d", vm.retreats.count))")
+            .font(Theme.body(12, weight: .medium))
+            .foregroundStyle(Theme.inkSoft)
+            .monospacedDigit()
+            .tracking(1)
+            .contentTransition(.numericText(value: Double(vm.activeIndex)))
+            .animation(.snappy(duration: 0.3), value: vm.activeIndex)
+            .accessibilityLabel("Retreat \(vm.activeIndex + 1) of \(vm.retreats.count)")
     }
 
     private var stackScroller: some View {
@@ -348,6 +348,11 @@ struct RetreatsStackView: View {
                 .padding(16)
                 .frame(maxWidth: .infinity)
                 .soulGlassCard(radius: Theme.cardRadius, stroke: Theme.glassBorderHigh)
+                // The whole card is the target. On iOS 26 `glassEffect` adds no
+                // hit-testable fill, so without this only the glyphs and the
+                // white pill answered — a tap on the glass between them did
+                // nothing (CLAUDE.md, rendering gotcha #5).
+                .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
             }
             .accessibilityLabel("Explore \(r.name). \(r.country), \(Self.dateLine(r))")
         }

@@ -134,6 +134,13 @@ final class RetreatsStackTests: XCTestCase {
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Explore \(retreatName)."))
             .firstMatch
         XCTAssertTrue(explore.waitForExistence(timeout: 5), "The card isn't showing \(retreatName)")
+        // The accessibility frame is the hit frame. On iOS 26 the glass under
+        // the card is not hit-testable, and before it had a content shape the
+        // frame shrank to the text and the pill — the empty middle, which is
+        // exactly where a thumb lands, did nothing.
+        let screenWidth = app.windows.firstMatch.frame.width
+        XCTAssertGreaterThan(explore.frame.width, screenWidth * 0.85,
+                             "The card only answers taps on its text: \(explore.frame)")
         explore.tap()
 
         XCTAssertTrue(app.buttons["Request a place"].waitForExistence(timeout: 10),
