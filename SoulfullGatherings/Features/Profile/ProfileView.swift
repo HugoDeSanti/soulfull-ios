@@ -248,9 +248,9 @@ struct ProfileView: View {
         if stats.keptToday { return "You've completed a practice today" }
         if stats.currentStreak > 0 {
             return stats.practicedToday ? "Finish a practice today to keep your streak"
-                                        : "Practice today to keep it"
+                                        : "Practice today to keep your streak"
         }
-        return "Finish a practice to begin"
+        return "Finish a practice today to start your streak"
     }
 
     private func bestCaption(_ stats: PracticeStats) -> String {

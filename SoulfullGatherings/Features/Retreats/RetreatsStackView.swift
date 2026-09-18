@@ -5,7 +5,10 @@
 //  Two ways to browse the gatherings:
 //
 //  STACK — the signature typographic scroller: retreat names snap to center
-//  over a crossfading full-bleed photo.
+//  over a crossfading full-bleed photo. The centre line is a focus lens — a
+//  name grows to full size and full ink as it reaches it, continuously with
+//  the scroll rather than on arrival, and each name that settles there ticks
+//  like a picker detent.
 //
 //  CATALOG — pinch out (or tap the grid button) and the stack recedes into a
 //  magazine contact sheet of covers. Tap a cover to fly back into the stack
@@ -13,6 +16,15 @@
 //
 //  The pinch is interactive: the live magnification scrubs scale/blur before
 //  committing with a spring, so the zoom feels attached to the fingers.
+//
+//  The chrome (Back, and the one button that toggles the two modes) sits
+//  above both and never scales, blurs or moves between them — and is there
+//  while loading or failed too, so the screen always has a way out.
+//
+//  A row carries the retreat's name and nothing else. It used to trail a bare
+//  number — the guest count — which read as a footnote marker, said nothing
+//  on its own, and put a number on a gathering before its place or its dates.
+//  Size lives on the detail screen, where it is labelled.
 //
 
 import SwiftUI
@@ -32,14 +44,22 @@ struct RetreatsStackView: View {
     private let rowHeight: CGFloat = 84
     private let commitSpring = Animation.spring(response: 0.5, dampingFraction: 0.82)
 
+    /// There is a catalog to browse — the mode toggle and the pinch mean
+    /// nothing while loading, failed, or empty.
+    private var hasCatalog: Bool {
+        !vm.isLoading && vm.loadFailure == nil && !vm.retreats.isEmpty
+    }
+
     var body: some View {
         ZStack {
             backdrop
 
             if vm.isLoading {
-                ProgressView().tint(.white)
+                ProgressView().tint(Theme.ink)
             } else if let failure = vm.loadFailure {
                 errorState(failure)
+            } else if vm.retreats.isEmpty {
+                emptyState
             } else {
                 // The stack stays mounted under the catalog so its scroll
                 // state survives — tapping a cover animates the live
@@ -53,13 +73,54 @@ struct RetreatsStackView: View {
                 }
             }
         }
-        .ignoresSafeArea()
+        .safeAreaInset(edge: .top, spacing: 0) { topBar }
         // High priority so the two-finger pinch never doubles as a tap on
         // rows/covers underneath; single-finger interactions pass through.
-        .highPriorityGesture(pinchGesture)
+        .highPriorityGesture(pinchGesture, isEnabled: hasCatalog)
         .task { await vm.load() }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
+    }
+
+    // MARK: - Chrome (shared by both modes)
+
+    /// Back on the left, the mode toggle on the right — the same anatomy as
+    /// the retreat detail's top bar, which is where this screen leads.
+    private var topBar: some View {
+        HStack {
+            Button {
+                Haptics.tap()
+                dismiss()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Back")
+                        .font(Theme.body(13))
+                        .underline()
+                }
+                .foregroundStyle(.white)
+                .onPhoto()
+                // The drawn label is ~20pt tall; give the thumb the full bar.
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            if hasCatalog {
+                CircleIconButton(systemName: mode == .stack ? "square.grid.2x2" : "text.alignleft",
+                                 size: 42) {
+                    withAnimation(commitSpring) { mode = mode == .stack ? .catalog : .stack }
+                }
+                .contentTransition(.symbolEffect(.replace))
+                .accessibilityLabel(mode == .stack ? "Show all retreats" : "Show as a list")
+                .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 4)
+        .animation(.easeInOut(duration: 0.3), value: hasCatalog)
     }
 
     // MARK: - Pinch (zoom out to catalog / back in to stack)
@@ -98,50 +159,55 @@ struct RetreatsStackView: View {
 
     private var stackMode: some View {
         VStack(spacing: 0) {
-            header
+            stackIntro
             stackScroller
             bottomCard
                 .padding(.horizontal, 16)
-                .padding(.bottom, 110)
+                .padding(.bottom, 8)
         }
         .scaleEffect(mode == .catalog ? 0.92 : scrub)
         .blur(radius: mode == .catalog ? 22 : (1 - scrub) * 24)
         .opacity(mode == .catalog ? 0.25 : 1)
     }
 
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("SOULFULL")
-                    .font(Theme.body(14, weight: .medium))
-                    .tracking(4)
-                    .foregroundStyle(.white)
-                Text("Intimate, luxurious gatherings around the world. Carefully chosen places, small groups, and practices that open the way.")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Color.white.opacity(0.78))
-                    .lineSpacing(2)
-                    .frame(maxWidth: 240, alignment: .leading)
+    /// What this list is, and where in it you are.
+    private var stackIntro: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Upcoming gatherings")
+                    .sgEyebrow(color: Theme.inkSoft, tracking: 3)
+                Spacer()
+                folio
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 10) {
-                CircleIconButton(systemName: "xmark", size: 42) { Haptics.tap(); dismiss() }
-                    .accessibilityLabel("Close")
-                CircleIconButton(systemName: "square.grid.2x2", size: 42) {
-                    withAnimation(commitSpring) { mode = .catalog }
-                }
-                .accessibilityLabel("Catalog")
-                ZStack {
-                    Circle().strokeBorder(Color.white.opacity(0.40), lineWidth: 1)
-                    Text(String(format: "%02d", vm.retreats.count))
-                        .font(Theme.body(12))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 42, height: 42)
-            }
+            Text("Small groups, in carefully chosen places.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.inkOnPhoto)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .safeAreaPadding(.top)
-        .padding(.top, 36)
+        .onPhoto()
         .padding(.horizontal, 24)
+        .padding(.top, 18)
+    }
+
+    /// "01 / 04" — the magazine folio, following the centred name. Replaces a
+    /// static count in a circle that looked like a button and wasn't one.
+    private var folio: some View {
+        HStack(spacing: 5) {
+            Text(String(format: "%02d", vm.activeIndex + 1))
+                .foregroundStyle(Theme.ink)
+                .contentTransition(.numericText(value: Double(vm.activeIndex)))
+            Text("/")
+                .foregroundStyle(Theme.inkSoft)
+            Text(String(format: "%02d", vm.retreats.count))
+                .foregroundStyle(Theme.inkSoft)
+        }
+        .font(Theme.body(12, weight: .medium))
+        .monospacedDigit()
+        .tracking(1)
+        .animation(.snappy(duration: 0.3), value: vm.activeIndex)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Retreat \(vm.activeIndex + 1) of \(vm.retreats.count)")
     }
 
     private var stackScroller: some View {
@@ -150,17 +216,6 @@ struct RetreatsStackView: View {
                 ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
                     row(idx: idx, retreat: r)
                         .id(idx)
-                        .onTapGesture {
-                            if idx == vm.activeIndex {
-                                Haptics.bump()
-                                onSelect(r)
-                            } else {
-                                Haptics.select()
-                                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                                    vm.activeIndex = idx
-                                }
-                            }
-                        }
                 }
             }
             .scrollTargetLayout()
@@ -172,6 +227,9 @@ struct RetreatsStackView: View {
         // spacers used to do, but understood by `viewAligned` so its snap and
         // our centering agree instead of fighting.
         .contentMargins(.vertical, max(0, (scrollerHeight - rowHeight) / 2), for: .scrollContent)
+        // The names share the header's 24pt margin. Without it they ran to the
+        // very edge of the glass and the first letter sat under the bezel.
+        .contentMargins(.horizontal, 24, for: .scrollContent)
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.height
         } action: { newHeight in
@@ -179,7 +237,12 @@ struct RetreatsStackView: View {
         }
         .mask(
             LinearGradient(
-                colors: [.clear, .black, .black, .clear],
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black, location: 0.28),
+                    .init(color: .black, location: 0.72),
+                    .init(color: .clear, location: 1),
+                ],
                 startPoint: .top, endPoint: .bottom
             )
         )
@@ -188,11 +251,17 @@ struct RetreatsStackView: View {
     /// Bridges the view-model's non-optional `activeIndex` to the optional id
     /// binding `scrollPosition` expects, so the centered row and the highlighted
     /// row are always the same value.
+    ///
+    /// Only a *scroll* comes through the setter — a tap writes `activeIndex`
+    /// directly — so this is where each name settling on the centre line
+    /// gets its detent tick, and a tap doesn't tick twice.
     private var activeIndexBinding: Binding<Int?> {
         Binding(
             get: { vm.activeIndex },
             set: { newValue in
-                guard let newValue, vm.retreats.indices.contains(newValue) else { return }
+                guard let newValue, vm.retreats.indices.contains(newValue),
+                      newValue != vm.activeIndex else { return }
+                Haptics.select()
                 vm.activeIndex = newValue
             }
         )
@@ -200,44 +269,76 @@ struct RetreatsStackView: View {
 
     private func row(idx: Int, retreat r: Retreat) -> some View {
         let isActive = idx == vm.activeIndex
-        return HStack(alignment: .lastTextBaseline, spacing: 8) {
+        // A local copy: `visualEffect` runs off the main actor and can't read
+        // the view's properties.
+        let height = rowHeight
+        return Button {
+            if isActive {
+                Haptics.bump()
+                onSelect(r)
+            } else {
+                Haptics.select()
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                    vm.activeIndex = idx
+                }
+            }
+        } label: {
             Text(r.name)
-                .font(Theme.headline(isActive ? 54 : 44, weight: isActive ? .semibold : .light))
-                .kerning(-1.4)
+                .font(Theme.headline(54, weight: isActive ? .semibold : .light))
+                .kerning(-1.6)
                 .foregroundStyle(.white)
-            Text("\(r.maxGuests)")
-                .font(Theme.body(12, weight: .medium))
-                .foregroundStyle(isActive ? Color(red: 1, green: 0.82, blue: 0.6) : Color.white.opacity(0.7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                // Display type in a fixed-height row: let it grow with the
+                // reader's text size, but not past where rows would collide.
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: height)
+                .contentShape(Rectangle())
+                // Unblurred photography in stack mode — see View.onPhoto().
+                .onPhoto()
+                .animation(.easeInOut(duration: 0.3), value: isActive)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: rowHeight)
-        // Unblurred photography in stack mode — see View.onPhoto().
-        .onPhoto()
-        .opacity(isActive ? 1 : 0.42)
-        .animation(.easeInOut(duration: 0.3), value: vm.activeIndex)
+        .buttonStyle(.soulPressableQuiet)
+        // The focus lens. `focus` is 1 on the centre line and 0 a row away,
+        // read from the row's live position, so size and ink track the finger
+        // instead of jumping when the centred index changes. Only the weight
+        // switches discretely — Geist ships static weights, not a variable axis.
+        .visualEffect { content, proxy in
+            let viewport = proxy.bounds(of: .scrollView(axis: .vertical)) ?? .zero
+            let distance = abs(viewport.midY - proxy.size.height / 2) / height
+            let focus = max(0, 1 - distance)
+            return content
+                .scaleEffect(0.8 + 0.2 * focus, anchor: .leading)
+                .opacity(0.4 + 0.6 * focus)
+        }
+        .accessibilityLabel("\(r.name), \(r.country)")
+        .accessibilityValue(Self.dateLine(r))
+        .accessibilityHint(isActive ? "Opens the retreat" : "Brings it into focus")
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 
+    /// The centred retreat's particulars and the way in. Its details crossfade
+    /// as the stack moves; the card itself holds still.
     @ViewBuilder
     private var bottomCard: some View {
         if let r = vm.active {
-            let year = Calendar.current.component(.year, from: r.startDate)
-            PressableCard(action: { onSelect(r) }) {
+            PressableCard(haptic: false, action: {
+                Haptics.bump()
+                onSelect(r)
+            }) {
                 HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(r.when), \(year) · \(r.country)".uppercased())
-                            .font(Theme.eyebrow(10))
-                            .tracking(2.5)
-                            .foregroundStyle(Color.white.opacity(0.75))
-                        Text(r.tags.joined(separator: " · "))
-                            .font(Theme.body(15, weight: .medium))
-                            .foregroundStyle(.white)
-                            .kerning(-0.2)
-                            .lineLimit(1)
+                    ZStack(alignment: .leading) {
+                        cardDetails(r)
+                            .id(r.id)
+                            .transition(.opacity.combined(with: .offset(y: 5)))
                     }
-                    Spacer(minLength: 12)
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold))
-                        Text("Reserve").font(Theme.body(13, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .animation(.easeInOut(duration: 0.28), value: r.id)
+
+                    HStack(spacing: 6) {
+                        Text("Explore").font(Theme.body(13, weight: .medium))
+                        Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundStyle(Color.black)
                     .padding(.horizontal, 18)
@@ -246,16 +347,48 @@ struct RetreatsStackView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .soulGlassCard(radius: 22, stroke: Theme.glassBorderHigh)
+                .soulGlassCard(radius: Theme.cardRadius, stroke: Theme.glassBorderHigh)
+            }
+            .accessibilityLabel("Explore \(r.name). \(r.country), \(Self.dateLine(r))")
+        }
+    }
+
+    /// Place, dates, then the character of it — one fact per line, so nothing
+    /// wraps. (Date and country shared an eyebrow and the country dropped to a
+    /// second line on its own.)
+    private func cardDetails(_ r: Retreat) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(r.country.uppercased())
+                .font(Theme.eyebrow(10))
+                .tracking(2.5)
+                .foregroundStyle(Theme.inkSoft)
+                .lineLimit(1)
+            Text(Self.dateLine(r))
+                .font(Theme.body(16, weight: .medium))
+                .kerning(-0.2)
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            if !r.tags.isEmpty {
+                Text(r.tags.joined(separator: " · "))
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
             }
         }
+    }
+
+    /// "January 10–15, 2027" — the same line the detail screen's Dates cell
+    /// shows, so the two screens agree.
+    private static func dateLine(_ r: Retreat) -> String {
+        "\(r.when), \(Calendar.current.component(.year, from: r.startDate))"
     }
 
     // MARK: - Catalog mode (magazine contact sheet)
 
     private var catalogMode: some View {
         VStack(spacing: 0) {
-            catalogHeader
+            catalogIntro
 
             ScrollView(showsIndicators: false) {
                 LazyVGrid(
@@ -274,34 +407,26 @@ struct RetreatsStackView: View {
                 LinearGradient(colors: [.black, .black, .black, .clear],
                                startPoint: .top, endPoint: .bottom)
             )
+            .ignoresSafeArea(edges: .bottom)
         }
         .scaleEffect(scrub)
         .blur(radius: max(0, (scrub - 1) * 60))
     }
 
-    private var catalogHeader: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("THE CATALOG")
-                    .font(Theme.body(14, weight: .medium))
-                    .tracking(4)
-                    .foregroundStyle(.white)
-                Text("Every gathering, side by side. Pinch in — or tap a cover — to return.")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Color.white.opacity(0.82))
-                    .lineSpacing(2)
-                    .frame(maxWidth: 230, alignment: .leading)
-            }
-            .onPhoto()
-            Spacer()
-            CircleIconButton(systemName: "rectangle.portrait", size: 42) {
-                withAnimation(commitSpring) { mode = .stack }
-            }
-            .accessibilityLabel("Stack")
+    private var catalogIntro: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("All gatherings")
+                .sgEyebrow(color: Theme.inkSoft, tracking: 3)
+            Text("Every retreat, side by side. Tap a cover to bring it into focus.")
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.inkOnPhoto)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .safeAreaPadding(.top)
-        .padding(.top, 36)
+        .onPhoto()
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24)
+        .padding(.top, 18)
         .padding(.bottom, 18)
     }
 
@@ -326,7 +451,7 @@ struct RetreatsStackView: View {
                 .clipped()
 
                 LinearGradient(
-                    colors: [.black.opacity(0.05), .clear, .black.opacity(0.66)],
+                    colors: [.black.opacity(0.05), .clear, .black.opacity(0.7)],
                     startPoint: .top, endPoint: .bottom
                 )
 
@@ -344,17 +469,24 @@ struct RetreatsStackView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("\(r.country) · \(r.when)".uppercased())
-                        .font(Theme.eyebrow(8.5))
+                    Text(r.country.uppercased())
+                        .font(Theme.eyebrow(10))
                         .tracking(1.8)
-                        .foregroundStyle(Color.white.opacity(0.78))
+                        .foregroundStyle(Color.white.opacity(0.82))
+                        .lineLimit(1)
                     Text(r.name)
-                        .font(Theme.headline(21, weight: .semibold))
+                        .font(Theme.headline(22, weight: .semibold))
                         .kerning(-0.5)
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
+                    Text(Self.dateLine(r))
+                        .font(Theme.body(11))
+                        .foregroundStyle(Theme.inkOnPhoto)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
+                .onPhoto()
                 .padding(12)
             }
             .frame(height: 224)
@@ -368,6 +500,8 @@ struct RetreatsStackView: View {
             )
             .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
         }
+        .accessibilityLabel("\(r.name), \(r.country), \(Self.dateLine(r))")
+        .accessibilityHint("Brings it into focus")
         .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
             let entering = max(phase.value, 0)
             return view
@@ -377,7 +511,7 @@ struct RetreatsStackView: View {
         }
     }
 
-    // MARK: - Error state
+    // MARK: - Error / empty states
 
     /// No catalog, and why. There is deliberately no sample data behind this —
     /// see `RetreatsLoadFailure`.
@@ -413,6 +547,24 @@ struct RetreatsStackView: View {
         }
     }
 
+    /// The fetch worked and nothing is upcoming — every retreat has begun, or
+    /// the next ones aren't in yet. Before this the screen was a bare backdrop
+    /// with a "00" in the corner.
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Text("New gatherings are on their way")
+                .font(Theme.headline(19, weight: .medium)).kerning(-0.2)
+                .foregroundStyle(Theme.ink)
+            Text("There are no upcoming retreats just now. New dates will appear here as they're announced.")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .padding(.horizontal, 32)
+        }
+        .onPhoto()
+    }
+
     // MARK: - Backdrop (crossfade)
 
     private var backdrop: some View {
@@ -441,7 +593,16 @@ struct RetreatsStackView: View {
                     colors: [.black.opacity(0.30), .black.opacity(0.15), .black.opacity(0.45), .black.opacity(0.78)],
                     startPoint: .top, endPoint: .bottom
                 )
-                .ignoresSafeArea()
+
+                // Ground for the header — the app-wide type-over-photography
+                // rule (see `PhotoBackdrop.topScrim`). The vignette above is at
+                // its lightest exactly where Back and the intro sit.
+                LinearGradient(
+                    colors: [.black.opacity(0.45), .clear],
+                    startPoint: .top, endPoint: .bottom
+                )
+                .frame(height: 340)
+                .frame(maxHeight: .infinity, alignment: .top)
 
                 if mode == .catalog {
                     Color.black.opacity(0.32).transition(.opacity)

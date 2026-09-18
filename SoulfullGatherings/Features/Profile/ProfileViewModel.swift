@@ -218,14 +218,26 @@ final class ProfileViewModel {
     ///
     /// Plus one program in progress, one completed, and two past retreats.
     ///
-    /// With `-preview-you-unfinished` as well, today's two practices are left
-    /// unfinished: today no longer counts, so the streak falls back to the
-    /// three days before it (3), classes drop to 12, minutes stay 250 (time
-    /// spent counts, finished or not), and the streak tile must say "Finish a
-    /// practice today to keep your streak" — never "Practice today", to someone
-    /// who just did.
+    /// `-preview-you-today <state>` changes only today, to reach each of the
+    /// streak tile's four captions:
+    /// - `finished` (the default) — as above: "You've completed a practice today".
+    /// - `unfinished` — today's two practices left unfinished. Today no longer
+    ///   counts, so the streak is the three days before it (3), classes 12,
+    ///   minutes still 250 (time spent counts, finished or not): "Finish a
+    ///   practice today to keep your streak" — never "Practice today", to
+    ///   someone who just did.
+    /// - `none` — nothing at all today; streak 3, classes 12, minutes 235:
+    ///   "Practice today to keep your streak".
+    /// - `lapsed` — nothing for the last four days either, so no streak; best
+    ///   still 9, classes 9, minutes 190: "Finish a practice today to start
+    ///   your streak".
     private func installPreviewFixture() {
-        let finishedToday = !CommandLine.arguments.contains("-preview-you-unfinished")
+        let args = CommandLine.arguments
+        let todayState = args.firstIndex(of: "-preview-you-today")
+            .flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil } ?? "finished"
+        let finishedToday = todayState == "finished"
+        let practicedToday = finishedToday || todayState == "unfinished"
+        let recentRun = todayState != "lapsed"
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
         func day(_ offset: Int) -> Date {
@@ -239,10 +251,11 @@ final class ProfileViewModel {
         }
 
         var ledger: [PracticePlayRecord] = []
-        ledger += (0...3).map { play(.exercise, -$0, seconds: 900, done: $0 != 0 || finishedToday) }
+        if practicedToday { ledger.append(play(.exercise, 0, seconds: 900, done: finishedToday)) }
+        if recentRun { ledger += (1...3).map { play(.exercise, -$0, seconds: 900) } }
         ledger += (22...30).map { play(.session, -$0, seconds: 1200) }
         ledger.append(play(.session, -25, seconds: 600, done: false))
-        ledger.append(play(.journal, 0, seconds: 300, done: finishedToday))
+        if practicedToday { ledger.append(play(.journal, 0, seconds: 300, done: finishedToday)) }
         ledger.append(play(.recipe, -10, seconds: 400))
         ledger.append(play(.journal, -5, seconds: 20, done: false))
         PracticeProgressStore.shared.installPreviewLedger(ledger)

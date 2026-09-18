@@ -97,12 +97,12 @@ final class ProfileTests: XCTestCase {
 
     /// Practised today but finished nothing. Only a finished practice keeps a
     /// streak, so today doesn't count yet — but the member DID practise, and
-    /// being told "Practice today to keep it" straight after reads as though it
+    /// being told "Practice today to keep your streak" straight after reads as though it
     /// never happened. The caption has to say what's actually true.
     func testStreakCaptionAcknowledgesAnUnfinishedPracticeToday() {
         let app = XCUIApplication()
         app.launchArguments = ["-uitest-reset", "-uitest-onboarded",
-                               "-preview-you", "-preview-you-unfinished"]
+                               "-preview-you", "-preview-you-today", "unfinished"]
         app.launch()
 
         let streak = element(app, "stat-current-streak")
@@ -118,6 +118,29 @@ final class ProfileTests: XCTestCase {
                        "An unfinished movement sitting is not a class")
         XCTAssertEqual(value(element(app, "stat-minutes")), "250, 4 hr, 10 min",
                        "Unfinished time still counts as minutes practiced")
+    }
+
+    /// The other two captions. Together with the two tests above, every one of
+    /// the streak tile's four states is asserted on screen.
+    func testStreakCaptionWhenNothingPracticedTodayOrNoStreak() {
+        let cases: [(state: String, expected: String, why: String)] = [
+            ("none", "3 days, Practice today to keep your streak",
+             "Nothing practised today: the streak rests on yesterday and needs today"),
+            ("lapsed", "0 days, Finish a practice today to start your streak",
+             "No practice for four days: there is no streak to keep, only one to start"),
+        ]
+        for c in cases {
+            let app = XCUIApplication()
+            app.launchArguments = ["-uitest-reset", "-uitest-onboarded",
+                                   "-preview-you", "-preview-you-today", c.state]
+            app.launch()
+
+            let streak = element(app, "stat-current-streak")
+            XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared (\(c.state))")
+            shot(app, "06-you-today-\(c.state)")
+            XCTAssertEqual(value(streak), c.expected, c.why)
+            app.terminate()
+        }
     }
 
     /// One program in progress, one completed; two retreats whose last day has

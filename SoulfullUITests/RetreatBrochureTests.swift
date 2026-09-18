@@ -40,20 +40,20 @@ final class RetreatBrochureTests: XCTestCase {
         shot(app, "01-home")
         all.tap()
 
-        // The stack's names are Text, not Button — the tappable control is the
-        // action pill in the bottom bar, which acts on whichever name is active.
-        let name = app.staticTexts["Mallorca"]
+        // Each name in the stack is a button labelled "<name>, <country>". The
+        // first tap on a name that isn't centred brings it into focus; the
+        // card under the stack then opens whichever retreat is focused.
+        let name = app.buttons["Mallorca, Spain"]
         XCTAssertTrue(name.waitForExistence(timeout: 20), "Mallorca never appeared in the stack")
         shot(app, "02-retreats-stack")
         name.tap()
 
-        // The bar is one combined accessibility element, so its label is the
-        // whole summary line ("JULY 21-26, 2027 · SPAIN, …") rather than the
-        // pill's own text.
+        // The card's label names the focused retreat ("Explore Mallorca. Spain,
+        // July 21–26, 2027"), so this only matches once Mallorca is centred.
         let open = app.buttons.matching(
-            NSPredicate(format: "label CONTAINS[c] %@", "SPAIN")
+            NSPredicate(format: "label BEGINSWITH %@", "Explore Mallorca")
         ).firstMatch
-        XCTAssertTrue(open.waitForExistence(timeout: 10), "No action pill in the stack bar")
+        XCTAssertTrue(open.waitForExistence(timeout: 10), "The stack's card never focused Mallorca")
         open.tap()
 
         // "Who this is for" exists only in the brochure layout — `basicStory`
