@@ -7,11 +7,22 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* Features/Profile/ProfileView.swift. Scrolls: header, Your practice (2x2
-     stat tiles), Digital retreats, In-person retreats, account actions. */
+  /* Features/Profile/ProfileView.swift. Scrolls: header (avatar), Your
+     practice (2x2 stat tiles), Digital retreats, In-person retreats,
+     Community (share toggle), account actions. */
   .scr { padding-top: 50px; padding-bottom: 130px; }
   .hdr { display: flex; flex-direction: column; align-items: center; padding: 28px 28px 0; }
   .hdr img { width: 88px; }
+  .avatar { position: relative; width: 92px; height: 92px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 39px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: 1px solid var(--glass-border-high); }
+  .avatar.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  .avatar .cam { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
+  /* Community section — one glass row with a honey toggle: "Share my practice". */
+  .share { display: flex; align-items: center; gap: 14px; margin: 0 20px; padding: 16px; border-radius: 22px; }
+  .share .tx { flex: 1; min-width: 0; }
+  .share h3 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .share p { font-size: 12px; line-height: 1.4; color: var(--ink-soft); margin: 4px 0 0; }
+  .toggle { width: 51px; height: 31px; border-radius: 999px; background: var(--honey); position: relative; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
   .eb { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 18px 0 0; }
   h1 { font-size: 36px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 8px 0 0; }
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-on-photo); margin: 16px 0 0; }
@@ -66,7 +77,10 @@
     <div class="aurora" style="opacity:.35;mix-blend-mode:plus-lighter"></div>
 
     <div class="hdr on-photo">
-      <img class="breathing" src="../assets/logo.png" alt="">
+      <!-- A member's face where the logo sits for a guest (AvatarView, 92pt):
+           tap → Choose a photo / Remove photo. Uploaded to the public
+           `avatars` bucket, 512px square JPEG, shown in the Community feed. -->
+      <div class="avatar t3">H<span class="cam"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4 7.5 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L15 4z"/><circle cx="12" cy="13" r="3.5" fill="#f5f3e8"/></svg></span></div>
       <p class="eb">Hugo</p>
       <h1>Welcome back.</h1>
       <div class="status">
@@ -182,6 +196,17 @@
       </div>
     </div>
 
+    <div class="sec">
+      <div class="section-label"><span class="title">Community</span></div>
+      <div class="share glass">
+        <div class="tx">
+          <h3>Share my practice</h3>
+          <p>Your finished practices appear in the Community feed as “Hugo D. practiced …”. Journal prompts never do.</p>
+        </div>
+        <div class="toggle"></div>
+      </div>
+    </div>
+
     <div class="actions">
       <button class="sg-btn">Sign out</button>
       <button class="delete">Delete account</button>
@@ -200,6 +225,7 @@
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V10z"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg></button>
     <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="nav-label">You</span></button>
   </nav>
   <div class="home-indicator"></div>

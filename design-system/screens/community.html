@@ -1,20 +1,58 @@
-<!-- @dsCard group="Screens · Parked (post-v1)" name="Circle — community placeholder" -->
-<!-- PARKED: the Circle tab is cut from v1 (Guideline 4.2 — a primary tab whose
-     only content advertised unbuilt features). MainTab omits the case, so
-     BottomNav drops it automatically. Kept here for when Circle is built. -->
+<!-- @dsCard group="Screens · Tabs" name="Community — feed" -->
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Circle — placeholder</title>
+<title>Community — feed</title>
 <link rel="stylesheet" href="../shared/tokens.css">
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .wrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 28px 100px; }
-  .wrap img { width: 72px; }
-  .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 18px 0 0; }
-  h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 14px 0 0; max-width: 320px; }
-  p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 16px 0 0; max-width: 320px; }
+  /* Features/Community/CommunityView.swift. What everyone (or just your
+     friends) has finished lately: one glass row per finished practice, the
+     member's face beside it, grouped Today / Yesterday / Earlier. The feed is
+     open to a guest; the Friends filter and the Friends screen are behind the
+     account gate. Journal prompts never appear here. */
+  .scr { padding-top: 60px; padding-bottom: 130px; }
+  .hdr { display: flex; align-items: flex-start; gap: 16px; padding: 0 20px; }
+  .hdr .tx { flex: 1; min-width: 0; }
+  .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .sub { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 6px 0 0; }
+
+  /* AvatarView — photo, or the initial on one of five brand tones picked by
+     the member's id. 46pt in the feed and the header, 92pt on the You tab. */
+  .av { width: 46px; height: 46px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: 1px solid var(--glass-border-high); background-size: cover; background-position: center; }
+  .av.t0 { background-image: linear-gradient(135deg, #4f5c29, #333d17); }
+  .av.t1 { background-image: linear-gradient(135deg, #8c702e, #614a1a); }
+  .av.t2 { background-image: linear-gradient(135deg, #854f4d, #573030); }
+  .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  .av.t4 { background-image: linear-gradient(135deg, #806b4f, #544530); }
+  .hdr .av { margin-top: 4px; }
+
+  /* Scope toggle — All | Friends on one glass capsule, a cream lens behind
+     the chosen one (BottomNav's physics at chip scale). */
+  .controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 24px 20px 0; }
+  .scope { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; }
+  .scope button { height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: none; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); letter-spacing: .3px; color: rgba(245,243,232,.85); cursor: pointer; }
+  .scope button.is-active { background: var(--ink); color: #000; box-shadow: 0 3px 8px rgba(0,0,0,.25); }
+  .friends-btn { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px 0 14px; border-radius: 999px; font-size: 13px; font-weight: var(--w-medium); color: var(--ink); }
+  .friends-btn .badge { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--honey); color: #000; font-size: 11px; font-weight: var(--w-semibold); display: inline-flex; align-items: center; justify-content: center; }
+
+  .sec { margin-top: 24px; }
+  .rows { display: flex; flex-direction: column; gap: 10px; margin: 0 20px 10px; }
+  /* ActivityRow — "Name practiced Title": name and title in ink at Medium, the
+     verb quieter; eyebrow beneath is the track (or library) and a relative
+     time. Your own lines read "You". */
+  .row { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border-radius: 22px; }
+  .row .tx { flex: 1; min-width: 0; }
+  .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
+  .row p b { font-weight: var(--w-medium); color: var(--ink); }
+  .row .meta { display: block; margin-top: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* EMPTY STATES (glass card, headline 20 + body 14): All → "Quiet for now";
+     Friends with no friends → "Practice alongside people you know" + "Find
+     friends →"; Friends with none active → "Nothing from your friends yet".
+     Offline / failed use the same two-state copy as Programs. Not drawn. */
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -23,23 +61,62 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <div class="screen">
-    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.7) blur(4px);transform:scale(1.06)"></div>
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.6) blur(24px);transform:scale(1.1)"></div>
     <div class="vignette vignette--deep"></div>
     <div class="top-scrim"></div>
-    <div class="aurora" style="opacity:.4;mix-blend-mode:plus-lighter"></div>
-    <div class="wrap">
-      <img class="breathing" src="../assets/logo.png" alt="">
-      <p class="eb">Community</p>
-      <h1>Your circles, your people.</h1>
-      <p>Live circles, member directory, and DMs land here next.</p>
+    <div class="aurora" style="opacity:.25;mix-blend-mode:plus-lighter"></div>
+
+    <div class="hdr">
+      <div class="tx on-photo">
+        <p class="eb">Together</p>
+        <h1>Community</h1>
+        <p class="sub">What the circle is practising, as it happens.</p>
+      </div>
+      <!-- Your own avatar (members only). Tapping opens the You tab, where the photo is set. -->
+      <div class="av t1">H</div>
+    </div>
+
+    <div class="controls">
+      <div class="scope glass">
+        <button class="is-active">All</button>
+        <button>Friends</button>
+      </div>
+      <!-- Badge = requests waiting on you. Opens friends.html (account-gated). -->
+      <button class="friends-btn glass">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.4"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2z"/><path d="M18 8v6M15 11h6"/></svg>
+        Friends <span class="badge">1</span>
+      </button>
+    </div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">Today</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div></div>
+        <div class="row glass"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div></div>
+        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="section-label"><span class="title">Yesterday</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div></div>
+        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="section-label"><span class="title">Earlier</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div></div>
+      </div>
     </div>
   </div>
 
   <nav class="bottom-nav">
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V10z"/></svg></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17z"/></svg></button>
-    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Circle</span></button>
+    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Community</span></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1-2.4 3-3.5 5.5-3.5s4.5 1.1 5.5 3.5"/></svg></button>
   </nav>
   <div class="home-indicator"></div>

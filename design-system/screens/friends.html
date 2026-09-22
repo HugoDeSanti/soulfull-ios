@@ -1,0 +1,84 @@
+<!-- @dsCard group="Screens · Tabs" name="Community — friends" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community — friends</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  /* Features/Community/FriendsView.swift. Pushed from the Community tab
+     behind the account gate. Search by NAME (matches the full name
+     server-side, shows the abbreviated one; never by email), then the
+     requests waiting on you, the ones you sent, and your friends. */
+  .scr { padding: 58px 20px 130px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: underline; }
+  .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 22px 0 0; }
+  h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .sub { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 6px 0 0; }
+  /* Glass field, 48pt, radius 16. UIKit-backed in Swift — no text halo on it. */
+  .search { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 16px; margin-top: 22px; font-size: 15px; color: var(--muted); }
+  .search svg { color: var(--ink-soft); flex: none; }
+  .sec { margin-top: 22px; }
+  .sec .section-label { margin-left: -20px; margin-right: -20px; }
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  /* MemberRow — face, name, one control. */
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 18px; }
+  .row .name { flex: 1; min-width: 0; font-size: 15px; font-weight: var(--w-medium); color: var(--ink); }
+  .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); }
+  .av.t0 { background-image: linear-gradient(135deg, #4f5c29, #333d17); }
+  .av.t2 { background-image: linear-gradient(135deg, #854f4d, #573030); }
+  .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  .av.t4 { background-image: linear-gradient(135deg, #806b4f, #544530); }
+  /* Pills: honey fill for the primary verb (Add / Accept), quiet glass for the
+     rest (Decline / Withdraw / Remove); a static glass chip for a standing
+     (Requested / Friends). Remove asks for confirmation. */
+  .pill { height: 34px; padding: 0 14px; border-radius: 999px; border: 0; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); background: none; cursor: pointer; display: inline-flex; align-items: center; }
+  .pill.fill { background: var(--honey); color: #000; }
+  .chip-state { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: var(--w-medium); color: var(--ink-soft); }
+  .ctl { display: flex; gap: 8px; }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.55) blur(24px);transform:scale(1.1)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
+
+    <a class="back"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1 2 6l5 5"/></svg>Community</a>
+    <div class="on-photo">
+      <p class="eb">Friends</p>
+      <h1>Your people</h1>
+      <p class="sub">Find the people you practise with. What they finish joins your Friends feed, and what you finish joins theirs.</p>
+    </div>
+
+    <div class="search glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search members by name</div>
+
+    <div class="sec">
+      <div class="section-label"><span class="title">Requests</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t4">N</div><span class="name">Nia</span><div class="ctl"><button class="pill fill">Accept</button><button class="pill glass">Decline</button></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="section-label"><span class="title">Sent</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t0">M</div><span class="name">Mateo V.</span><button class="pill glass">Withdraw</button></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="section-label"><span class="title">Friends</span></div>
+      <div class="rows">
+        <div class="row glass"><div class="av t2">A</div><span class="name">Alma G.</span><button class="pill glass">Remove</button></div>
+        <div class="row glass"><div class="av t3">T</div><span class="name">Theo R.</span><button class="pill glass">Remove</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>
