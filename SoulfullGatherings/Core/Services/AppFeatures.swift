@@ -71,13 +71,10 @@ enum AppFeatures {
     /// `dueToday` to be derived from it rather than from brochure copy.
     static let depositInstallmentsEnabled = false
 
-    /// The Circle tab (community circles, member directory, DMs).
-    ///
-    /// **Off for v1.** It was a `TabPlaceholder` reading "lands here next",
-    /// which is a Guideline 4.2 minimum-functionality rejection. `MainTab` omits
-    /// the case entirely rather than reading this flag — `BottomNav` builds from
-    /// `MainTab.allCases`, so the tab disappears from the bar automatically.
-    /// This constant documents the decision; `CommunityPlaceholder` is parked,
-    /// not deleted.
-    static let circleTabEnabled = false
+    // The Circle tab flag (`circleTabEnabled`) is gone. It documented cutting a
+    // `TabPlaceholder` that read "lands here next" — a Guideline 4.2 rejection.
+    // Its successor shipped on 2026-09-22 as the Community tab
+    // (`Features/Community/`): a live feed of finished practices over the
+    // `community_activity` view, with friends. `CommunityPlaceholder` was
+    // deleted with the flag; both are in git history.
 }

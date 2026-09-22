@@ -49,6 +49,26 @@
 			</array>
 		</dict>
 
+		<!--
+		  Profile photo (`profiles.avatar_url` → the public `avatars` bucket),
+		  chosen through PhotosPicker, downsized on the device and shown beside
+		  the member's name in the Community feed. Only the one chosen image is
+		  uploaded — the picker runs out of process, so the app never reads the
+		  library and no photo-library purpose string is needed.
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
 		<!-- Supabase auth user id; also the `profiles` primary key. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
@@ -78,15 +98,20 @@
 		</dict>
 
 		<!--
-		  Practice activity: which session, prompt, exercise, recipe or massage
-		  was opened, how much of it was consumed, and when
-		  (`practice_plays`, see 0008_practice_progress.sql).
+		  Practice activity: which session, prompt, exercise or recipe was
+		  opened, how much of it was consumed, and when (`practice_plays`, see
+		  0008_practice_progress.sql).
 
 		  Declared because it is genuinely collected and linked to the account —
 		  it powers "Continue where you left off" and is the record content
 		  creator payouts are calculated from. It is NOT tracking: it never
 		  leaves our own backend, is not joined to any third-party identity,
-		  and no advertising or analytics SDK sees it.
+		  and no advertising or analytics SDK sees it. Since 2026-09-22 a
+		  FINISHED session, movement sequence or recipe (never a journal prompt)
+		  is also shown to other members in the Community feed as "<first name>
+		  <last initial>. practiced <title>", unless the member turns
+		  "Share my practice" off on the You tab. Friendships (`friendships`)
+		  fall under the same type.
 
 		  Note what is NOT here: the text of a journal reflection. Only the fact
 		  that a prompt was opened is recorded — the writing itself stays on the

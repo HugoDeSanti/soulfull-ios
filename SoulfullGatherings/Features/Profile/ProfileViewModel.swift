@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// One program on the You tab, and where the member is in it.
 struct ProgramJourney: Identifiable, Hashable {
@@ -64,6 +65,14 @@ final class ProfileViewModel {
     private(set) var programsLoaded = false
     private(set) var retreatsLoaded = false
 
+    /// Whether this member's finished practices appear in the Community feed.
+    /// Mirrors `profiles.share_activity`; true until the row says otherwise.
+    private(set) var shareActivity = true
+    private(set) var isUploadingAvatar = false
+    private(set) var isSavingShare = false
+    /// A photo or sharing change that failed, for an alert. Cleared when read.
+    var profileError: String?
+
     private let store = ProgramStore.shared
     private var loadedFor: UUID?
 
@@ -83,7 +92,7 @@ final class ProfileViewModel {
     /// Loads the member's practice, programs and retreats. Cheap on appear —
     /// each piece no-ops when this member's data is already in hand. `force`
     /// is pull to refresh: everything, from the server.
-    func load(force: Bool = false) async {
+    func load(force: Bool = false, settings: AppSettings? = nil) async {
         #if DEBUG
         if Self.isPreview { installPreviewFixture(); return }
         #endif
@@ -95,8 +104,120 @@ final class ProfileViewModel {
             : PracticeProgressStore.shared.refresh()
         async let joined: Void = loadPrograms(for: userID, force: force)
         async let visited: Void = loadRetreats(for: userID, force: force)
-        _ = await (practice, joined, visited)
+        async let me: Void = loadProfile(for: userID, settings: settings)
+        _ = await (practice, joined, visited, me)
         if store.currentUserID == userID { loadedFor = userID }
+    }
+
+    /// The row itself — for the photo and the sharing switch. Best-effort: the
+    /// tab is complete without it, and a failure here is a stale face, not a
+    /// missing section.
+    private func loadProfile(for userID: UUID, settings: AppSettings?) async {
+        do {
+            guard let profile = try await SupabaseService.shared.fetchProfile(id: userID),
+                  store.currentUserID == userID else { return }
+            shareActivity = profile.shareActivity
+            settings?.avatarUrl = profile.avatarUrl
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Log.data.info("Profile row unavailable: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Profile photo
+
+    /// Downsizes the chosen photo to a 512px square JPEG and uploads it,
+    /// pointing the row (and `AppSettings`) at the new path. Drawing through a
+    /// renderer also bakes in the EXIF orientation, so a portrait shot from
+    /// the camera roll doesn't arrive sideways on everyone else's phone.
+    func setAvatar(imageData: Data, settings: AppSettings) async {
+        guard let userID = store.currentUserID, !isUploadingAvatar else { return }
+        guard let image = UIImage(data: imageData),
+              let jpeg = Self.avatarJPEG(from: image) else {
+            profileError = "That photo couldn't be read. Try a different one."
+            return
+        }
+        isUploadingAvatar = true
+        defer { isUploadingAvatar = false }
+        let previous = settings.avatarUrl
+        do {
+            let path = try await SupabaseService.shared.setAvatar(jpegData: jpeg, userID: userID,
+                                                                  replacing: previous)
+            guard store.currentUserID == userID else { return }
+            settings.avatarUrl = path
+            Haptics.success()
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Haptics.bump()
+            Log.media.error("Avatar upload failed: \(error.localizedDescription)")
+            profileError = error.isOffline
+                ? "You're offline. Reconnect to change your photo."
+                : "We couldn't save that photo. Please try again."
+        }
+    }
+
+    func removeAvatar(settings: AppSettings) async {
+        guard let userID = store.currentUserID, !isUploadingAvatar else { return }
+        isUploadingAvatar = true
+        defer { isUploadingAvatar = false }
+        let previous = settings.avatarUrl
+        do {
+            try await SupabaseService.shared.clearAvatar(userID: userID, previous: previous)
+            guard store.currentUserID == userID else { return }
+            settings.avatarUrl = nil
+            Haptics.success()
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Haptics.bump()
+            Log.media.error("Avatar removal failed: \(error.localizedDescription)")
+            profileError = error.isOffline
+                ? "You're offline. Reconnect to remove your photo."
+                : "We couldn't remove that photo. Please try again."
+        }
+    }
+
+    /// Square-crops from the centre and scales to 512pt at 1x. ~40–80KB.
+    nonisolated static func avatarJPEG(from image: UIImage, side: CGFloat = 512) -> Data? {
+        let source = image.size
+        guard source.width > 0, source.height > 0 else { return nil }
+        let scale = side / min(source.width, source.height)
+        let drawn = CGSize(width: source.width * scale, height: source.height * scale)
+        let origin = CGPoint(x: (side - drawn.width) / 2, y: (side - drawn.height) / 2)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format)
+        let square = renderer.image { _ in
+            image.draw(in: CGRect(origin: origin, size: drawn))
+        }
+        return square.jpegData(compressionQuality: 0.82)
+    }
+
+    // MARK: - Sharing
+
+    /// The feed opt-out. Optimistic, reverted if the server says no.
+    func setShareActivity(_ share: Bool) async {
+        guard let userID = store.currentUserID, share != shareActivity, !isSavingShare else { return }
+        isSavingShare = true
+        defer { isSavingShare = false }
+        let before = shareActivity
+        shareActivity = share
+        Haptics.select()
+        do {
+            try await SupabaseService.shared.setShareActivity(share, userID: userID)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Haptics.bump()
+            shareActivity = before
+            Log.data.error("Share setting failed: \(error.localizedDescription)")
+            profileError = error.isOffline
+                ? "You're offline. Reconnect to change this."
+                : "We couldn't save that just now. Please try again."
+        }
     }
 
     private func loadPrograms(for userID: UUID, force: Bool) async {

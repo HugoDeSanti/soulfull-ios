@@ -18,12 +18,17 @@ final class AppSettings {
         static let intentions   = "sg.intentions"
         static let bodyState    = "sg.bodyState"
         static let frequency    = "sg.frequency"
+        static let avatarUrl    = "sg.avatarUrl"
     }
 
     var hasOnboarded: Bool { didSet { UserDefaults.standard.set(hasOnboarded, forKey: Keys.hasOnboarded) } }
     var userName: String   { didSet { UserDefaults.standard.set(userName,     forKey: Keys.userName) } }
     var bodyState: String  { didSet { UserDefaults.standard.set(bodyState,    forKey: Keys.bodyState) } }
     var frequency: String  { didSet { UserDefaults.standard.set(frequency,    forKey: Keys.frequency) } }
+    /// This member's `profiles.avatar_url`, mirrored so the You tab and the
+    /// Community header can paint the face before the server answers. Not the
+    /// source of truth — the row is; hydrated on sign-in and on every You tab load.
+    var avatarUrl: String?  { didSet { UserDefaults.standard.set(avatarUrl,    forKey: Keys.avatarUrl) } }
 
     private var intentionsRaw: String { didSet { UserDefaults.standard.set(intentionsRaw, forKey: Keys.intentions) } }
 
@@ -40,6 +45,7 @@ final class AppSettings {
         bodyState     = ud.string(forKey: Keys.bodyState)   ?? ""
         frequency     = ud.string(forKey: Keys.frequency)   ?? ""
         intentionsRaw = ud.string(forKey: Keys.intentions)  ?? ""
+        avatarUrl     = ud.string(forKey: Keys.avatarUrl)
     }
 
     func reset() {
@@ -65,5 +71,6 @@ final class AppSettings {
         intentionsRaw = ""
         bodyState     = ""
         frequency     = ""
+        avatarUrl     = nil
     }
 }

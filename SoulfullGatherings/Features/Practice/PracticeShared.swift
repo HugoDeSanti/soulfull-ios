@@ -30,6 +30,7 @@ struct PracticeBackBar: View {
                 .foregroundStyle(Theme.ink)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("back-bar")
             Spacer()
         }
     }

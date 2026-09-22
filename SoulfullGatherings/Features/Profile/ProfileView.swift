@@ -12,6 +12,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     /// Switch to the Programs tab. A non-nil id opens that program.
@@ -33,6 +34,9 @@ struct ProfileView: View {
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var deleteError: String?
+    @State private var showPhotoOptions = false
+    @State private var showPhotoPicker = false
+    @State private var photoItem: PhotosPickerItem?
 
     /// Has anything of their own to show. `-preview-you` renders the member
     /// layout against fixtures without an account.
@@ -55,6 +59,7 @@ struct ProfileView: View {
                         practiceSection
                         digitalSection
                         inPersonSection
+                        communitySection
                     }
                     .padding(.top, 38)
                 } else {
@@ -75,7 +80,7 @@ struct ProfileView: View {
         .scrollIndicators(.hidden)
         .refreshable {
             guard isMember else { return }
-            await vm.load(force: true)
+            await vm.load(force: true, settings: settings)
         }
         .background {
             ZStack {
@@ -89,10 +94,40 @@ struct ProfileView: View {
         }
         .task(id: identity) {
             guard isMember else { return }
-            await vm.load()
+            await vm.load(settings: settings)
         }
         .sheet(isPresented: $showAccount) {
             AccountView(mode: accountMode)
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            photoItem = nil
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self) else {
+                    vm.profileError = "That photo couldn't be read. Try a different one."
+                    return
+                }
+                await vm.setAvatar(imageData: data, settings: settings)
+            }
+        }
+        .confirmationDialog("Profile photo", isPresented: $showPhotoOptions, titleVisibility: .visible) {
+            Button(settings.avatarUrl == nil ? "Choose a photo" : "Choose a new photo") {
+                showPhotoPicker = true
+            }
+            if settings.avatarUrl != nil {
+                Button("Remove photo", role: .destructive) {
+                    Task { await vm.removeAvatar(settings: settings) }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Shown beside your name in the Community feed.")
+        }
+        .alert("Couldn't save that", isPresented: Binding(get: { vm.profileError != nil }, set: { if !$0 { vm.profileError = nil } })) {
+            Button("OK", role: .cancel) { vm.profileError = nil }
+        } message: {
+            Text(vm.profileError ?? "")
         }
         .confirmationDialog("Delete your account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete account", role: .destructive) {
@@ -125,10 +160,14 @@ struct ProfileView: View {
 
     private var header: some View {
         VStack(spacing: 18) {
-            Image("soulfull-logo-white")
-                .resizable().scaledToFit()
-                .frame(width: 88, height: 88)
-                .breathing(scale: 0.96...1.04, opacity: 0.82...0.95, period: 5.5)
+            if isMember {
+                avatarButton
+            } else {
+                Image("soulfull-logo-white")
+                    .resizable().scaledToFit()
+                    .frame(width: 88, height: 88)
+                    .breathing(scale: 0.96...1.04, opacity: 0.82...0.95, period: 5.5)
+            }
             VStack(spacing: 18) {
                 Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
                     .font(Theme.eyebrow(12))
@@ -146,6 +185,40 @@ struct ProfileView: View {
             .onPhoto()
             intentionsRow
         }
+    }
+
+    /// The member's face where the logo sits for a guest. Tapping offers a
+    /// new photo or none; a small badge says it can be changed at all.
+    private var avatarButton: some View {
+        Button {
+            Haptics.tap()
+            showPhotoOptions = true
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                AvatarView(avatarUrl: settings.avatarUrl,
+                           name: settings.userName,
+                           seed: auth.userID?.uuidString ?? "preview",
+                           size: 92)
+                    .overlay {
+                        if vm.isUploadingAvatar {
+                            Circle().fill(.black.opacity(0.45))
+                            ProgressView().tint(Theme.ink)
+                        }
+                    }
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.black)
+                    .frame(width: 28, height: 28)
+                    .background(Theme.ink, in: Circle())
+                    .overlay(Circle().strokeBorder(Theme.bg, lineWidth: 2))
+                    .offset(x: 2, y: 2)
+            }
+            .contentShape(Circle())
+        }
+        .buttonStyle(.soulPressableChip)
+        .disabled(vm.isUploadingAvatar)
+        .accessibilityLabel(settings.avatarUrl == nil ? "Add a profile photo" : "Change your profile photo")
+        .accessibilityIdentifier("profile-avatar")
     }
 
     /// What they came here for, as quiet glass chips.
@@ -383,6 +456,52 @@ struct ProfileView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Community
+
+    /// The one switch the feed needs: whether this member appears in it. Off
+    /// hides their finished practices from everyone, friends included; they
+    /// stay findable and can still add and be added.
+    private var communitySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionLabel(title: "Community")
+
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Share my practice")
+                        .font(Theme.headline(17))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                    Text("Your finished practices appear in the Community feed as \u{201C}\(settings.userName.isEmpty ? "You" : Self.abbreviated(settings.userName)) practiced …\u{201D}. Journal prompts never do.")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Toggle("", isOn: Binding(
+                    get: { vm.shareActivity },
+                    set: { on in Task { await vm.setShareActivity(on) } }
+                ))
+                .labelsHidden()
+                .tint(Theme.honey)
+                .disabled(vm.isSavingShare)
+                .accessibilityLabel("Share my practice in the Community feed")
+                .accessibilityIdentifier("share-activity")
+            }
+            .padding(16)
+            .soulGlassCard()
+            .padding(.horizontal, 20)
+        }
+    }
+
+    /// "Hugo De Santiago" → "Hugo D.", the way the server abbreviates it.
+    private static func abbreviated(_ name: String) -> String {
+        let parts = name.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard let first = parts.first else { return "You" }
+        guard parts.count > 1, let initial = parts.last?.first else { return first }
+        return "\(first) \(initial)."
     }
 
     // MARK: - Shared section states

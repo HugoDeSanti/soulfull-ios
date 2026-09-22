@@ -616,6 +616,188 @@ actor SupabaseService {
         try? client.storage.from(bucket).getPublicURL(path: path)
     }
 
+    // MARK: - Community
+
+    /// The feed: finished practices, newest first, from the `community_activity`
+    /// view. Pass `memberIDs` to narrow it to those people (the Friends
+    /// filter); nil is everyone. The view runs with owner rights so it can
+    /// see across members — it already leaves out journal prompts, unfinished
+    /// sittings, guests and anyone who opted out. Uncached: it moves every
+    /// time anyone finishes anything.
+    func fetchCommunityActivity(memberIDs: [UUID]? = nil, limit: Int = 100) async throws -> [CommunityActivity] {
+        if let memberIDs, memberIDs.isEmpty { return [] }
+        var query = client
+            .from("community_activity")
+            .select()
+        if let memberIDs {
+            query = query.in("user_id", values: memberIDs)
+        }
+        let rows: [CommunityActivityRow] = try await query
+            .order("completed_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+        return rows.compactMap(\.activity)
+    }
+
+    /// Specific members by id — the people behind a friendship row.
+    func fetchCommunityMembers(ids: [UUID]) async throws -> [CommunityMember] {
+        guard !ids.isEmpty else { return [] }
+        let rows: [CommunityMemberRow] = try await client
+            .from("community_members")
+            .select()
+            .in("id", values: ids)
+            .limit(200)
+            .execute()
+            .value
+        return rows.map(\.member)
+    }
+
+    /// Members whose name contains `query` — through `search_members()`, which
+    /// matches on the full name server-side and answers with the abbreviated
+    /// one. Two characters minimum; the function returns nothing for less.
+    func searchMembers(_ query: String) async throws -> [CommunityMember] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { return [] }
+        let rows: [CommunityMemberRow] = try await client
+            .rpc("search_members", params: ["q": trimmed])
+            .execute()
+            .value
+        return rows.map(\.member)
+    }
+
+    /// Every friendship row this member is on either side of, pending or
+    /// accepted, with the other person resolved. RLS returns only the caller's
+    /// rows. Uncached.
+    func fetchFriendships(userID: UUID) async throws -> [Friendship] {
+        let rows: [FriendshipRow] = try await client
+            .from("friendships")
+            .select()
+            .order("created_at", ascending: false)
+            .limit(500)
+            .execute()
+            .value
+        let others = Set(rows.map { $0.requesterId == userID ? $0.addresseeId : $0.requesterId })
+        let members = try await fetchCommunityMembers(ids: Array(others))
+        let byID = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0) })
+        return rows.map { row in
+            let direction: Friendship.Direction = row.requesterId == userID ? .sent : .received
+            return Friendship(requesterID: row.requesterId, addresseeID: row.addresseeId,
+                              status: Friendship.Status(rawValue: row.status) ?? .pending,
+                              createdAt: row.createdAt,
+                              other: byID[direction == .sent ? row.addresseeId : row.requesterId],
+                              direction: direction)
+        }
+    }
+
+    /// Asks another member to be friends. The server refuses a guest, a
+    /// request to a non-member, and a second row for the same pair.
+    func sendFriendRequest(from userID: UUID, to memberID: UUID) async throws {
+        struct Insert: Encodable {
+            let requesterId: UUID
+            let addresseeId: UUID
+            enum CodingKeys: String, CodingKey {
+                case requesterId = "requester_id", addresseeId = "addressee_id"
+            }
+        }
+        try await client
+            .from("friendships")
+            .insert(Insert(requesterId: userID, addresseeId: memberID))
+            .execute()
+    }
+
+    /// Accepts a request sent to this member. Only the addressee can, and only
+    /// pending → accepted is a change the trigger lets through.
+    func acceptFriendRequest(from requesterID: UUID, userID: UUID) async throws {
+        struct Update: Encodable { let status: String }
+        try await client
+            .from("friendships")
+            .update(Update(status: "accepted"))
+            .eq("requester_id", value: requesterID)
+            .eq("addressee_id", value: userID)
+            .execute()
+    }
+
+    /// Declines, withdraws, or unfriends — one delete for all three. Either
+    /// side may.
+    func removeFriendship(between a: UUID, and b: UUID) async throws {
+        try await client
+            .from("friendships")
+            .delete()
+            .or("and(requester_id.eq.\(a.uuidString),addressee_id.eq.\(b.uuidString)),and(requester_id.eq.\(b.uuidString),addressee_id.eq.\(a.uuidString))")
+            .execute()
+    }
+
+    // MARK: - Avatar
+
+    /// Uploads a new profile photo and points the profile at it. Returns the
+    /// new `avatar_url`.
+    ///
+    /// A fresh uuid per upload, never an overwrite of a fixed name: the path IS
+    /// the cache key in `RemoteImageCache` and in every other member's
+    /// `URLCache`, so replacing the bytes behind the same path would leave the
+    /// old face on screen until the caches turned over. The previous object is
+    /// deleted best-effort once the row points away from it.
+    func setAvatar(jpegData: Data, userID: UUID, replacing previous: String?) async throws -> String {
+        let objectPath = "\(userID.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+        try await client.storage
+            .from("avatars")
+            .upload(objectPath, data: jpegData,
+                    options: FileOptions(cacheControl: "31536000", contentType: "image/jpeg"))
+        let avatarUrl = "avatars/\(objectPath)"
+        try await updateAvatarUrl(avatarUrl, userID: userID)
+        await removeAvatarObject(previous)
+        return avatarUrl
+    }
+
+    /// Removes the profile photo: the row first, then the object.
+    func clearAvatar(userID: UUID, previous: String?) async throws {
+        try await updateAvatarUrl(nil, userID: userID)
+        await removeAvatarObject(previous)
+    }
+
+    private func updateAvatarUrl(_ avatarUrl: String?, userID: UUID) async throws {
+        struct Update: Encodable {
+            let avatarUrl: String?
+            enum CodingKeys: String, CodingKey { case avatarUrl = "avatar_url" }
+            // Encode the nil explicitly, or PostgREST sees no change at all.
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(avatarUrl, forKey: .avatarUrl)
+            }
+        }
+        try await client
+            .from("profiles")
+            .update(Update(avatarUrl: avatarUrl))
+            .eq("id", value: userID)
+            .execute()
+    }
+
+    /// Best-effort: an orphaned object costs a few kilobytes; a failed delete
+    /// must not undo an upload that succeeded.
+    private func removeAvatarObject(_ avatarUrl: String?) async {
+        guard let avatarUrl, avatarUrl.hasPrefix("avatars/") else { return }
+        let objectPath = String(avatarUrl.dropFirst("avatars/".count))
+        do {
+            _ = try await client.storage.from("avatars").remove(paths: [objectPath])
+        } catch {
+            Log.media.info("Old avatar not removed: \(error.localizedDescription)")
+        }
+    }
+
+    /// The feed opt-out.
+    func setShareActivity(_ share: Bool, userID: UUID) async throws {
+        struct Update: Encodable {
+            let shareActivity: Bool
+            enum CodingKeys: String, CodingKey { case shareActivity = "share_activity" }
+        }
+        try await client
+            .from("profiles")
+            .update(Update(shareActivity: share))
+            .eq("id", value: userID)
+            .execute()
+    }
+
     func invalidateCache() {
         retreatsCache = nil
         retreatsCacheDate = nil
@@ -640,12 +822,16 @@ private struct ProfileRow: Decodable {
     let bodyState: String?
     let frequency: String?
     let stripeCustomerId: String?
+    let avatarUrl: String?
+    let shareActivity: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, email, intentions, frequency
         case fullName         = "full_name"
         case bodyState        = "body_state"
         case stripeCustomerId = "stripe_customer_id"
+        case avatarUrl        = "avatar_url"
+        case shareActivity    = "share_activity"
     }
 
     var profile: Profile {
@@ -656,7 +842,9 @@ private struct ProfileRow: Decodable {
             intentions: intentions ?? [],
             bodyState: bodyState ?? "",
             frequency: frequency ?? "",
-            stripeCustomerId: stripeCustomerId
+            stripeCustomerId: stripeCustomerId,
+            avatarUrl: avatarUrl,
+            shareActivity: shareActivity ?? true
         )
     }
 }
@@ -1012,5 +1200,78 @@ private struct ProgramDayCompletionRow: Decodable {
 
     var completion: ProgramDayCompletion {
         ProgramDayCompletion(programID: programId, day: dayNumber, completedAt: completedAt)
+    }
+}
+
+// MARK: - Community DTOs
+
+/// Read model for the `community_members` view and `search_members()`.
+private struct CommunityMemberRow: Decodable {
+    let id: UUID
+    let displayName: String
+    let avatarUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName = "display_name"
+        case avatarUrl   = "avatar_url"
+    }
+
+    var member: CommunityMember {
+        CommunityMember(id: id, displayName: displayName, avatarUrl: avatarUrl)
+    }
+}
+
+/// Read model for the `community_activity` view.
+private struct CommunityActivityRow: Decodable {
+    let playId: UUID
+    let userId: UUID
+    let displayName: String
+    let avatarUrl: String?
+    let contentKind: String
+    let contentId: Int
+    let contentTitle: String
+    let category: String?
+    let completedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case category
+        case playId       = "play_id"
+        case userId       = "user_id"
+        case displayName  = "display_name"
+        case avatarUrl    = "avatar_url"
+        case contentKind  = "content_kind"
+        case contentId    = "content_id"
+        case contentTitle = "content_title"
+        case completedAt  = "completed_at"
+    }
+
+    /// Nil for a kind this build doesn't know — a line that can't say what was
+    /// practised is better left out than mislabelled.
+    var activity: CommunityActivity? {
+        guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
+        return CommunityActivity(
+            id: playId,
+            member: CommunityMember(id: userId, displayName: displayName, avatarUrl: avatarUrl),
+            kind: kind,
+            contentID: contentId,
+            title: contentTitle,
+            category: category.flatMap(PracticeCategory.init(rawValue:)),
+            completedAt: completedAt
+        )
+    }
+}
+
+private struct FriendshipRow: Decodable {
+    let requesterId: UUID
+    let addresseeId: UUID
+    let status: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case requesterId = "requester_id"
+        case addresseeId = "addressee_id"
+        case createdAt   = "created_at"
     }
 }

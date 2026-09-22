@@ -23,6 +23,12 @@ struct Profile: Identifiable, Hashable {
     var bodyState: String
     var frequency: String
     var stripeCustomerId: String?
+    /// `avatars/<user id>/<uuid>.jpg` in Storage, or nil for no photo. Written
+    /// by `SupabaseService.setAvatar`, never by `upsertProfile`.
+    var avatarUrl: String? = nil
+    /// Whether finished practices appear in the Community feed. Opt-out,
+    /// on the You tab. Never touched by `upsertProfile`.
+    var shareActivity: Bool = true
 }
 
 // MARK: - Bookings (retreat reservations / payments)
@@ -1272,4 +1278,74 @@ extension MoodChip {
         .init(id: "inspired", label: "Inspired", suggests: .journal,
               ritual: "Catch it in writing",   ritualLead: "Before the thought moves on"),
     ]
+}
+
+// MARK: - Community
+
+/// Another member as the Community tab shows them: an id, a name abbreviated
+/// server-side ("Hugo D." — the full name never leaves the row), and a photo.
+/// Read from the `community_members` view and `search_members()`.
+struct CommunityMember: Identifiable, Hashable, Sendable {
+    let id: UUID
+    let displayName: String
+    /// `avatars/<id>/<uuid>.jpg`, resolved by `ImageSource`; nil for initials.
+    let avatarUrl: String?
+}
+
+/// One line of the feed: a member finished a practice. Read from the
+/// `community_activity` view, which already excludes journal prompts, anything
+/// unfinished, and members who have opted out.
+struct CommunityActivity: Identifiable, Hashable, Sendable {
+    /// The play's id — one row per sitting, so a session done twice is two lines.
+    let id: UUID
+    let member: CommunityMember
+    let kind: PracticeContentKind
+    let contentID: Int
+    let title: String
+    let category: PracticeCategory?
+    let completedAt: Date
+
+    /// The eyebrow under the line: the track for a session, the library otherwise.
+    var kindLabel: String {
+        if let category { return category.title }
+        switch kind {
+        case .session:  return "Session"
+        case .exercise: return "Movement"
+        case .recipe:   return "Recipe"
+        case .journal:  return "Journal"
+        }
+    }
+}
+
+/// A friend request, or the friendship it became. `status` is the server's;
+/// which side of it *this* member is on is `direction`.
+struct Friendship: Identifiable, Hashable, Sendable {
+    enum Status: String, Hashable, Sendable { case pending, accepted }
+    enum Direction: Hashable, Sendable {
+        /// This member asked.
+        case sent
+        /// This member was asked.
+        case received
+    }
+
+    let requesterID: UUID
+    let addresseeID: UUID
+    let status: Status
+    let createdAt: Date
+    /// The other person, resolved through `community_members`. Nil only if
+    /// they have since deleted their account (the row cascades soon after).
+    var other: CommunityMember?
+    let direction: Direction
+
+    var id: String { "\(requesterID.uuidString)-\(addresseeID.uuidString)" }
+    var otherID: UUID { direction == .sent ? addresseeID : requesterID }
+    var isAccepted: Bool { status == .accepted }
+}
+
+/// Where a member stands relative to me, for the button beside their name.
+enum FriendStanding: Hashable {
+    case none
+    case requested
+    case awaitingMyAnswer
+    case friends
 }

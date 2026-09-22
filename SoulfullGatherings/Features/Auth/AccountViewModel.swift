@@ -268,6 +268,7 @@ final class AccountViewModel {
         do {
             let existing = try await SupabaseService.shared.fetchProfile(id: id)
             let hasSavedAnswers = existing.map { !$0.intentions.isEmpty || !$0.bodyState.isEmpty } ?? false
+            settings.avatarUrl = existing?.avatarUrl
             if let existing, hasSavedAnswers {
                 if !existing.fullName.isEmpty  { settings.userName  = existing.fullName }
                 if !existing.bodyState.isEmpty { settings.bodyState = existing.bodyState }
@@ -287,6 +288,7 @@ final class AccountViewModel {
         guard let id = auth.userID else { return }
         do {
             guard let profile = try await SupabaseService.shared.fetchProfile(id: id) else { return }
+            settings.avatarUrl = profile.avatarUrl
             if !profile.fullName.isEmpty { settings.userName = profile.fullName }
             if !profile.bodyState.isEmpty { settings.bodyState = profile.bodyState }
             if !profile.frequency.isEmpty { settings.frequency = profile.frequency }

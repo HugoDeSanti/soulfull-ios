@@ -6,8 +6,9 @@
 //
 // Steps: best-effort delete the Stripe customer (removes PII + saved payment
 // methods; charges remain as immutable financial records) → best-effort revoke
-// the user's Sign in with Apple grant → delete the auth user with the service
-// role, which cascades to `profiles` + `bookings` + `apple_credentials`.
+// the user's Sign in with Apple grant → best-effort remove their profile photo
+// from the `avatars` bucket → delete the auth user with the service role,
+// which cascades to `profiles` + `apple_credentials` + `friendships`.
 //
 // THE APPLE REVOKE IS NOT OPTIONAL. Guideline 5.1.1(v): an app offering both
 // Sign in with Apple and account deletion "must use the Sign in with Apple REST
@@ -128,6 +129,22 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("[delete-account] Apple revocation failed (continuing):", (e as Error).message);
       }
+    }
+
+    // Remove the profile photo. Storage objects don't cascade with the auth
+    // user, and a face left in a public bucket after the person deleted their
+    // account is exactly what the dialog promised wouldn't happen. Best-effort,
+    // like the other two: the folder is `avatars/<user id>/`, and the row
+    // pointing at it goes with the cascade below either way.
+    try {
+      const { data: objects } = await admin.storage.from("avatars").list(user.id, { limit: 100 });
+      const paths = (objects ?? []).map((o) => `${user.id}/${o.name}`);
+      if (paths.length > 0) {
+        const { error: rmErr } = await admin.storage.from("avatars").remove(paths);
+        if (rmErr) throw rmErr;
+      }
+    } catch (e) {
+      console.error("[delete-account] Avatar removal failed (continuing):", (e as Error).message);
     }
 
     // Delete the auth user. This cascades to public.profiles and

@@ -2,9 +2,8 @@
 //  MainTabView.swift
 //  Soulfull Gatherings
 //
-//  Hosts the primary tabs (Home, Practice, You — Circle is cut from v1, see
-//  AppFeatures.circleTabEnabled) with a custom floating glass tab bar instead
-//  of the system one. Home pushes into Retreats / Retreat Detail through its
+//  Hosts the primary tabs (Home, Programs, Practice, Community, You) with a
+//  custom floating glass tab bar instead of the system one. Home pushes into Retreats / Retreat Detail through its
 //  own NavigationStack so native swipe-back works.
 //
 //  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
@@ -19,37 +18,41 @@
 
 import SwiftUI
 
-/// The primary tabs. `BottomNav` builds itself from `allCases`, so adding the
-/// Circle case back is all that's needed to restore the tab — see
-/// `AppFeatures.circleTabEnabled` for why it's out of v1.
+/// The primary tabs. `BottomNav` builds itself from `allCases`, so the order
+/// here is the order on the bar. (The old Circle placeholder tab was cut from
+/// v1 under Guideline 4.2; Community is its real successor — a live feed, not
+/// a promise.)
 enum MainTab: String, Hashable, CaseIterable {
-    case home, programs, practice, you
+    case home, programs, practice, community, you
 
     var label: String {
         switch self {
-        case .home:     return "Home"
-        case .programs: return "Programs"
-        case .practice: return "Practice"
-        case .you:      return "You"
+        case .home:      return "Home"
+        case .programs:  return "Programs"
+        case .practice:  return "Practice"
+        case .community: return "Community"
+        case .you:       return "You"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .home:     return "house"
-        case .programs: return "mountain.2"
-        case .practice: return "sparkles"
-        case .you:      return "person.crop.circle"
+        case .home:      return "house"
+        case .programs:  return "mountain.2"
+        case .practice:  return "sparkles"
+        case .community: return "person.2"
+        case .you:       return "person.crop.circle"
         }
     }
 
     /// Filled variant shown while the tab is selected.
     var activeSystemImage: String {
         switch self {
-        case .home:     return "house.fill"
-        case .programs: return "mountain.2.fill"
-        case .practice: return "sparkles"
-        case .you:      return "person.crop.circle.fill"
+        case .home:      return "house.fill"
+        case .programs:  return "mountain.2.fill"
+        case .practice:  return "sparkles"
+        case .community: return "person.2.fill"
+        case .you:       return "person.crop.circle.fill"
         }
     }
 }
@@ -77,6 +80,7 @@ struct MainTabView: View {
             return tab
         }
         if args.contains("-preview-you") { return .you }
+        if args.contains("-preview-community") { return .community }
         #endif
         return .home
     }
@@ -122,6 +126,14 @@ struct MainTabView: View {
                                          showAccount = true
                                      }
                                  })
+                case .community:
+                    CommunityRoot(navHidden: $navHidden,
+                                  requireAccount: { action in
+                                      if gate.require(signedIn: auth.hasAccount, action) {
+                                          showAccount = true
+                                      }
+                                  },
+                                  onOpenProfile: { tab = .you })
                 case .you:
                     ProfileView(onOpenProgram: { programID in
                         pendingProgram = programID
@@ -337,6 +349,43 @@ private struct ProgramsRoot: View {
         case .recipe(let recipe):     path.append(.recipeDetail(recipe))
         case .session:                break   // handled as a sheet by the day view
         }
+    }
+}
+
+// MARK: - Community wrapped in its own NavigationStack.
+
+/// The Community tab. The feed is open to a guest; the Friends filter and the
+/// Friends screen go through `requireAccount`, the same gate as a practice.
+/// The view model is owned here so the feed and the Friends screen share one
+/// set of friendships — accepting a request on one is reflected on the other
+/// without a round trip.
+private struct CommunityRoot: View {
+    enum Route: Hashable {
+        case friends
+    }
+    @Binding var navHidden: Bool
+    var requireAccount: (@escaping () -> Void) -> Void = { $0() }
+    /// Switch to the You tab, where the profile photo is set.
+    var onOpenProfile: () -> Void = {}
+    @State private var path: [Route] = []
+    @State private var vm = CommunityViewModel()
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            CommunityView(vm: vm,
+                          onOpenFriends: { path.append(.friends) },
+                          onOpenProfile: onOpenProfile,
+                          requireAccount: requireAccount)
+                .navigationDestination(for: Route.self) { route in
+                    switch route {
+                    case .friends:
+                        FriendsView(vm: vm)
+                            .toolbar(.hidden, for: .navigationBar)
+                    }
+                }
+                .toolbar(.hidden, for: .navigationBar)
+        }
+        .onChange(of: path) { navHidden = !path.isEmpty }
     }
 }
 
