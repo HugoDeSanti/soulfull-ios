@@ -44,17 +44,6 @@ enum MainTab: String, Hashable, CaseIterable {
         case .you:       return "person.crop.circle"
         }
     }
-
-    /// Filled variant shown while the tab is selected.
-    var activeSystemImage: String {
-        switch self {
-        case .home:      return "house.fill"
-        case .programs:  return "mountain.2.fill"
-        case .practice:  return "sparkles"
-        case .community: return "person.2.fill"
-        case .you:       return "person.crop.circle.fill"
-        }
-    }
 }
 
 struct MainTabView: View {
@@ -155,12 +144,11 @@ struct MainTabView: View {
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.85), value: auth.needsRetry)
 
-            // Floating glass nav
+            // Docked nav. Static: it hides on detail pushes without moving.
             BottomNav(current: $tab)
-                .padding(.bottom, 8)
-                .offset(y: navHidden ? 140 : 0)
                 .opacity(navHidden ? 0 : 1)
-                .animation(.spring(response: 0.45, dampingFraction: 0.8), value: navHidden)
+                .allowsHitTesting(!navHidden)
+                .transaction { $0.animation = nil }
         }
         .onChange(of: tab) { navHidden = false }
         // One sheet for the whole shell, so a gated tap works from any tab and

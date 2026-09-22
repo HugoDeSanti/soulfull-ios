@@ -184,31 +184,29 @@
 .section-label .action { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
 
 /* ---------------------------------------------------------------------------
-   BottomNav  (App/BottomNav.swift) — floating glass capsule
+   BottomNav  (App/BottomNav.swift) — flat, docked, static tab bar
    --------------------------------------------------------------------------- */
 .bottom-nav {
-  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
-  display: flex; gap: 4px; padding: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid var(--glass-border-high);
-  backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; padding: 8px 8px 30px;
+  background: color-mix(in srgb, var(--bg-deep) 94%, transparent);
+  border-top: 0.5px solid var(--line);
   z-index: 50;
 }
 .nav-item {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 46px; padding: 0 13px; border-radius: 999px;
-  color: rgba(255,255,255,0.85); cursor: pointer;
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  height: 46px; color: var(--muted); cursor: pointer;
   border: 0; background: transparent;
 }
-.nav-item svg { width: 19px; height: 19px; }
-.nav-item .nav-label { display: none; font-size: 13px; font-weight: var(--w-medium); letter-spacing: 0.3px; }
-.nav-item.is-active {
-  background: var(--ink); color: #000; padding: 0 18px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-}
-.nav-item.is-active .nav-label { display: inline; }
+.nav-item svg { width: 20px; height: 20px; }
+.nav-item .nav-label { font-size: 10px; font-weight: var(--w-medium); letter-spacing: 0.3px; }
+.nav-item.is-active { color: var(--ink); }
+/* The You item: the member's AvatarView (photo, or initial on their tone). */
+.nav-item .nav-avatar { width: 22px; height: 22px; border-radius: 50%; opacity: .75;
+  display: grid; place-items: center; font-size: 10px; color: var(--ink);
+  background: linear-gradient(135deg, #8c7030, #614a1a);
+  box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.2px transparent; }
+.nav-item.is-active .nav-avatar { opacity: 1; box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.2px var(--ink); }
 
 /* ---------------------------------------------------------------------------
    Photo backdrop  (PhotoBackdrop in Components.swift)

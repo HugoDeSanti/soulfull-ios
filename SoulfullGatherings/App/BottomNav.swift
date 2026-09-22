@@ -2,69 +2,105 @@
 //  BottomNav.swift
 //  Soulfull Gatherings
 //
-//  One continuous liquid-glass capsule. A cream "lens" slides behind the
-//  active tab with a springy overshoot; the active icon fills, bounces, and
-//  reveals its label. Inactive items are quiet glyphs on glass.
+//  A flat bar docked to the bottom edge: five evenly spaced items, a thin
+//  glyph over a small label, cream when selected and muted when not. It does
+//  not move — no sliding lens, no bounce, no squish — so the only thing that
+//  changes on a tap is the colour. The You item is the member's own face
+//  (their photo, or their initial on their tone); a guest, who has no face
+//  yet, sees the plain person glyph.
 //
 
 import SwiftUI
 
 struct BottomNav: View {
     @Binding var current: MainTab
-    @Namespace private var lens
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 item(tab)
             }
         }
-        .padding(6)
-        .soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
-        .shadow(color: .black.opacity(0.28), radius: 18, y: 8)
-        .animation(.spring(response: 0.42, dampingFraction: 0.72), value: current)
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
+        .background {
+            Theme.bgDeep.opacity(0.94)
+                .overlay(alignment: .top) {
+                    Rectangle().fill(Theme.line).frame(height: 0.5)
+                }
+                .ignoresSafeArea(edges: .bottom)
+        }
+        // Static on purpose: nothing inherited from a surrounding transaction
+        // animates the bar either.
+        .transaction { $0.animation = nil }
     }
 
     private func item(_ tab: MainTab) -> some View {
         let active = current == tab
         return Button {
             guard tab != current else { return }
-            Haptics.tap()
+            Haptics.select()
             current = tab
         } label: {
-            HStack(spacing: 7) {
-                Image(systemName: active ? tab.activeSystemImage : tab.systemImage)
-                    .font(.system(size: 17, weight: .medium))
-                    .symbolEffect(.bounce.down.byLayer, value: active)
-                    .frame(width: 22)
-
-                if active {
-                    Text(tab.label)
-                        .font(Theme.body(13, weight: .medium))
-                        .tracking(0.3)
-                        .fixedSize()
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.8, anchor: .leading)),
-                            removal: .opacity
-                        ))
-                }
+            VStack(spacing: 5) {
+                icon(tab, active: active)
+                    .frame(height: 26)
+                Text(tab.label)
+                    .font(Theme.body(10, weight: .medium))
+                    .tracking(0.3)
+                    .lineLimit(1)
+                    .fixedSize()
             }
-            .foregroundStyle(active ? Color.black : Color.white.opacity(0.85))
-            .padding(.horizontal, active ? 18 : 13)
+            .foregroundStyle(active ? Theme.ink : Theme.muted)
+            .frame(maxWidth: .infinity)
             .frame(height: 46)
-            .background {
-                if active {
-                    Capsule()
-                        .fill(Theme.ink)
-                        .matchedGeometryEffect(id: "lens", in: lens)
-                        .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
-                }
-            }
-            .contentShape(Capsule())
+            .contentShape(Rectangle())
         }
-        .buttonStyle(SoulPressableStyle(scale: 0.93, hapticOnPress: false, dim: false))
+        .buttonStyle(StaticNavButtonStyle())
         .accessibilityLabel(tab.label)
         .accessibilityAddTraits(active ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private func icon(_ tab: MainTab, active: Bool) -> some View {
+        if tab == .you {
+            YouNavIcon(active: active)
+        } else {
+            Image(systemName: tab.systemImage)
+                .font(.system(size: 19, weight: .light))
+        }
+    }
+}
+
+/// The member's face, ringed in cream while the You tab is selected.
+private struct YouNavIcon: View {
+    let active: Bool
+    @Environment(AuthManager.self) private var auth
+    @Environment(AppSettings.self) private var settings
+
+    var body: some View {
+        if auth.hasAccount {
+            AvatarView(avatarUrl: settings.avatarUrl,
+                       name: settings.userName,
+                       seed: auth.userID?.uuidString ?? "",
+                       size: 22)
+                .padding(2)
+                .overlay {
+                    Circle().strokeBorder(active ? Theme.ink : .clear, lineWidth: 1.2)
+                }
+                .opacity(active ? 1 : 0.75)
+        } else {
+            Image(systemName: MainTab.you.systemImage)
+                .font(.system(size: 20, weight: .light))
+        }
+    }
+}
+
+/// No scale, no dim, no spring — a tab bar that holds still under the finger.
+private struct StaticNavButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
     }
 }
 
@@ -73,5 +109,7 @@ struct BottomNav: View {
         PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.5)
         VStack { Spacer(); BottomNav(current: .constant(.home)) }
     }
+    .environment(AuthManager(settings: AppSettings()))
+    .environment(AppSettings())
     .preferredColorScheme(.dark)
 }
