@@ -1,0 +1,59 @@
+<!-- @dsCard group="Screens · Tabs" name="Community — notifications" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community — notifications</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  /* Features/Community/NotificationsView.swift. Pushed from the bell. One
+     row per like on one of your finished practices; unread rows carry a
+     honey dot and tint for THIS visit, then everything is marked read
+     (server-side `read_at` latches). Written only by the like trigger. */
+  .scr { padding: 58px 20px 130px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: underline; }
+  .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 22px 0 0; }
+  h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .sub { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 6px 0 0; }
+  .rows { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 18px 12px 12px; border-radius: 22px; }
+  .row.unread { background: color-mix(in srgb, var(--honey) 5%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 28%, transparent); }
+  .row .tx { flex: 1; min-width: 0; }
+  .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
+  .row p b { font-weight: var(--w-medium); color: var(--ink); }
+  .row .meta { display: block; margin-top: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  .row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--honey); flex: none; }
+  .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); }
+  .av.t2 { background-image: linear-gradient(135deg, #854f4d, #573030); }
+  .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  /* EMPTY: glass card "Nothing yet" / "Finish a practice and it joins the
+     Community feed, where people can like it. You'll hear about it here." */
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.55) blur(24px);transform:scale(1.1)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
+
+    <a class="back"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1 2 6l5 5"/></svg>Community</a>
+    <div class="on-photo">
+      <p class="eb">Likes</p>
+      <h1>Notifications</h1>
+      <p class="sub">When someone likes a practice you finished, it lands here.</p>
+    </div>
+
+    <div class="rows">
+      <div class="row glass unread"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> liked your <b>Morning Mobility</b> practice</p><span class="meta">42 min ago</span></div><span class="dot"></span></div>
+      <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> liked your <b>Core &amp; Ground</b> practice</p><span class="meta">Saturday</span></div></div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

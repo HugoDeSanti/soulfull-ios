@@ -36,6 +36,10 @@ final class CommunityTests: XCTestCase {
         return app
     }
 
+    private func value(_ element: XCUIElement) -> String? {
+        element.value as? String
+    }
+
     private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: id).firstMatch
     }
@@ -121,6 +125,52 @@ final class CommunityTests: XCTestCase {
         XCTAssertFalse(friendsButton.label.contains("request"), "No requests left, so no badge")
     }
 
+    /// A like moves the count at once and can be taken back; your own line
+    /// has no button; the bell counts unread likes and clears once seen.
+    func testLikesMoveTheCountAndNotificationsClearTheBadge() {
+        let app = launch(fixture: true)
+
+        let first = rows(app).firstMatch
+        XCTAssertTrue(first.waitForExistence(timeout: 15), "The feed never rendered")
+        let allRows = rows(app).allElementsBoundByIndex
+        // Alma's Confidence Boost leads: 3 likes, already liked by you.
+        let almaLike = allRows[0].descendants(matching: .any).matching(identifier: "like-button").firstMatch
+        XCTAssertEqual(almaLike.label, "Unlike")
+        XCTAssertEqual(value(almaLike), "3 likes")
+        // Your own line has no button.
+        XCTAssertEqual(allRows[1].descendants(matching: .any).matching(identifier: "like-button").count, 0,
+                       "You can't like your own practice")
+        // Theo's: 1 like, not yours. Like it, then take it back.
+        let theoLike = allRows[2].descendants(matching: .any).matching(identifier: "like-button").firstMatch
+        XCTAssertEqual(theoLike.label, "Like")
+        XCTAssertEqual(value(theoLike), "1 like")
+        theoLike.tap()
+        XCTAssertTrue(theoLike.waitForExistence(timeout: 5))
+        XCTAssertEqual(theoLike.label, "Unlike", "A tap likes")
+        XCTAssertEqual(value(theoLike), "2 likes", "…and the count moves with it")
+        shot(app, "09-liked")
+        theoLike.tap()
+        XCTAssertEqual(theoLike.label, "Like", "A second tap unlikes")
+        XCTAssertEqual(value(theoLike), "1 like")
+
+        // The bell: one unread in the fixture.
+        let bell = element(app, "community-notifications")
+        XCTAssertTrue(bell.exists)
+        XCTAssertTrue(bell.label.contains("1 unread"), "got '\(bell.label)'")
+        bell.tap()
+
+        let note = app.descendants(matching: .any).matching(identifier: "notification-row").firstMatch
+        XCTAssertTrue(note.waitForExistence(timeout: 10), "The notification never appeared")
+        XCTAssertTrue(note.label.hasPrefix("Alma G. liked your Morning Mobility practice"), "got '\(note.label)'")
+        XCTAssertTrue(note.label.hasSuffix(", new"), "The unread one is marked new for this visit")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "notification-row").count, 2)
+        shot(app, "10-notifications")
+
+        element(app, "back-bar").tap()
+        XCTAssertTrue(bell.waitForExistence(timeout: 10))
+        XCTAssertFalse(bell.label.contains("unread"), "Seen, so no badge: got '\(bell.label)'")
+    }
+
     /// The feed is browsing and stays open; Friends is personal and is not.
     func testGuestChoosingFriendsIsAskedToSignIn() {
         let app = launch(fixture: false)
@@ -148,5 +198,15 @@ final class CommunityTests: XCTestCase {
         element(app, "community-friends").tap()
         XCTAssertTrue(close.waitForExistence(timeout: 10), "The Friends screen must be behind the gate too")
         shot(app, "08-account-sheet-on-friends-screen")
+        close.tap()
+
+        // So does a like — when the live feed has a line to like.
+        let like = element(app, "like-button")
+        if like.waitForExistence(timeout: 5) {
+            like.tap()
+            XCTAssertTrue(close.waitForExistence(timeout: 10), "Liking as a guest must raise the account sheet")
+            close.tap()
+            XCTAssertEqual(like.label, "Like", "Nothing was liked behind the sheet")
+        }
     }
 }

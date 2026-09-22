@@ -60,6 +60,10 @@ final class CommunityViewModel {
     /// last hundred lines of everyone's.
     private(set) var friendsActivity: [CommunityActivity] = []
     private(set) var friendships: [Friendship] = []
+    /// Likes on this member's practices, newest first.
+    private(set) var notifications: [LikeNotification] = []
+    private(set) var notificationsLoaded = false
+    private(set) var notificationsFailure: CommunityLoadFailure?
 
     private(set) var isLoadingActivity = false
     private(set) var activityFailure: CommunityLoadFailure?
@@ -111,6 +115,7 @@ final class CommunityViewModel {
     var incomingRequests: [Friendship] { friendships.filter { !$0.isAccepted && $0.direction == .received } }
     var outgoingRequests: [Friendship] { friendships.filter { !$0.isAccepted && $0.direction == .sent } }
     var friendIDs: [UUID] { friends.map(\.otherID) }
+    var unreadCount: Int { notifications.filter(\.isUnread).count }
 
     func standing(for memberID: UUID) -> FriendStanding {
         guard let row = friendships.first(where: { $0.otherID == memberID }) else { return .none }
@@ -130,9 +135,83 @@ final class CommunityViewModel {
         if loadedFor != userID { reset() }
         loadedFor = userID
         if isMember {
-            await loadFriendships(force: force)
+            async let friends: Void = loadFriendships(force: force)
+            async let bell: Void = loadNotifications(force: force)
+            _ = await (friends, bell)
         }
         await loadActivity(force: force)
+    }
+
+    func loadNotifications(force: Bool = false) async {
+        #if DEBUG
+        if Self.isPreview { return }
+        #endif
+        guard let userID else { return }
+        guard force || !notificationsLoaded || notificationsFailure != nil else { return }
+        do {
+            notifications = try await SupabaseService.shared.fetchNotifications(userID: userID)
+            notificationsFailure = nil
+            notificationsLoaded = true
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Log.data.info("Notifications unavailable: \(error.localizedDescription)")
+            notificationsFailure = CommunityLoadFailure(offline: error.isOffline)
+        }
+    }
+
+    /// Everything read, at once — called once the Notifications screen has
+    /// shown them. Optimistic; the server latches `read_at` anyway.
+    func markAllRead() async {
+        guard unreadCount > 0 else { return }
+        let now = Date.now
+        notifications = notifications.map {
+            LikeNotification(id: $0.id, actor: $0.actor, playID: $0.playID, practiceTitle: $0.practiceTitle,
+                             createdAt: $0.createdAt, readAt: $0.readAt ?? now)
+        }
+        #if DEBUG
+        if Self.isPreview { return }
+        #endif
+        guard let userID else { return }
+        do {
+            try await SupabaseService.shared.markNotificationsRead(userID: userID)
+        } catch {
+            Log.data.info("Mark-read failed: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Likes
+
+    /// Likes or unlikes one line. Both feeds update at once so the count
+    /// agrees whichever scope is showing; the server's answer wins on failure.
+    func toggleLike(_ line: CommunityActivity) async {
+        guard let userID, line.member.id != selfID, !busy.contains(line.id) else { return }
+        busy.insert(line.id)
+        defer { busy.remove(line.id) }
+        let liking = !line.likedByMe
+        apply(to: line.id) { $0.likedByMe = liking; $0.likeCount = max(0, $0.likeCount + (liking ? 1 : -1)) }
+        liking ? Haptics.bump() : Haptics.tap()
+        #if DEBUG
+        if Self.isPreview { return }
+        #endif
+        do {
+            if liking {
+                try await SupabaseService.shared.likeActivity(playID: line.id, userID: userID)
+            } else {
+                try await SupabaseService.shared.unlikeActivity(playID: line.id, userID: userID)
+            }
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Log.data.info("Like failed: \(error.localizedDescription)")
+            apply(to: line.id) { $0.likedByMe = !liking; $0.likeCount = max(0, $0.likeCount + (liking ? -1 : 1)) }
+            Haptics.bump()
+        }
+    }
+
+    private func apply(to playID: UUID, _ change: (inout CommunityActivity) -> Void) {
+        for i in allActivity.indices where allActivity[i].id == playID { change(&allActivity[i]) }
+        for i in friendsActivity.indices where friendsActivity[i].id == playID { change(&friendsActivity[i]) }
     }
 
     func loadActivity(force: Bool = false) async {
@@ -189,6 +268,9 @@ final class CommunityViewModel {
         allActivity = []
         friendsActivity = []
         friendships = []
+        notifications = []
+        notificationsLoaded = false
+        notificationsFailure = nil
         activityFailure = nil
         friendshipsFailure = nil
         activityLoaded = []
@@ -317,18 +399,27 @@ final class CommunityViewModel {
         guard !friendshipsLoaded else { return }
         func ago(_ hours: Double) -> Date { Date.now.addingTimeInterval(-hours * 3600) }
         func line(_ m: CommunityMember, _ kind: PracticeContentKind, _ id: Int, _ title: String,
-                  _ category: PracticeCategory?, _ hours: Double) -> CommunityActivity {
+                  _ category: PracticeCategory?, _ hours: Double,
+                  likes: Int = 0, liked: Bool = false) -> CommunityActivity {
             CommunityActivity(id: UUID(), member: m, kind: kind, contentID: id, title: title,
-                              category: category, completedAt: ago(hours))
+                              category: category, completedAt: ago(hours),
+                              likeCount: likes, likedByMe: liked)
         }
         allActivity = [
-            line(Self.alma,  .session,  11, "Confidence Boost",     .breathwork, 0.2),
-            line(Self.me,    .exercise, 2,  "Morning Mobility",     nil,         1.5),
-            line(Self.theo,  .session,  12, "Body Scan for Sleep",  .meditation, 5),
+            line(Self.alma,  .session,  11, "Confidence Boost",     .breathwork, 0.2, likes: 3, liked: true),
+            line(Self.me,    .exercise, 2,  "Morning Mobility",     nil,         1.5, likes: 1),
+            line(Self.theo,  .session,  12, "Body Scan for Sleep",  .meditation, 5,   likes: 1),
             line(Self.nia,   .recipe,   1,  "Golden Turmeric Broth", nil,        27),
             line(Self.mateo, .session,  13, "Shaking It Out",       .somatic,    30),
-            line(Self.alma,  .exercise, 3,  "Core & Ground",        nil,         26 * 6),
+            line(Self.alma,  .exercise, 3,  "Core & Ground",        nil,         26 * 6, likes: 2),
         ]
+        notifications = [
+            LikeNotification(id: UUID(), actor: Self.alma, playID: allActivity[1].id,
+                             practiceTitle: "Morning Mobility", createdAt: ago(0.7), readAt: nil),
+            LikeNotification(id: UUID(), actor: Self.theo, playID: nil,
+                             practiceTitle: "Core & Ground", createdAt: ago(50), readAt: ago(49)),
+        ]
+        notificationsLoaded = true
         friendships = [
             Friendship(requesterID: Self.previewSelf, addresseeID: Self.alma.id, status: .accepted,
                        createdAt: ago(200), other: Self.alma, direction: .sent),

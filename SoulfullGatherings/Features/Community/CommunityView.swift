@@ -17,6 +17,7 @@ struct CommunityView: View {
     /// Shared with `FriendsView`, which the root pushes; owned by the root.
     @Bindable var vm: CommunityViewModel
     var onOpenFriends: () -> Void = {}
+    var onOpenNotifications: () -> Void = {}
     /// Switch to the You tab — where the photo beside your name is set.
     var onOpenProfile: () -> Void = {}
     /// Runs the action once an account exists, raising the sheet first if not.
@@ -80,6 +81,7 @@ struct CommunityView: View {
             .onPhoto()
             Spacer(minLength: 0)
             if isMember {
+                bell
                 Button {
                     Haptics.tap()
                     onOpenProfile()
@@ -97,6 +99,39 @@ struct CommunityView: View {
             }
         }
         .padding(.horizontal, 20)
+    }
+
+    /// Likes on your practices. The badge is the unread count.
+    private var bell: some View {
+        Button {
+            Haptics.tap()
+            onOpenNotifications()
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: vm.unreadCount > 0 ? "bell.badge.fill" : "bell")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .symbolEffect(.bounce, value: vm.unreadCount)
+                    .frame(width: 46, height: 46)
+                    .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
+                if vm.unreadCount > 0 {
+                    Text("\(vm.unreadCount)")
+                        .font(Theme.body(11, weight: .semibold))
+                        .foregroundStyle(Color.black)
+                        .padding(.horizontal, 5)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(Theme.honey, in: Capsule())
+                        .offset(x: 4, y: -4)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .contentShape(Circle())
+        }
+        .buttonStyle(.soulPressableChip)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: vm.unreadCount)
+        .accessibilityLabel(vm.unreadCount == 0 ? "Notifications" : "Notifications, \(vm.unreadCount) unread")
+        .accessibilityIdentifier("community-notifications")
+        .padding(.top, 4)
     }
 
     // MARK: - Scope toggle + friends link
@@ -167,8 +202,15 @@ struct CommunityView: View {
                     SectionLabel(title: group.title)
                     VStack(spacing: 10) {
                         ForEach(group.lines) { line in
-                            ActivityRow(line: line, isSelf: line.member.id == vm.selfID)
-                                .listReveal()
+                            ActivityRow(line: line, isSelf: line.member.id == vm.selfID,
+                                        busy: vm.busy.contains(line.id)) {
+                                if isMember {
+                                    Task { await vm.toggleLike(line) }
+                                } else {
+                                    requireAccount { Task { await vm.toggleLike(line) } }
+                                }
+                            }
+                            .listReveal()
                         }
                     }
                     .padding(.horizontal, 20)
@@ -331,6 +373,8 @@ private struct ScopeToggle: View {
 private struct ActivityRow: View {
     let line: CommunityActivity
     let isSelf: Bool
+    var busy = false
+    var onLike: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
@@ -352,13 +396,35 @@ private struct ActivityRow: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if isSelf {
+                // Your own line: the count, if anyone has, and no button.
+                if line.likeCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 12, weight: .medium))
+                        Text("\(line.likeCount)")
+                            .font(Theme.body(12, weight: .medium))
+                    }
+                    .foregroundStyle(Theme.honey)
+                    .accessibilityHidden(true)
+                }
+            } else {
+                LikeButton(count: line.likeCount, liked: line.likedByMe, busy: busy, action: onLike)
+            }
         }
         .padding(12)
         .padding(.trailing, 6)
         .soulGlassCard()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(isSelf ? "You" : line.member.displayName) practiced \(line.title). \(line.kindLabel), \(Self.relative(line.completedAt))")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(spoken)
         .accessibilityIdentifier("activity-row")
+    }
+
+    private var spoken: String {
+        var s = "\(isSelf ? "You" : line.member.displayName) practiced \(line.title). \(line.kindLabel), \(Self.relative(line.completedAt))"
+        if line.likeCount > 0 { s += ". \(line.likeCount == 1 ? "1 like" : "\(line.likeCount) likes")" }
+        return s
     }
 
     /// Name and title in ink, the verb between them quieter — one line that
@@ -385,6 +451,49 @@ private struct ActivityRow: View {
                                            to: calendar.startOfDay(for: .now)).day ?? 0
         if days < 7 { return date.formatted(.dateTime.weekday(.wide)) }
         return date.formatted(.dateTime.day().month(.abbreviated))
+    }
+}
+
+// MARK: - Like button
+
+/// A heart and a count. Fills honey and bounces when it's yours; the count
+/// rolls rather than snaps. One tap toggles.
+private struct LikeButton: View {
+    let count: Int
+    let liked: Bool
+    var busy = false
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: liked ? "heart.fill" : "heart")
+                    .font(.system(size: 14, weight: .medium))
+                    .symbolEffect(.bounce.up, value: liked)
+                    .contentTransition(.symbolEffect(.replace))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(Theme.body(12, weight: .medium))
+                        .contentTransition(.numericText(value: Double(count)))
+                        .monospacedDigit()
+                }
+            }
+            .foregroundStyle(liked ? Theme.honey : Theme.inkSoft)
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .soulGlassCapsule(tint: liked ? Theme.honey.opacity(0.10) : nil, interactive: true,
+                              stroke: liked ? Theme.honey.opacity(0.35) : Theme.glassBorder)
+            .contentShape(Capsule())
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: liked)
+            .animation(.easeOut(duration: 0.25), value: count)
+        }
+        .buttonStyle(SoulPressableStyle(scale: 0.88, hapticOnPress: false))
+        .disabled(busy)
+        .accessibilityLabel(liked ? "Unlike" : "Like")
+        .accessibilityValue(count == 1 ? "1 like" : "\(count) likes")
+        .accessibilityIdentifier("like-button")
     }
 }
 

@@ -728,6 +728,60 @@ actor SupabaseService {
             .execute()
     }
 
+    // MARK: - Likes + notifications
+
+    /// Likes one line of the feed. The server refuses a guest, a line that
+    /// isn't in the feed, and the member's own line; a second like of the
+    /// same line is a duplicate key, which the caller treats as "already".
+    func likeActivity(playID: UUID, userID: UUID) async throws {
+        struct Insert: Encodable {
+            let playId: UUID
+            let userId: UUID
+            enum CodingKeys: String, CodingKey { case playId = "play_id", userId = "user_id" }
+        }
+        try await client
+            .from("practice_play_likes")
+            .insert(Insert(playId: playID, userId: userID))
+            .execute()
+    }
+
+    func unlikeActivity(playID: UUID, userID: UUID) async throws {
+        try await client
+            .from("practice_play_likes")
+            .delete()
+            .eq("play_id", value: playID)
+            .eq("user_id", value: userID)
+            .execute()
+    }
+
+    /// This member's notifications, newest first. RLS scopes the view to the
+    /// recipient. Uncached.
+    func fetchNotifications(userID: UUID, limit: Int = 100) async throws -> [LikeNotification] {
+        let rows: [NotificationRow] = try await client
+            .from("member_notifications")
+            .select()
+            .eq("user_id", value: userID)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+        return rows.map(\.notification)
+    }
+
+    /// Stamps every unread notification read. `read_at` latches server-side.
+    func markNotificationsRead(userID: UUID) async throws {
+        struct Update: Encodable {
+            let readAt: Date
+            enum CodingKeys: String, CodingKey { case readAt = "read_at" }
+        }
+        try await client
+            .from("notifications")
+            .update(Update(readAt: .now))
+            .eq("user_id", value: userID)
+            .is("read_at", value: nil)
+            .execute()
+    }
+
     // MARK: - Avatar
 
     /// Uploads a new profile photo and points the profile at it. Returns the
@@ -1233,6 +1287,9 @@ private struct CommunityActivityRow: Decodable {
     let contentTitle: String
     let category: String?
     let completedAt: Date
+    /// Optional so a feed row from before 0016 still decodes.
+    let likeCount: Int?
+    let likedByMe: Bool?
 
     enum CodingKeys: String, CodingKey {
         case category
@@ -1244,6 +1301,8 @@ private struct CommunityActivityRow: Decodable {
         case contentId    = "content_id"
         case contentTitle = "content_title"
         case completedAt  = "completed_at"
+        case likeCount    = "like_count"
+        case likedByMe    = "liked_by_me"
     }
 
     /// Nil for a kind this build doesn't know — a line that can't say what was
@@ -1257,7 +1316,44 @@ private struct CommunityActivityRow: Decodable {
             contentID: contentId,
             title: contentTitle,
             category: category.flatMap(PracticeCategory.init(rawValue:)),
-            completedAt: completedAt
+            completedAt: completedAt,
+            likeCount: likeCount ?? 0,
+            likedByMe: likedByMe ?? false
+        )
+    }
+}
+
+/// Read model for the `member_notifications` view.
+private struct NotificationRow: Decodable {
+    let id: UUID
+    let actorId: UUID?
+    let actorName: String?
+    let actorAvatarUrl: String?
+    let playId: UUID?
+    let contentTitle: String?
+    let createdAt: Date
+    let readAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case actorId        = "actor_id"
+        case actorName      = "actor_name"
+        case actorAvatarUrl = "actor_avatar_url"
+        case playId         = "play_id"
+        case contentTitle   = "content_title"
+        case createdAt      = "created_at"
+        case readAt         = "read_at"
+    }
+
+    var notification: LikeNotification {
+        LikeNotification(
+            id: id,
+            actor: actorId.map { CommunityMember(id: $0, displayName: actorName ?? "A member",
+                                                 avatarUrl: actorAvatarUrl) },
+            playID: playId,
+            practiceTitle: contentTitle,
+            createdAt: createdAt,
+            readAt: readAt
         )
     }
 }

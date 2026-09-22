@@ -350,6 +350,7 @@ private struct ProgramsRoot: View {
 private struct CommunityRoot: View {
     enum Route: Hashable {
         case friends
+        case notifications
     }
     @Binding var navHidden: Bool
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
@@ -362,12 +363,16 @@ private struct CommunityRoot: View {
         NavigationStack(path: $path) {
             CommunityView(vm: vm,
                           onOpenFriends: { path.append(.friends) },
+                          onOpenNotifications: { path.append(.notifications) },
                           onOpenProfile: onOpenProfile,
                           requireAccount: requireAccount)
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case .friends:
                         FriendsView(vm: vm)
+                            .toolbar(.hidden, for: .navigationBar)
+                    case .notifications:
+                        NotificationsView(vm: vm)
                             .toolbar(.hidden, for: .navigationBar)
                     }
                 }

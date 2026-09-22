@@ -28,6 +28,16 @@
   .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
   .av.t4 { background-image: linear-gradient(135deg, #806b4f, #544530); }
   .hdr .av { margin-top: 4px; }
+  .hdr .right { display: flex; gap: 10px; align-items: flex-start; }
+  /* Bell — glass circle, honey badge = unread likes. Opens notifications.html. */
+  .bell { position: relative; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink); margin-top: 4px; }
+  .bell .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--honey); color: #000; font-size: 11px; font-weight: var(--w-semibold); display: flex; align-items: center; justify-content: center; }
+  /* LikeButton — heart + count on a glass capsule; honey fill + tint when
+     yours; bounces on tap, the count rolls. Your own line shows the count
+     only (no button — you can't like your own practice). */
+  .like { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: var(--w-medium); color: var(--ink-soft); flex: none; }
+  .like.on { color: var(--honey); background: color-mix(in srgb, var(--honey) 10%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
+  .like-self { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: var(--w-medium); color: var(--honey); flex: none; }
 
   /* Scope toggle — All | Friends on one glass capsule, a cream lens behind
      the chosen one (BottomNav's physics at chip scale). */
@@ -44,6 +54,7 @@
      verb quieter; eyebrow beneath is the track (or library) and a relative
      time. Your own lines read "You". */
   .row { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border-radius: 22px; }
+  .row .like, .row .like-self { margin-left: auto; }
   .row .tx { flex: 1; min-width: 0; }
   .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
   .row p b { font-weight: var(--w-medium); color: var(--ink); }
@@ -73,8 +84,11 @@
         <h1>Community</h1>
         <p class="sub">What the circle is practising, as it happens.</p>
       </div>
-      <!-- Your own avatar (members only). Tapping opens the You tab, where the photo is set. -->
-      <div class="av t1">H</div>
+      <div class="right">
+        <div class="bell glass"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><span class="badge">1</span></div>
+        <!-- Your own avatar (members only). Tapping opens the You tab, where the photo is set. -->
+        <div class="av t1">H</div>
+      </div>
     </div>
 
     <div class="controls">
@@ -92,22 +106,22 @@
     <div class="sec">
       <div class="section-label"><span class="title">Today</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div></div>
-        <div class="row glass"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div></div>
-        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div></div>
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like glass on"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span></div>
+        <div class="row glass"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
+        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Yesterday</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div></div>
-        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div></div>
+        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span></div>
+        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Earlier</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div></div>
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span></div>
       </div>
     </div>
   </div>

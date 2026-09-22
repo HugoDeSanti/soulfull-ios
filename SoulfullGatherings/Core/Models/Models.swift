@@ -1304,6 +1304,11 @@ struct CommunityActivity: Identifiable, Hashable, Sendable {
     let title: String
     let category: PracticeCategory?
     let completedAt: Date
+    /// How many members liked this line, and whether the viewer is one of
+    /// them. Both come from the view per request, so the likes table itself
+    /// stays scoped to the people it concerns.
+    var likeCount: Int = 0
+    var likedByMe: Bool = false
 
     /// The eyebrow under the line: the track for a session, the library otherwise.
     var kindLabel: String {
@@ -1348,4 +1353,18 @@ enum FriendStanding: Hashable {
     case requested
     case awaitingMyAnswer
     case friends
+}
+
+/// "Alma G. liked your Confidence Boost practice." Read from the
+/// `member_notifications` view; written only by the like trigger.
+struct LikeNotification: Identifiable, Hashable, Sendable {
+    let id: UUID
+    /// Nil once the liker has deleted their account: "Someone liked…".
+    let actor: CommunityMember?
+    let playID: UUID?
+    let practiceTitle: String?
+    let createdAt: Date
+    let readAt: Date?
+
+    var isUnread: Bool { readAt == nil }
 }
