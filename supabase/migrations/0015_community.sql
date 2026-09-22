@@ -12,11 +12,13 @@
 --      pending — with owner-scoped RLS, closed to anonymous guests.
 --   4. `search_members(q)` — find a member by name to send a request to.
 --
--- NOT APPLIED YET. Apply through the Management API
--- (`POST /v1/projects/<ref>/database/query`) and then backfill
--- `supabase_migrations.schema_migrations` with version '0015' — the step that
--- was forgotten for 0010 and 0011. `supabase db push` would also work but needs
--- the DB password.
+-- APPLIED to the live project 2026-09-22 through the Management API and
+-- recorded in supabase_migrations.schema_migrations (0015). Two corrections
+-- were applied the same day and are folded in below: the abbreviation takes
+-- the second word's initial, and the view revoke names `authenticated`.
+-- Verified as an anonymous guest (reads 200, every write 42501) and as two
+-- confirmed test members (search, request, accept, the trigger holding
+-- `accepted`, the avatar shape constraint, the pair uniqueness).
 --
 -- What leaves the row, and what doesn't. Every other reader of `profiles` is
 -- its owner. These views show OTHER members exactly three things: the id, the
@@ -69,10 +71,11 @@ as $$
         when full_name is null or btrim(full_name) = '' then 'A member'
         when array_length(regexp_split_to_array(btrim(full_name), '\s+'), 1) = 1
             then btrim(full_name)
+        -- The SECOND word's initial, not the last: "Hugo De Santiago" is
+        -- "Hugo D.", the way the person would say it, not "Hugo S.".
         else (regexp_split_to_array(btrim(full_name), '\s+'))[1]
              || ' '
-             || left((regexp_split_to_array(btrim(full_name), '\s+'))
-                     [array_length(regexp_split_to_array(btrim(full_name), '\s+'), 1)], 1)
+             || left((regexp_split_to_array(btrim(full_name), '\s+'))[2], 1)
              || '.'
     end
 $$;
@@ -119,11 +122,18 @@ where pl.completed
   and pl.content_kind <> 'journal'
   and p.share_activity;
 
--- `authenticated` only. Anonymous guests ARE `authenticated` (0003's trap), so
--- they can read the feed — browsing is open, and a feed is browsing. The
--- `anon` role never carries a session in this app; keep it out.
-revoke all on public.community_members  from anon, public;
-revoke all on public.community_activity from anon, public;
+-- `authenticated` only, and SELECT only. Anonymous guests ARE `authenticated`
+-- (0003's trap), so they can read the feed — browsing is open, and a feed is
+-- browsing. The `anon` role never carries a session in this app; keep it out.
+--
+-- ⚠️ The revoke must name `authenticated` too. Supabase's default privileges
+-- grant ALL on a new view to `authenticated`, and `community_members` is a
+-- simple enough view to be auto-updatable — with owner rights. Left in place,
+-- a member could `update community_members set avatar_url = …` on ANY row and
+-- walk straight past the RLS on `profiles`. Caught on the live project
+-- 2026-09-22 (the first version revoked from `anon, public` only).
+revoke all on public.community_members  from anon, authenticated, public;
+revoke all on public.community_activity from anon, authenticated, public;
 grant select on public.community_members  to authenticated;
 grant select on public.community_activity to authenticated;
 

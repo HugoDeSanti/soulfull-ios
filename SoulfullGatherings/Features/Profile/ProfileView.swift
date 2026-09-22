@@ -500,7 +500,7 @@ struct ProfileView: View {
     private static func abbreviated(_ name: String) -> String {
         let parts = name.split(whereSeparator: \.isWhitespace).map(String.init)
         guard let first = parts.first else { return "You" }
-        guard parts.count > 1, let initial = parts.last?.first else { return first }
+        guard parts.count > 1, let initial = parts[1].first else { return first }
         return "\(first) \(initial)."
     }
 
