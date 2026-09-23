@@ -55,6 +55,8 @@ struct ExerciseListView: View {
                 .tracking(1)
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.inkSoft)
+                PresenceLine(kind: .exercise, contentID: exercise.id, faceSize: 18)
+                    .padding(.top, 4)
             }
             Spacer()
             Image(systemName: "chevron.right")
@@ -98,6 +100,8 @@ struct ExerciseDetailView: View {
                         .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
+                    PresenceLine(kind: .exercise, contentID: exercise.id, faceSize: 22)
+                        .padding(.top, 6)
                 }
                 // Header block over the (blurred) photo backdrop.
                 .onPhoto()

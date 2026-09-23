@@ -120,6 +120,8 @@ struct PracticeListView: View {
                     ProgressRule(fraction: p.fraction)
                         .padding(.top, 5)
                 }
+                PresenceLine(kind: .session, contentID: session.id, faceSize: 18)
+                    .padding(.top, 4)
             }
             Spacer()
             if progress(session)?.completed == true {

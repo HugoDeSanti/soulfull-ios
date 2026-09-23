@@ -381,3 +381,17 @@
   color: var(--honey);
   font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
 }
+
+/* ---- Presence — PresenceBadge.swift -------------------------------------
+   Three overlapping faces + "75.7k present". Absent entirely below 3 people
+   (server-side). Journal prompts: count only, no faces. */
+.presence { display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+.presence .faces { display: flex; }
+.presence .faces i { width: 20px; height: 20px; border-radius: 50%; margin-left: -6px;
+  display: grid; place-items: center; font-style: normal; font-size: 8.5px; color: var(--ink);
+  border: 1px solid var(--glass-border-high); }
+.presence .faces i:first-child { margin-left: 0; }
+.presence .faces i:nth-child(1) { background: linear-gradient(135deg, #4a5c6e, #2b3a4a); z-index: 3; }
+.presence .faces i:nth-child(2) { background: linear-gradient(135deg, #806b4f, #544530); z-index: 2; }
+.presence .faces i:nth-child(3) { background: linear-gradient(135deg, #4f5c29, #333d17); z-index: 1; }

@@ -445,6 +445,8 @@ struct HomeView: View {
                 Text("with \(p.lead)")
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)
+                PresenceLine(programID: p.id, faceSize: 18)
+                    .padding(.top, 6)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -457,7 +459,7 @@ struct HomeView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program")
+        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program\(PresenceStore.shared.presence(programID: p.id).map { ", \($0.label)" } ?? "")")
         .accessibilityHint("Opens the program")
     }
 

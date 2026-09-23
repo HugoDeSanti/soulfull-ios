@@ -123,6 +123,8 @@ struct ProgramDetailView: View {
                 Text("with \(program.lead)")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkOnPhoto)
+                PresenceLine(programID: program.id, faceSize: 22)
+                    .padding(.top, 4)
                 if enrolled && !days.isEmpty {
                     HStack(spacing: 10) {
                         Text("\(store.completedDayCount(program.id)) OF \(days.count) DAYS")

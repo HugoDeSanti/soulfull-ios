@@ -1292,6 +1292,38 @@ struct CommunityMember: Identifiable, Hashable, Sendable {
     let avatarUrl: String?
 }
 
+/// "75.7k present" — how many people are with a practice or a digital
+/// retreat, and up to three of their faces. From `practice_presence()` /
+/// `program_presence()` (0018).
+///
+/// For a practice, present = started it in the last 24 hours. For a program,
+/// = joined, not finished, and active in it in the last 14 days. The server
+/// never answers below 3 people, puts friends first among the faces, leaves
+/// out the viewer and anyone who opted out of sharing, and sends no faces for
+/// a journal prompt — so `faces` may hold fewer than three, or none.
+struct Presence: Hashable, Sendable {
+    let count: Int
+    let faces: [CommunityMember]
+
+    /// "840 present", "1.2k present", "75.7k present", "1.1M present".
+    var label: String { "\(Self.compact(count)) present" }
+
+    /// Rounded DOWN to one decimal, so the line never claims someone who
+    /// isn't there: 1,999 reads "1.9k", not "2k".
+    static func compact(_ n: Int) -> String {
+        func scaled(_ unit: Int, _ suffix: String) -> String {
+            let tenths = n / (unit / 10)
+            let whole = tenths / 10, rest = tenths % 10
+            return rest == 0 ? "\(whole)\(suffix)" : "\(whole).\(rest)\(suffix)"
+        }
+        switch n {
+        case ..<1_000:     return "\(n)"
+        case ..<1_000_000: return scaled(1_000, "k")
+        default:           return scaled(1_000_000, "M")
+        }
+    }
+}
+
 /// One line of the feed: a member finished a practice. Read from the
 /// `community_activity` view, which already excludes journal prompts, anything
 /// unfinished, and members who have opted out.

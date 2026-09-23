@@ -61,6 +61,8 @@ struct RecipeListView: View {
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.muted)
                     .lineLimit(2)
+                PresenceLine(kind: .recipe, contentID: recipe.id, faceSize: 18)
+                    .padding(.top, 6)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,6 +118,9 @@ struct RecipeDetailView: View {
                             metaPill("person.2", "\(recipe.servings) servings")
                         }
                         .padding(.top, 2)
+
+                        PresenceLine(kind: .recipe, contentID: recipe.id, faceSize: 22)
+                            .padding(.top, 4)
 
                         Text(recipe.blurb)
                             .font(Theme.body(14))

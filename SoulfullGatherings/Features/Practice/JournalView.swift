@@ -51,6 +51,11 @@ struct JournalListView: View {
                     .kerning(-0.2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                // A count and never faces: the server sends none for a
+                // journal prompt, whose title can say what someone is
+                // working through.
+                PresenceLine(kind: .journal, contentID: prompt.id)
+                    .padding(.top, 2)
             }
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
@@ -234,6 +239,10 @@ struct JournalDetailView: View {
                     .onPhoto()
             }
             .padding(.top, 8)
+
+            PresenceLine(kind: .journal, contentID: prompt.id)
+                .padding(.top, 6)
+                .onPhoto()
         }
     }
 

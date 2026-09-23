@@ -782,6 +782,31 @@ actor SupabaseService {
             .execute()
     }
 
+    // MARK: - Presence
+
+    /// Every practice with at least 3 people present in the last 24 hours,
+    /// keyed "session-4" / "journal-2" (the `PracticeProgress.id` shape).
+    /// Uncached here — `PresenceStore` owns the freshness policy.
+    func fetchPracticePresence() async throws -> [String: Presence] {
+        let rows: [PracticePresenceRow] = try await client
+            .rpc("practice_presence")
+            .execute()
+            .value
+        return Dictionary(rows.map { ("\($0.contentKind)-\($0.contentId)", $0.presence) },
+                          uniquingKeysWith: { a, _ in a })
+    }
+
+    /// Every published program with at least 3 members in flight, keyed by
+    /// program id.
+    func fetchProgramPresence() async throws -> [String: Presence] {
+        let rows: [ProgramPresenceRow] = try await client
+            .rpc("program_presence")
+            .execute()
+            .value
+        return Dictionary(rows.map { ($0.programId, $0.presence) },
+                          uniquingKeysWith: { a, _ in a })
+    }
+
     // MARK: - Push
 
     /// Registers (or refreshes) this device's APNs token for the signed-in
@@ -1303,6 +1328,36 @@ private struct CommunityMemberRow: Decodable {
     var member: CommunityMember {
         CommunityMember(id: id, displayName: displayName, avatarUrl: avatarUrl)
     }
+}
+
+/// Read model for one row of `practice_presence()`.
+private struct PracticePresenceRow: Decodable {
+    let contentKind: String
+    let contentId: Int
+    let present: Int
+    let faces: [CommunityMemberRow]
+
+    enum CodingKeys: String, CodingKey {
+        case present, faces
+        case contentKind = "content_kind"
+        case contentId   = "content_id"
+    }
+
+    var presence: Presence { Presence(count: present, faces: faces.map(\.member)) }
+}
+
+/// Read model for one row of `program_presence()`.
+private struct ProgramPresenceRow: Decodable {
+    let programId: String
+    let present: Int
+    let faces: [CommunityMemberRow]
+
+    enum CodingKeys: String, CodingKey {
+        case present, faces
+        case programId = "program_id"
+    }
+
+    var presence: Presence { Presence(count: present, faces: faces.map(\.member)) }
 }
 
 /// Read model for the `community_activity` view.

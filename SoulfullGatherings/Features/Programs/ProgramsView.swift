@@ -186,6 +186,8 @@ struct ProgramsView: View {
                     }
                     dayStateLine(state, day: day, program: program)
                         .padding(.top, 2)
+                    PresenceLine(programID: program.id)
+                        .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(18)
@@ -315,6 +317,8 @@ struct ProgramsView: View {
                     .tracking(1.6)
                     .foregroundStyle(Theme.muted)
                     .padding(.top, 2)
+                PresenceLine(programID: program.id)
+                    .padding(.top, 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
@@ -326,8 +330,14 @@ struct ProgramsView: View {
                 .strokeBorder(Theme.glassBorder, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(program.title). \(program.metaLine), with \(program.lead)")
+        .accessibilityLabel("\(program.title). \(program.metaLine), with \(program.lead)\(presenceSuffix(program.id))")
         .accessibilityHint("Opens the program")
+    }
+
+    /// ". 1.2k present" — the card sets its own VoiceOver label, which would
+    /// otherwise drop the presence line.
+    private func presenceSuffix(_ programID: String) -> String {
+        PresenceStore.shared.presence(programID: programID).map { ". \($0.label)" } ?? ""
     }
 
     private func stateChip(_ program: Program) -> (String, Color)? {
