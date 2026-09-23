@@ -25,8 +25,17 @@ struct CommunityView: View {
 
     @Environment(AuthManager.self) private var auth
     @Environment(AppSettings.self) private var settings
+    /// Read inside `body` so the observation registers.
+    private let push = PushRegistrar.shared
+    @State private var pushPromptDismissed = PushRegistrar.shared.promptDismissed
 
     private var isMember: Bool { auth.hasAccount || CommunityViewModel.isPreview }
+
+    /// The one moment the app asks about notifications for likes: a member,
+    /// on this tab, who has never been asked and hasn't said "not now".
+    private var showsPushPrompt: Bool {
+        isMember && push.status == .notDetermined && !pushPromptDismissed
+    }
 
     /// Reload when the person behind the session changes.
     private var identity: String {
@@ -38,6 +47,10 @@ struct CommunityView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header
                 controls
+                if showsPushPrompt {
+                    pushPrompt
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 feed
                 Color.clear.frame(height: 120)
             }
@@ -57,6 +70,68 @@ struct CommunityView: View {
         }
         .task(id: identity) { await vm.load(isMember: isMember) }
         .task(id: vm.scope) { await vm.loadActivity() }
+        .task(id: identity) { await push.syncIfAuthorized(isMember: auth.hasAccount) }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: showsPushPrompt)
+    }
+
+    // MARK: - Push prompt
+
+    /// Asks once, here, where a like is worth something — not at launch.
+    private var pushPrompt: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: "bell.badge")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Theme.honey)
+                .frame(width: 40, height: 40)
+                .soulGlass(in: Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Hear when someone likes your practice")
+                    .font(Theme.headline(16))
+                    .foregroundStyle(Theme.ink)
+                    .kerning(-0.2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("A quiet nudge, only for likes on what you finish.")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 12) {
+                    Button {
+                        Haptics.bump()
+                        Task { await push.requestAndRegister() }
+                    } label: {
+                        Text("Turn on")
+                            .font(Theme.body(13, weight: .medium))
+                            .foregroundStyle(Color.black)
+                            .padding(.horizontal, 14)
+                            .frame(height: 32)
+                            .background(Theme.honey, in: Capsule())
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.soulPressableQuiet)
+                    .accessibilityIdentifier("push-turn-on")
+                    Button {
+                        Haptics.tap()
+                        push.promptDismissed = true
+                        pushPromptDismissed = true
+                    } label: {
+                        Text("Not now")
+                            .font(Theme.body(13, weight: .medium))
+                            .foregroundStyle(Theme.inkSoft)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.soulPressableQuiet)
+                    .accessibilityIdentifier("push-not-now")
+                }
+                .padding(.top, 6)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .soulGlassCard(tint: Theme.honey.opacity(0.05), stroke: Theme.honey.opacity(0.28))
+        .padding(.horizontal, 20)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("push-prompt")
     }
 
     // MARK: - Header

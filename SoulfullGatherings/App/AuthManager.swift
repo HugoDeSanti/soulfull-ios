@@ -410,6 +410,8 @@ final class AuthManager {
     /// Signs out of a permanent account and returns to a fresh anonymous guest
     /// session so the rest of the app keeps working.
     func signOut() async {
+        // While the session is still valid: this phone stops being theirs.
+        await PushRegistrar.shared.forgetDevice()
         do {
             try await supabase.auth.signOut()
         } catch {
@@ -485,6 +487,11 @@ final class AuthManager {
         // whose data is now in scope. It hands a guest's writing forward when
         // that guest becomes a member, and returns true only when the identity
         // actually moved — this runs on every confirmation poll.
+        if !isAnonymous {
+            // A member arrived (sign-in, or a guest upgraded in place): file
+            // this device under them if they already allow notifications.
+            Task { await PushRegistrar.shared.syncIfAuthorized(isMember: true) }
+        }
         if LocalUserStore.shared.adopt(userID: user?.id, isAnonymous: isAnonymous) {
             RetreatTripStore.shared.reload()
             // Server-side practice history belongs to the previous member;

@@ -232,3 +232,39 @@ select creator, listeners, hours_played, plays
  where month = date_trunc('month', now() - interval '1 month')
  order by hours_played desc;
 ```
+
+
+## send-like-push (push notifications for likes)
+
+Called by the database, not the app: the `notifications_push` trigger (0017)
+posts `{ "notification_id" }` to it through pg_net whenever a like creates a
+notification. It reads the row through `member_notifications`, finds the
+recipient's `device_tokens`, and sends one APNs alert per device. Dead tokens
+(410 / BadDeviceToken / Unregistered) are deleted; everything else is logged
+and answered 200 so pg_net never retries a like into a storm. The in-app bell
+is the record; this is the buzz.
+
+```bash
+supabase functions deploy send-like-push --no-verify-jwt --project-ref <ref>
+supabase secrets set PUSH_WEBHOOK_SECRET=<random> --project-ref <ref>
+```
+
+- `--no-verify-jwt` because pg_net carries no user session. The
+  `x-webhook-secret` header, matched against `PUSH_WEBHOOK_SECRET`, is the
+  authentication. The same value must be in Vault as `push_webhook_secret`,
+  next to `push_function_url` (the function's full URL) — both created at
+  apply time, never in a migration:
+  `select vault.create_secret('<value>', 'push_webhook_secret');`
+- APNs auth reuses the four `APPLE_*` secrets Sign in with Apple uses:
+  `APPLE_TEAM_ID` (iss), `APPLE_KEY_ID` (kid), `APPLE_PRIVATE_KEY` (the .p8),
+  and `APPLE_CLIENT_ID` (the bundle id, which is also the `apns-topic`).
+  **The .p8 must have the Apple Push Notifications service enabled** in the
+  developer portal (Keys → the key → Edit → tick APNs). Without it APNs answers
+  `403 InvalidProviderToken` for every send, the function logs it, and the
+  token is kept (it isn't the token's fault). Nothing else needs to change once
+  the service is on — the same key id and secret keep working.
+- `device_tokens.environment` picks the host: Debug builds on a device register
+  `sandbox`, TestFlight / App Store builds `production`. A token sent to the
+  wrong host is a BadDeviceToken and gets deleted, which is correct.
+- Read the function's output through the Management API logs (see
+  `net._http_response` for what it answered the trigger).

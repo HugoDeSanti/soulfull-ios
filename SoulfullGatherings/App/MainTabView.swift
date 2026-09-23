@@ -86,6 +86,10 @@ struct MainTabView: View {
     /// Set when the You tab's "Explore retreats" asks for the retreats stack.
     /// Consumed by `HomeRoot` on appear — the same handshake again.
     @State private var pendingRetreats = false
+    /// A like push was tapped. Consumed by `CommunityRoot`, which pushes the
+    /// Notifications screen — the same handshake as the others.
+    @State private var pendingNotifications = false
+    private let push = PushRegistrar.shared
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -116,7 +120,7 @@ struct MainTabView: View {
                                      }
                                  })
                 case .community:
-                    CommunityRoot(navHidden: $navHidden,
+                    CommunityRoot(navHidden: $navHidden, openNotifications: $pendingNotifications,
                                   requireAccount: { action in
                                       if gate.require(signedIn: auth.hasAccount, action) {
                                           showAccount = true
@@ -151,6 +155,12 @@ struct MainTabView: View {
                 .transaction { $0.animation = nil }
         }
         .onChange(of: tab) { navHidden = false }
+        .onChange(of: push.openNotificationsRequested, initial: true) { _, requested in
+            guard requested else { return }
+            push.openNotificationsRequested = false
+            pendingNotifications = true
+            tab = .community
+        }
         // One sheet for the whole shell, so a gated tap works from any tab and
         // survives the tab switch Home's ritual card performs.
         .sheet(isPresented: $showAccount, onDismiss: {
@@ -353,6 +363,8 @@ private struct CommunityRoot: View {
         case notifications
     }
     @Binding var navHidden: Bool
+    /// A like push was tapped. Consumed once, then cleared.
+    @Binding var openNotifications: Bool
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
     /// Switch to the You tab, where the profile photo is set.
     var onOpenProfile: () -> Void = {}
@@ -366,6 +378,8 @@ private struct CommunityRoot: View {
                           onOpenNotifications: { path.append(.notifications) },
                           onOpenProfile: onOpenProfile,
                           requireAccount: requireAccount)
+                .onAppear(perform: consumeOpenNotifications)
+                .onChange(of: openNotifications) { consumeOpenNotifications() }
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case .friends:
@@ -379,6 +393,12 @@ private struct CommunityRoot: View {
                 .toolbar(.hidden, for: .navigationBar)
         }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    private func consumeOpenNotifications() {
+        guard openNotifications else { return }
+        openNotifications = false
+        path = [.notifications]
     }
 }
 

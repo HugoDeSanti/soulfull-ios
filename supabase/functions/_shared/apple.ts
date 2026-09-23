@@ -77,7 +77,7 @@ type AppleSigningKey = Awaited<ReturnType<typeof jose.importPKCS8>>;
 
 let cachedKey: { pem: string; key: AppleSigningKey } | null = null;
 
-async function signingKey(pem: string): Promise<AppleSigningKey> {
+export async function signingKey(pem: string): Promise<AppleSigningKey> {
   if (cachedKey?.pem === pem) return cachedKey.key;
   const normalised = normalisePem(pem);
   let key: AppleSigningKey;

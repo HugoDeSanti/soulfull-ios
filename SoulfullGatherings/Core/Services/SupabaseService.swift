@@ -782,6 +782,35 @@ actor SupabaseService {
             .execute()
     }
 
+    // MARK: - Push
+
+    /// Registers (or refreshes) this device's APNs token for the signed-in
+    /// member. Keyed on the token: the server-side trigger hands the token
+    /// over from whoever held it before, so a shared phone follows the
+    /// person signed in. The server refuses a guest.
+    func registerDeviceToken(_ token: String, userID: UUID, environment: String) async throws {
+        struct Upsert: Encodable {
+            let token: String
+            let userId: UUID
+            let environment: String
+            enum CodingKeys: String, CodingKey { case token, environment, userId = "user_id" }
+        }
+        try await client
+            .from("device_tokens")
+            .upsert(Upsert(token: token, userId: userID, environment: environment), onConflict: "token")
+            .execute()
+    }
+
+    /// Forgets this device — on sign-out, so the next member's likes don't
+    /// buzz the previous one's phone. RLS limits it to the caller's own row.
+    func removeDeviceToken(_ token: String) async throws {
+        try await client
+            .from("device_tokens")
+            .delete()
+            .eq("token", value: token)
+            .execute()
+    }
+
     // MARK: - Avatar
 
     /// Uploads a new profile photo and points the profile at it. Returns the

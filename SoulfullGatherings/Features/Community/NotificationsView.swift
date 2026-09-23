@@ -32,6 +32,7 @@ struct NotificationsView: View {
         }
         .refreshable { await vm.loadNotifications(force: true) }
         .task {
+            PushRegistrar.shared.clearBadge()
             await vm.loadNotifications()
             unreadAtOpen = Set(vm.notifications.filter(\.isUnread).map(\.id))
             await vm.markAllRead()

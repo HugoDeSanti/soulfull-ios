@@ -13,6 +13,8 @@ import SwiftUI
 @main
 struct SoulfullGatheringsApp: App {
     @State private var appState = AppState()
+    /// For the APNs token and notification taps — see PushRegistrar.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         #if DEBUG
@@ -35,7 +37,12 @@ struct SoulfullGatheringsApp: App {
                 .environment(appState.auth)
                 .preferredColorScheme(.dark)
                 .tint(Theme.ink)
-                .task { await appState.initializeAuth() }
+                .task {
+                    await appState.initializeAuth()
+                    // A member who already allows notifications is registered
+                    // for push without being asked anything.
+                    await PushRegistrar.shared.syncIfAuthorized(isMember: appState.auth.hasAccount)
+                }
                 .onOpenURL { url in
                     // Email-confirmation / magic-link callback (soulfull://auth-callback).
                     Task { await appState.auth.handleDeepLink(url) }
