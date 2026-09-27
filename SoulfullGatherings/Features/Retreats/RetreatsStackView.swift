@@ -19,7 +19,9 @@
 //
 //  The chrome (Back, and the one button that toggles the two modes) sits
 //  above both and never scales, blurs or moves between them — and is there
-//  while loading or failed too, so the screen always has a way out.
+//  while loading or failed too, so the screen always has a way out. As the
+//  root of the Gatherings tab there is nothing to go back to, so Back goes and
+//  the tab bar is the way out.
 //
 //  A row carries the retreat's name and nothing else. It used to trail a bare
 //  number — the guest count — which read as a footnote marker, said nothing
@@ -39,9 +41,18 @@ struct RetreatsStackView: View {
     @State private var mode: Mode = .stack
     @State private var pinch: CGFloat = 1
 
+    /// The root of the Gatherings tab rather than a push: no Back, and the
+    /// docked tab bar to keep clear of at the bottom.
+    var isTabRoot = false
+    /// A retreat another tab asked to open (a card on Home's shelf). Consumed
+    /// once the catalog is in, then cleared — see `consumePending()`.
+    var pending: Binding<Retreat?> = .constant(nil)
     let onSelect: (Retreat) -> Void
+    /// The first load has finished, one way or the other.
+    @State private var loaded = false
 
     private let rowHeight: CGFloat = 84
+    private var navClearance: CGFloat { isTabRoot ? BottomNav.height : 0 }
     private let commitSpring = Animation.spring(response: 0.5, dampingFraction: 0.82)
 
     /// There is a catalog to browse — the mode toggle and the pinch mean
@@ -77,9 +88,32 @@ struct RetreatsStackView: View {
         // High priority so the two-finger pinch never doubles as a tap on
         // rows/covers underneath; single-finger interactions pass through.
         .highPriorityGesture(pinchGesture, isEnabled: hasCatalog)
-        .task { await vm.load() }
+        .task {
+            await vm.load()
+            loaded = true
+            consumePending()
+        }
+        .onChange(of: pending.wrappedValue) { consumePending() }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
+    }
+
+    /// Opens whatever another tab handed us, focused in the stack so Back
+    /// lands on it, then clears it.
+    ///
+    /// Not until the first load is done. Pushing in the same update the tab
+    /// appears builds this screen underneath the retreat without it ever
+    /// having been on screen, and the scroll position then re-evaluates
+    /// forever — the app hung at 100% CPU on the Home hand-off. Waiting for
+    /// the catalog is also what the digital retreats hand-off does, so both
+    /// shelves on Home behave the same way.
+    private func consumePending() {
+        guard loaded, let retreat = pending.wrappedValue else { return }
+        pending.wrappedValue = nil
+        if let index = vm.retreats.firstIndex(where: { $0.id == retreat.id }) {
+            vm.activeIndex = index
+        }
+        onSelect(retreat)
     }
 
     // MARK: - Chrome (shared by both modes)
@@ -88,23 +122,7 @@ struct RetreatsStackView: View {
     /// the retreat detail's top bar, which is where this screen leads.
     private var topBar: some View {
         HStack {
-            Button {
-                Haptics.tap()
-                dismiss()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
-                    Text("Back")
-                        .font(Theme.body(13))
-                        .underline()
-                }
-                .foregroundStyle(.white)
-                .onPhoto()
-                // The drawn label is ~20pt tall; give the thumb the full bar.
-                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            if !isTabRoot { backButton }
 
             Spacer()
 
@@ -118,9 +136,32 @@ struct RetreatsStackView: View {
                 .transition(.opacity)
             }
         }
+        // Holds Back's height when there is no Back, so the intro sits in the
+        // same place whether or not the toggle has arrived yet.
+        .frame(minHeight: 44)
         .padding(.horizontal, 24)
         .padding(.top, 4)
         .animation(.easeInOut(duration: 0.3), value: hasCatalog)
+    }
+
+    private var backButton: some View {
+        Button {
+            Haptics.tap()
+            dismiss()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                Text("Back")
+                    .font(Theme.body(13))
+                    .underline()
+            }
+            .foregroundStyle(.white)
+            .onPhoto()
+            // The drawn label is ~20pt tall; give the thumb the full bar.
+            .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Pinch (zoom out to catalog / back in to stack)
@@ -163,7 +204,7 @@ struct RetreatsStackView: View {
             stackScroller
             bottomCard
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                .padding(.bottom, 8 + navClearance)
         }
         .scaleEffect(mode == .catalog ? 0.92 : scrub)
         .blur(radius: mode == .catalog ? 22 : (1 - scrub) * 24)
@@ -406,7 +447,7 @@ struct RetreatsStackView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
-                Color.clear.frame(height: 60)
+                Color.clear.frame(height: 60 + navClearance)
             }
             .mask(
                 LinearGradient(colors: [.black, .black, .black, .clear],

@@ -91,6 +91,7 @@ mirror matching the **shipping** app; parked work stays under
 
 | Change | Mirror effect |
 |---|---|
+| **Gatherings tab; Programs → Digital Retreats** (2026-09-25) | `bottom-nav` is **six** items — Home · Gatherings · Digital Retreats · Practice · Community · You — and `.nav-item` is `flex: auto` (content-sized slots + an equal share of the spare, `NavBarLayout`), because six equal slots put "Digital Retreats" into "Gatherings". Gatherings (a folded-map glyph) is the retreats stack as a tab root: `retreats-stack` / `retreats-catalog` lose "‹ Back" and gain the bar, the bottom card sits 8pt above it. `home` gains the Digital Retreats shelf it was missing and ends on Upcoming gatherings — both shelves hand off to their tabs. Every member-facing "program" is now "digital retreat": `programs` (title, "More digital retreats"), `program-detail` (back label, "Start this digital retreat", "Leave this digital retreat"), the `Screens · Digital Retreats` group. File paths are unchanged, so each card syncs to the same place. |
 | **Community tab added** (2026-09-22; the old Circle placeholder — cut under Guideline 4.2 — is gone, this is its real successor) | `bottom-nav` is **five** items — Home · Programs · Practice · Community · You. `community.html` moved to `Screens · Tabs` and is the live feed: `AvatarView` (photo, or the initial on one of five id-picked tones), the All \| Friends scope toggle (a cream lens on glass, BottomNav's physics), the Friends button with a request badge, and `ActivityRow` ("Name practiced Title" + track · time) grouped Today / Yesterday / Earlier. `friends.html` is the pushed Friends screen (search by name, Requests / Sent / Friends with honey-fill primary pills). **Likes (same day):** each row carries a `LikeButton` — heart + count on a glass capsule, honey when yours, count-only on your own line — and the header a bell with an unread badge; `notifications.html` is the pushed list ("Alma G. liked your Morning Mobility practice", unread rows honey-dotted for the visit). A one-time **push prompt card** ("Hear when someone likes your practice" — Turn on / Not now) sits between the controls and the feed for a member who has never been asked. `profile.html` gains the 92pt avatar with a camera badge in place of the logo, and a Community section with the "Share my practice" toggle. Journal prompts never appear in the feed. |
 | **Presence** (2026-09-23) | `PresenceBadge.swift` → `.presence` in `shared/app.css`: up to three overlapping 20pt faces (friends first) + "75.7k present" in `--ink-soft` body 12 medium. On practice rows (`practice-list.html`), recipe/exercise/journal detail (`recipe-detail.html`), program cards (`programs.html`, Home's shelf) and the program hero (`program-detail.html`). Absent below 3 people; journal prompts show the count with no faces. |
 | **Programs tab added** | A fourth tab of self-paced, multi-day journeys — three new cards in `Screens · Programs`, and a "Day N is open" card on `home`. Free to browse, free to join, but joining needs an account (`AccountGate`), which is why `program-detail` is readable end to end while its CTA is the gate. |
@@ -123,16 +124,17 @@ guest opens an actual practice, then replays the tap they were making.
 ## Card groups in Claude Design
 
 `Overview` · `Foundations` · `Components` · `Screens · Welcome` ·
-`Screens · Onboarding` · `Screens · Home` · `Screens · Programs` ·
+`Screens · Onboarding` · `Screens · Home` · `Screens · Digital Retreats` ·
 `Screens · Retreats` · `Screens · Practice` · `Screens · Tabs` ·
 `Screens · Parked (post-v1)`
 
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.
 
-### Programs (`programs`, `program-detail`, `program-day`)
+### Digital Retreats (`programs`, `program-detail`, `program-day`)
 
-Self-paced, multi-day journeys. Mapped to `Features/Programs/**` and
+Self-paced, multi-day journeys — "programs" in the code and the files, "digital
+retreats" to a member. Mapped to `Features/Programs/**` and
 `Core/Services/ProgramStore.swift`; the full spec is
 `docs/PLAN-digital-programs.md`.
 

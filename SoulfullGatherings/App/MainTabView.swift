@@ -2,14 +2,16 @@
 //  MainTabView.swift
 //  Soulfull Gatherings
 //
-//  Hosts the primary tabs (Home, Programs, Practice, Community, You) with a
-//  custom floating glass tab bar instead of the system one. Home pushes into Retreats / Retreat Detail through its
+//  Hosts the primary tabs (Home, Gatherings, Digital Retreats, Practice,
+//  Community, You) with a custom docked tab bar instead of the system one.
+//  Gatherings is the retreats stack, pushing into Retreat Detail through its
 //  own NavigationStack so native swipe-back works.
 //
 //  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
 //  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
-//  request on appear. `pendingProgram` and `pendingRetreats` work the same way
-//  (Home and the You tab open a program; the You tab opens the retreats stack).
+//  request on appear. `pendingProgram` and `pendingRetreat` work the same way
+//  (Home and the You tab open a digital retreat; Home's gatherings shelf opens
+//  a retreat).
 //
 //  Browsing needs no account. `AccountGate` lives here (one sheet for the whole
 //  shell) and is handed to PracticeRoot, which asks for an account only when a
@@ -22,26 +24,32 @@ import SwiftUI
 /// here is the order on the bar. (The old Circle placeholder tab was cut from
 /// v1 under Guideline 4.2; Community is its real successor — a live feed, not
 /// a promise.)
+///
+/// `programs` is the Digital Retreats tab. Members only ever see "digital
+/// retreat"; the code, the tables and the `-tab programs` launch arg keep the
+/// original name.
 enum MainTab: String, Hashable, CaseIterable {
-    case home, programs, practice, community, you
+    case home, gatherings, programs, practice, community, you
 
     var label: String {
         switch self {
-        case .home:      return "Home"
-        case .programs:  return "Programs"
-        case .practice:  return "Practice"
-        case .community: return "Community"
-        case .you:       return "You"
+        case .home:       return "Home"
+        case .gatherings: return "Gatherings"
+        case .programs:   return "Digital Retreats"
+        case .practice:   return "Practice"
+        case .community:  return "Community"
+        case .you:        return "You"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .home:      return "house"
-        case .programs:  return "mountain.2"
-        case .practice:  return "sparkles"
-        case .community: return "person.2"
-        case .you:       return "person.crop.circle"
+        case .home:       return "house"
+        case .gatherings: return "map"
+        case .programs:   return "mountain.2"
+        case .practice:   return "sparkles"
+        case .community:  return "person.2"
+        case .you:        return "person.crop.circle"
         }
     }
 }
@@ -83,9 +91,9 @@ struct MainTabView: View {
     /// Set when Home's "Day N is open" card asks to open a program. Consumed by
     /// `ProgramsRoot` on appear, the same handshake `pendingPractice` uses.
     @State private var pendingProgram: String?
-    /// Set when the You tab's "Explore retreats" asks for the retreats stack.
-    /// Consumed by `HomeRoot` on appear — the same handshake again.
-    @State private var pendingRetreats = false
+    /// Set when a card on Home's gatherings shelf asks to open a retreat.
+    /// Consumed by `GatheringsRoot` on appear — the same handshake again.
+    @State private var pendingRetreat: Retreat?
     /// A like push was tapped. Consumed by `CommunityRoot`, which pushes the
     /// Notifications screen — the same handshake as the others.
     @State private var pendingNotifications = false
@@ -97,14 +105,20 @@ struct MainTabView: View {
             Group {
                 switch tab {
                 case .home:
-                    HomeRoot(navHidden: $navHidden, openRetreats: $pendingRetreats,
-                             onOpenPractice: { item in
+                    HomeView(onOpenRetreats: { tab = .gatherings },
+                             onOpenRetreat: { retreat in
+                        pendingRetreat = retreat
+                        tab = .gatherings
+                    }, onOpenPractice: { item in
                         pendingPractice = item
                         tab = .practice
                     }, onOpenProgram: { programID in
                         pendingProgram = programID
                         tab = .programs
                     })
+                case .gatherings:
+                    GatheringsRoot(navHidden: $navHidden, pending: $pendingRetreat,
+                                   onGoHome: { tab = .home })
                 case .programs:
                     ProgramsRoot(navHidden: $navHidden, pending: $pendingProgram,
                                  requireAccount: { action in
@@ -131,10 +145,7 @@ struct MainTabView: View {
                     ProfileView(onOpenProgram: { programID in
                         pendingProgram = programID
                         tab = .programs
-                    }, onOpenRetreats: {
-                        pendingRetreats = true
-                        tab = .home
-                    })
+                    }, onOpenRetreats: { tab = .gatherings })
                 }
             }
             .ignoresSafeArea(.keyboard)
@@ -171,15 +182,15 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Home wrapped in its own NavigationStack so retreats push correctly.
+// MARK: - Gatherings wrapped in its own NavigationStack so retreats push correctly.
 
-private struct HomeRoot: View {
+/// The Gatherings tab: the retreats stack, and everything a retreat leads to.
+/// Home's shelf of upcoming gatherings hands off here rather than pushing on
+/// its own stack — the same way its digital retreats shelf hands off to that
+/// tab — so there is one place a retreat is opened from.
+private struct GatheringsRoot: View {
     enum Route: Hashable {
-        case retreatsStack
-        /// `zoom` is true when pushed from a Home card that registered a
-        /// matched zoom-hero source; pushes from the retreats stack use the
-        /// default slide (the full-bleed photo already carries continuity).
-        case retreatDetail(Retreat, zoom: Bool)
+        case retreatDetail(Retreat)
         // Post-purchase flow (experience hub → trip screens).
         case retreatExperience(Retreat)
         case retreatTodos(Retreat)
@@ -187,90 +198,59 @@ private struct HomeRoot: View {
         case retreatPacking(Retreat)
     }
     @Binding var navHidden: Bool
-    /// Another tab asked for the retreats stack. Consumed once, then cleared.
-    @Binding var openRetreats: Bool
-    /// Switch to the Practice tab and open a section there.
-    var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
-    /// Switch to the Programs tab. A non-nil id opens that program.
-    var onOpenProgram: (String?) -> Void = { _ in }
+    /// A retreat another tab asked to open. The stack consumes it once its
+    /// catalog is in, then clears it.
+    @Binding var pending: Retreat?
+    /// The trip checklist's "Go to my home" — the Home tab, not this root.
+    var onGoHome: () -> Void = {}
     @State private var path: [Route] = []
-    @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
-            HomeView(
-                onOpenRetreats: { path.append(.retreatsStack) },
-                onOpenRetreat: { r in path.append(.retreatDetail(r, zoom: true)) },
-                onOpenPractice: onOpenPractice,
-                onOpenProgram: onOpenProgram,
-                zoomNamespace: zoomNS
-            )
-            .onAppear(perform: consumeOpenRetreats)
-            .onChange(of: openRetreats) { consumeOpenRetreats() }
-            .navigationDestination(for: Route.self) { route in
-                switch route {
-                case .retreatsStack:
-                    RetreatsStackView(
-                        onSelect: { r in path.append(.retreatDetail(r, zoom: false)) }
-                    )
-                    .toolbar(.hidden, for: .navigationBar)
-
-                case .retreatDetail(let r, let zoom):
-                    Group {
-                        if zoom {
-                            retreatDetail(r)
-                                .navigationTransition(.zoom(sourceID: "home-retreat-\(r.id)", in: zoomNS))
-                        } else {
-                            retreatDetail(r)
-                        }
-                    }
-                    .toolbar(.hidden, for: .navigationBar)
-
-                case .retreatExperience(let r):
-                    RetreatExperienceHubView(
-                        retreat: r,
-                        onOpenTodos:   { path.append(.retreatTodos(r)) },
-                        onOpenGuides:  { path.append(.retreatGuides(r)) },
-                        onOpenPacking: { path.append(.retreatPacking(r)) },
-                        onOpenDetail:  { path.append(.retreatDetail(r, zoom: false)) }
-                    )
-                    .toolbar(.hidden, for: .navigationBar)
-
-                case .retreatTodos(let r):
-                    RetreatTodosView(retreat: r, onGoHome: { path = [] })
-                        .toolbar(.hidden, for: .navigationBar)
-                case .retreatGuides(let r):
-                    RetreatGuidesView(retreat: r)
-                        .toolbar(.hidden, for: .navigationBar)
-                case .retreatPacking(let r):
-                    PackingListView(retreat: r)
+            RetreatsStackView(isTabRoot: true, pending: $pending,
+                              onSelect: { r in path.append(.retreatDetail(r)) })
+                .navigationDestination(for: Route.self) { route in
+                    destination(route)
                         .toolbar(.hidden, for: .navigationBar)
                 }
-            }
-            .toolbar(.hidden, for: .navigationBar)
+                .toolbar(.hidden, for: .navigationBar)
         }
         .onChange(of: path) { navHidden = !path.isEmpty }
     }
 
-    private func consumeOpenRetreats() {
-        guard openRetreats else { return }
-        openRetreats = false
-        path = [.retreatsStack]
-    }
+    @ViewBuilder
+    private func destination(_ route: Route) -> some View {
+        switch route {
+        case .retreatDetail(let r):
+            // Detail screen wired to push the post-purchase flow (the hub).
+            RetreatDetailView(
+                retreat: r,
+                onOpenExperience: { path.append(.retreatExperience($0)) }
+            )
 
-    /// Detail screen wired to push the post-purchase flow (checkout / hub).
-    private func retreatDetail(_ r: Retreat) -> some View {
-        RetreatDetailView(
-            retreat: r,
-            onOpenExperience: { path.append(.retreatExperience($0)) }
-        )
+        case .retreatExperience(let r):
+            RetreatExperienceHubView(
+                retreat: r,
+                onOpenTodos:   { path.append(.retreatTodos(r)) },
+                onOpenGuides:  { path.append(.retreatGuides(r)) },
+                onOpenPacking: { path.append(.retreatPacking(r)) },
+                onOpenDetail:  { path.append(.retreatDetail(r)) }
+            )
+
+        case .retreatTodos(let r):
+            RetreatTodosView(retreat: r, onGoHome: onGoHome)
+        case .retreatGuides(let r):
+            RetreatGuidesView(retreat: r)
+        case .retreatPacking(let r):
+            PackingListView(retreat: r)
+        }
     }
 }
 
 // MARK: - Programs wrapped in its own NavigationStack.
 
-/// The Programs tab. Browsing is open to a guest all the way down to the day
-/// list; `requireAccount` wraps **joining** only — the moment a program stops
+/// The Programs tab (labelled Digital Retreats). Browsing is open to a guest
+/// all the way down to the day list; `requireAccount` wraps **joining** only — the moment a program stops
 /// being something you're reading about and starts being yours.
 private struct ProgramsRoot: View {
     enum Route: Hashable {

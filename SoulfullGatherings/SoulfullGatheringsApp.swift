@@ -142,7 +142,7 @@ private struct PreviewProgram<Content: View>: View {
 
 /// The retreats stack (`-preview-retreats`) against the live catalog, with the
 /// detail push wired so a tap on the focused name goes somewhere — the same
-/// hand-off `HomeRoot` makes, minus the rest of Home.
+/// push `GatheringsRoot` makes, minus the rest of the tab.
 private struct PreviewRetreatsStack: View {
     @State private var path: [Retreat] = []
 

@@ -49,6 +49,8 @@
   .rcard .t { padding: 14px 16px; }
   .rcard .t .name { font-size: 22px; letter-spacing: -0.2px; color: var(--ink); }
   .rcard .t .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  /* Digital retreats shelf: the same card with a taller (200pt) cover. */
+  .rcard--digital .hero { height: 200px; }
 
   .circle-row { margin: 0 20px 10px; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border); }
   .circle-row .av { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-size: 18px; color: var(--ink); flex: none; }
@@ -134,11 +136,25 @@
       </div>
     </div>
 
+    <!-- The two shelves close the page: digital retreats, then upcoming
+         gatherings (last since 2026-09-25 — gatherings have a tab of their own
+         now, so this is a glimpse rather than the way in). Both hand off to
+         their tab: ALL switches tab, a card opens that item inside it. -->
+    <div class="sec">
+      <div class="section-label"><span class="title">Digital Retreats</span><span class="action">All</span></div>
+      <div class="hscroll">
+        <!-- Hidden until `programs` has a published row. -->
+        <div class="rcard rcard--digital">
+          <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><div class="m">7 days · Self-paced · Digital</div></div>
+          <div class="t"><div class="name">Finding Ground</div><div class="sub">with Alma Guerra</div></div>
+        </div>
+      </div>
+    </div>
 
     <div class="sec">
       <div class="section-label"><span class="title">Upcoming gatherings</span><span class="action">All</span></div>
       <div class="hscroll">
-        <!-- Only upcoming retreats: fetchRetreats() filters end_date >= today. -->
+        <!-- Only retreats that haven't started: fetchRetreats() filters start_date > today. -->
         <div class="rcard">
           <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><div class="m">Italy · Sep 2026</div></div>
           <div class="t"><div class="name">Dolomites</div><div class="sub">5 days · 12 guests</div></div>
@@ -154,7 +170,8 @@
 
   <nav class="bottom-nav">
     <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
-    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg><span class="nav-label">Programs</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span class="nav-label">Gatherings</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg><span class="nav-label">Digital Retreats</span></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg><span class="nav-label">Practice</span></button>
     <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Community</span></button>
     <button class="nav-item"><span class="nav-avatar">M</span><span class="nav-label">You</span></button>

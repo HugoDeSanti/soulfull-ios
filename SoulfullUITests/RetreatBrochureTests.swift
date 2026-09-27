@@ -25,20 +25,12 @@ final class RetreatBrochureTests: XCTestCase {
 
     func testMallorcaBrochureComesFromTheDatabase() {
         let app = XCUIApplication()
-        app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "home"]
+        // Straight to the Gatherings tab, which is the retreats stack. Not via
+        // Home's shelf: it scrolls horizontally and Mallorca is its third card,
+        // so it exists but has no valid activation point — even `isHittable`
+        // throws on it. The stack is a vertical list of every retreat.
+        app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "gatherings"]
         app.launch()
-
-        // Via the retreats stack rather than Home's shelf: the shelf scrolls
-        // horizontally and Mallorca is its third card, so it exists but has no
-        // valid activation point — even `isHittable` throws on it. The stack is
-        // a vertical list of every retreat.
-        // "All gatherings", not "ALL": Home has two of these now (gatherings and
-        // programs) and they were indistinguishable to this query — and to
-        // VoiceOver — until `SectionLabel` gained an accessibility label.
-        let all = app.buttons["All gatherings"]
-        XCTAssertTrue(all.waitForExistence(timeout: 30), "Home never finished loading")
-        shot(app, "01-home")
-        all.tap()
 
         // Each name in the stack is a button labelled "<name>, <country>". The
         // first tap on a name that isn't centred brings it into focus; the

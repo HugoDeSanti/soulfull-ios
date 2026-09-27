@@ -225,7 +225,7 @@ struct ProgramDayView: View {
                         .foregroundStyle(Theme.honey)
                 }
             } else if let closing = program.curriculum?.closing {
-                Label("PROGRAM COMPLETE", systemImage: "checkmark.seal.fill")
+                Label("DIGITAL RETREAT COMPLETE", systemImage: "checkmark.seal.fill")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
                     .foregroundStyle(Theme.accent)

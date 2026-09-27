@@ -2,7 +2,8 @@
 //  ProgramsView.swift
 //  Soulfull Gatherings
 //
-//  The Programs tab: self-paced, multi-day journeys.
+//  The Programs tab — "Digital Retreats" to a member: self-paced, multi-day
+//  journeys.
 //
 //  Layout is "continue on top, catalog below" — a program in flight leads the
 //  screen with the day the member is actually on, and everything else is
@@ -111,7 +112,7 @@ struct ProgramsView: View {
                 .font(Theme.eyebrow(11))
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
-            Text("Programs")
+            Text("Digital Retreats")
                 .font(Theme.headline(38))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.3)
@@ -260,7 +261,7 @@ struct ProgramsView: View {
 
     private var catalog: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: active == nil ? "All programs" : "More programs")
+            SectionLabel(title: active == nil ? "All digital retreats" : "More digital retreats")
 
             VStack(spacing: 14) {
                 ForEach(vm.programs.filter { $0.id != active?.id }) { program in
@@ -331,7 +332,7 @@ struct ProgramsView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(program.title). \(program.metaLine), with \(program.lead)\(presenceSuffix(program.id))")
-        .accessibilityHint("Opens the program")
+        .accessibilityHint("Opens the digital retreat")
     }
 
     /// ". 1.2k present" — the card sets its own VoiceOver label, which would
@@ -353,7 +354,7 @@ struct ProgramsView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("New programs are on their way")
+            Text("New digital retreats are on their way")
                 .font(Theme.headline(20))
                 .foregroundStyle(Theme.ink)
             Text("We're putting the finishing touches to the first ones. They'll appear here as soon as they're ready.")
@@ -390,8 +391,8 @@ struct ProgramsView: View {
     }
 }
 
-/// `matchedTransitionSource` only when the host handed us a namespace — the
-/// same shape Home uses for its retreat cards.
+/// `matchedTransitionSource` only when the host handed us a namespace (previews
+/// pass none).
 private struct ProgramZoomSource: ViewModifier {
     let id: String
     let namespace: Namespace.ID?

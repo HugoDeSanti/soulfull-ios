@@ -2,7 +2,7 @@
 //  ProgramTests.swift
 //  SoulfullUITests
 //
-//  The Programs tab, driven end to end.
+//  The Programs tab ("Digital Retreats" on screen), driven end to end.
 //
 //  These earn their place for the same reason `RetreatBrochureTests` does: the
 //  curriculum decode **fails soft**. A malformed `programs.curriculum` doesn't
@@ -83,10 +83,10 @@ final class ProgramTests: XCTestCase {
         app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "home"]
         app.launch()
 
-        let all = app.buttons["All programs"]
+        let all = app.buttons["All digital retreats"]
         XCTAssertTrue(all.waitForExistence(timeout: 30), "Home never finished loading")
 
-        // The shelf is the last section; scroll it into view before tapping.
+        // The shelf sits near the foot of Home; scroll it into view before tapping.
         var tries = 0
         while !all.isHittable && tries < 6 {
             app.swipeUp(velocity: .slow)
@@ -110,7 +110,7 @@ final class ProgramTests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 25), "Programs catalog never appeared")
         card.tap()
 
-        let start = app.buttons["Start this program"]
+        let start = app.buttons["Start this digital retreat"]
         XCTAssertTrue(start.waitForExistence(timeout: 15), "The join CTA never appeared")
         shot(app, "03-detail-as-guest")
         start.tap()

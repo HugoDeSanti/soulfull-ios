@@ -1,15 +1,17 @@
-<!-- @dsCard group="Screens · Retreats" name="Retreats — name stack" -->
+<!-- @dsCard group="Screens · Retreats" name="Gatherings tab — name stack" -->
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Retreats — stack</title>
+<title>Gatherings — stack</title>
 <link rel="stylesheet" href="../shared/tokens.css">
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <!--
-  RetreatsStackView (stack mode). Maps 1:1:
-  - .topbar   → topBar: "‹ Back" (same anatomy as retreat-detail) + the ONE mode
-                toggle (grid ↔ list). Shared by both modes; never scales or blurs.
+  RetreatsStackView (stack mode) — the root of the GATHERINGS TAB (2026-09-25).
+  Home's "Upcoming gatherings" shelf and its ALL hand off here. Maps 1:1:
+  - .topbar   → topBar: the ONE mode toggle (grid ↔ list). No Back as a tab root
+                (it has "‹ Back" only when pushed, e.g. the -preview-retreats hook).
+                Shared by both modes; never scales or blurs.
   - .intro    → stackIntro: eyebrow in --ink-soft, the folio, a 14px subline in
                 --ink-on-photo. The folio ("03 / 04") follows the centred name and
                 replaces the old static "07" count circle.
@@ -20,10 +22,11 @@
                 line; only the weight (Light → SemiBold) switches discretely.
   - .botcard  → bottomCard: one fact per line (country / dates / tags) + the
                 "Explore" pill. The whole card is the tap target. It read
-                "Reserve", which it never did — it opens the retreat.
+                "Reserve", which it never did — it opens the retreat. Sits 8pt
+                above the docked tab bar (BottomNav.height).
 -->
 <style>
-  .topbar { position: relative; z-index: 6; display: flex; justify-content: space-between; align-items: center; padding: 4px 24px 0; }
+  .topbar { position: relative; z-index: 6; display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px 24px 0; }
   .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 
   .intro { position: relative; z-index: 5; padding: 18px 24px 10px; }
@@ -41,7 +44,7 @@
     transform-origin: left center; transform: scale(.8); opacity: .4; }
   .item.active .name { font-weight: 600; transform: none; opacity: 1; }
 
-  .botcard { position: absolute; left: 16px; right: 16px; bottom: 30px; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border-radius: 22px; }
+  .botcard { position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border-radius: 22px; }
   .botcard .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .botcard .when { font-size: 16px; font-weight: 500; letter-spacing: -0.2px; color: var(--ink); margin-top: 5px; }
   .botcard .tags { font-size: 13px; color: var(--ink-soft); margin-top: 5px; white-space: nowrap; }
@@ -60,7 +63,6 @@
     <div class="top-scrim"></div>
 
     <div class="topbar">
-      <span class="back on-photo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
       <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
     </div>
 
@@ -88,6 +90,15 @@
       <span class="go">Explore <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </div>
   </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
+    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span class="nav-label">Gatherings</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg><span class="nav-label">Digital Retreats</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg><span class="nav-label">Practice</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Community</span></button>
+    <button class="nav-item"><span class="nav-avatar">M</span><span class="nav-label">You</span></button>
+  </nav>
   <div class="home-indicator"></div>
 </div></div>
 </body></html>

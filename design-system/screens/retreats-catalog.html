@@ -1,4 +1,4 @@
-<!-- @dsCard group="Screens · Retreats" name="Retreats — catalog (pinch)" -->
+<!-- @dsCard group="Screens · Retreats" name="Gatherings tab — catalog (pinch)" -->
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,14 +7,14 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <!--
-  RetreatsStackView (catalog mode). The .topbar is the SAME chrome as
-  retreats-stack — "‹ Back" and the mode toggle, which now shows the list glyph
-  and sits exactly where the grid glyph was. The catalog has no header button of
+  RetreatsStackView (catalog mode), inside the Gatherings tab. The .topbar is
+  the SAME chrome as retreats-stack — just the mode toggle as a tab root, which
+  now shows the list glyph and sits exactly where the grid glyph was. The catalog has no header button of
   its own. Covers: country eyebrow (10px — it was 8.5px), name, then the dates.
 -->
 <style>
-  .scr { padding-top: 54px; padding-bottom: 30px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 4px 24px 0; position: relative; z-index: 3; }
+  .scr { padding-top: 54px; padding-bottom: 116px; }
+  .topbar { display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px 24px 0; position: relative; z-index: 3; }
   .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
   .intro { padding: 18px 24px 18px; position: relative; z-index: 2; }
   .intro .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
@@ -41,7 +41,6 @@
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.4),rgba(0,0,0,.6),rgba(0,0,0,.85))"></div>
 
     <div class="topbar">
-      <span class="back on-photo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
       <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h11M4 14h16M4 18h11"/></svg></span>
     </div>
     <div class="intro on-photo">
@@ -55,6 +54,14 @@
       <div class="cover" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><span class="folio">04</span><div class="meta on-photo"><div class="m">Italy</div><div class="n">Dolomites</div><div class="d">September 8–13, 2027</div></div></div>
     </div>
   </div>
+  <nav class="bottom-nav">
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
+    <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span class="nav-label">Gatherings</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 20h20l-6.5-9-4 5.2L9 13zm12.5-8.5L19 5l3 6.5z"/></svg><span class="nav-label">Digital Retreats</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/></svg><span class="nav-label">Practice</span></button>
+    <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2zM15 13.8c2.8 0 4.8 1.9 4.8 5.2H17"/></svg><span class="nav-label">Community</span></button>
+    <button class="nav-item"><span class="nav-avatar">M</span><span class="nav-label">You</span></button>
+  </nav>
   <div class="home-indicator"></div>
 </div></div>
 </body></html>

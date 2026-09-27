@@ -23,14 +23,14 @@ enum ProgramsLoadFailure: Equatable {
     var title: String {
         switch self {
         case .offline: "No internet connection"
-        case .failed:  "Couldn't load programs"
+        case .failed:  "Couldn't load digital retreats"
         }
     }
 
     var detail: String {
         switch self {
         case .offline:
-            "You'll need to be online to browse our programs. Reconnect and try again."
+            "You'll need to be online to browse our digital retreats. Reconnect and try again."
         case .failed:
             "Something went wrong at our end. Please try again in a moment."
         }

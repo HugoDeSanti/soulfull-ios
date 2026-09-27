@@ -354,8 +354,8 @@ struct ProfileView: View {
                     retryLine(failure)
                 } else if journeys.isEmpty {
                     emptyCard(title: "Nothing joined yet",
-                              detail: "Programs are free, and walked one day at a time.",
-                              action: "Browse programs") { onOpenProgram(nil) }
+                              detail: "Digital retreats are free, and walked one day at a time.",
+                              action: "Browse digital retreats") { onOpenProgram(nil) }
                 } else {
                     VStack(spacing: 10) {
                         ForEach(journeys) { journey in
@@ -378,7 +378,7 @@ struct ProfileView: View {
             PressableCard(action: { onOpenProgram(program.id) }) {
                 journeyCard(journey, opens: true)
             }
-            .accessibilityHint("Opens the program")
+            .accessibilityHint("Opens the digital retreat")
             .accessibilityIdentifier("journey-row")
         } else {
             journeyCard(journey, opens: false)

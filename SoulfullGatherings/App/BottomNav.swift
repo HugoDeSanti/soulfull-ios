@@ -2,7 +2,7 @@
 //  BottomNav.swift
 //  Soulfull Gatherings
 //
-//  A flat bar docked to the bottom edge: five evenly spaced items, a thin
+//  A flat bar docked to the bottom edge: six evenly spaced items, a thin
 //  glyph over a small label, cream when selected and muted when not. It does
 //  not move — no sliding lens, no bounce, no squish — so the only thing that
 //  changes on a tap is the colour. The You item is the member's own face
@@ -15,8 +15,13 @@ import SwiftUI
 struct BottomNav: View {
     @Binding var current: MainTab
 
+    /// How far the bar reaches above the bottom safe area (8 + 46 + 2 below).
+    /// For a screen that pins something to its foot under the bar — most tab
+    /// roots scroll and just end on a tall spacer instead.
+    static let height: CGFloat = 56
+
     var body: some View {
-        HStack(spacing: 0) {
+        NavBarLayout {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 item(tab)
             }
@@ -50,7 +55,9 @@ struct BottomNav: View {
                     .font(Theme.body(10, weight: .medium))
                     .tracking(0.3)
                     .lineLimit(1)
-                    .fixedSize()
+                    // Only ever used when the bar is too narrow for every label
+                    // at full size — see `NavBarLayout`.
+                    .minimumScaleFactor(0.7)
             }
             .foregroundStyle(active ? Theme.ink : Theme.muted)
             .frame(maxWidth: .infinity)
@@ -69,6 +76,39 @@ struct BottomNav: View {
         } else {
             Image(systemName: tab.systemImage)
                 .font(.system(size: 19, weight: .light))
+        }
+    }
+}
+
+/// Lays the items out edge to edge, each as wide as its own label plus an equal
+/// share of whatever is left over.
+///
+/// Equal slots stopped working at six: "Digital Retreats" is ~77pt at 10pt
+/// Geist, a sixth of a 402pt phone is ~64pt, and the label ran into
+/// "Gatherings" beside it. Sizing slots to their content keeps the gaps
+/// between labels even instead, and the slots still tile the whole bar, so
+/// every point of it answers a tap.
+private struct NavBarLayout: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        return CGSize(width: proposal.width ?? sizes.map(\.width).reduce(0, +),
+                      height: sizes.map(\.height).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard !subviews.isEmpty else { return }
+        let widths = subviews.map { $0.sizeThatFits(.unspecified).width }
+        let natural = widths.reduce(0, +)
+        let spare = (bounds.width - natural) / CGFloat(subviews.count)
+        var x = bounds.minX
+        for (subview, width) in zip(subviews, widths) {
+            // Too narrow for every label at full size (a small phone at a large
+            // text size): share the width out in proportion instead, and let
+            // the labels scale down to it.
+            let slot = spare >= 0 ? width + spare : width * bounds.width / natural
+            subview.place(at: CGPoint(x: x, y: bounds.minY), anchor: .topLeading,
+                          proposal: ProposedViewSize(width: slot, height: bounds.height))
+            x += slot
         }
     }
 }

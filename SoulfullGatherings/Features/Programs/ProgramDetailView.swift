@@ -71,7 +71,7 @@ struct ProgramDetailView: View {
         .scrollIndicators(.hidden)
         .background { Theme.bg.ignoresSafeArea() }
         .overlay(alignment: .topLeading) {
-            PracticeBackBar(label: "Programs")
+            PracticeBackBar(label: "Digital Retreats")
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
         }
@@ -81,11 +81,11 @@ struct ProgramDetailView: View {
             await PracticeProgressStore.shared.refresh()
             await store.syncCompletion(for: program)
         }
-        .confirmationDialog("Leave this program?", isPresented: $confirmingLeave, titleVisibility: .visible) {
-            Button("Leave program", role: .destructive) { leave() }
+        .confirmationDialog("Leave this digital retreat?", isPresented: $confirmingLeave, titleVisibility: .visible) {
+            Button("Leave digital retreat", role: .destructive) { leave() }
             Button("Stay", role: .cancel) {}
         } message: {
-            Text("Your day-by-day progress in this program will be cleared. The practices you've done stay in your history.")
+            Text("Your day-by-day progress in this digital retreat will be cleared. The practices you've done stay in your history.")
         }
     }
 
@@ -152,7 +152,7 @@ struct ProgramDetailView: View {
                 confirmingLeave = true
             }
         } else if !enrolled {
-            SGPrimaryButton(title: isJoining ? "Starting…" : "Start this program",
+            SGPrimaryButton(title: isJoining ? "Starting…" : "Start this digital retreat",
                             enabled: !isJoining,
                             filled: true,
                             icon: "arrow.forward") {
@@ -312,7 +312,7 @@ struct ProgramDetailView: View {
 
     private func closingCard(_ closing: ProgramClosing) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("PROGRAM COMPLETE", systemImage: "checkmark.seal.fill")
+            Label("DIGITAL RETREAT COMPLETE", systemImage: "checkmark.seal.fill")
                 .font(Theme.eyebrow(10))
                 .tracking(2)
                 .foregroundStyle(Theme.accent)
@@ -333,7 +333,7 @@ struct ProgramDetailView: View {
     }
 
     private var notReadyNote: some View {
-        Text("The days of this program are still being written. It'll open here as soon as they are.")
+        Text("The days of this digital retreat are still being written. It'll open here as soon as they are.")
             .font(Theme.body(14))
             .foregroundStyle(Theme.inkSoft)
             .lineSpacing(3)
@@ -348,7 +348,7 @@ struct ProgramDetailView: View {
             Haptics.tap()
             confirmingLeave = true
         } label: {
-            Text("Leave this program")
+            Text("Leave this digital retreat")
                 .font(Theme.body(13))
                 .underline()
                 .foregroundStyle(Theme.muted)
@@ -373,7 +373,7 @@ struct ProgramDetailView: View {
                 if let first = store.currentDay(program) { onOpenDay(first) }
             } catch {
                 Log.data.error("Program enrolment failed: \(error.localizedDescription)")
-                joinError = "Couldn't start this program. Please try again."
+                joinError = "Couldn't start this digital retreat. Please try again."
             }
         }
     }
@@ -385,7 +385,7 @@ struct ProgramDetailView: View {
                 Haptics.tap()
             } catch {
                 Log.data.error("Leaving program failed: \(error.localizedDescription)")
-                joinError = "Couldn't leave this program. Please try again."
+                joinError = "Couldn't leave this digital retreat. Please try again."
             }
         }
     }

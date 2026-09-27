@@ -4,8 +4,8 @@
 //
 //  The main landing screen. Sections rise out of a blur as they scroll in,
 //  card imagery drifts in parallax, mood chips bloom on selection, and the
-//  ritual card has a living aurora interior. Retreat cards are zoom-hero
-//  sources into the detail screen.
+//  ritual card has a living aurora interior. The two shelves at the foot —
+//  digital retreats, then upcoming gatherings — hand off to their own tabs.
 //
 
 import SwiftUI
@@ -20,15 +20,15 @@ struct HomeView: View {
     /// Program enrolment, for the "Day N is open" line. Read inside `body`.
     private let programs = ProgramStore.shared
 
+    /// Jump to the Gatherings tab.
     let onOpenRetreats: () -> Void
+    /// Jump to the Gatherings tab and open that retreat there.
     let onOpenRetreat: (Retreat) -> Void
     /// Jump to a section of the Practice library (from the ritual card).
     var onOpenPractice: (PracticeMenuItem) -> Void = { _ in }
-    /// Jump to the Programs tab. A non-nil id opens that program; nil just
-    /// switches to the tab.
+    /// Jump to the Digital Retreats tab. A non-nil id opens that program; nil
+    /// just switches to the tab.
     var onOpenProgram: (String?) -> Void = { _ in }
-    /// Zoom-hero namespace owned by HomeRoot; retreat cards register as sources.
-    var zoomNamespace: Namespace.ID? = nil
 
     var body: some View {
         ScrollView {
@@ -48,11 +48,13 @@ struct HomeView: View {
                     section { continueCard(resume) }
                 }
                 section { todaysRitual }
-                section { upcomingGatherings }
                 // Hidden until the `programs` table is seeded — see HomeViewModel.
                 if !vm.programs.isEmpty {
                     section { digitalRetreats }
                 }
+                // Last on the page: the gatherings have a tab of their own now,
+                // so this is a glimpse rather than the way in.
+                section { upcomingGatherings }
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 24)
@@ -381,7 +383,6 @@ struct HomeView: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .modifier(ZoomSourceIfAvailable(id: "home-retreat-\(r.id)", namespace: zoomNamespace))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(r.name), \(r.country). \(r.when). \(r.durationDays) days, \(r.maxGuests) guests")
         .accessibilityHint("Opens retreat details")
@@ -390,10 +391,10 @@ struct HomeView: View {
     private var digitalRetreats: some View {
         VStack(alignment: .leading, spacing: 14) {
             // Both the "ALL" action and pressable cards came back when the
-            // Programs tab gave them somewhere to go — see the note that used
-            // to sit here about the shelf being informational.
+            // Digital Retreats tab gave them somewhere to go — see the note
+            // that used to sit here about the shelf being informational.
             SectionLabel(title: "Digital Retreats", action: "ALL",
-                         actionLabel: "All programs") { onOpenProgram(nil) }
+                         actionLabel: "All digital retreats") { onOpenProgram(nil) }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
@@ -459,8 +460,8 @@ struct HomeView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital program\(PresenceStore.shared.presence(programID: p.id).map { ", \($0.label)" } ?? "")")
-        .accessibilityHint("Opens the program")
+        .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital retreat\(PresenceStore.shared.presence(programID: p.id).map { ", \($0.label)" } ?? "")")
+        .accessibilityHint("Opens the digital retreat")
     }
 
     // MARK: - "Day N is open"
@@ -513,21 +514,6 @@ struct HomeView: View {
         .accessibilityHint("Opens the day")
     }
 
-}
-
-/// Registers a zoom-hero source only when the owning stack provided a
-/// namespace (previews pass none).
-private struct ZoomSourceIfAvailable: ViewModifier {
-    let id: String
-    let namespace: Namespace.ID?
-
-    func body(content: Content) -> some View {
-        if let namespace {
-            content.matchedTransitionSource(id: id, in: namespace)
-        } else {
-            content
-        }
-    }
 }
 
 #Preview {
