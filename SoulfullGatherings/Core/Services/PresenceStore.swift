@@ -33,14 +33,14 @@ final class PresenceStore {
 
     func presence(kind: PracticeContentKind, contentID: Int) -> Presence? {
         #if DEBUG
-        if Self.previewFixture { return Self.fixture(seed: "\(kind.rawValue)-\(contentID)", faces: kind != .journal) }
+        if Self.previewFixture { return loadedAt == nil ? nil : Self.fixture(seed: "\(kind.rawValue)-\(contentID)", faces: kind != .journal) }
         #endif
         return practices["\(kind.rawValue)-\(contentID)"]
     }
 
     func presence(programID: String) -> Presence? {
         #if DEBUG
-        if Self.previewFixture { return Self.fixture(seed: programID, faces: true) }
+        if Self.previewFixture { return loadedAt == nil ? nil : Self.fixture(seed: programID, faces: true) }
         #endif
         return programs[programID]
     }
@@ -57,6 +57,12 @@ final class PresenceStore {
     }
 
     private func load() async {
+        #if DEBUG
+        // The fixture still waits for a load, so the tests exercise the same
+        // path live data takes. Returning it from the first frame is what hid
+        // a PresenceLine that never started loading at all.
+        if Self.previewFixture { loadedAt = .now; return }
+        #endif
         async let p = try? SupabaseService.shared.fetchPracticePresence()
         async let g = try? SupabaseService.shared.fetchProgramPresence()
         let (practiceRows, programRows) = await (p, g)

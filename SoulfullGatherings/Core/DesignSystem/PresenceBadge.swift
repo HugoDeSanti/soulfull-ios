@@ -76,7 +76,10 @@ struct PresenceLine: View {
     }
 
     var body: some View {
-        Group {
+        // A real container, never `Group`: a Group hands its modifiers to its
+        // children, so with no presence yet there was nothing to run `.task`
+        // on and the first load never happened. An empty VStack still exists.
+        VStack(alignment: .leading, spacing: 0) {
             if let presence {
                 PresenceBadge(presence: presence, faceSize: faceSize)
                     .transition(.opacity)
