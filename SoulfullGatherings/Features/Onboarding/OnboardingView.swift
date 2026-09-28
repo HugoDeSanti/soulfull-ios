@@ -172,6 +172,7 @@ private struct NameStep: View {
             .autocorrectionDisabled()
             .submitLabel(.next)
             .onSubmit { vm.next() }
+            .accessibilityIdentifier("onboarding-name")
             .multilineTextAlignment(.center)
             .font(Theme.headline(22))
             .italic()
@@ -423,6 +424,7 @@ private struct OptionCard: View {
             .animation(.spring(response: 0.38, dampingFraction: 0.66), value: selected)
         }
         .buttonStyle(.soulPressableQuiet)
+        .accessibilityIdentifier("onboarding-option")
     }
 }
 

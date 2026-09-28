@@ -1,0 +1,67 @@
+//
+//  OnboardingFlowTests.swift
+//  SoulfullTests
+//
+//  Four questions, each needing an answer before Next moves on — the flow
+//  must never advance on empty state. The journey through the real screens
+//  is SoulfullUITests/OnboardingTests.
+//
+
+import Testing
+@testable import SoulfullGatherings
+
+@MainActor
+@Suite("Onboarding flow")
+struct OnboardingFlowTests {
+
+    @Test func eachQuestionHoldsTheFlowUntilItIsAnswered() {
+        let vm = OnboardingViewModel()
+
+        vm.name = "   "
+        vm.next()
+        #expect(vm.step == .name)
+        vm.name = "Mara"
+        vm.next()
+        #expect(vm.step == .intention)
+
+        vm.next()
+        #expect(vm.step == .intention)
+        vm.toggleIntention("rest")
+        vm.next()
+        #expect(vm.step == .state)
+
+        vm.next()
+        #expect(vm.step == .state)
+        vm.pickState("wired")
+        vm.next()
+        #expect(vm.step == .frequency)
+
+        vm.next()
+        #expect(vm.step == .frequency)
+        vm.pickFrequency("daily")
+        vm.next()
+        #expect(vm.step == .finish)
+        #expect(!vm.isQuestionStep)
+    }
+
+    @Test func deselectingTheOnlyIntentionTakesAwayNext() {
+        let vm = OnboardingViewModel()
+        vm.step = .intention
+        vm.toggleIntention("rest")
+
+        vm.toggleIntention("rest")
+
+        #expect(!vm.canAdvance)
+    }
+
+    @Test func backStepsThroughTheQuestionsAndStopsAtTheFirst() {
+        let vm = OnboardingViewModel()
+        vm.step = .finish
+
+        vm.back()
+        #expect(vm.step == .frequency)
+        vm.step = .name
+        vm.back()
+        #expect(vm.step == .name)
+    }
+}

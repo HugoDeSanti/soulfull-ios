@@ -76,7 +76,7 @@ struct RetreatEnquiry: Encodable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(firstName, forKey: .firstName)
         try c.encode(lastName, forKey: .lastName)
-        try c.encode(Self.dateFormatter.string(from: dateOfBirth), forKey: .dateOfBirth)
+        try c.encode(Self.dayString(dateOfBirth), forKey: .dateOfBirth)
         try c.encode(basedIn, forKey: .basedIn)
         try c.encode(phone, forKey: .phone)
         try c.encode(instagram, forKey: .instagram)
@@ -87,15 +87,20 @@ struct RetreatEnquiry: Encodable {
         try c.encode(referral, forKey: .referral)
     }
 
-    /// `en_US_POSIX` so a device set to a non-Gregorian calendar still sends a
-    /// date the server can read — the same reason `RetreatRow` pins its own.
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    /// The calendar day the applicant picked, as `yyyy-MM-dd`.
+    ///
+    /// Read in the device's time zone — the one the form showed the date in.
+    /// It was formatted in UTC, and the picker's value carries the time of day
+    /// the wheel was opened at, so an applicant far enough from Greenwich
+    /// (evenings in the Americas, mornings in Asia) sent the team the day
+    /// before or after the one on their screen. Gregorian whatever the device's
+    /// own calendar, so the server can always read it.
+    static func dayString(_ date: Date, in timeZone: TimeZone = .current) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let day = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+    }
 
     // MARK: - The questions, verbatim
 

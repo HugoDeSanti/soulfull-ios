@@ -31,23 +31,42 @@ struct SoulfullGatheringsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            rootContent
-                .environment(appState)
-                .environment(appState.settings)
-                .environment(appState.auth)
-                .preferredColorScheme(.dark)
-                .tint(Theme.ink)
-                .task {
-                    await appState.initializeAuth()
-                    // A member who already allows notifications is registered
-                    // for push without being asked anything.
-                    await PushRegistrar.shared.syncIfAuthorized(isMember: appState.auth.hasAccount)
-                }
-                .onOpenURL { url in
-                    // Email-confirmation / magic-link callback (soulfull://auth-callback).
-                    Task { await appState.auth.handleDeepLink(url) }
-                }
+            if Self.isHostingUnitTests {
+                // `SoulfullTests` runs inside this process. The real app
+                // underneath it would open an anonymous Supabase session and
+                // check push on every unit-test run — network the tests never
+                // asked for and must not depend on.
+                Color.clear
+            } else {
+                rootContent
+                    .environment(appState)
+                    .environment(appState.settings)
+                    .environment(appState.auth)
+                    .preferredColorScheme(.dark)
+                    .tint(Theme.ink)
+                    .task {
+                        await appState.initializeAuth()
+                        // A member who already allows notifications is registered
+                        // for push without being asked anything.
+                        await PushRegistrar.shared.syncIfAuthorized(isMember: appState.auth.hasAccount)
+                    }
+                    .onOpenURL { url in
+                        // Email-confirmation / magic-link callback (soulfull://auth-callback).
+                        Task { await appState.auth.handleDeepLink(url) }
+                    }
+            }
         }
+    }
+
+    /// True only while this process hosts the unit-test bundle. XCTest sets
+    /// the variable in the process it injects into; the app a UI test drives
+    /// is launched normally and never sees it. Always false in Release.
+    private static var isHostingUnitTests: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        #else
+        false
+        #endif
     }
 
     /// The app root, or a DEBUG screen override for visual passes without

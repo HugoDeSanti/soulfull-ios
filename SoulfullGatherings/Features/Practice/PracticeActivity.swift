@@ -31,10 +31,6 @@ final class PlaybackReporter {
     /// How much media time must accumulate before we write again. Short enough
     /// that a force-quit loses little, long enough not to chatter.
     private static let heartbeat: Double = 20
-    /// Media-time jump beyond which a tick is treated as a seek rather than
-    /// playback. The observer fires every second, so anything past this is not
-    /// listening.
-    private static let seekThreshold: Double = 2
 
     private let play: PracticePlay
     /// Whose play this is, fixed when the player opened. A sign-out mid-listen
@@ -44,16 +40,14 @@ final class PlaybackReporter {
     private var observer: Any?
     private var endObserver: (any NSObjectProtocol)?
 
-    private var lastMediaTime: Double?
-    private var playedSeconds: Double = 0
-    private var positionSeconds: Double = 0
+    private var meter: MediaTimeMeter
     private var reportedAt: Double = 0
-    private var didComplete = false
     private var didFinish = false
 
     init(play: PracticePlay) {
         self.play = play
         self.owner = PracticeProgressStore.shared.currentUserID
+        self.meter = MediaTimeMeter(durationSeconds: play.durationSeconds)
     }
 
     /// Where this practice was left last time, if anywhere. The player seeks
@@ -77,7 +71,7 @@ final class PlaybackReporter {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                self.didComplete = true
+                self.meter.markCompleted()
                 self.flush()
             }
         }
@@ -85,36 +79,19 @@ final class PlaybackReporter {
 
     private func tick(_ time: Double) {
         guard time.isFinite else { return }
-        defer { lastMediaTime = time }
-
-        if let last = lastMediaTime {
-            let delta = time - last
-            // Forward, and small enough to be real playback rather than a seek.
-            if delta > 0, delta <= Self.seekThreshold {
-                playedSeconds += delta
-            }
-        }
-        positionSeconds = time
-
-        // Some encoders leave the last fraction of a second unreachable, so
-        // "finished" is a threshold rather than an equality.
-        if let duration = play.durationSeconds, duration > 0,
-           time >= Double(duration) - Self.seekThreshold {
-            didComplete = true
-        }
-
-        if playedSeconds - reportedAt >= Self.heartbeat { flush() }
+        meter.observe(time)
+        if meter.playedSeconds - reportedAt >= Self.heartbeat { flush() }
     }
 
     /// Writes what has accumulated so far. Safe to call repeatedly — the row is
     /// upserted on the play's event id, and the DB trigger keeps
     /// `seconds_played` monotonic.
     func flush() {
-        guard playedSeconds > 0 || didComplete else { return }
-        reportedAt = playedSeconds
-        let seconds = Int(playedSeconds.rounded())
-        let position = Int(positionSeconds.rounded())
-        let completed = didComplete
+        guard meter.playedSeconds > 0 || meter.didComplete else { return }
+        reportedAt = meter.playedSeconds
+        let seconds = Int(meter.playedSeconds.rounded())
+        let position = Int(meter.positionSeconds.rounded())
+        let completed = meter.didComplete
         Task { [owner] in
             await PracticeProgressStore.shared.record(play,
                                                       owner: owner,
@@ -134,6 +111,54 @@ final class PlaybackReporter {
         observer = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
+    }
+}
+
+/// The arithmetic `PlaybackReporter` credits a creator by: media time actually
+/// played, from the player's periodic observations. Kept apart from AVFoundation
+/// so it can be tested (`SoulfullTests/MediaTimeMeterTests`).
+struct MediaTimeMeter {
+
+    /// Media-time jump beyond which a tick is treated as a seek rather than
+    /// playback. The observer fires every second, so anything past this is not
+    /// listening.
+    static let seekThreshold: Double = 2
+
+    let durationSeconds: Int?
+    private(set) var playedSeconds: Double = 0
+    private(set) var positionSeconds: Double = 0
+    private(set) var didComplete = false
+    private var lastMediaTime: Double?
+
+    init(durationSeconds: Int?) {
+        self.durationSeconds = durationSeconds
+    }
+
+    /// One periodic reading of the player's media time.
+    mutating func observe(_ time: Double) {
+        guard time.isFinite else { return }
+        defer { lastMediaTime = time }
+
+        if let last = lastMediaTime {
+            let delta = time - last
+            // Forward, and small enough to be real playback rather than a seek.
+            if delta > 0, delta <= Self.seekThreshold {
+                playedSeconds += delta
+            }
+        }
+        positionSeconds = time
+
+        // Some encoders leave the last fraction of a second unreachable, so
+        // "finished" is a threshold rather than an equality.
+        if let durationSeconds, durationSeconds > 0,
+           time >= Double(durationSeconds) - Self.seekThreshold {
+            didComplete = true
+        }
+    }
+
+    /// The item played through to its end.
+    mutating func markCompleted() {
+        didComplete = true
     }
 }
 

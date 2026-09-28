@@ -135,44 +135,29 @@ final class ProgramStore {
         Set(enrollments.values.filter { $0.completedAt != nil }.map(\.programID))
     }
 
-    /// When a given day became (or becomes) available.
-    ///
-    /// Day 1 is the enrolment moment. Every later day is **the next local
-    /// midnight after the previous day was finished** — which is what "the date
-    /// has changed" means. `startOfDay` + 1 day rather than +86400 seconds, so
-    /// the clocks going forward or back doesn't shift the boundary.
-    ///
-    /// Nil means the chain is broken further back: not enrolled, or the
-    /// previous day isn't finished.
+    /// When a given day became (or becomes) available — see
+    /// `ProgramUnlockRule.unlockedAt`.
     func dayUnlockedAt(_ program: Program, day: Int) -> Date? {
-        guard let enrollment = enrollments[program.id] else { return nil }
-        guard day > 1 else { return enrollment.enrolledAt }
-        guard let previous = completions[program.id]?[day - 1] else { return nil }
-        let calendar = Calendar.current
-        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: previous))
+        ProgramUnlockRule.unlockedAt(day: day,
+                                     enrolledAt: enrollments[program.id]?.enrolledAt,
+                                     completions: completions[program.id] ?? [:],
+                                     calendar: .current)
     }
 
     func state(_ program: Program, day: Int) -> ProgramDayState {
-        if let finished = completions[program.id]?[day] { return .complete(finished) }
-        guard let unlock = dayUnlockedAt(program, day: day) else { return .awaitingPreviousDay }
-        return Date.now >= unlock ? .open : .opens(unlock)
+        ProgramUnlockRule.state(day: day,
+                                enrolledAt: enrollments[program.id]?.enrolledAt,
+                                completions: completions[program.id] ?? [:],
+                                now: .now,
+                                calendar: .current)
     }
 
-    /// Whether one activity counts as done **for this day**.
-    ///
-    /// ⚠️ The `lastPlayedAt >= unlocked` half is load-bearing and easy to drop
-    /// as redundant. `practice_progress.completed` is latched for all time, so
-    /// without it a member with any history at all would have days 1–4 marked
-    /// finished the instant they enrolled and the pacing — the whole point —
-    /// would evaporate. The visible consequence is intentional: the same prompt
-    /// can appear on day 2 and day 6, and must be genuinely re-done the second
-    /// time.
+    /// Whether one activity counts as done **for this day** — see
+    /// `ProgramUnlockRule.counts`.
     func isDone(_ activity: ProgramActivity, in program: Program, day: Int) -> Bool {
-        guard let unlocked = dayUnlockedAt(program, day: day) else { return false }
-        guard let progress = PracticeProgressStore.shared.progress(kind: activity.kind,
-                                                                  contentID: activity.contentID)
-        else { return false }
-        return progress.completed && progress.lastPlayedAt >= unlocked
+        ProgramUnlockRule.counts(PracticeProgressStore.shared.progress(kind: activity.kind,
+                                                                      contentID: activity.contentID),
+                                 towardDayUnlockedAt: dayUnlockedAt(program, day: day))
     }
 
     func doneCount(of day: ProgramDay, in program: Program) -> Int {
@@ -334,6 +319,57 @@ final class ProgramStore {
                                       day: next.day,
                                       dayTitle: next.title,
                                       unlockAt: unlock)
+    }
+}
+
+// MARK: - The unlock rule
+
+/// The unlock rule itself, as pure functions of a member's enrolment and
+/// completions, the calendar and the time. `ProgramStore` supplies the live
+/// values; keeping the rule apart from them is what lets
+/// `SoulfullTests/ProgramUnlockRuleTests` pin it down without a session, a
+/// network or a clock.
+enum ProgramUnlockRule {
+
+    /// When a given day became (or becomes) available.
+    ///
+    /// Day 1 is the enrolment moment. Every later day is **the next local
+    /// midnight after the previous day was finished** — which is what "the date
+    /// has changed" means. `startOfDay` + 1 day rather than +86400 seconds, so
+    /// the clocks going forward or back doesn't shift the boundary.
+    ///
+    /// Nil means the chain is broken further back: not enrolled, or the
+    /// previous day isn't finished.
+    static func unlockedAt(day: Int, enrolledAt: Date?, completions: [Int: Date],
+                           calendar: Calendar) -> Date? {
+        guard let enrolledAt else { return nil }
+        guard day > 1 else { return enrolledAt }
+        guard let previous = completions[day - 1] else { return nil }
+        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: previous))
+    }
+
+    static func state(day: Int, enrolledAt: Date?, completions: [Int: Date],
+                      now: Date, calendar: Calendar) -> ProgramDayState {
+        if let finished = completions[day] { return .complete(finished) }
+        guard let unlock = unlockedAt(day: day, enrolledAt: enrolledAt,
+                                      completions: completions, calendar: calendar)
+        else { return .awaitingPreviousDay }
+        return now >= unlock ? .open : .opens(unlock)
+    }
+
+    /// Whether a practice's progress counts toward a day that unlocked at
+    /// `unlocked`.
+    ///
+    /// ⚠️ The `lastPlayedAt >= unlocked` half is load-bearing and easy to drop
+    /// as redundant. `practice_progress.completed` is latched for all time, so
+    /// without it a member with any history at all would have days 1–4 marked
+    /// finished the instant they enrolled and the pacing — the whole point —
+    /// would evaporate. The visible consequence is intentional: the same prompt
+    /// can appear on day 2 and day 6, and must be genuinely re-done the second
+    /// time.
+    static func counts(_ progress: PracticeProgress?, towardDayUnlockedAt unlocked: Date?) -> Bool {
+        guard let unlocked, let progress else { return false }
+        return progress.completed && progress.lastPlayedAt >= unlocked
     }
 }
 

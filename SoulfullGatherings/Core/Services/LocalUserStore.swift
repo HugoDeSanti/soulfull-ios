@@ -29,6 +29,9 @@ final class LocalUserStore {
     private(set) var scope: String = ""
 
     private let defaults: UserDefaults
+    /// Where private text lives: `<root>/<scope>/<suffix>.txt`. Application
+    /// Support in the app; a temporary directory under test.
+    private let privateRoot: URL
 
     /// Root of every namespaced key, and the prefix a purge sweeps.
     private static let root = "sg.u."
@@ -42,8 +45,11 @@ final class LocalUserStore {
     /// abandoned instead.
     private var scopeIsAnonymous: Bool
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard,
+         privateRoot: URL = URL.applicationSupportDirectory
+            .appending(path: "private", directoryHint: .isDirectory)) {
         self.defaults = defaults
+        self.privateRoot = privateRoot
         scope = defaults.string(forKey: Self.scopeKey) ?? ""
         scopeIsAnonymous = defaults.bool(forKey: Self.scopeAnonymousKey)
     }
@@ -178,9 +184,7 @@ final class LocalUserStore {
     private func privateDirectory(scope id: String? = nil) -> URL? {
         let scopeID = id ?? scope
         guard !scopeID.isEmpty else { return nil }
-        var directory = URL.applicationSupportDirectory
-            .appending(path: "private", directoryHint: .isDirectory)
-            .appending(path: scopeID, directoryHint: .isDirectory)
+        var directory = privateRoot.appending(path: scopeID, directoryHint: .isDirectory)
         do {
             try FileManager.default.createDirectory(
                 at: directory, withIntermediateDirectories: true,

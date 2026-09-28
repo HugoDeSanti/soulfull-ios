@@ -46,12 +46,23 @@ final class RetreatsViewModel {
         retreats.indices.contains(activeIndex) ? retreats[activeIndex] : nil
     }
 
+    /// The catalog read. Injectable so the failure handling below can be
+    /// tested without a network (`SoulfullTests/RetreatCatalogLoadTests`);
+    /// the app always uses the default.
+    private let fetchRetreats: @MainActor () async throws -> [Retreat]
+
+    init(fetchRetreats: @escaping @MainActor () async throws -> [Retreat] = {
+        try await SupabaseService.shared.fetchRetreats()
+    }) {
+        self.fetchRetreats = fetchRetreats
+    }
+
     func load() async {
         isLoading = true
         defer { isLoading = false }
         loadFailure = nil
         do {
-            retreats = try await SupabaseService.shared.fetchRetreats()
+            retreats = try await fetchRetreats()
             activeIndex = 0
         } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.

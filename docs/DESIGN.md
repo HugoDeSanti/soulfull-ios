@@ -90,6 +90,7 @@ only — feature code never branches on OS.
 - Build per phase: `xcodegen generate && xcodebuild … -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`.
 - `SoulfullUITests` tour test drives Welcome → Onboarding → Home → Retreats (pinch, push) →
   Practice (pinch, player) → You, attaching screenshots; extracted from the `.xcresult`
-  and reviewed visually.
+  and reviewed visually. (That tour was removed on 2026-06-15; today's tests and how to
+  run them are in `CLAUDE.md` → Testing.)
 - Commits land per phase (foundation, nav, welcome/onboarding, home, retreats, practice,
   player, details, verification fixes).

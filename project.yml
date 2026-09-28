@@ -33,15 +33,33 @@ schemes:
     build:
       targets:
         SoulfullGatherings: all
+        SoulfullTests: [test]
         SoulfullUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - SoulfullTests
         - SoulfullUITests
 
 targets:
+  # Unit tests (Swift Testing), hosted in the app so they can `@testable import`
+  # it. The host renders nothing and runs no launch work while they run — see
+  # `SoulfullGatheringsApp.isHostingUnitTests`. Testing policy: CLAUDE.md → Testing.
+  SoulfullTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - SoulfullTests
+    dependencies:
+      - target: SoulfullGatherings
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.soulfullgatherings.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+
   SoulfullUITests:
     type: bundle.ui-testing
     platform: iOS

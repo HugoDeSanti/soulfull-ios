@@ -30,7 +30,7 @@ Plus mandatory haptics on every meaningful tap, a Metal-shader effect suite (gra
 | Backend | Supabase (Postgres + Storage + Auth; anonymous guests upgradable to email/password) |
 | Payments | Stripe via Supabase Edge Functions (server-side only — no payment SDK in the app) |
 | Fonts | Geist (six weights, registered in `Info.plist`) — no serif/SF split, everything is Geist |
-| Tests | One UI-test target — `SoulfullUITests/AccountGateTests.swift` (2 tests) covering the account gate. No unit tests yet. |
+| Tests | Swift Testing unit tests (`SoulfullTests`) + XCUITest journeys (`SoulfullUITests`) — see [Tests](#tests) |
 
 ## Prerequisites
 
@@ -72,7 +72,8 @@ design-system/          # HTML/CSS mirror of the UI, synced to a Claude Design p
 supabase/               # Backend-as-code (Edge Functions + auth email templates) — NOT in the Xcode build
 ├── templates/          # Branded auth emails (confirm-signup + change-email)
 └── functions/          # create-payment-intent, stripe-webhook, delete-account (+ README)
-SoulfullUITests/        # AccountGateTests.swift — drives the account gate end to end
+SoulfullTests/          # Unit tests (Swift Testing), one folder per area
+SoulfullUITests/        # XCUITest journeys — the critical paths only
 
 SoulfullGatherings/
 ├── SoulfullGatheringsApp.swift   # @main; injects env, forces dark mode, routes soulfull:// deep links
@@ -114,17 +115,18 @@ There are rendering gotchas that have actually bitten this codebase (Metal effec
 
 ## Tests
 
-One UI-test target: `SoulfullUITests/AccountGateTests.swift`, two tests driving the account gate end to end. It is scoped `SoulfullUITests: [test]` in the scheme, so archives don't build it. No unit tests yet.
+Two targets in the `SoulfullGatherings` scheme, both scoped `[test]` so archives don't build them:
+
+- **`SoulfullTests`** — fast Swift Testing unit tests for the business rules (streaks and stats, the program unlock rule, payout media time, per-member private storage, the retreat application, error classification). No network.
+- **`SoulfullUITests`** — XCUITest journeys for the critical paths only (onboarding, the account gate, the retreat application, catalog, programs, You tab, Community). They run against the live Supabase project and need a signed-out simulator.
 
 ```bash
+xcodegen generate   # after adding a test file
 xcodebuild test -project SoulfullGatherings.xcodeproj -scheme SoulfullGatherings \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -resultBundlePath build/x.xcresult -only-testing:SoulfullUITests
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SoulfullTests
 ```
 
-Screenshots come out with `xcrun xcresulttool export attachments --path build/x.xcresult --output-path build/attach` (map names through `manifest.json`).
-
-**Reach for this whenever a control "doesn't work".** The accessibility dump (`app.debugDescription`) reports real hit frames — which is how a button that looked 38pt but hit-tested at 11pt was found, a bug invisible to inspection and to two rounds of reasoning. The `-uitest-reset` / `-uitest-onboarded` / `-tab <name>` launch hooks are what make the run deterministic.
+The UI-test command, the simulator it needs, the launch arguments and fixtures, and **the policy for which change needs which test** are in [`CLAUDE.md` → Testing](CLAUDE.md#testing) — the single source for all of it.
 
 ## v1 ships narrower than the codebase
 
