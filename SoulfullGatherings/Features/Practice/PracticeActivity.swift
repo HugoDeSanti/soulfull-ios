@@ -10,7 +10,8 @@
 //
 //    • `PlaybackReporter` for audio/video. It counts MEDIA time, not wall-clock
 //      and not the scrubber position: seeking to the end of a track banks
-//      nothing, and a paused player accrues nothing.
+//      nothing, and a paused player accrues nothing. Nor does seeking to the
+//      end finish it — that takes having heard most of it.
 //    • `.practiceActivity(_:)` for the written libraries (journal, movement,
 //      recipes), which have no transport — there, time on screen is the only
 //      honest signal available.
@@ -47,7 +48,8 @@ final class PlaybackReporter {
     init(play: PracticePlay) {
         self.play = play
         self.owner = PracticeProgressStore.shared.currentUserID
-        self.meter = MediaTimeMeter(durationSeconds: play.durationSeconds)
+        self.meter = MediaTimeMeter(durationSeconds: play.durationSeconds,
+                                    earlier: PracticeProgressStore.shared.progress(for: play))
     }
 
     /// Where this practice was left last time, if anywhere. The player seeks
@@ -71,7 +73,7 @@ final class PlaybackReporter {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                self.meter.markCompleted()
+                self.meter.markReachedEnd()
                 self.flush()
             }
         }
@@ -115,8 +117,9 @@ final class PlaybackReporter {
 }
 
 /// The arithmetic `PlaybackReporter` credits a creator by: media time actually
-/// played, from the player's periodic observations. Kept apart from AVFoundation
-/// so it can be tested (`SoulfullTests/MediaTimeMeterTests`).
+/// played, from the player's periodic observations, and whether that amounts to
+/// finishing the session. Kept apart from AVFoundation so it can be tested
+/// (`SoulfullTests/MediaTimeMeterTests`).
 struct MediaTimeMeter {
 
     /// Media-time jump beyond which a tick is treated as a seek rather than
@@ -124,14 +127,31 @@ struct MediaTimeMeter {
     /// listening.
     static let seekThreshold: Double = 2
 
+    /// How much of a session's length must actually have been played for
+    /// reaching its end to count as finishing it.
+    ///
+    /// Reaching the end used to be enough, so scrubbing a session to its last
+    /// seconds finished it — a class on the You tab, a day kept in the streak,
+    /// an activity ticked off in a digital retreat. The fifth left over is room
+    /// for skipping an intro or a closing silence, not the session.
+    static let requiredShare: Double = 0.8
+
     let durationSeconds: Int?
+    /// Media time listened to in this member's earlier, unfinished sittings of
+    /// the same session — so one heard across two days still finishes.
+    let earlierSeconds: Double
     private(set) var playedSeconds: Double = 0
     private(set) var positionSeconds: Double = 0
     private(set) var didComplete = false
     private var lastMediaTime: Double?
 
-    init(durationSeconds: Int?) {
+    /// - Parameter earlier: this member's progress on the session before this
+    ///   sitting. Unfinished, what was played counts toward finishing. Already
+    ///   finished, nothing carries over: hearing it again counts again only if
+    ///   it is actually heard again.
+    init(durationSeconds: Int?, earlier: PracticeProgress? = nil) {
         self.durationSeconds = durationSeconds
+        earlierSeconds = earlier.map { $0.completed ? 0 : Double(max(0, $0.totalSecondsPlayed)) } ?? 0
     }
 
     /// One periodic reading of the player's media time.
@@ -149,16 +169,28 @@ struct MediaTimeMeter {
         positionSeconds = time
 
         // Some encoders leave the last fraction of a second unreachable, so
-        // "finished" is a threshold rather than an equality.
+        // "the end" is a threshold rather than an equality.
         if let durationSeconds, durationSeconds > 0,
            time >= Double(durationSeconds) - Self.seekThreshold {
-            didComplete = true
+            reachedEnd(ofLength: Double(durationSeconds))
         }
     }
 
-    /// The item played through to its end.
-    mutating func markCompleted() {
-        didComplete = true
+    /// The item played through to its end — which it also does after a scrub
+    /// to its last seconds, so this finishes it only if enough was heard.
+    mutating func markReachedEnd() {
+        // Without a known length, where the end turned out to be is the length.
+        reachedEnd(ofLength: durationSeconds.map(Double.init) ?? positionSeconds)
+    }
+
+    /// Finishes the session if enough of it was actually played. Latched:
+    /// seeking back afterwards doesn't un-finish it, and falling short now
+    /// can still be made good by playing more and reaching the end again.
+    private mutating func reachedEnd(ofLength length: Double) {
+        guard length > 0 else { return }
+        if earlierSeconds + playedSeconds >= Self.requiredShare * length {
+            didComplete = true
+        }
     }
 }
 
