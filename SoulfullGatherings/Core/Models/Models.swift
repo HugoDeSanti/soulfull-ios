@@ -908,9 +908,9 @@ extension PracticePlay {
                      durationSeconds: exercise.durationSeconds)
     }
 
-    /// `Recipe.lead` is a dietary angle ("Anti-inflammatory"), not a person, so
-    /// it is deliberately NOT passed as the creator — a payout run must never
-    /// try to pay "Gut-friendly".
+    /// `Recipe.angle` is a dietary angle ("Anti-inflammatory"), not a person,
+    /// so it is deliberately NOT passed as the creator — a payout run must
+    /// never try to pay "Gut-friendly".
     static func recipe(_ recipe: Recipe) -> PracticePlay {
         PracticePlay(kind: .recipe, contentID: recipe.id, title: recipe.title,
                      durationSeconds: recipe.minutes * 60)
@@ -1039,9 +1039,18 @@ enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
     }
 }
 
-// MARK: - Journal prompts (text)
+// MARK: - Written practices (journal prompts, movement, recipes)
+//
+// Each library is a table (0021) — `journal_prompts`, `exercises`, `recipes` —
+// read through `WrittenPracticeStore`. They lived here as `.all` arrays until
+// 2026-09-29, which made every new prompt and every typo fix a release.
+//
+// The ids are a contract with the practice ledger, `practice_credits`, program
+// curricula and a member's saved reflections, none of which can follow a
+// renumbering. `.mock` on each type is a preview / DEBUG fixture only — never a
+// fallback for a library that failed to load.
 
-struct JournalPrompt: Identifiable, Hashable {
+struct JournalPrompt: Identifiable, Hashable, Codable {
     let id: Int
     /// The question itself — shown as the row title and the detail heading.
     let title: String
@@ -1056,25 +1065,25 @@ struct JournalPrompt: Identifiable, Hashable {
 }
 
 extension JournalPrompt {
-    static let all: [JournalPrompt] = [
-        .init(id: 1, title: "What is your body asking for today?", prompt: "Close your eyes for a breath and scan from head to toe. Without fixing anything, name what you notice — tension, hunger, restlessness, ease. Let the answer come from sensation rather than thought.", theme: "Embodiment", imageUrl: "retreat-images/dolomites-2027-09.jpg"),
-        .init(id: 2, title: "Name one thing you've outgrown.", prompt: "Think of a belief, a role, or a pattern that no longer fits who you're becoming. What would it feel like to set it down? Write to it as if saying goodbye.", theme: "Letting go", imageUrl: "retreat-images/sedona-2026-06.jpg"),
-        .init(id: 3, title: "Where did you feel ease this week?", prompt: "Recall a moment — however small — when your shoulders dropped and time softened. Describe it in detail. What made it possible, and how might you invite more of it?", theme: "Gratitude", imageUrl: "retreat-images/bali-2026-07.jpg"),
-        .init(id: 4, title: "What would self-compassion say right now?", prompt: "Picture the voice of someone who loves you unconditionally. Speak to yourself in their words about whatever you're carrying today. Notice how the body responds to kindness.", theme: "Self-compassion", imageUrl: "retreat-images/kyoto-2026-05.jpg"),
-        .init(id: 5, title: "What are you ready to begin?", prompt: "Not the whole journey — just the first honest step. Name it, and name the smallest action you could take in the next 24 hours.", theme: "Intention", imageUrl: "retreat-images/mallorca-2027-07.jpg"),
+    /// Preview / DEBUG fixture only. Id 3 is the prompt `-preview-instructors`
+    /// credits to its second guide.
+    static let mock: [JournalPrompt] = [
+        .init(id: 1, title: "What is your body asking for today?", prompt: "Close your eyes for a breath and scan from head to toe. Without fixing anything, name what you notice.", theme: "Embodiment", imageUrl: "retreat-images/dolomites-2027-09.jpg"),
+        .init(id: 3, title: "Where did you feel ease this week?", prompt: "Recall a moment — however small — when your shoulders dropped and time softened. Describe it in detail.", theme: "Gratitude", imageUrl: "retreat-images/bali-2026-07.jpg"),
     ]
 }
 
-// MARK: - Movement (guided exercise sequences)
-
-struct ExerciseStep: Identifiable, Hashable {
+struct ExerciseStep: Identifiable, Hashable, Codable {
+    /// Its place in the sequence, from 1. Steps are stored as an ordered list,
+    /// so the position is their only identity.
     let id: Int
     let name: String
-    /// Sets/reps or guidance, e.g. "3 sets · 12 reps" or "Hold 30 sec".
-    let detail: String
+    /// Sets/reps or guidance, e.g. "3 sets · 12 reps" or "Hold 30 sec". Nil
+    /// when the name says it all.
+    let detail: String?
 }
 
-struct Exercise: Identifiable, Hashable {
+struct Exercise: Identifiable, Hashable, Codable {
     let id: Int
     let title: String
     /// Primary focus, e.g. "Mobility", "Core".
@@ -1094,51 +1103,27 @@ struct Exercise: Identifiable, Hashable {
 }
 
 extension Exercise {
-    static let all: [Exercise] = [
+    /// Preview / DEBUG fixture only. Id 1 is the sequence `-preview-instructors`
+    /// credits to its first guide.
+    static let mock: [Exercise] = [
         .init(id: 1, title: "Morning Mobility Flow", focus: "Mobility", durationSeconds: 600, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "A gentle full-body sequence to wake the joints and spine.", steps: [
             .init(id: 1, name: "Cat–Cow", detail: "8 slow reps"),
             .init(id: 2, name: "World's Greatest Stretch", detail: "5 reps each side"),
             .init(id: 3, name: "Hip Circles", detail: "10 each direction"),
-            .init(id: 4, name: "Thoracic Rotations", detail: "8 each side"),
         ]),
-        .init(id: 2, title: "Core Foundations", focus: "Core", durationSeconds: 720, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "Build deep stability with slow, controlled holds.", steps: [
-            .init(id: 1, name: "Dead Bug", detail: "3 sets · 10 reps"),
-            .init(id: 2, name: "Forearm Plank", detail: "3 sets · 30 sec"),
-            .init(id: 3, name: "Bird Dog", detail: "3 sets · 8 each side"),
-            .init(id: 4, name: "Glute Bridge", detail: "3 sets · 12 reps"),
-        ]),
-        .init(id: 3, title: "Posture Reset", focus: "Alignment", durationSeconds: 480, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "Undo the desk slump and reopen the chest.", steps: [
-            .init(id: 1, name: "Wall Angels", detail: "2 sets · 10 reps"),
-            .init(id: 2, name: "Chin Tucks", detail: "2 sets · 12 reps"),
-            .init(id: 3, name: "Doorway Chest Stretch", detail: "Hold 30 sec · 3x"),
-        ]),
-        // Yoga lives here rather than in a category of its own: the Practice
-        // tab's three tracks are audio/video, and a sequence is step content.
-        // See docs/PLAN-digital-programs.md.
-        .init(id: 4, title: "Grounding Yoga", focus: "Yoga", durationSeconds: 900, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "A slow standing sequence that asks the feet to do the listening.", steps: [
-            .init(id: 1, name: "Mountain", detail: "10 breaths, eyes closed"),
-            .init(id: 2, name: "Forward Fold", detail: "Hold 1 min, knees soft"),
-            .init(id: 3, name: "Low Lunge", detail: "1 min each side"),
-            .init(id: 4, name: "Downward Dog", detail: "Hold 1 min"),
-            .init(id: 5, name: "Child's Pose", detail: "Rest 2 min"),
-        ]),
-        .init(id: 5, title: "Evening Yin", focus: "Yoga", durationSeconds: 1200, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Long, supported holds for the end of the day. Nothing here is earned by effort.", steps: [
+        .init(id: 5, title: "Evening Yin", focus: "Yoga", durationSeconds: 1200, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Long, supported holds for the end of the day.", steps: [
             .init(id: 1, name: "Butterfly", detail: "Hold 3 min"),
-            .init(id: 2, name: "Sphinx", detail: "Hold 2 min"),
-            .init(id: 3, name: "Reclined Twist", detail: "3 min each side"),
-            .init(id: 4, name: "Legs Up the Wall", detail: "Hold 5 min"),
-            .init(id: 5, name: "Savasana", detail: "Rest as long as you like"),
+            .init(id: 2, name: "Savasana", detail: nil),
         ]),
     ]
 }
 
-// MARK: - Food recipes
-
-struct Recipe: Identifiable, Hashable {
+struct Recipe: Identifiable, Hashable, Codable {
     let id: Int
     let title: String
-    /// Dietary angle or chef, e.g. "Anti-inflammatory".
-    let lead: String
+    /// A dietary angle, e.g. "Anti-inflammatory" — never a person. A recipe's
+    /// guide, if it has one, is credited in `practice_credits`.
+    let angle: String
     let minutes: Int
     let servings: Int
     let imageUrl: String
@@ -1151,17 +1136,34 @@ struct Recipe: Identifiable, Hashable {
 }
 
 extension Recipe {
-    static let all: [Recipe] = [
-        .init(id: 1, title: "Golden Turmeric Lentils", lead: "Anti-inflammatory", minutes: 35, servings: 4, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "A warming, grounding bowl built on turmeric, ginger, and red lentils.",
-              ingredients: ["1 cup red lentils", "1 onion, diced", "3 cloves garlic", "1 tbsp grated ginger", "2 tsp turmeric", "1 can coconut milk", "2 cups vegetable broth", "Salt & black pepper", "Fresh cilantro to finish"],
-              steps: ["Sauté onion, garlic, and ginger until soft.", "Stir in turmeric and toast for 30 seconds.", "Add lentils, coconut milk, and broth; bring to a simmer.", "Cook 20–25 minutes until lentils are tender.", "Season, then finish with fresh cilantro."]),
-        .init(id: 2, title: "Overnight Oats & Berries", lead: "Gut-friendly", minutes: 10, servings: 2, imageUrl: "retreat-images/kyoto-2026-05.jpg", blurb: "Prep tonight, wake to a fiber-rich breakfast that loves your microbiome.",
-              ingredients: ["1 cup rolled oats", "1 cup milk of choice", "1/2 cup yogurt", "1 tbsp chia seeds", "1 tbsp maple syrup", "1 cup mixed berries"],
-              steps: ["Combine oats, milk, yogurt, chia, and maple in a jar.", "Stir well and seal.", "Refrigerate overnight (at least 6 hours).", "Top with berries before serving."]),
-        .init(id: 3, title: "Miso Glazed Salmon", lead: "Omega-3 rich", minutes: 25, servings: 2, imageUrl: "retreat-images/mallorca-2027-07.jpg", blurb: "A ten-minute glaze turns salmon into something restorative and bright.",
-              ingredients: ["2 salmon fillets", "2 tbsp white miso", "1 tbsp honey", "1 tbsp rice vinegar", "1 tsp sesame oil", "Sliced scallions", "Steamed greens to serve"],
-              steps: ["Whisk miso, honey, vinegar, and sesame oil.", "Coat salmon and rest 10 minutes.", "Roast at 200°C / 400°F for 12 minutes.", "Top with scallions; serve over steamed greens."]),
+    /// Preview / DEBUG fixture only. Id 1 is the recipe `-preview-instructors`
+    /// credits to its first guide.
+    static let mock: [Recipe] = [
+        .init(id: 1, title: "Golden Turmeric Lentils", angle: "Anti-inflammatory", minutes: 35, servings: 4, imageUrl: "retreat-images/bali-2026-07.jpg", blurb: "A warming, grounding bowl built on turmeric, ginger, and red lentils.",
+              ingredients: ["1 cup red lentils", "1 onion, diced", "2 tsp turmeric", "1 can coconut milk"],
+              steps: ["Sauté the onion until soft.", "Stir in the turmeric, then the lentils and coconut milk.", "Simmer until tender."]),
     ]
+}
+
+/// The three written libraries as the app holds them: published rows only, in
+/// the team's order.
+struct WrittenLibrary: Hashable, Sendable, Codable {
+    var journals: [JournalPrompt] = []
+    var exercises: [Exercise] = []
+    var recipes: [Recipe] = []
+
+    static let empty = WrittenLibrary()
+
+    /// Preview / DEBUG fixture only.
+    static let mock = WrittenLibrary(journals: JournalPrompt.mock,
+                                     exercises: Exercise.mock,
+                                     recipes: Recipe.mock)
+
+    var isEmpty: Bool { journals.isEmpty && exercises.isEmpty && recipes.isEmpty }
+
+    func journal(id: Int) -> JournalPrompt? { journals.first { $0.id == id } }
+    func exercise(id: Int) -> Exercise? { exercises.first { $0.id == id } }
+    func recipe(id: Int) -> Recipe? { recipes.first { $0.id == id } }
 }
 
 // MARK: - Circles (live now)
@@ -1477,10 +1479,11 @@ struct InstructorSocial: Hashable, Sendable {
 }
 
 /// A written practice — a journal prompt, a movement sequence, a recipe —
-/// credited to a guide, from `practice_credits` (0020). Those libraries live
-/// in Swift, not in a table, so this is the only place their guide can be
-/// named without a release. Display only: it does not touch payouts, which
-/// the written libraries don't take part in (`creditsCreator`).
+/// credited to a guide, from `practice_credits` (0020). It predates those
+/// libraries having tables of their own (0021), which is why the credit is a
+/// row beside the practice rather than a column on it. Display only: it does
+/// not touch payouts, which the written libraries don't take part in
+/// (`creditsCreator`).
 ///
 /// Sessions are not credited here: a session row carries its own
 /// `instructor_id`, which also keeps its `lead` (the payout snapshot) in step.
@@ -1506,21 +1509,19 @@ struct InstructorLibrary: Hashable, Sendable {
     var count: Int { programs.count + sessions.count + exercises.count + recipes.count + journals.count }
 
     /// Resolves a guide's credits against the written libraries, in each
-    /// library's own order. A credit naming something this build doesn't have
-    /// is dropped — the credits are data and can run ahead of a release — and
-    /// a session credit is ignored, because sessions are credited on their row.
+    /// library's own order. A credit naming a practice the library doesn't
+    /// hold — unpublished, or never there — is dropped, and a session credit is
+    /// ignored, because sessions are credited on their row.
     init(programs: [Program], sessions: [PracticeSession], credits: [PracticeCredit],
-         journals: [JournalPrompt] = JournalPrompt.all,
-         exercises: [Exercise] = Exercise.all,
-         recipes: [Recipe] = Recipe.all) {
+         library: WrittenLibrary) {
         func ids(_ kind: PracticeContentKind) -> Set<Int> {
             Set(credits.filter { $0.kind == kind }.map(\.contentID))
         }
         let exerciseIDs = ids(.exercise), recipeIDs = ids(.recipe), journalIDs = ids(.journal)
         self.programs = programs
         self.sessions = sessions
-        self.exercises = exercises.filter { exerciseIDs.contains($0.id) }
-        self.recipes = recipes.filter { recipeIDs.contains($0.id) }
-        self.journals = journals.filter { journalIDs.contains($0.id) }
+        self.exercises = library.exercises.filter { exerciseIDs.contains($0.id) }
+        self.recipes = library.recipes.filter { recipeIDs.contains($0.id) }
+        self.journals = library.journals.filter { journalIDs.contains($0.id) }
     }
 }

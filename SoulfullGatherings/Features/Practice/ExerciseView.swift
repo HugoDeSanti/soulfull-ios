@@ -4,14 +4,14 @@
 //
 //  Movement section: guided exercise sequences. The list shows each routine;
 //  the detail screen lays out its numbered steps with sets/reps.
-//  Mock-driven until an `exercises` table is seeded.
+//  The sequences are the `exercises` table, through WrittenPracticeStore.
 //
 
 import SwiftUI
 
 struct ExerciseListView: View {
     let onOpen: (Exercise) -> Void
-    private let exercises = Exercise.all
+    private let store = WrittenPracticeStore.shared
 
     var body: some View {
         PracticeListScaffold(
@@ -20,15 +20,20 @@ struct ExerciseListView: View {
             systemImage: PracticeMenuItem.movement.systemImage,
             backdrop: PracticeMenuItem.movement.imageName
         ) {
-            VStack(spacing: 10) {
-                ForEach(exercises) { exercise in
-                    PressableCard(action: { onOpen(exercise) }) {
-                        exerciseRow(exercise)
+            if store.library.exercises.isEmpty {
+                WrittenLibraryPlaceholder(item: .movement, noun: "sequences")
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(store.library.exercises) { exercise in
+                        PressableCard(action: { onOpen(exercise) }) {
+                            exerciseRow(exercise)
+                        }
+                        .listReveal()
                     }
-                    .listReveal()
                 }
             }
         }
+        .task { await store.refresh() }
     }
 
     private func exerciseRow(_ exercise: Exercise) -> some View {
@@ -140,7 +145,7 @@ struct ExerciseDetailView: View {
 
 #Preview {
     NavigationStack {
-        ExerciseDetailView(exercise: Exercise.all[1])
+        ExerciseDetailView(exercise: Exercise.mock[0])
             .toolbar(.hidden, for: .navigationBar)
     }
     .preferredColorScheme(.dark)

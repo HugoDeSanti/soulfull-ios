@@ -4,14 +4,14 @@
 //
 //  Food Recipes section. The list shows each dish; the detail screen leads
 //  with a full-bleed photo, then meta, ingredients, and method.
-//  Mock-driven until a `recipes` table is seeded.
+//  The recipes are the `recipes` table, through WrittenPracticeStore.
 //
 
 import SwiftUI
 
 struct RecipeListView: View {
     let onOpen: (Recipe) -> Void
-    private let recipes = Recipe.all
+    private let store = WrittenPracticeStore.shared
 
     var body: some View {
         PracticeListScaffold(
@@ -20,16 +20,21 @@ struct RecipeListView: View {
             systemImage: PracticeMenuItem.recipes.systemImage,
             backdrop: PracticeMenuItem.recipes.imageName
         ) {
-            VStack(spacing: 14) {
-                ForEach(recipes) { recipe in
-                    PressableCard(action: { onOpen(recipe) }) {
-                        recipeCard(recipe)
+            if store.library.recipes.isEmpty {
+                WrittenLibraryPlaceholder(item: .recipes, noun: "recipes")
+            } else {
+                VStack(spacing: 14) {
+                    ForEach(store.library.recipes) { recipe in
+                        PressableCard(action: { onOpen(recipe) }) {
+                            recipeCard(recipe)
+                        }
+                        .accessibilityIdentifier("recipe-card")
+                        .listReveal()
                     }
-                    .accessibilityIdentifier("recipe-card")
-                    .listReveal()
                 }
             }
         }
+        .task { await store.refresh() }
     }
 
     private func recipeCard(_ recipe: Recipe) -> some View {
@@ -43,7 +48,7 @@ struct RecipeListView: View {
                     }
                     .clipped()
                 LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
-                Text("\(recipe.lead) · \(recipe.minutes) MIN".uppercased())
+                Text("\(recipe.angle) · \(recipe.minutes) MIN".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2)
                     .foregroundStyle(.white)
@@ -103,7 +108,7 @@ struct RecipeDetailView: View {
 
                     VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(recipe.lead.uppercased())
+                        Text(recipe.angle.uppercased())
                             .font(Theme.eyebrow(11))
                             .tracking(3)
                             .foregroundStyle(Theme.muted)
@@ -245,7 +250,7 @@ struct RecipeDetailView: View {
 
 #Preview {
     NavigationStack {
-        RecipeDetailView(recipe: Recipe.all[0])
+        RecipeDetailView(recipe: Recipe.mock[0])
             .toolbar(.hidden, for: .navigationBar)
     }
     .preferredColorScheme(.dark)

@@ -39,6 +39,31 @@ enum Fixtures {
                 imageUrl: "", toneTop: .clear, toneMid: .clear, toneBase: .clear)
     }
 
+    static func journal(_ id: Int) -> JournalPrompt {
+        JournalPrompt(id: id, title: "Prompt \(id)", prompt: "", theme: "", imageUrl: "")
+    }
+
+    static func exercise(_ id: Int) -> Exercise {
+        Exercise(id: id, title: "Sequence \(id)", focus: "", durationSeconds: 600, imageUrl: "",
+                 blurb: "", steps: [ExerciseStep(id: 1, name: "Step", detail: nil)])
+    }
+
+    static func recipe(_ id: Int) -> Recipe {
+        Recipe(id: id, title: "Recipe \(id)", angle: "", minutes: 10, servings: 2, imageUrl: "",
+               blurb: "", ingredients: ["One thing"], steps: ["Cook it"])
+    }
+
+    static func session(_ id: Int) -> PracticeSession {
+        PracticeSession(id: id, category: .breathwork, title: "Session \(id)", lead: "", mediaKind: .audio,
+                        storagePath: "", durationSeconds: 600, imageUrl: "", blurb: "", instructorID: nil)
+    }
+
+    /// A written library holding exactly these ids, in the order given.
+    static func library(journals: [Int] = [], exercises: [Int] = [], recipes: [Int] = []) -> WrittenLibrary {
+        WrittenLibrary(journals: journals.map(journal), exercises: exercises.map(exercise),
+                       recipes: recipes.map(recipe))
+    }
+
     static func progress(_ kind: PracticeContentKind = .journal, contentID: Int = 1,
                          completed: Bool, lastPlayedAt: Date) -> PracticeProgress {
         PracticeProgress(kind: kind, contentID: contentID, title: "A practice", creator: nil,

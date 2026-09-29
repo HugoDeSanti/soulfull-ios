@@ -361,7 +361,7 @@ struct InstructorProfileView: View {
                         librarySection("Recipes") {
                             ForEach(library.recipes) { recipe in
                                 writtenRow(.recipe(recipe), image: recipe.imageUrl,
-                                           meta: "\(recipe.lead) · \(recipe.minutes) min",
+                                           meta: "\(recipe.angle) · \(recipe.minutes) min",
                                            glyph: "fork.knife")
                             }
                         }

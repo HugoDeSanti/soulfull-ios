@@ -44,6 +44,8 @@ actor SupabaseService {
     private var instructorsCacheDate: Date?
     private var creditsCache: [PracticeCredit]?
     private var creditsCacheDate: Date?
+    private var writtenCache: WrittenLibrary?
+    private var writtenCacheDate: Date?
     private let cacheTTL: TimeInterval = 300
 
     /// Deep-link the app handles for auth email confirmations / magic links.
@@ -262,6 +264,52 @@ actor SupabaseService {
             .execute()
             .value
         return rows.map(\.session)
+    }
+
+    // MARK: - Written practices
+
+    /// Journal prompts, movement sequences and recipes (0021) — published rows
+    /// only, which RLS enforces, in the team's order. Read together because
+    /// every caller wants all three, and cached like the rest of the catalog.
+    ///
+    /// All or nothing: one failed table fails the read, so a library is never
+    /// quietly empty just because its request was the one that dropped.
+    func fetchWrittenLibrary() async throws -> WrittenLibrary {
+        if let cache = writtenCache,
+           let date = writtenCacheDate,
+           Date().timeIntervalSince(date) < cacheTTL {
+            return cache
+        }
+        async let journals: [JournalPromptRow] = client
+            .from("journal_prompts")
+            .select(JournalPromptRow.columns)
+            .order("sort_order", ascending: true, nullsFirst: false)
+            .order("id", ascending: true)
+            .limit(200)
+            .execute()
+            .value
+        async let exercises: [ExerciseRow] = client
+            .from("exercises")
+            .select(ExerciseRow.columns)
+            .order("sort_order", ascending: true, nullsFirst: false)
+            .order("id", ascending: true)
+            .limit(200)
+            .execute()
+            .value
+        async let recipes: [RecipeRow] = client
+            .from("recipes")
+            .select(RecipeRow.columns)
+            .order("sort_order", ascending: true, nullsFirst: false)
+            .order("id", ascending: true)
+            .limit(200)
+            .execute()
+            .value
+        let library = try await WrittenLibrary(journals: journals.map(\.journalPrompt),
+                                               exercises: exercises.map(\.exercise),
+                                               recipes: recipes.map(\.recipe))
+        writtenCache = library
+        writtenCacheDate = Date()
+        return library
     }
 
     // MARK: - Programs (enrolment + day completion)
@@ -706,9 +754,13 @@ actor SupabaseService {
             .execute()
             .value
         let credits = try await fetchPracticeCredits().filter { $0.instructorID == id }
+        // Throws with the rest when it's needed: a guide known only for written
+        // practices would otherwise read as having published nothing.
+        let library = credits.isEmpty ? WrittenLibrary.empty : try await fetchWrittenLibrary()
         return InstructorLibrary(programs: programRows.map(\.program),
                                  sessions: sessionRows.map(\.session),
-                                 credits: credits)
+                                 credits: credits,
+                                 library: library)
     }
 
     /// Follows a guide. Idempotent: a second follow is a duplicate key, and
@@ -1045,6 +1097,8 @@ actor SupabaseService {
         instructorsCacheDate = nil
         creditsCache = nil
         creditsCacheDate = nil
+        writtenCache = nil
+        writtenCacheDate = nil
     }
 }
 
@@ -1313,6 +1367,91 @@ private struct PracticeSessionRow: Codable {
     }
 }
 
+
+// MARK: - Written practice DTOs
+//
+// Columns are named rather than `*`, so a column added for the team's own use
+// in the dashboard can't break the decode. `image_url` is nullable in the
+// table — no photo draws `CatalogImage`'s gradient, which is what "" does.
+
+/// Read model for `journal_prompts`.
+private struct JournalPromptRow: Decodable {
+    static let columns = "id, title, prompt, theme, image_url"
+
+    let id: Int
+    let title: String
+    let prompt: String
+    let theme: String
+    let imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, prompt, theme
+        case imageUrl = "image_url"
+    }
+
+    var journalPrompt: JournalPrompt {
+        JournalPrompt(id: id, title: title, prompt: prompt, theme: theme, imageUrl: imageUrl ?? "")
+    }
+}
+
+/// Read model for `exercises`. The steps' shape is enforced by the table's
+/// check constraint (0021), so a strict decode can't meet a malformed one.
+private struct ExerciseRow: Decodable {
+    static let columns = "id, title, focus, duration_seconds, image_url, blurb, steps"
+
+    struct Step: Decodable {
+        let name: String
+        let detail: String?
+    }
+
+    let id: Int
+    let title: String
+    let focus: String
+    let durationSeconds: Int
+    let imageUrl: String?
+    let blurb: String
+    let steps: [Step]
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, focus, blurb, steps
+        case durationSeconds = "duration_seconds"
+        case imageUrl        = "image_url"
+    }
+
+    var exercise: Exercise {
+        Exercise(id: id, title: title, focus: focus, durationSeconds: durationSeconds,
+                 imageUrl: imageUrl ?? "", blurb: blurb,
+                 steps: steps.enumerated().map { index, step in
+                     ExerciseStep(id: index + 1, name: step.name,
+                                  detail: step.detail.flatMap { $0.isEmpty ? nil : $0 })
+                 })
+    }
+}
+
+/// Read model for `recipes`.
+private struct RecipeRow: Decodable {
+    static let columns = "id, title, angle, minutes, servings, image_url, blurb, ingredients, steps"
+
+    let id: Int
+    let title: String
+    let angle: String
+    let minutes: Int
+    let servings: Int
+    let imageUrl: String?
+    let blurb: String
+    let ingredients: [String]
+    let steps: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, angle, minutes, servings, blurb, ingredients, steps
+        case imageUrl = "image_url"
+    }
+
+    var recipe: Recipe {
+        Recipe(id: id, title: title, angle: angle, minutes: minutes, servings: servings,
+               imageUrl: imageUrl ?? "", blurb: blurb, ingredients: ingredients, steps: steps)
+    }
+}
 
 /// Write model for `practice_plays`. `id`, `started_at`, `created_at` and
 /// `updated_at` are all DB-managed (defaults + the integrity trigger), so they

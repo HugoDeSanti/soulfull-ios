@@ -166,9 +166,11 @@ final class ProgramStore {
 
     // MARK: - Resolving a curriculum to real content
 
-    /// Looks up every session a program references, so its days can be rendered.
-    /// Cheap to call repeatedly — only unseen ids hit the network.
+    /// Looks up everything a program references, so its days can be rendered:
+    /// the written libraries (shared, and cached) and every session. Cheap to
+    /// call repeatedly — only unseen session ids hit the network.
     func resolveContent(for program: Program) async {
+        await WrittenPracticeStore.shared.refresh()
         let ids = Set(program.authoredDays
             .flatMap(\.activities)
             .filter { $0.kind == .session }
@@ -192,32 +194,36 @@ final class ProgramStore {
         }
     }
 
-    /// A day's activities, paired with the content they point at.
-    ///
-    /// **Unresolvable activities are dropped**, not rendered as broken rows. A
-    /// curriculum is allowed to reference media before it is uploaded, and an
-    /// activity that cannot be opened cannot be completed — which, under the
-    /// unlock rule, would stall the member's program permanently. So a day
-    /// quietly shrinks to what actually exists and grows again when the media
-    /// lands.
+    /// A day's activities, paired with the content they point at — see
+    /// `ProgramDayResolution` for what is dropped and what is waited on.
+    func resolution(_ day: ProgramDay) -> ProgramDayResolution {
+        ProgramDayResolution(day, lookup: lookup)
+    }
+
     func resolved(_ day: ProgramDay, in program: Program) -> [ResolvedActivity] {
-        day.activities.compactMap { activity in
-            guard let content = content(for: activity) else { return nil }
-            return ResolvedActivity(activity: activity, content: content)
+        resolution(day).activities
+    }
+
+    private func lookup(_ activity: ProgramActivity) -> ActivityLookup {
+        let id = activity.contentID
+        switch activity.kind {
+        case .session:
+            if let session = sessionCache[id] { return .found(.session(session)) }
+            return missingSessionIDs.contains(id) ? .missing : .pending
+        case .journal:
+            return written(WrittenPracticeStore.shared.library.journal(id: id).map(ProgramActivityContent.journal))
+        case .exercise:
+            return written(WrittenPracticeStore.shared.library.exercise(id: id).map(ProgramActivityContent.exercise))
+        case .recipe:
+            return written(WrittenPracticeStore.shared.library.recipe(id: id).map(ProgramActivityContent.recipe))
         }
     }
 
-    private func content(for activity: ProgramActivity) -> ProgramActivityContent? {
-        switch activity.kind {
-        case .session:
-            return sessionCache[activity.contentID].map(ProgramActivityContent.session)
-        case .journal:
-            return JournalPrompt.all.first { $0.id == activity.contentID }.map(ProgramActivityContent.journal)
-        case .exercise:
-            return Exercise.all.first { $0.id == activity.contentID }.map(ProgramActivityContent.exercise)
-        case .recipe:
-            return Recipe.all.first { $0.id == activity.contentID }.map(ProgramActivityContent.recipe)
-        }
+    /// A written practice is missing only once this launch has read the
+    /// tables; before that it may just be newer than the remembered copy.
+    private func written(_ content: ProgramActivityContent?) -> ActivityLookup {
+        if let content { return .found(content) }
+        return WrittenPracticeStore.shared.isAuthoritative ? .missing : .pending
     }
 
     // MARK: - Writing
@@ -262,14 +268,13 @@ final class ProgramStore {
         }
         guard state(program, day: day.day).isOpen else { return nil }
 
-        let activities = resolved(day, in: program)
-        if activities.isEmpty {
+        let resolution = resolution(day)
+        guard resolution.isFinished(isDone: { isDone($0, in: program, day: day.day) }) else { return nil }
+        if resolution.activities.isEmpty {
             // A day that resolves to nothing is a broken curriculum. Completing
             // it is the lesser evil: the alternative traps the member on it
             // forever, with no action available that could ever free them.
             Log.data.error("Program \(program.id, privacy: .public) day \(day.day, privacy: .public) has no resolvable activities — completing it so the program isn't stuck")
-        } else if !activities.allSatisfy({ isDone($0.activity, in: program, day: day.day) }) {
-            return nil
         }
         return await record(day: day, in: program)
     }
@@ -370,6 +375,62 @@ enum ProgramUnlockRule {
     static func counts(_ progress: PracticeProgress?, towardDayUnlockedAt unlocked: Date?) -> Bool {
         guard let unlocked, let progress else { return false }
         return progress.completed && progress.lastPlayedAt >= unlocked
+    }
+}
+
+// MARK: - Resolving a day
+
+/// What a curriculum entry points at, as far as is known right now.
+enum ActivityLookup: Hashable {
+    case found(ProgramActivityContent)
+    /// Looked for and not there — unpublished, or never uploaded.
+    case missing
+    /// Not known yet: its library hasn't been read this launch, or the read
+    /// failed.
+    case pending
+}
+
+/// A day's activities against what can be found of them, as a pure function
+/// of a lookup — `ProgramStore` supplies the live one, and
+/// `SoulfullTests/ProgramDayResolutionTests` its own.
+///
+/// **A missing activity is dropped**, not rendered as a broken row. A
+/// curriculum may reference media before it is uploaded, and an activity that
+/// can't be opened can't be completed — which, under the unlock rule, would
+/// stall the member's program permanently. So a day quietly shrinks to what
+/// exists and grows again when the content lands.
+///
+/// ⚠️ **A pending one is not dropped from the judgement.** It is left out of
+/// what can be shown, but the day can't be finished around it: it is almost
+/// certainly there, and the completion is latched. Before the written
+/// libraries moved to tables they could never be pending, and a session
+/// whose read had failed was treated as missing — so a day could close with a
+/// practice nobody had been shown.
+struct ProgramDayResolution {
+    /// What can be shown and opened, in curriculum order.
+    let activities: [ResolvedActivity]
+    /// Every activity has an answer, found or missing.
+    let isSettled: Bool
+
+    init(_ day: ProgramDay, lookup: (ProgramActivity) -> ActivityLookup) {
+        var activities: [ResolvedActivity] = []
+        var settled = true
+        for activity in day.activities {
+            switch lookup(activity) {
+            case .found(let content): activities.append(ResolvedActivity(activity: activity, content: content))
+            case .missing:            break
+            case .pending:            settled = false
+            }
+        }
+        self.activities = activities
+        isSettled = settled
+    }
+
+    /// Whether the day is finished: settled, and everything that remains is
+    /// done. A settled day with nothing left in it counts — see
+    /// `ProgramStore.syncCompletion`.
+    func isFinished(isDone: (ProgramActivity) -> Bool) -> Bool {
+        isSettled && activities.allSatisfy { isDone($0.activity) }
     }
 }
 

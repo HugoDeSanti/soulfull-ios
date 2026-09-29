@@ -89,6 +89,73 @@ struct PracticeListScaffold<Content: View>: View {
     }
 }
 
+// MARK: - A written library with nothing to list
+
+/// What a written library's list shows in place of rows it doesn't have: a
+/// spinner while the first read is under way, why it failed — offline or our
+/// end, see `Error.isOffline` — with a retry, or an honest "nothing here yet"
+/// once the table has answered empty. Only ever before a first successful
+/// read: after one, the library is remembered and the rows show offline too.
+struct WrittenLibraryPlaceholder: View {
+    let item: PracticeMenuItem
+    /// What the list holds, in the plural: "prompts", "sequences", "recipes".
+    let noun: String
+    private let store = WrittenPracticeStore.shared
+
+    var body: some View {
+        Group {
+            switch store.status {
+            case .failed(let offline) where !store.isLoading:
+                message(offline ? "wifi.slash" : "exclamationmark.circle",
+                        title: offline ? "No internet connection" : "Couldn't load the \(noun)",
+                        detail: offline ? "You'll need to be online to load the \(noun) the first time. Reconnect and try again."
+                                        : "Something went wrong at our end. Please try again in a moment.",
+                        retry: true)
+            case .done where !store.isLoading:
+                message(item.systemImage, title: "Nothing here yet.",
+                        detail: "New \(noun) are on the way.", retry: false)
+            default:
+                ProgressView()
+                    .tint(Theme.ink)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+            }
+        }
+    }
+
+    private func message(_ systemImage: String, title: String, detail: String, retry: Bool) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 30, weight: .light))
+                .foregroundStyle(Theme.muted)
+            Text(title)
+                .font(Theme.headline(20))
+                .foregroundStyle(Theme.ink)
+            Text(detail)
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+            if retry {
+                Button {
+                    Haptics.tap()
+                    Task { await store.refresh() }
+                } label: {
+                    Text("Try again")
+                        .font(Theme.body(13, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .soulGlassCapsule()
+                }
+                .buttonStyle(.soulPressableQuiet)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+    }
+}
+
 // MARK: - Numbered step row (shared by movement sequences and recipes)
 
 struct NumberedStepRow: View {

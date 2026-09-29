@@ -116,6 +116,8 @@ final class InstructorDirectory {
 
     /// Alma: the first movement sequence and the first recipe. Mara: the
     /// gratitude prompt. Everything else has no guide, so its page has no card.
+    /// The pages themselves are the live tables; the profile's library
+    /// resolves these against `WrittenLibrary.mock`, which carries all three.
     static let fixtureCredits: [PracticeCredit] = [
         PracticeCredit(kind: .exercise, contentID: 1, instructorID: "alma-guerra"),
         PracticeCredit(kind: .recipe, contentID: 1, instructorID: "alma-guerra"),
@@ -153,10 +155,12 @@ final class InstructorDirectory {
             ]
             return InstructorLibrary(programs: Program.mock.filter { $0.instructorID == id },
                                      sessions: sessions,
-                                     credits: fixtureCredits.filter { $0.instructorID == id })
+                                     credits: fixtureCredits.filter { $0.instructorID == id },
+                                     library: .mock)
         default:
             return InstructorLibrary(programs: [], sessions: [],
-                                     credits: fixtureCredits.filter { $0.instructorID == id })
+                                     credits: fixtureCredits.filter { $0.instructorID == id },
+                                     library: .mock)
         }
     }
     #endif

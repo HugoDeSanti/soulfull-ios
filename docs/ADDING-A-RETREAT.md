@@ -189,6 +189,6 @@ Uploaded 2026-09-14 when the post-purchase screens stopped hardcoding them:
 
 - The **four element icons** are SF Symbols, so those are data — but the
   *layout* of the brochure is not. A new section type means Swift.
-- **Practice content** (journal prompts, movement sequences, recipes) is still
-  hardcoded in `Models.swift`. `practice_sessions` is a real table, but the
-  written libraries are not yet.
+- (No longer: **practice content**. Sessions were always a table, and journal
+  prompts, movement sequences and recipes became tables in 0021 — see
+  `docs/ADDING-A-WRITTEN-PRACTICE.md`.)

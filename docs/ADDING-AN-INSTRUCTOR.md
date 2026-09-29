@@ -71,9 +71,10 @@ is reached from there), and the written practices credited to them below.
 
 ### Written practices: journal prompts, movement, recipes
 
-These live in the app's code, not in a table, so they are credited in
-`practice_credits` (migration 0020) by kind and id. The ids are the ones in
-`Models.swift` (`JournalPrompt.all`, `Exercise.all`, `Recipe.all`):
+These are credited in `practice_credits` (migration 0020) by kind and id —
+the `id` of the row in `journal_prompts`, `exercises` or `recipes` (0021). The
+credit predates those tables, which is why it is a row of its own rather than
+a column on the practice:
 
 ```sql
 insert into public.practice_credits (content_kind, content_id, instructor_id)

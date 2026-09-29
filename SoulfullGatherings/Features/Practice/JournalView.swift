@@ -4,14 +4,14 @@
 //
 //  Journal Prompts section: a list of reflective prompts, each opening a
 //  detail screen with the full prompt and a (device-local) writing area.
-//  Mock-driven until a `journal_prompts` table is seeded.
+//  The prompts are the `journal_prompts` table, through WrittenPracticeStore.
 //
 
 import SwiftUI
 
 struct JournalListView: View {
     let onOpen: (JournalPrompt) -> Void
-    private let prompts = JournalPrompt.all
+    private let store = WrittenPracticeStore.shared
 
     var body: some View {
         PracticeListScaffold(
@@ -20,15 +20,20 @@ struct JournalListView: View {
             systemImage: PracticeMenuItem.journal.systemImage,
             backdrop: PracticeMenuItem.journal.imageName
         ) {
-            VStack(spacing: 10) {
-                ForEach(prompts) { prompt in
-                    PressableCard(action: { onOpen(prompt) }) {
-                        promptRow(prompt)
+            if store.library.journals.isEmpty {
+                WrittenLibraryPlaceholder(item: .journal, noun: "prompts")
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(store.library.journals) { prompt in
+                        PressableCard(action: { onOpen(prompt) }) {
+                            promptRow(prompt)
+                        }
+                        .listReveal()
                     }
-                    .listReveal()
                 }
             }
         }
+        .task { await store.refresh() }
     }
 
     private func promptRow(_ prompt: JournalPrompt) -> some View {
@@ -271,7 +276,7 @@ struct JournalDetailView: View {
 
 #Preview {
     NavigationStack {
-        JournalDetailView(prompt: JournalPrompt.all[0])
+        JournalDetailView(prompt: JournalPrompt.mock[0])
             .toolbar(.hidden, for: .navigationBar)
     }
     .preferredColorScheme(.dark)

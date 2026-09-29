@@ -28,7 +28,11 @@ struct ProgramDayView: View {
     /// celebrated exactly once rather than on every return to the screen.
     @State private var justCompleted = false
 
-    private var activities: [ResolvedActivity] { store.resolved(day, in: program) }
+    private var resolution: ProgramDayResolution { store.resolution(day) }
+    private var activities: [ResolvedActivity] { resolution.activities }
+    /// Nothing to show yet, and something still on its way — a first visit
+    /// offline, or before the libraries have been read.
+    private var isWaiting: Bool { activities.isEmpty && !resolution.isSettled }
     private var doneCount: Int { store.doneCount(of: day, in: program) }
     private var state: ProgramDayState { store.state(program, day: day.day) }
 
@@ -116,7 +120,7 @@ struct ProgramDayView: View {
                 Label("Day complete", systemImage: "checkmark.seal.fill")
                     .font(Theme.body(14, weight: .medium))
                     .foregroundStyle(Theme.accent)
-            } else {
+            } else if !isWaiting {
                 Text("\(doneCount) of \(activities.count) done")
                     .font(Theme.body(14, weight: .medium))
                     .foregroundStyle(Theme.ink)
@@ -132,6 +136,12 @@ struct ProgramDayView: View {
 
     private var activityList: some View {
         VStack(spacing: 10) {
+            if isWaiting {
+                ProgressView()
+                    .tint(Theme.ink)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 20)
+            }
             ForEach(Array(activities.enumerated()), id: \.element.id) { index, item in
                 PressableCard(action: { open(item) }) {
                     activityRow(item, index: index + 1)
@@ -312,6 +322,9 @@ struct ProgramDayView: View {
     /// until the member left and returned.
     private func settle() async {
         await store.refresh()
+        // Usually already done by the page that pushed this one; not when the
+        // libraries couldn't be read then, and this visit is the retry.
+        await store.resolveContent(for: program)
         for delay in [0.35, 1.6] {
             try? await Task.sleep(for: .seconds(delay))
             guard !Task.isCancelled else { return }
