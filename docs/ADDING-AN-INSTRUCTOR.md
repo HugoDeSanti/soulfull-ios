@@ -2,10 +2,17 @@
 
 **No app release required.** A guide is a row in `instructors`, a portrait in
 Storage, and their content pointed at them. All three are done in the Supabase
-dashboard. Needs migration `0019_instructors.sql` applied first.
+dashboard. Migration `0019_instructors.sql` is applied (2026-09-28).
 
-Until a guide has a row, nothing changes in the app: the Practice tab has no
-Guides shelf, and a digital retreat's "with Alma Guerra" stays plain text.
+With no guide rows, the app shows no Guides shelf, and a digital retreat's
+"with Alma Guerra" stays plain text.
+
+> ⚠️ **The five guides live today are placeholders**: Alma Guerra, Inés Aranda,
+> Tomás Ferrer, Noa Castell and Julián Ros. The people are invented, the bios
+> were written for them, and the faces are AI-generated. They were seeded on
+> 2026-09-28 so the feature has something to show. **Remove them, or replace
+> them with real guides, before any build goes to App Review.** See *Removing
+> the placeholder guides* at the end.
 
 ---
 
@@ -87,6 +94,21 @@ member who has turned it off is counted but never shown. The viewer is never
 one of the faces; the app adds "you" itself. Nobody can list a guide's
 followers. `instructor_social()` answers the count and at most three
 abbreviated names.
+
+## Removing the placeholder guides
+
+```sql
+-- Content pointing at them falls back to its plain `lead` text (on delete set null).
+-- Follows go with them (cascade).
+delete from public.instructors
+ where id in ('alma-guerra', 'ines-aranda', 'tomas-ferrer', 'noa-castell', 'julian-ros');
+```
+
+Then delete the five `<id>.jpg` files from the `instructor-photos` bucket in the
+dashboard. Deleting `storage.objects` rows in SQL does not delete the files.
+To keep a slot and only swap in the real person, update the row (name, title,
+bio) and upload a new photo under a new name. Finding Ground's credit then
+follows the new name automatically.
 
 ## Verify
 

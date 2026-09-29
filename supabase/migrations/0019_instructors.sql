@@ -14,10 +14,14 @@
 --   4. `instructor_social(id)` — the numbers on the page, and three faces.
 --   5. The `instructor-photos` bucket.
 --
--- NOT YET APPLIED. Apply through the Management API (see CLAUDE.md →
--- Backend) and backfill supabase_migrations.schema_migrations (0019) the same
--- day. Until it is applied the app shows no Guides shelf and plain "with …"
--- credits — every read below fails soft on the client.
+-- APPLIED 2026-09-28 through the Management API and recorded in
+-- supabase_migrations.schema_migrations (0019). Verified live: both client
+-- roles hold SELECT on every column but user_id and nothing else on the table;
+-- `select=user_id` and `select=*` answer 42501; a guest session reads the
+-- guides and the RPC and is refused a follow (42501); a confirmed test member
+-- follows (201), a second follow is 23505, unfollow 204, and the counts move;
+-- linked to a guide, that member gets following = 1, is_me = true, and is
+-- refused following themselves (42501). The test users were deleted.
 --
 -- Decisions (2026-09-28):
 --
