@@ -415,10 +415,12 @@ struct Program: Identifiable, Hashable {
     /// can, because a program someone finished is still part of their history
     /// even once it's gone from the shelf — it just can't be opened any more.
     let published: Bool
+    /// The guide's `instructors` row, when linked (0019). `lead` is its name.
+    let instructorID: String?
 
     init(id: String, title: String, lead: String, when: String? = nil, days: Int,
          imageUrl: String, blurb: String? = nil, curriculum: ProgramCurriculum? = nil,
-         published: Bool = true) {
+         published: Bool = true, instructorID: String? = nil) {
         self.id = id
         self.title = title
         self.lead = lead
@@ -428,6 +430,7 @@ struct Program: Identifiable, Hashable {
         self.blurb = blurb
         self.curriculum = curriculum
         self.published = published
+        self.instructorID = instructorID
     }
 
     /// What the catalog card and the detail header say about length.
@@ -651,7 +654,8 @@ extension Program {
                                                 .init(kind: .exercise, contentID: 3)]),
                     ],
                     closing: ProgramClosing(title: "You have come back seven times",
-                                            body: "That is the practice — not the week, but the returning."))),
+                                            body: "That is the practice — not the week, but the returning.")),
+                instructorID: "alma-guerra"),
     ]
 }
 
@@ -745,6 +749,10 @@ struct PracticeSession: Identifiable, Hashable {
     /// Asset catalog name (current) or Storage URL (future).
     let imageUrl: String
     let blurb: String
+    /// The guide's `instructors` row, when the session is linked to one (0019)
+    /// — what makes "with …" lead somewhere. `lead` is kept equal to that
+    /// guide's name server-side, so the two can't disagree.
+    var instructorID: String? = nil
 
     var durationLabel: String {
         let minutes = max(0, durationSeconds) / 60
@@ -1399,4 +1407,79 @@ struct LikeNotification: Identifiable, Hashable, Sendable {
     let readAt: Date?
 
     var isUnread: Bool { readAt == nil }
+}
+
+// MARK: - Instructors
+
+/// A guide who teaches in the app, from the `instructors` table (0019).
+///
+/// A row the team writes, the way a retreat is — not a member account. A guide
+/// who also has an account is linked to it server-side, and that link never
+/// reaches the app (see 0019).
+struct Instructor: Identifiable, Hashable, Sendable {
+    /// A slug ("alma-guerra"): what `practice_sessions.instructor_id` and
+    /// `programs.instructor_id` point at.
+    let id: String
+    let name: String
+    /// What they teach, in a few words: "Breathwork · Somatic therapy".
+    let title: String?
+    let bio: String?
+    /// `instructor-photos/<id>.jpg`, resolved by `ImageSource`; nil for the
+    /// initial on its tone.
+    let photoUrl: String?
+
+    /// "Alma" — for copy that speaks about them ("Practices with Alma").
+    var firstName: String {
+        name.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? name
+    }
+}
+
+/// The numbers on a guide's page, from `instructor_social()`.
+///
+/// `following` is the guides this guide's own member account follows —
+/// members follow guides, so that is what a guide can follow. Zero for a guide
+/// with no account linked. `faces` never includes the viewer and only ever
+/// holds members who share their practice, so it can be shorter than
+/// `followers` suggests, or empty.
+struct InstructorSocial: Hashable, Sendable {
+    var followers: Int
+    var following: Int
+    var followedByMe: Bool
+    /// The viewer IS this guide: no Follow button on your own page.
+    var isMe: Bool
+    var faces: [CommunityMember]
+
+    static let empty = InstructorSocial(followers: 0, following: 0, followedByMe: false,
+                                        isMe: false, faces: [])
+
+    /// "Followed by Alma G., Theo R. and 1,203 others".
+    ///
+    /// At most two names, "you" first when the viewer follows too — the
+    /// server leaves the viewer out of `faces`, so without it they would be
+    /// hidden in "others". Nil when nobody can be named: the count alone says
+    /// it. `others` is clamped, because the count and the faces come from one
+    /// read but an optimistic follow moves only the count.
+    func followedByLine(locale: Locale = .current) -> String? {
+        var names: [String] = followedByMe ? ["you"] : []
+        names += faces.prefix(2 - names.count).map(\.displayName)
+        guard !names.isEmpty else { return nil }
+        let others = max(0, followers - names.count)
+        let named = names.count == 1 ? names[0] : names.joined(separator: others == 0 ? " and " : ", ")
+        switch others {
+        case 0:  return "Followed by \(named)"
+        case 1:  return "Followed by \(named) and 1 other"
+        default: return "Followed by \(named) and \(others.formatted(.number.locale(locale))) others"
+        }
+    }
+}
+
+/// What a guide has published: their sessions on the Practice tab and their
+/// digital retreats. The written libraries (journal, movement, recipes) are
+/// house content with no guide, so they never appear here.
+struct InstructorLibrary: Hashable, Sendable {
+    var sessions: [PracticeSession]
+    var programs: [Program]
+
+    var isEmpty: Bool { sessions.isEmpty && programs.isEmpty }
+    var count: Int { sessions.count + programs.count }
 }

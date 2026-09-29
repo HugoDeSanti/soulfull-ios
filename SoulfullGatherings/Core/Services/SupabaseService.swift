@@ -40,6 +40,8 @@ actor SupabaseService {
     private var practiceCacheDate: [PracticeCategory: Date] = [:]
     private var availableCategoriesCache: Set<PracticeCategory>?
     private var availableCategoriesCacheDate: Date?
+    private var instructorsCache: [Instructor]?
+    private var instructorsCacheDate: Date?
     private let cacheTTL: TimeInterval = 300
 
     /// Deep-link the app handles for auth email confirmations / magic links.
@@ -616,6 +618,105 @@ actor SupabaseService {
         try? client.storage.from(bucket).getPublicURL(path: path)
     }
 
+    // MARK: - Instructors
+
+    /// Every published guide, in the team's order. Cached like the rest of the
+    /// catalog.
+    ///
+    /// The columns are named rather than `*`: `user_id` is withheld from client
+    /// roles by column grant (0019), and PostgREST answers a `*` over a column
+    /// you may not read with 42501 rather than leaving it out.
+    func fetchInstructors() async throws -> [Instructor] {
+        if let cache = instructorsCache,
+           let date = instructorsCacheDate,
+           Date().timeIntervalSince(date) < cacheTTL {
+            return cache
+        }
+        let rows: [InstructorRow] = try await client
+            .from("instructors")
+            .select(InstructorRow.columns)
+            .eq("published", value: true)
+            .order("sort_order", ascending: true, nullsFirst: false)
+            .order("name", ascending: true)
+            .limit(100)
+            .execute()
+            .value
+        let instructors = rows.map(\.instructor)
+        instructorsCache = instructors
+        instructorsCacheDate = Date()
+        return instructors
+    }
+
+    /// The numbers on a guide's page, through `instructor_social()`. Nil for a
+    /// guide who isn't published (or doesn't exist). Uncached: it moves every
+    /// time someone follows, and the caller's own follow is part of it.
+    func fetchInstructorSocial(id: String) async throws -> InstructorSocial? {
+        let rows: [InstructorSocialRow] = try await client
+            .rpc("instructor_social", params: ["p_instructor_id": id])
+            .execute()
+            .value
+        return rows.first?.social
+    }
+
+    /// What a guide has published: their Practice-tab sessions and their
+    /// published digital retreats. `program_only` media is left out — it
+    /// belongs to its program and is reached from there, the same line the
+    /// Practice tab draws. Uncached.
+    func fetchInstructorLibrary(id: String) async throws -> InstructorLibrary {
+        let sessionRows: [PracticeSessionRow] = try await client
+            .from("practice_sessions")
+            .select()
+            .eq("instructor_id", value: id)
+            .eq("program_only", value: false)
+            .order("title", ascending: true)
+            .limit(200)
+            .execute()
+            .value
+        let programRows: [ProgramRow] = try await client
+            .from("programs")
+            .select()
+            .eq("instructor_id", value: id)
+            .eq("published", value: true)
+            .order("sort_order", ascending: true, nullsFirst: false)
+            .order("title", ascending: true)
+            .limit(50)
+            .execute()
+            .value
+        return InstructorLibrary(sessions: sessionRows.map(\.session),
+                                 programs: programRows.map(\.program))
+    }
+
+    /// Follows a guide. Idempotent: a second follow is a duplicate key, and
+    /// the thing asked for is already true, so it is not an error. The server
+    /// refuses a guest, an unpublished guide, and a guide following themselves.
+    func followInstructor(id: String, userID: UUID) async throws {
+        struct Insert: Encodable {
+            let userId: UUID
+            let instructorId: String
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id", instructorId = "instructor_id"
+            }
+        }
+        do {
+            try await client
+                .from("instructor_follows")
+                .insert(Insert(userId: userID, instructorId: id))
+                .execute()
+        } catch let error as PostgrestError where error.code == "23505" {
+            return
+        }
+    }
+
+    /// Unfollows. Deleting a follow that isn't there is a no-op, not an error.
+    func unfollowInstructor(id: String, userID: UUID) async throws {
+        try await client
+            .from("instructor_follows")
+            .delete()
+            .eq("user_id", value: userID)
+            .eq("instructor_id", value: id)
+            .execute()
+    }
+
     // MARK: - Community
 
     /// The feed: finished practices, newest first, from the `community_activity`
@@ -915,6 +1016,8 @@ actor SupabaseService {
         practiceCacheDate.removeAll()
         availableCategoriesCache = nil
         availableCategoriesCacheDate = nil
+        instructorsCache = nil
+        instructorsCacheDate = nil
     }
 }
 
@@ -1104,11 +1207,14 @@ private struct ProgramRow: Codable {
     /// curriculum can't take the whole catalog down with it.
     let curriculum: AnyJSON?
     let published: Bool
+    /// Absent before 0019, so optional.
+    let instructorId: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, lead, days, blurb, curriculum, published
-        case dateRange = "date_range"
-        case imageUrl  = "image_url"
+        case dateRange    = "date_range"
+        case imageUrl     = "image_url"
+        case instructorId = "instructor_id"
     }
 
     /// The curriculum document, or `nil` if there isn't one **or it's
@@ -1138,7 +1244,7 @@ private struct ProgramRow: Codable {
     var program: Program {
         Program(id: id, title: title, lead: lead, when: dateRange, days: days,
                 imageUrl: imageUrl, blurb: blurb, curriculum: decodedCurriculum,
-                published: published)
+                published: published, instructorID: instructorId)
     }
 }
 
@@ -1152,6 +1258,8 @@ private struct PracticeSessionRow: Codable {
     let durationSeconds: Int
     let imageUrl: String
     let blurb: String?
+    /// Absent before 0019, so optional.
+    let instructorId: String?
 
     enum CodingKeys: String, CodingKey {
         case id, category, title, lead, blurb
@@ -1159,6 +1267,7 @@ private struct PracticeSessionRow: Codable {
         case storagePath     = "storage_path"
         case durationSeconds = "duration_seconds"
         case imageUrl        = "image_url"
+        case instructorId    = "instructor_id"
     }
 
     var session: PracticeSession {
@@ -1171,7 +1280,8 @@ private struct PracticeSessionRow: Codable {
             storagePath: storagePath,
             durationSeconds: durationSeconds,
             imageUrl: imageUrl,
-            blurb: blurb ?? ""
+            blurb: blurb ?? "",
+            instructorID: instructorId
         )
     }
 }
@@ -1453,5 +1563,51 @@ private struct FriendshipRow: Decodable {
         case requesterId = "requester_id"
         case addresseeId = "addressee_id"
         case createdAt   = "created_at"
+    }
+}
+
+// MARK: - Instructor DTOs
+
+/// Read model for `instructors`. Only the columns clients are granted.
+private struct InstructorRow: Decodable {
+    static let columns = "id, name, title, bio, photo_url"
+
+    let id: String
+    let name: String
+    let title: String?
+    let bio: String?
+    let photoUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, title, bio
+        case photoUrl = "photo_url"
+    }
+
+    var instructor: Instructor {
+        Instructor(id: id, name: name,
+                   title: title.flatMap { $0.isEmpty ? nil : $0 },
+                   bio: bio.flatMap { $0.isEmpty ? nil : $0 },
+                   photoUrl: photoUrl.flatMap { $0.isEmpty ? nil : $0 })
+    }
+}
+
+/// Read model for one row of `instructor_social()`.
+private struct InstructorSocialRow: Decodable {
+    let followers: Int
+    let following: Int
+    let followedByMe: Bool
+    let isMe: Bool
+    let faces: [CommunityMemberRow]
+
+    enum CodingKeys: String, CodingKey {
+        case followers, following, faces
+        case followedByMe = "followed_by_me"
+        case isMe         = "is_me"
+    }
+
+    var social: InstructorSocial {
+        InstructorSocial(followers: followers, following: following,
+                         followedByMe: followedByMe, isMe: isMe,
+                         faces: faces.map(\.member))
     }
 }

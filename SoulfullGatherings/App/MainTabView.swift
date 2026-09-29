@@ -132,6 +132,10 @@ struct MainTabView: View {
                                      if gate.require(signedIn: auth.hasAccount, action) {
                                          showAccount = true
                                      }
+                                 },
+                                 onOpenProgram: { programID in
+                                     pendingProgram = programID
+                                     tab = .programs
                                  })
                 case .community:
                     CommunityRoot(navHidden: $navHidden, openNotifications: $pendingNotifications,
@@ -266,6 +270,9 @@ private struct ProgramsRoot: View {
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
         case recipeDetail(Recipe)
+        /// A guide's profile, from a digital retreat's credit. `from` is the
+        /// back bar's label — the retreat it was opened from.
+        case instructor(String, from: String)
     }
     @Binding var navHidden: Bool
     /// A program another tab asked to open. Consumed once, then cleared.
@@ -298,7 +305,8 @@ private struct ProgramsRoot: View {
             let detail = ProgramDetailView(
                 program: program,
                 onOpenDay: { path.append(.day(program, $0.day)) },
-                requireAccount: requireAccount
+                requireAccount: requireAccount,
+                onOpenInstructor: { path.append(.instructor($0, from: program.title)) }
             )
             if zoom {
                 detail.navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
@@ -314,6 +322,11 @@ private struct ProgramsRoot: View {
         case .journalDetail(let prompt):  JournalDetailView(prompt: prompt)
         case .exerciseDetail(let exercise): ExerciseDetailView(exercise: exercise)
         case .recipeDetail(let recipe):   RecipeDetailView(recipe: recipe)
+
+        case .instructor(let id, let from):
+            InstructorProfileView(instructorID: id, backLabel: from,
+                                  onOpenProgram: { path.append(.detail($0, zoom: false)) },
+                                  requireAccount: requireAccount)
         }
     }
 
@@ -393,6 +406,8 @@ private struct PracticeRoot: View {
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
         case recipeDetail(Recipe)
+        /// A guide's profile, from the Guides shelf.
+        case instructor(String)
     }
     @Binding var navHidden: Bool
     /// A section another tab asked to open. Consumed once, then cleared.
@@ -402,12 +417,17 @@ private struct PracticeRoot: View {
     /// session, opening a prompt, a movement sequence, a recipe. The landing
     /// and every list stay open, so a guest can always see what's on offer.
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
+    /// A digital retreat in a guide's library. Programs live on their own
+    /// tab, so it is handed there rather than pushed here — one place a
+    /// digital retreat is opened from, as with Home's shelf.
+    var onOpenProgram: (String) -> Void = { _ in }
     @State private var path: [Route] = []
     @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
-            PracticeView(onSelect: open, zoomNamespace: zoomNS)
+            PracticeView(onSelect: open, zoomNamespace: zoomNS,
+                         onOpenInstructor: { path.append(.instructor($0)) })
                 .onAppear(perform: consumePending)
                 .onChange(of: pending) { consumePending() }
                 .navigationDestination(for: Route.self) { route in
@@ -478,6 +498,10 @@ private struct PracticeRoot: View {
             ExerciseDetailView(exercise: exercise)
         case .recipeDetail(let recipe):
             RecipeDetailView(recipe: recipe)
+        case .instructor(let id):
+            InstructorProfileView(instructorID: id, backLabel: "Practices",
+                                  onOpenProgram: { onOpenProgram($0.id) },
+                                  requireAccount: requireAccount)
         }
     }
 }

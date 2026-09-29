@@ -473,7 +473,7 @@ struct ProfileView: View {
                         .font(Theme.headline(17))
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.2)
-                    Text("Your finished practices appear in the Community feed as \u{201C}\(settings.userName.isEmpty ? "You" : Self.abbreviated(settings.userName)) practiced …\u{201D}. Journal prompts never do.")
+                    Text("Your finished practices appear in the Community feed as \u{201C}\(settings.userName.isEmpty ? "You" : Self.abbreviated(settings.userName)) practiced …\u{201D}, and your face among the followers of guides you follow. Journal prompts never appear.")
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.inkSoft)
                         .lineSpacing(2)
