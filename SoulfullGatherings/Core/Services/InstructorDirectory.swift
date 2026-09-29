@@ -96,9 +96,13 @@ final class InstructorDirectory {
         #endif
     }
 
-    #if DEBUG
+    /// The viewer's id on their own face in "Followed by" when there is no
+    /// session to take it from — the fixture member, in practice. Outside
+    /// `#if DEBUG` because `InstructorProfileView` reads it in every build:
+    /// inside, Release didn't compile.
     static let previewSelf = UUID(uuidString: "00000000-0000-0000-0000-00000000bbbb")!
 
+    #if DEBUG
     static let fixture: [Instructor] = [
         Instructor(id: "alma-guerra", name: "Alma Guerra", title: "Breathwork · Somatic therapy",
                    // Fixture copy: about the teaching, never a biography —
