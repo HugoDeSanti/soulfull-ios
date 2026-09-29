@@ -15,12 +15,6 @@ struct PracticeView: View {
     let onSelect: (PracticeMenuItem) -> Void
     /// Zoom-hero namespace owned by PracticeRoot.
     var zoomNamespace: Namespace.ID? = nil
-    /// A face on the Guides shelf was tapped — push that guide's profile.
-    var onOpenInstructor: (String) -> Void = { _ in }
-
-    /// Published guides. Empty (and the shelf absent) until the team has
-    /// written an `instructors` row, or while offline.
-    private let guides = InstructorDirectory.shared
 
     /// True = contact sheet (2-up covers), false = feature spread.
     @State private var sheet = false
@@ -61,11 +55,6 @@ struct PracticeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
-                if !guides.instructors.isEmpty {
-                    GuidesShelf(instructors: guides.instructors) { onOpenInstructor($0.id) }
-                        .padding(.bottom, 4)
-                        .transition(.opacity)
-                }
                 LazyVGrid(columns: columns, spacing: sheet ? 12 : 20) {
                     ForEach(Array(PracticeMenuItem.allCases.enumerated()), id: \.element) { idx, item in
                         card(item, folio: idx + 1)
@@ -81,11 +70,9 @@ struct PracticeView: View {
         .background {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.76)
         }
-        .animation(.easeOut(duration: 0.3), value: guides.instructors)
         .task {
             availability = await SupabaseService.shared.availablePracticeCategories()
         }
-        .task { await guides.refresh() }
     }
 
     // MARK: - Header

@@ -7,10 +7,12 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* Features/Instructors/InstructorProfileView.swift. Pushed from the Guides
-     shelf on the Practice landing ("‹ Practices") or from a digital retreat's
-     guide chip ("‹ Finding Ground"). Open to a guest end to end; Follow and
-     playing a session go through AccountGate.
+  /* Features/Instructors/InstructorProfileView.swift. Pushed from the "Your
+     guide" card on anything the guide made — a digital retreat, a practice's
+     page, a session's player chip — and the back bar names that page
+     ("‹ Finding Ground", "‹ Morning Mobility Flow"). Guides never appear on
+     the Practice landing. Open to a guest end to end; Follow, playing a
+     session and opening a practice go through AccountGate.
      Backdrop: the guide's own photo, blur 48 / darken .86 — only its colour
      survives, so each guide's page has its own temperature (home-bg when
      there is no photo, as here). */
@@ -83,7 +85,7 @@
     <div class="vignette vignette--deep"></div>
     <div class="top-scrim"></div>
 
-    <a class="back"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1 2 6l5 5"/></svg>Practices</a>
+    <a class="back"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1 2 6l5 5"/></svg>Finding Ground</a>
 
     <div class="head">
       <div class="portrait"><div class="av">A</div></div>
@@ -124,6 +126,17 @@
     <div class="rows">
       <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></span><div class="tx"><h4>Breath of Fire</h4><div class="m">Breathwork · 9 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
       <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Settling the Nervous System</h4><div class="m">Somatic Exercises · 13 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
+    </div>
+    <!-- Then the written practices credited to them (practice_credits), each in
+         the session row's shape with its library's glyph: Movement, Recipes,
+         Journal prompts — in that order, each absent when empty. -->
+    <p class="sub-eb on-photo">Movement</p>
+    <div class="rows">
+      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Grounding Yoga</h4><div class="m">Yoga · 15 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
+    </div>
+    <p class="sub-eb on-photo">Journal prompts</p>
+    <div class="rows">
+      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-dolomites.jpg')"></span><div class="tx"><h4>What is your body asking for today?</h4><div class="m">Embodiment</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
     </div>
   </div>
   <div class="home-indicator"></div>

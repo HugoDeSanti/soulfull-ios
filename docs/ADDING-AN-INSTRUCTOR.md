@@ -2,10 +2,13 @@
 
 **No app release required.** A guide is a row in `instructors`, a portrait in
 Storage, and their content pointed at them. All three are done in the Supabase
-dashboard. Migration `0019_instructors.sql` is applied (2026-09-28).
+dashboard. Migrations `0019_instructors.sql` and `0020_practice_credits.sql` are
+applied (2026-09-28).
 
-With no guide rows, the app shows no Guides shelf, and a digital retreat's
-"with Alma Guerra" stays plain text.
+A guide appears on the pages of what they made: a "Your guide" card on each
+digital retreat, movement sequence, recipe and journal prompt credited to them,
+and a face chip in the player for their sessions. They never appear on the
+Practice landing. Content with no guide shows no card.
 
 > ⚠️ **The five guides live today are placeholders**: Alma Guerra, Inés Aranda,
 > Tomás Ferrer, Noa Castell and Julián Ros. The people are invented, the bios
@@ -62,10 +65,26 @@ guide once in `instructors` and every credit follows. Hand-editing `lead` on a
 linked row is reverted. `practice_plays.creator` is not touched: it is the
 payout snapshot, taken at play time, and history does not move.
 
-The profile's library is their **published** digital retreats plus their
-sessions that appear on the Practice tab. `program_only` media belongs to its
-program and is reached from there. Journal prompts, movement and recipes are
-house content with no guide.
+The profile's library is their **published** digital retreats, their sessions
+that appear on the Practice tab (`program_only` media belongs to its program and
+is reached from there), and the written practices credited to them below.
+
+### Written practices: journal prompts, movement, recipes
+
+These live in the app's code, not in a table, so they are credited in
+`practice_credits` (migration 0020) by kind and id. The ids are the ones in
+`Models.swift` (`JournalPrompt.all`, `Exercise.all`, `Recipe.all`):
+
+```sql
+insert into public.practice_credits (content_kind, content_id, instructor_id)
+values ('exercise', 4, 'alma-guerra'), ('journal', 1, 'alma-guerra')
+on conflict (content_kind, content_id) do update set instructor_id = excluded.instructor_id;
+```
+
+A credit is **display only**. It puts the guide on the page and in their
+library, and it does not pay them: the written libraries record no creator in
+the payout ledger. Sessions can't be credited here; they carry their guide on
+their own row.
 
 ## 4. Optional: link their own account
 
@@ -99,7 +118,7 @@ abbreviated names.
 
 ```sql
 -- Content pointing at them falls back to its plain `lead` text (on delete set null).
--- Follows go with them (cascade).
+-- Follows and practice credits go with them (cascade).
 delete from public.instructors
  where id in ('alma-guerra', 'ines-aranda', 'tomas-ferrer', 'noa-castell', 'julian-ros');
 ```
@@ -113,7 +132,7 @@ follows the new name automatically.
 ## Verify
 
 After inserting, pull to refresh isn't needed: the catalog cache is 5 minutes.
-Relaunch the app and check the Guides shelf on the Practice tab, the profile,
-and the "with …" chip on the guide's digital retreat. The SQL checks for
+Relaunch the app and open something the guide made: its page should show the
+"Your guide" card, and the card should open their profile. The SQL checks for
 permissions (a guest can't follow, `user_id` is unreadable) are at the bottom
 of `0019_instructors.sql`.

@@ -2,18 +2,21 @@
 //  InstructorProfileTests.swift
 //  SoulfullUITests
 //
-//  A guide's profile, reached the two ways the app offers: the Guides shelf on
-//  the Practice tab, and a digital retreat's "with …" credit. The numbers and
-//  the "Followed by" line read right, Follow moves them both and can be taken
-//  back, the library opens where it should, and a guest reaching for Follow is
-//  asked to sign in rather than shown an error.
+//  Guides are met on the pages of what they made, never on the Practice
+//  landing. A movement sequence, a recipe, a prompt and a digital retreat each
+//  carry a "Your guide" card when their content names a guide — and nothing
+//  when it doesn't. The card opens the guide's profile, whose numbers and
+//  "Followed by" line read right, whose Follow moves them both and can be
+//  taken back, and whose library opens where it should. A guest reaching for
+//  Follow is asked to sign in rather than shown an error.
 //
 //  Everything runs against `-preview-instructors` (InstructorDirectory's
-//  fixture): no guide exists in the live database until the team writes one,
-//  and the follow count must be deterministic to be asserted. Alma Guerra has
-//  212 followers, follows 12 guides, three faces, a bio and a library of one
-//  digital retreat and three sessions; Mara Solé has 75,712 followers and is
-//  already followed; Rodrigo Peán has nothing at all.
+//  fixture), browsed as a member unless `-preview-guest` is passed: the live
+//  guides are placeholders that will be replaced, and the counts must be
+//  deterministic to be asserted. Alma Guerra has 212 followers, follows 12,
+//  three faces, a bio, and a library of Finding Ground, three sessions, the
+//  first movement sequence and the first recipe; Mara Solé has 75,712
+//  followers, is already followed, and is credited with the gratitude prompt.
 //
 
 import XCTest
@@ -47,13 +50,29 @@ final class InstructorProfileTests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: id)
     }
 
-    /// Opens a guide from the Practice tab's shelf, by name.
-    private func openGuide(_ app: XCUIApplication, _ name: String) {
-        let card = all(app, "guide-card").matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 15), "No '\(name)' on the Guides shelf")
+    /// From the Practice landing: a section card, then the row titled `title`.
+    private func openPractice(_ app: XCUIApplication, section: String, title: String) {
+        let card = app.buttons[section]
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No '\(section)' on the Practice landing")
+        card.tap()
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "No '\(title)' in \(section)")
+        row.tap()
+    }
+
+    /// The page's "Your guide" card, which must name `name`.
+    private func guideCard(_ app: XCUIApplication, naming name: String) -> XCUIElement {
+        let card = element(app, "guide-card")
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "This page should name its guide")
+        XCTAssertTrue(card.label.hasPrefix("Your guide, \(name)"), "got '\(card.label)'")
+        return card
+    }
+
+    /// Opens a profile from a guide card and checks whose it is.
+    private func openProfile(_ app: XCUIApplication, from card: XCUIElement, _ name: String) {
         card.tap()
         let title = element(app, "instructor-name")
-        XCTAssertTrue(title.waitForExistence(timeout: 10), "The profile never opened")
+        XCTAssertTrue(title.waitForExistence(timeout: 10), "The guide card never opened the profile")
         XCTAssertEqual(title.label, name)
     }
 
@@ -66,53 +85,80 @@ final class InstructorProfileTests: XCTestCase {
         return element.label == expected
     }
 
-    func testTheGuidesShelfOpensAProfileWithItsNumbersBioAndLibrary() {
+    /// Opens a digital retreat's page from the fixture catalog.
+    private func openProgram(_ app: XCUIApplication) {
+        let card = app.buttons.matching(identifier: "program-card").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 15), "The fixture catalog never appeared")
+        card.tap()
+    }
+
+    func testAPracticePageNamesItsGuideAndTheLandingNamesNone() {
         let app = launch(tab: "practice", ["-preview-programs"])
 
-        XCTAssertTrue(element(app, "guide-card").waitForExistence(timeout: 15), "The Guides shelf never appeared")
-        XCTAssertEqual(all(app, "guide-card").count, 3, "The fixture has three guides")
-        shot(app, "01-practice-guides-shelf")
+        XCTAssertTrue(app.buttons["Movement"].waitForExistence(timeout: 20))
+        XCTAssertFalse(element(app, "guide-card").exists, "Guides are met on their practices, not on the landing")
+        XCTAssertFalse(app.staticTexts["THE GUIDES"].exists)
+        shot(app, "01-landing-without-guides")
 
-        openGuide(app, "Alma Guerra")
-        let followers = element(app, "instructor-followers")
-        XCTAssertTrue(waitForLabel(followers, "212 followers"), "got '\(followers.label)'")
+        // A sequence nobody is credited with has no card at all.
+        openPractice(app, section: "Movement", title: "Core Foundations")
+        XCTAssertTrue(app.staticTexts["THE SEQUENCE"].waitForExistence(timeout: 10))
+        XCTAssertFalse(element(app, "guide-card").exists, "No guide credited, so no card")
+        element(app, "back-bar").tap()
+
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Morning Mobility Flow")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        let card = guideCard(app, naming: "Alma Guerra")
+        shot(app, "02-movement-page-with-guide")
+
+        openProfile(app, from: card, "Alma Guerra")
+        XCTAssertTrue(all(app, "back-bar").matching(NSPredicate(format: "label CONTAINS %@", "Morning Mobility Flow")).firstMatch.exists,
+                      "Back names the practice it came from")
+        XCTAssertTrue(waitForLabel(element(app, "instructor-followers"), "212 followers"))
         XCTAssertEqual(element(app, "instructor-following").label, "Following 12")
-        XCTAssertEqual(element(app, "instructor-followed-by").label,
-                       "Followed by Theo R., Nia K. and 210 others",
+        XCTAssertEqual(element(app, "instructor-followed-by").label, "Followed by Theo R., Nia K. and 210 others",
                        "Two names, then the rest counted")
         XCTAssertEqual(element(app, "instructor-follow").label, "Follow")
-        XCTAssertTrue(element(app, "instructor-bio").exists, "Alma has a bio")
-        shot(app, "02-profile-top")
+        XCTAssertTrue(element(app, "instructor-bio").exists)
+        shot(app, "03-profile")
 
         let program = element(app, "instructor-library-program")
         XCTAssertTrue(program.waitForExistence(timeout: 10), "The library never loaded")
         XCTAssertEqual(all(app, "instructor-library-program").count, 1, "One digital retreat")
         XCTAssertEqual(all(app, "instructor-library-session").count, 3, "Three sessions")
+        XCTAssertEqual(all(app, "instructor-library-practice").count, 2, "One movement sequence and one recipe")
         app.swipeUp()
-        shot(app, "03-profile-library")
+        app.swipeUp()
+        shot(app, "04-profile-library")
 
-        // A digital retreat in the library opens on its own tab.
+        // A digital retreat in the library opens on its own tab — whose page
+        // names the same guide.
         program.tap()
-        XCTAssertTrue(element(app, "program-guide").waitForExistence(timeout: 15),
-                      "The digital retreat should open on the Digital Retreats tab, credited to its guide")
-        shot(app, "04-handed-to-digital-retreats")
+        _ = guideCard(app, naming: "Alma Guerra")
+        shot(app, "05-handed-to-digital-retreats")
     }
 
     func testFollowingMovesTheCountAndPutsYouFirst() {
-        let app = launch(tab: "practice")
-        openGuide(app, "Alma Guerra")
+        let app = launch(tab: "programs", ["-preview-programs"])
+        openProgram(app)
+        let card = guideCard(app, naming: "Alma Guerra")
+        shot(app, "06-digital-retreat-with-guide")
+        openProfile(app, from: card, "Alma Guerra")
 
         let follow = element(app, "instructor-follow")
         let followers = element(app, "instructor-followers")
         let followedBy = element(app, "instructor-followed-by")
         XCTAssertTrue(waitForLabel(followers, "212 followers"))
+        XCTAssertTrue(all(app, "back-bar").matching(NSPredicate(format: "label CONTAINS %@", "Finding Ground")).firstMatch.exists,
+                      "Back names the digital retreat it came from")
 
         follow.tap()
         XCTAssertTrue(waitForLabel(follow, "Following"), "A tap follows, got '\(follow.label)'")
         XCTAssertTrue(waitForLabel(followers, "213 followers"), "…and the count moves with it, got '\(followers.label)'")
         XCTAssertTrue(waitForLabel(followedBy, "Followed by you, Theo R. and 211 others"),
                       "You lead the line once you follow, got '\(followedBy.label)'")
-        shot(app, "05-following")
+        shot(app, "07-following")
 
         follow.tap()
         XCTAssertTrue(waitForLabel(follow, "Follow"), "A second tap unfollows")
@@ -120,54 +166,35 @@ final class InstructorProfileTests: XCTestCase {
         XCTAssertTrue(waitForLabel(followedBy, "Followed by Theo R., Nia K. and 210 others"))
     }
 
-    func testALargeCountIsCompactedAndAnEmptyProfileSaysSo() {
-        let app = launch(tab: "practice")
+    func testRecipesAndPromptsNameTheirGuides() {
+        let recipeApp = launch(tab: "practice")
+        openPractice(recipeApp, section: "Food Recipes", title: "Golden Turmeric Lentils")
+        _ = guideCard(recipeApp, naming: "Alma Guerra")
+        shot(recipeApp, "08-recipe-with-guide")
+        recipeApp.terminate()
 
-        openGuide(app, "Mara Solé")
+        let app = launch(tab: "practice")
+        openPractice(app, section: "Journal Prompts", title: "Where did you feel ease this week?")
+        let card = guideCard(app, naming: "Mara Solé")
+        app.swipeUp()
+        shot(app, "09-prompt-with-guide")
+        openProfile(app, from: card, "Mara Solé")
+
         let followers = element(app, "instructor-followers")
         XCTAssertTrue(waitForLabel(followers, "75,712 followers"), "got '\(followers.label)'")
         XCTAssertEqual(followers.value as? String, "75.7k", "Drawn compact, rounded down")
         XCTAssertTrue(waitForLabel(element(app, "instructor-follow"), "Following"), "Mara is already followed")
         XCTAssertEqual(element(app, "instructor-followed-by").label, "Followed by you, Theo R. and 75,710 others")
-        shot(app, "06-large-count")
-
-        element(app, "back-bar").tap()
-        openGuide(app, "Rodrigo Peán")
-        XCTAssertTrue(waitForLabel(element(app, "instructor-followers"), "0 followers"))
-        XCTAssertEqual(element(app, "instructor-following").label, "Following 0")
-        XCTAssertFalse(element(app, "instructor-followed-by").exists, "Nobody to name, so no line")
-        XCTAssertFalse(element(app, "instructor-bio").exists, "No bio, so no About")
-        XCTAssertTrue(element(app, "instructor-library-empty").waitForExistence(timeout: 10),
-                      "An empty library says so rather than showing nothing")
-        shot(app, "07-empty-profile")
-    }
-
-    func testADigitalRetreatsCreditOpensItsGuide() {
-        let app = launch(tab: "programs", ["-preview-programs"])
-
-        let card = app.buttons.matching(identifier: "program-card").firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 15), "The fixture catalog never appeared")
-        card.tap()
-
-        let credit = element(app, "program-guide")
-        XCTAssertTrue(credit.waitForExistence(timeout: 10),
-                      "A retreat linked to a published guide should credit them as a link")
-        XCTAssertEqual(credit.label, "with Alma Guerra")
-        shot(app, "08-program-credit")
-        credit.tap()
-
-        let title = element(app, "instructor-name")
-        XCTAssertTrue(title.waitForExistence(timeout: 10), "The credit never opened the profile")
-        XCTAssertEqual(title.label, "Alma Guerra")
-        let back = all(app, "back-bar").matching(NSPredicate(format: "label CONTAINS %@", "Finding Ground")).firstMatch
-        XCTAssertTrue(back.exists, "Back names the retreat it came from")
-        shot(app, "09-profile-from-credit")
+        XCTAssertTrue(element(app, "instructor-library-practice").waitForExistence(timeout: 10))
+        XCTAssertEqual(all(app, "instructor-library-practice").count, 1, "The prompt she is credited with")
+        shot(app, "10-large-count")
     }
 
     /// Reading a profile is browsing; following is personal.
     func testAGuestReachingForFollowIsAskedToSignIn() {
-        let app = launch(tab: "practice", ["-preview-guest"])
-        openGuide(app, "Alma Guerra")
+        let app = launch(tab: "programs", ["-preview-programs", "-preview-guest"])
+        openProgram(app)
+        openProfile(app, from: guideCard(app, naming: "Alma Guerra"), "Alma Guerra")
 
         let follow = element(app, "instructor-follow")
         XCTAssertTrue(follow.waitForExistence(timeout: 10))
@@ -176,7 +203,7 @@ final class InstructorProfileTests: XCTestCase {
         let close = app.buttons["account-close"]
         XCTAssertTrue(close.waitForExistence(timeout: 10),
                       "Following as a guest must raise the account sheet — the server refuses a guest anyway")
-        shot(app, "10-account-sheet-on-follow")
+        shot(app, "11-account-sheet-on-follow")
         close.tap()
 
         XCTAssertTrue(follow.waitForExistence(timeout: 10))

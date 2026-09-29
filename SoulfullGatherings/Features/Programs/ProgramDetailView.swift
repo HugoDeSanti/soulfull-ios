@@ -17,8 +17,6 @@ struct ProgramDetailView: View {
     /// Injected by `ProgramsRoot` so this view stays unaware of auth. Defaults
     /// to running straight through, which keeps previews working.
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
-    /// The guide's credit was tapped. Nil leaves the credit a plain line.
-    var onOpenInstructor: ((String) -> Void)? = nil
 
     private let store = ProgramStore.shared
     @State private var isJoining = false
@@ -56,6 +54,8 @@ struct ProgramDetailView: View {
                             .foregroundStyle(Theme.honey)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+
+                    GuideCard(instructorID: program.instructorID, from: program.title)
 
                     if days.isEmpty {
                         notReadyNote
@@ -113,39 +113,32 @@ struct ProgramDetailView: View {
             )
 
             VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(program.metaLine.uppercased())
-                        .font(Theme.eyebrow(11))
-                        .tracking(3)
-                        .foregroundStyle(Theme.inkSoft)
-                    Text(program.title)
-                        .font(Theme.headline(38))
-                        .foregroundStyle(Theme.ink)
-                        .kerning(-0.4)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .onPhoto()
-                // Outside the `.onPhoto()` blocks: when the guide is linked it
-                // is a glass capsule, and a shadow pass over glass flattens it.
-                // The plain fallback carries its own halo.
-                GuideCredit(lead: program.lead, instructorID: program.instructorID,
-                            onOpen: onOpenInstructor)
-                VStack(alignment: .leading, spacing: 8) {
-                    PresenceLine(programID: program.id, faceSize: 22)
-                        .padding(.top, 4)
-                    if enrolled && !days.isEmpty {
-                        HStack(spacing: 10) {
-                            Text("\(store.completedDayCount(program.id)) OF \(days.count) DAYS")
-                                .font(Theme.eyebrow(10))
-                                .tracking(2)
-                                .foregroundStyle(Theme.honey)
-                            ProgressRule(fraction: store.fractionComplete(program), width: 90)
-                        }
-                        .padding(.top, 4)
+                Text(program.metaLine.uppercased())
+                    .font(Theme.eyebrow(11))
+                    .tracking(3)
+                    .foregroundStyle(Theme.inkSoft)
+                Text(program.title)
+                    .font(Theme.headline(38))
+                    .foregroundStyle(Theme.ink)
+                    .kerning(-0.4)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("with \(program.lead)")
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                PresenceLine(programID: program.id, faceSize: 22)
+                    .padding(.top, 4)
+                if enrolled && !days.isEmpty {
+                    HStack(spacing: 10) {
+                        Text("\(store.completedDayCount(program.id)) OF \(days.count) DAYS")
+                            .font(Theme.eyebrow(10))
+                            .tracking(2)
+                            .foregroundStyle(Theme.honey)
+                        ProgressRule(fraction: store.fractionComplete(program), width: 90)
                     }
+                    .padding(.top, 4)
                 }
-                .onPhoto()
             }
+            .onPhoto()
             .padding(20)
         }
     }

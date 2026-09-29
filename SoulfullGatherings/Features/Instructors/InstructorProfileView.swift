@@ -2,9 +2,10 @@
 //  InstructorProfileView.swift
 //  Soulfull Gatherings
 //
-//  A guide's page. Their portrait breathing over their own photograph, blurred
-//  to a colour field; the two numbers — followers, following — with the faces
-//  of a few people who follow them; Follow; the bio; and everything they have
+//  A guide's page, opened from the "Your guide" card on anything they made.
+//  Their portrait breathing over their own photograph, blurred to a colour
+//  field; the two numbers — followers, following — with the faces of a few
+//  people who follow them; Follow; the bio; and everything they have
 //  published, which opens exactly where it would from anywhere else.
 //
 //  Open to a guest end to end. Following and playing are the two things on
@@ -18,6 +19,9 @@ struct InstructorProfileView: View {
     /// A digital retreat in the library was tapped. The host decides whether
     /// that is a push (Digital Retreats tab) or a hand-off (anywhere else).
     var onOpenProgram: (Program) -> Void
+    /// A written practice in the library was tapped. The host pushes its page
+    /// — through its own account gate, as it does from the Practice tab.
+    var onOpenPractice: (ProgramActivityContent) -> Void
     /// Injected so this view stays unaware of auth; the default runs straight
     /// through, which keeps previews working.
     var requireAccount: (@escaping () -> Void) -> Void
@@ -32,9 +36,11 @@ struct InstructorProfileView: View {
     init(instructorID: String,
          backLabel: String = "Practices",
          onOpenProgram: @escaping (Program) -> Void = { _ in },
+         onOpenPractice: @escaping (ProgramActivityContent) -> Void = { _ in },
          requireAccount: @escaping (@escaping () -> Void) -> Void = { $0() }) {
         self.backLabel = backLabel
         self.onOpenProgram = onOpenProgram
+        self.onOpenPractice = onOpenPractice
         self.requireAccount = requireAccount
         _vm = State(initialValue: InstructorProfileViewModel(
             instructorID: instructorID,
@@ -342,6 +348,32 @@ struct InstructorProfileView: View {
                             }
                         }
                     }
+                    if !library.exercises.isEmpty {
+                        librarySection("Movement") {
+                            ForEach(library.exercises) { exercise in
+                                writtenRow(.exercise(exercise), image: exercise.imageUrl,
+                                           meta: "\(exercise.focus) · \(exercise.durationLabel)",
+                                           glyph: "figure.strengthtraining.functional")
+                            }
+                        }
+                    }
+                    if !library.recipes.isEmpty {
+                        librarySection("Recipes") {
+                            ForEach(library.recipes) { recipe in
+                                writtenRow(.recipe(recipe), image: recipe.imageUrl,
+                                           meta: "\(recipe.lead) · \(recipe.minutes) min",
+                                           glyph: "fork.knife")
+                            }
+                        }
+                    }
+                    if !library.journals.isEmpty {
+                        librarySection("Journal prompts") {
+                            ForEach(library.journals) { prompt in
+                                writtenRow(.journal(prompt), image: prompt.imageUrl,
+                                           meta: prompt.theme, glyph: "pencil.and.scribble")
+                            }
+                        }
+                    }
                 }
             } else if let failure = vm.libraryFailure {
                 failureState(failure) { Task { await vm.loadLibrary() } }
@@ -467,6 +499,52 @@ struct InstructorProfileView: View {
         .soulGlassCard(radius: 18)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    /// A movement sequence, recipe or prompt: the session row's shape, with
+    /// the library's glyph where a session shows its media kind.
+    private func writtenRow(_ content: ProgramActivityContent, image: String,
+                            meta: String, glyph: String) -> some View {
+        PressableCard(action: { onOpenPractice(content) }) {
+            HStack(spacing: 14) {
+                ZStack {
+                    CatalogImage(image) { $0.resizable().scaledToFill() }
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    Image(systemName: glyph)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.5), radius: 4)
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                )
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(content.title)
+                        .font(Theme.headline(16))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.2)
+                        .lineLimit(2)
+                    Text(meta.uppercased())
+                        .font(Theme.eyebrow(10))
+                        .tracking(1)
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity)
+            .soulGlassCard(radius: 18)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("instructor-library-practice")
+        .listReveal()
     }
 
     private func emptyLibrary(_ instructor: Instructor) -> some View {

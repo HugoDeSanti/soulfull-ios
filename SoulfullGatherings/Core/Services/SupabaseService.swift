@@ -42,6 +42,8 @@ actor SupabaseService {
     private var availableCategoriesCacheDate: Date?
     private var instructorsCache: [Instructor]?
     private var instructorsCacheDate: Date?
+    private var creditsCache: [PracticeCredit]?
+    private var creditsCacheDate: Date?
     private let cacheTTL: TimeInterval = 300
 
     /// Deep-link the app handles for auth email confirmations / magic links.
@@ -647,6 +649,26 @@ actor SupabaseService {
         return instructors
     }
 
+    /// Which guide each written practice is credited to (0020). Catalog data,
+    /// cached like the rest of it; a few dozen rows at most.
+    func fetchPracticeCredits() async throws -> [PracticeCredit] {
+        if let cache = creditsCache,
+           let date = creditsCacheDate,
+           Date().timeIntervalSince(date) < cacheTTL {
+            return cache
+        }
+        let rows: [PracticeCreditRow] = try await client
+            .from("practice_credits")
+            .select()
+            .limit(500)
+            .execute()
+            .value
+        let credits = rows.compactMap(\.credit)
+        creditsCache = credits
+        creditsCacheDate = Date()
+        return credits
+    }
+
     /// The numbers on a guide's page, through `instructor_social()`. Nil for a
     /// guide who isn't published (or doesn't exist). Uncached: it moves every
     /// time someone follows, and the caller's own follow is part of it.
@@ -658,10 +680,11 @@ actor SupabaseService {
         return rows.first?.social
     }
 
-    /// What a guide has published: their Practice-tab sessions and their
-    /// published digital retreats. `program_only` media is left out — it
-    /// belongs to its program and is reached from there, the same line the
-    /// Practice tab draws. Uncached.
+    /// What a guide has published: their published digital retreats, their
+    /// Practice-tab sessions, and the written practices credited to them.
+    /// `program_only` media is left out — it belongs to its program and is
+    /// reached from there, the same line the Practice tab draws. Uncached,
+    /// except for the credits, which are catalog.
     func fetchInstructorLibrary(id: String) async throws -> InstructorLibrary {
         let sessionRows: [PracticeSessionRow] = try await client
             .from("practice_sessions")
@@ -682,8 +705,10 @@ actor SupabaseService {
             .limit(50)
             .execute()
             .value
-        return InstructorLibrary(sessions: sessionRows.map(\.session),
-                                 programs: programRows.map(\.program))
+        let credits = try await fetchPracticeCredits().filter { $0.instructorID == id }
+        return InstructorLibrary(programs: programRows.map(\.program),
+                                 sessions: sessionRows.map(\.session),
+                                 credits: credits)
     }
 
     /// Follows a guide. Idempotent: a second follow is a duplicate key, and
@@ -1018,6 +1043,8 @@ actor SupabaseService {
         availableCategoriesCacheDate = nil
         instructorsCache = nil
         instructorsCacheDate = nil
+        creditsCache = nil
+        creditsCacheDate = nil
     }
 }
 
@@ -1609,5 +1636,25 @@ private struct InstructorSocialRow: Decodable {
         InstructorSocial(followers: followers, following: following,
                          followedByMe: followedByMe, isMe: isMe,
                          faces: faces.map(\.member))
+    }
+}
+
+/// Read model for `practice_credits`.
+private struct PracticeCreditRow: Decodable {
+    let contentKind: String
+    let contentId: Int
+    let instructorId: String
+
+    enum CodingKeys: String, CodingKey {
+        case contentKind  = "content_kind"
+        case contentId    = "content_id"
+        case instructorId = "instructor_id"
+    }
+
+    /// Nil for a kind this build doesn't know: better no credit than the
+    /// wrong page's.
+    var credit: PracticeCredit? {
+        guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
+        return PracticeCredit(kind: kind, contentID: contentId, instructorID: instructorId)
     }
 }

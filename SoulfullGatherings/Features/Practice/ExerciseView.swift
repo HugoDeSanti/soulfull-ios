@@ -106,6 +106,9 @@ struct ExerciseDetailView: View {
                 // Header block over the (blurred) photo backdrop.
                 .onPhoto()
 
+                // Glass, so outside the header's halo.
+                GuideCard(kind: .exercise, contentID: exercise.id, from: exercise.title)
+
                 Text("THE SEQUENCE")
                     .font(Theme.eyebrow(11))
                     .tracking(3)

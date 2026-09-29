@@ -397,3 +397,31 @@
 .presence .faces i:nth-child(1) { background: linear-gradient(135deg, #4a5c6e, #2b3a4a); z-index: 3; }
 .presence .faces i:nth-child(2) { background: linear-gradient(135deg, #806b4f, #544530); z-index: 2; }
 .presence .faces i:nth-child(3) { background: linear-gradient(135deg, #4f5c29, #333d17); z-index: 1; }
+
+/* ---- Your guide — Features/Instructors/GuideCard.swift ------------------
+   On the page of anything a guide made, when its content names one: a digital
+   retreat and a session by their row's instructor_id, a journal prompt /
+   movement sequence / recipe by practice_credits. Never on the Practice
+   landing. 50pt face in a 1px honey ring 3pt out, YOUR GUIDE eyebrow, name
+   (headline 19), what they teach (body 12, muted), chevron. Glass — so never
+   inside a text halo. Absent when nothing names a guide. Tap → the guide's
+   profile (instructor-profile), whose back bar names this page. */
+.guide-card { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; }
+.guide-card .ring { flex: none; padding: 3px; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--honey) 40%, transparent); }
+.guide-card .av { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 21px; font-weight: 500; color: var(--ink); border: 1px solid var(--glass-border-high);
+  background-image: linear-gradient(135deg, #4f5c29, #333d17); }
+.guide-card .tx { flex: 1; min-width: 0; }
+.guide-card .gc-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+.guide-card .gc-nm { font-size: 19px; letter-spacing: -0.2px; color: var(--ink); margin: 3px 0 0; }
+.guide-card .gc-ti { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
+.guide-card > svg { flex: none; color: var(--ink-soft); }
+/* The player's compact form — GuideCredit: a 24pt face, "with …" and a
+   chevron on a glass capsule. Plain "with …" text when the media has no guide. */
+.guide-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px 4px 4px;
+  border-radius: 999px; font-size: 13px; color: var(--ink); }
+.guide-chip .av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 500; border: 1px solid var(--glass-border-high);
+  background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+.guide-chip svg { color: var(--ink-soft); }

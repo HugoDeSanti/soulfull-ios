@@ -2,13 +2,12 @@
 //  InstructorDirectory.swift
 //  Soulfull Gatherings
 //
-//  Every published guide, read once and shared: the Practice tab's Guides
-//  shelf draws from it, and a digital retreat's "with …" credit looks its
-//  guide up here to show a face and open the profile.
+//  Every published guide, and which guide each written practice is credited
+//  to — read once and shared. A practice's or a digital retreat's page looks
+//  its guide up here to show the "Your guide" card and open the profile.
 //
-//  Fails soft and silently, like presence. Before migration 0019 is applied —
-//  or offline — there is simply no shelf, and every credit stays the plain
-//  "with Alma Guerra" it has always been. Nothing else on a screen waits for it.
+//  Fails soft and silently, like presence. Offline, or for content with no
+//  guide, the card simply isn't there. Nothing else on a page waits for it.
 //
 
 import SwiftUI
@@ -20,11 +19,18 @@ final class InstructorDirectory {
 
     /// Published guides, in the team's order.
     private(set) var instructors: [Instructor] = []
+    /// Written practices' guides, keyed "exercise-4" (`PracticeCredit.key`).
+    private(set) var credits: [String: String] = [:]
     private var inFlight: Task<Void, Never>?
 
     func instructor(id: String?) -> Instructor? {
         guard let id else { return nil }
         return instructors.first { $0.id == id }
+    }
+
+    /// The guide a written practice is credited to, if any.
+    func instructorID(kind: PracticeContentKind, contentID: Int) -> String? {
+        credits["\(kind.rawValue)-\(contentID)"]
     }
 
     /// Cheap from every screen that shows a guide: concurrent callers share one
@@ -39,23 +45,38 @@ final class InstructorDirectory {
 
     private func load() async {
         #if DEBUG
-        if Self.isPreview { instructors = Self.fixture; return }
+        if Self.isPreview {
+            instructors = Self.fixture
+            credits = Dictionary(uniqueKeysWithValues: Self.fixtureCredits.map { ($0.key, $0.instructorID) })
+            return
+        }
         #endif
+        // Each kept on failure: a dropped request must not take a guide off a
+        // page that was showing one.
         do {
             instructors = try await SupabaseService.shared.fetchInstructors()
         } catch where error.isCancellation {
             return
         } catch {
-            // Keep what we had: a dropped request must not empty the shelf.
             Log.data.info("Instructors unavailable: \(error.localizedDescription)")
+        }
+        do {
+            let rows = try await SupabaseService.shared.fetchPracticeCredits()
+            credits = Dictionary(rows.map { ($0.key, $0.instructorID) }, uniquingKeysWith: { a, _ in a })
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Log.data.info("Practice credits unavailable: \(error.localizedDescription)")
         }
     }
 
     // MARK: - DEBUG fixture
 
-    /// `-preview-instructors`: three guides with a library, followers and
-    /// faces, so the profile can be seen (and tested) before the team has
-    /// written a single `instructors` row. Always false in Release.
+    /// `-preview-instructors`: two guides with libraries, followers, faces and
+    /// credits on written practices, so every page with a guide can be seen
+    /// (and tested) whatever the live data holds. Browsed as a member — the
+    /// shell's account gate lets it through — unless `-preview-guest` is
+    /// passed too. Always false in Release.
     nonisolated static var isPreview: Bool {
         #if DEBUG
         CommandLine.arguments.contains("-preview-instructors")
@@ -65,7 +86,8 @@ final class InstructorDirectory {
     }
 
     /// With `-preview-guest` as well, the fixture is browsed as a guest, so
-    /// Follow meets the account gate — what `InstructorProfileTests` checks.
+    /// Follow and every practice meet the account gate — what
+    /// `InstructorProfileTests` checks.
     nonisolated static var isPreviewMember: Bool {
         #if DEBUG
         isPreview && !CommandLine.arguments.contains("-preview-guest")
@@ -86,8 +108,14 @@ final class InstructorDirectory {
         Instructor(id: "mara-sole", name: "Mara Solé", title: "Meditation · Movement",
                    bio: "Stillness for people who are sure they can't sit still.",
                    photoUrl: nil),
-        Instructor(id: "rodrigo-pean", name: "Rodrigo Peán", title: "Breathwork",
-                   bio: nil, photoUrl: nil),
+    ]
+
+    /// Alma: the first movement sequence and the first recipe. Mara: the
+    /// gratitude prompt. Everything else has no guide, so its page has no card.
+    static let fixtureCredits: [PracticeCredit] = [
+        PracticeCredit(kind: .exercise, contentID: 1, instructorID: "alma-guerra"),
+        PracticeCredit(kind: .recipe, contentID: 1, instructorID: "alma-guerra"),
+        PracticeCredit(kind: .journal, contentID: 3, instructorID: "mara-sole"),
     ]
 
     private static func member(_ n: Int, _ name: String) -> CommunityMember {
@@ -96,8 +124,8 @@ final class InstructorDirectory {
     }
 
     /// Alma: 212 followers — small enough that one follow visibly moves the
-    /// number — following 12 guides, three faces. Mara: large, compacted.
-    /// Rodrigo: no followers, no bio, no library — the empty states.
+    /// number — following 12 guides, three faces. Mara: large, compacted,
+    /// already followed.
     static func fixtureSocial(for id: String) -> InstructorSocial? {
         switch id {
         case "alma-guerra":
@@ -106,8 +134,6 @@ final class InstructorDirectory {
         case "mara-sole":
             return InstructorSocial(followers: 75_712, following: 3, followedByMe: true, isMe: false,
                                     faces: [member(1, "Theo R.")])
-        case "rodrigo-pean":
-            return InstructorSocial(followers: 0, following: 0, followedByMe: false, isMe: false, faces: [])
         default:
             return nil
         }
@@ -121,11 +147,12 @@ final class InstructorDirectory {
                 .init(id: 21, category: .somatic, title: "Settling the Nervous System", lead: "Alma Guerra", mediaKind: .audio, storagePath: "", durationSeconds: 780, imageUrl: "retreat-images/sedona-2026-06.jpg", blurb: "", instructorID: id),
                 .init(id: 22, category: .meditation, title: "Resting in the Exhale", lead: "Alma Guerra", mediaKind: .audio, storagePath: "", durationSeconds: 600, imageUrl: "retreat-images/dolomites-2027-09.jpg", blurb: "", instructorID: id),
             ]
-            return InstructorLibrary(sessions: sessions, programs: Program.mock.filter { $0.instructorID == id })
-        case "mara-sole":
-            return InstructorLibrary(sessions: PracticeSession.mock.filter { $0.lead == "Mara Solé" }, programs: [])
+            return InstructorLibrary(programs: Program.mock.filter { $0.instructorID == id },
+                                     sessions: sessions,
+                                     credits: fixtureCredits.filter { $0.instructorID == id })
         default:
-            return InstructorLibrary(sessions: [], programs: [])
+            return InstructorLibrary(programs: [], sessions: [],
+                                     credits: fixtureCredits.filter { $0.instructorID == id })
         }
     }
     #endif

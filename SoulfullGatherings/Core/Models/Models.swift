@@ -728,6 +728,9 @@ struct MediaItem: Identifiable, Hashable {
     var contentKind: PracticeContentKind = .session
     /// Media track, for sessions; `nil` for other libraries.
     var category: PracticeCategory? = nil
+    /// The guide it is credited to, when linked (0019) — what lets the player
+    /// open their profile.
+    var instructorID: String? = nil
 
     var durationLabel: String {
         let minutes = max(0, durationSeconds) / 60
@@ -762,7 +765,7 @@ struct PracticeSession: Identifiable, Hashable {
     var media: MediaItem {
         MediaItem(id: id, title: title, lead: lead, imageUrl: imageUrl,
                   mediaKind: mediaKind, storagePath: storagePath, durationSeconds: durationSeconds,
-                  contentKind: .session, category: category)
+                  contentKind: .session, category: category, instructorID: instructorID)
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -1473,13 +1476,51 @@ struct InstructorSocial: Hashable, Sendable {
     }
 }
 
-/// What a guide has published: their sessions on the Practice tab and their
-/// digital retreats. The written libraries (journal, movement, recipes) are
-/// house content with no guide, so they never appear here.
-struct InstructorLibrary: Hashable, Sendable {
-    var sessions: [PracticeSession]
-    var programs: [Program]
+/// A written practice — a journal prompt, a movement sequence, a recipe —
+/// credited to a guide, from `practice_credits` (0020). Those libraries live
+/// in Swift, not in a table, so this is the only place their guide can be
+/// named without a release. Display only: it does not touch payouts, which
+/// the written libraries don't take part in (`creditsCreator`).
+///
+/// Sessions are not credited here: a session row carries its own
+/// `instructor_id`, which also keeps its `lead` (the payout snapshot) in step.
+struct PracticeCredit: Hashable, Sendable {
+    let kind: PracticeContentKind
+    let contentID: Int
+    let instructorID: String
 
-    var isEmpty: Bool { sessions.isEmpty && programs.isEmpty }
-    var count: Int { sessions.count + programs.count }
+    /// "exercise-4" — `PracticeProgress.id`'s shape.
+    var key: String { "\(kind.rawValue)-\(contentID)" }
+}
+
+/// What a guide has published: their digital retreats, their sessions on the
+/// Practice tab, and the written practices credited to them.
+struct InstructorLibrary: Hashable, Sendable {
+    var programs: [Program]
+    var sessions: [PracticeSession]
+    var exercises: [Exercise] = []
+    var recipes: [Recipe] = []
+    var journals: [JournalPrompt] = []
+
+    var isEmpty: Bool { count == 0 }
+    var count: Int { programs.count + sessions.count + exercises.count + recipes.count + journals.count }
+
+    /// Resolves a guide's credits against the written libraries, in each
+    /// library's own order. A credit naming something this build doesn't have
+    /// is dropped — the credits are data and can run ahead of a release — and
+    /// a session credit is ignored, because sessions are credited on their row.
+    init(programs: [Program], sessions: [PracticeSession], credits: [PracticeCredit],
+         journals: [JournalPrompt] = JournalPrompt.all,
+         exercises: [Exercise] = Exercise.all,
+         recipes: [Recipe] = Recipe.all) {
+        func ids(_ kind: PracticeContentKind) -> Set<Int> {
+            Set(credits.filter { $0.kind == kind }.map(\.contentID))
+        }
+        let exerciseIDs = ids(.exercise), recipeIDs = ids(.recipe), journalIDs = ids(.journal)
+        self.programs = programs
+        self.sessions = sessions
+        self.exercises = exercises.filter { exerciseIDs.contains($0.id) }
+        self.recipes = recipes.filter { recipeIDs.contains($0.id) }
+        self.journals = journals.filter { journalIDs.contains($0.id) }
+    }
 }

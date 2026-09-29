@@ -33,20 +33,6 @@
   }
   .pcard .ex--soon { color: rgba(255,255,255,.6); }
   .pcard .ex { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #fff; margin-top: 10px; }
-  /* Features/Instructors/GuidesShelf.swift — THE GUIDES: one face per
-     published guide (62pt AvatarView + a 1px honey ring 3pt out), name under
-     it. Scrolls edge to edge; absent until the team writes an `instructors`
-     row. Tap → the guide's profile (instructor-profile). */
-  .guides { padding: 22px 0 4px; }
-  .guides .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 20px 12px; }
-  .guides .row { display: flex; gap: 12px; padding: 0 20px; overflow-x: auto; }
-  .guide { width: 80px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .guide .ring { padding: 3px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--honey) 40%, transparent); }
-  .guide .av { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); }
-  .guide .nm { font-size: 12px; font-weight: var(--w-medium); color: var(--ink); text-align: center; }
-  .av.t0 { background-image: linear-gradient(135deg, #4f5c29, #333d17); }
-  .av.t1 { background-image: linear-gradient(135deg, #8c7030, #614a1a); }
-  .av.t2 { background-image: linear-gradient(135deg, #854f4d, #573030); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -63,15 +49,6 @@
         <p>Choose a way in. Prompts to sit with, movement and food — guided sessions on the way.</p>
       </div>
       <span class="circle-btn" style="position:relative;z-index:3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-    </div>
-
-    <div class="guides on-photo">
-      <p class="eb">The guides</p>
-      <div class="row">
-        <div class="guide"><span class="ring"><span class="av t0">A</span></span><span class="nm">Alma Guerra</span></div>
-        <div class="guide"><span class="ring"><span class="av t1">M</span></span><span class="nm">Mara Solé</span></div>
-        <div class="guide"><span class="ring"><span class="av t2">R</span></span><span class="nm">Rodrigo Peán</span></div>
-      </div>
     </div>
 
     <div class="cards">

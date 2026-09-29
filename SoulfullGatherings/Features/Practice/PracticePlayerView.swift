@@ -123,9 +123,15 @@ struct PracticePlayerView: View {
                         .foregroundStyle(Theme.ink)
                         .multilineTextAlignment(.center)
                         .kerning(-0.4)
-                    Text("with \(media.lead)")
-                        .font(Theme.body(13))
-                        .foregroundStyle(Theme.inkSoft)
+                    // The guide, as a chip that opens their profile — the
+                    // sheet closes first so it is pushed on the stack below.
+                    GuideCredit(instructorID: media.instructorID,
+                                beforeOpen: { dismiss() }, from: media.title) {
+                        Text("with \(media.lead)")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    .padding(.top, 2)
                 }
                 .padding(.horizontal, 28)
 

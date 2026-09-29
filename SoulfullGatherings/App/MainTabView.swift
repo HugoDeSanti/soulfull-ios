@@ -99,6 +99,11 @@ struct MainTabView: View {
     @State private var pendingNotifications = false
     private let push = PushRegistrar.shared
 
+    /// Whether the account gate lets a tap straight through. `-preview-
+    /// instructors` browses its fixture as a member (DEBUG only — the flag is
+    /// always false in Release), so a fixture practice page can be opened.
+    private var hasAccount: Bool { auth.hasAccount || InstructorDirectory.isPreviewMember }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab content
@@ -122,14 +127,14 @@ struct MainTabView: View {
                 case .programs:
                     ProgramsRoot(navHidden: $navHidden, pending: $pendingProgram,
                                  requireAccount: { action in
-                                     if gate.require(signedIn: auth.hasAccount, action) {
+                                     if gate.require(signedIn: hasAccount, action) {
                                          showAccount = true
                                      }
                                  })
                 case .practice:
                     PracticeRoot(navHidden: $navHidden, pending: $pendingPractice,
                                  requireAccount: { action in
-                                     if gate.require(signedIn: auth.hasAccount, action) {
+                                     if gate.require(signedIn: hasAccount, action) {
                                          showAccount = true
                                      }
                                  },
@@ -140,7 +145,7 @@ struct MainTabView: View {
                 case .community:
                     CommunityRoot(navHidden: $navHidden, openNotifications: $pendingNotifications,
                                   requireAccount: { action in
-                                      if gate.require(signedIn: auth.hasAccount, action) {
+                                      if gate.require(signedIn: hasAccount, action) {
                                           showAccount = true
                                       }
                                   },
@@ -179,7 +184,7 @@ struct MainTabView: View {
         // One sheet for the whole shell, so a gated tap works from any tab and
         // survives the tab switch Home's ritual card performs.
         .sheet(isPresented: $showAccount, onDismiss: {
-            gate.resume(signedIn: auth.hasAccount)
+            gate.resume(signedIn: hasAccount)
         }) {
             AccountView(initialName: settings.userName)
         }
@@ -270,8 +275,8 @@ private struct ProgramsRoot: View {
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
         case recipeDetail(Recipe)
-        /// A guide's profile, from a digital retreat's credit. `from` is the
-        /// back bar's label — the retreat it was opened from.
+        /// A guide's profile, from the "Your guide" card on a digital retreat
+        /// or a practice. `from` is the back bar's label — that page's title.
         case instructor(String, from: String)
     }
     @Binding var navHidden: Bool
@@ -295,7 +300,15 @@ private struct ProgramsRoot: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .environment(\.openInstructor) { id, from in openInstructor(id, from: from) }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    /// Pushes a guide's profile — unless it is already on top, which is where
+    /// a session's player was opened from when its guide chip is tapped.
+    private func openInstructor(_ id: String, from: String) {
+        if case .instructor(let current, _) = path.last, current == id { return }
+        path.append(.instructor(id, from: from))
     }
 
     @ViewBuilder
@@ -305,8 +318,7 @@ private struct ProgramsRoot: View {
             let detail = ProgramDetailView(
                 program: program,
                 onOpenDay: { path.append(.day(program, $0.day)) },
-                requireAccount: requireAccount,
-                onOpenInstructor: { path.append(.instructor($0, from: program.title)) }
+                requireAccount: requireAccount
             )
             if zoom {
                 detail.navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
@@ -326,6 +338,7 @@ private struct ProgramsRoot: View {
         case .instructor(let id, let from):
             InstructorProfileView(instructorID: id, backLabel: from,
                                   onOpenProgram: { path.append(.detail($0, zoom: false)) },
+                                  onOpenPractice: { content in requireAccount { open(content) } },
                                   requireAccount: requireAccount)
         }
     }
@@ -406,8 +419,9 @@ private struct PracticeRoot: View {
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
         case recipeDetail(Recipe)
-        /// A guide's profile, from the Guides shelf.
-        case instructor(String)
+        /// A guide's profile, from the "Your guide" card on a practice's page.
+        /// `from` is the back bar's label — that page's title.
+        case instructor(String, from: String)
     }
     @Binding var navHidden: Bool
     /// A section another tab asked to open. Consumed once, then cleared.
@@ -426,8 +440,7 @@ private struct PracticeRoot: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            PracticeView(onSelect: open, zoomNamespace: zoomNS,
-                         onOpenInstructor: { path.append(.instructor($0)) })
+            PracticeView(onSelect: open, zoomNamespace: zoomNS)
                 .onAppear(perform: consumePending)
                 .onChange(of: pending) { consumePending() }
                 .navigationDestination(for: Route.self) { route in
@@ -436,7 +449,15 @@ private struct PracticeRoot: View {
                 }
                 .toolbar(.hidden, for: .navigationBar)
         }
+        .environment(\.openInstructor) { id, from in openInstructor(id, from: from) }
         .onChange(of: path) { navHidden = !path.isEmpty }
+    }
+
+    /// Pushes a guide's profile — unless it is already on top, which is where
+    /// a session's player was opened from when its guide chip is tapped.
+    private func openInstructor(_ id: String, from: String) {
+        if case .instructor(let current, _) = path.last, current == id { return }
+        path.append(.instructor(id, from: from))
     }
 
     /// Opens whatever another tab handed us, then clears it so returning to
@@ -498,9 +519,19 @@ private struct PracticeRoot: View {
             ExerciseDetailView(exercise: exercise)
         case .recipeDetail(let recipe):
             RecipeDetailView(recipe: recipe)
-        case .instructor(let id):
-            InstructorProfileView(instructorID: id, backLabel: "Practices",
+        case .instructor(let id, let from):
+            InstructorProfileView(instructorID: id, backLabel: from,
                                   onOpenProgram: { onOpenProgram($0.id) },
+                                  onOpenPractice: { content in
+                                      requireAccount {
+                                          switch content {
+                                          case .journal(let prompt):    path.append(.journalDetail(prompt))
+                                          case .exercise(let exercise): path.append(.exerciseDetail(exercise))
+                                          case .recipe(let recipe):     path.append(.recipeDetail(recipe))
+                                          case .session:                break   // played in the profile's own sheet
+                                          }
+                                      }
+                                  },
                                   requireAccount: requireAccount)
         }
     }
