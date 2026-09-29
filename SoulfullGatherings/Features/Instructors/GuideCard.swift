@@ -28,37 +28,15 @@ extension EnvironmentValues {
 }
 
 struct GuideCard: View {
-    private enum Subject: Equatable {
-        case instructor(String?)
-        case practice(PracticeContentKind, Int)
-    }
-
-    private let subject: Subject
+    /// The row's `instructor_id` — a digital retreat's, or a written
+    /// practice's (0022). Nil draws nothing.
+    let instructorID: String?
     /// The page's title, for the profile's back bar.
-    private let from: String
+    let from: String
     @Environment(\.openInstructor) private var openInstructor
     private let directory = InstructorDirectory.shared
 
-    /// Content that carries its guide on the row: a digital retreat.
-    init(instructorID: String?, from: String) {
-        self.subject = .instructor(instructorID)
-        self.from = from
-    }
-
-    /// A written practice, whose guide is a credit (0020).
-    init(kind: PracticeContentKind, contentID: Int, from: String) {
-        self.subject = .practice(kind, contentID)
-        self.from = from
-    }
-
-    private var instructor: Instructor? {
-        switch subject {
-        case .instructor(let id):
-            directory.instructor(id: id)
-        case .practice(let kind, let contentID):
-            directory.instructor(id: directory.instructorID(kind: kind, contentID: contentID))
-        }
-    }
+    private var instructor: Instructor? { directory.instructor(id: instructorID) }
 
     var body: some View {
         // A real container, never `Group`, so `.task` has something to run on

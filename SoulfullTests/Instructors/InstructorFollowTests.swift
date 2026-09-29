@@ -52,7 +52,7 @@ struct InstructorFollowTests {
                     }
                     return snapshot
                 },
-                library: { _ in InstructorLibrary(programs: [], sessions: [], credits: [], library: .empty) },
+                library: { id in InstructorLibrary(programs: [], sessions: [], written: .empty, instructorID: id) },
                 follow: { _, _ in
                     self.followCalls += 1
                     self.onWrite()

@@ -135,7 +135,7 @@ struct RecipeDetailView: View {
                             .padding(.top, 2)
                     }
 
-                    GuideCard(kind: .recipe, contentID: recipe.id, from: recipe.title)
+                    GuideCard(instructorID: recipe.instructorID, from: recipe.title)
 
                     section("INGREDIENTS") {
                         VStack(alignment: .leading, spacing: 4) {

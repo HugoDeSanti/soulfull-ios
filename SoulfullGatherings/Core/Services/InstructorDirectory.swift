@@ -2,9 +2,9 @@
 //  InstructorDirectory.swift
 //  Soulfull Gatherings
 //
-//  Every published guide, and which guide each written practice is credited
-//  to — read once and shared. A practice's or a digital retreat's page looks
-//  its guide up here to show the "Your guide" card and open the profile.
+//  Every published guide, read once and shared. A practice's or a digital
+//  retreat's page names its guide by id (its row's `instructor_id`) and looks
+//  them up here to show the "Your guide" card and open the profile.
 //
 //  Fails soft and silently, like presence. Offline, or for content with no
 //  guide, the card simply isn't there. Nothing else on a page waits for it.
@@ -19,18 +19,11 @@ final class InstructorDirectory {
 
     /// Published guides, in the team's order.
     private(set) var instructors: [Instructor] = []
-    /// Written practices' guides, keyed "exercise-4" (`PracticeCredit.key`).
-    private(set) var credits: [String: String] = [:]
     private var inFlight: Task<Void, Never>?
 
     func instructor(id: String?) -> Instructor? {
         guard let id else { return nil }
         return instructors.first { $0.id == id }
-    }
-
-    /// The guide a written practice is credited to, if any.
-    func instructorID(kind: PracticeContentKind, contentID: Int) -> String? {
-        credits["\(kind.rawValue)-\(contentID)"]
     }
 
     /// Cheap from every screen that shows a guide: concurrent callers share one
@@ -47,33 +40,23 @@ final class InstructorDirectory {
         #if DEBUG
         if Self.isPreview {
             instructors = Self.fixture
-            credits = Dictionary(uniqueKeysWithValues: Self.fixtureCredits.map { ($0.key, $0.instructorID) })
             return
         }
         #endif
-        // Each kept on failure: a dropped request must not take a guide off a
-        // page that was showing one.
+        // Kept on failure: a dropped request must not take a guide off a page
+        // that was showing one.
         do {
             instructors = try await SupabaseService.shared.fetchInstructors()
         } catch where error.isCancellation {
-            return
         } catch {
             Log.data.info("Instructors unavailable: \(error.localizedDescription)")
-        }
-        do {
-            let rows = try await SupabaseService.shared.fetchPracticeCredits()
-            credits = Dictionary(rows.map { ($0.key, $0.instructorID) }, uniquingKeysWith: { a, _ in a })
-        } catch where error.isCancellation {
-            return
-        } catch {
-            Log.data.info("Practice credits unavailable: \(error.localizedDescription)")
         }
     }
 
     // MARK: - DEBUG fixture
 
     /// `-preview-instructors`: two guides with libraries, followers, faces and
-    /// credits on written practices, so every page with a guide can be seen
+    /// written practices of their own, so every page with a guide can be seen
     /// (and tested) whatever the live data holds. Browsed as a member — the
     /// shell's account gate lets it through — unless `-preview-guest` is
     /// passed too. Always false in Release.
@@ -116,13 +99,27 @@ final class InstructorDirectory {
 
     /// Alma: the first movement sequence and the first recipe. Mara: the
     /// gratitude prompt. Everything else has no guide, so its page has no card.
-    /// The pages themselves are the live tables; the profile's library
-    /// resolves these against `WrittenLibrary.mock`, which carries all three.
-    static let fixtureCredits: [PracticeCredit] = [
-        PracticeCredit(kind: .exercise, contentID: 1, instructorID: "alma-guerra"),
-        PracticeCredit(kind: .recipe, contentID: 1, instructorID: "alma-guerra"),
-        PracticeCredit(kind: .journal, contentID: 3, instructorID: "mara-sole"),
+    /// Keyed like `PracticeProgress.id`.
+    static let fixtureGuides: [String: String] = [
+        "exercise-1": "alma-guerra",
+        "recipe-1":   "alma-guerra",
+        "journal-3":  "mara-sole",
     ]
+
+    /// `library` with its guides replaced by the fixture's. The pages under
+    /// `-preview-instructors` are the live tables — `WrittenPracticeStore`
+    /// passes each read through this — but the live rows name the placeholder
+    /// guides, who aren't in the fixture, and the tests need guides whose
+    /// numbers they know. The profile's library applies it to
+    /// `WrittenLibrary.mock`, which carries all three practices.
+    static func withFixtureGuides(_ library: WrittenLibrary) -> WrittenLibrary {
+        func guide(_ kind: PracticeContentKind, _ id: Int) -> String? { fixtureGuides["\(kind.rawValue)-\(id)"] }
+        var library = library
+        for i in library.journals.indices { library.journals[i].instructorID = guide(.journal, library.journals[i].id) }
+        for i in library.exercises.indices { library.exercises[i].instructorID = guide(.exercise, library.exercises[i].id) }
+        for i in library.recipes.indices { library.recipes[i].instructorID = guide(.recipe, library.recipes[i].id) }
+        return library
+    }
 
     private static func member(_ n: Int, _ name: String) -> CommunityMember {
         CommunityMember(id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", n))!,
@@ -155,12 +152,12 @@ final class InstructorDirectory {
             ]
             return InstructorLibrary(programs: Program.mock.filter { $0.instructorID == id },
                                      sessions: sessions,
-                                     credits: fixtureCredits.filter { $0.instructorID == id },
-                                     library: .mock)
+                                     written: withFixtureGuides(.mock),
+                                     instructorID: id)
         default:
             return InstructorLibrary(programs: [], sessions: [],
-                                     credits: fixtureCredits.filter { $0.instructorID == id },
-                                     library: .mock)
+                                     written: withFixtureGuides(.mock),
+                                     instructorID: id)
         }
     }
     #endif

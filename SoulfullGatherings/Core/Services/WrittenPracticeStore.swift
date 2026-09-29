@@ -83,6 +83,11 @@ final class WrittenPracticeStore {
             library = fresh
             status = .done
             remember(fresh)
+            #if DEBUG
+            // After `remember`, so the fixture's guides never reach the copy
+            // a normal launch starts from.
+            if InstructorDirectory.isPreview { library = InstructorDirectory.withFixtureGuides(fresh) }
+            #endif
         } catch where error.isCancellation {
         } catch {
             Log.data.error("Written practices unavailable: \(error.localizedDescription)")

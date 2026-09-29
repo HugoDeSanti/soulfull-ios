@@ -11,7 +11,8 @@ Journal prompts, movement sequences and recipes are rows in three tables
 | Movement | `exercises` | `title`, `focus` ("Mobility", "Yoga"…), `duration_seconds`, `blurb`, `steps` |
 | Food Recipes | `recipes` | `title`, `angle` ("Gut-friendly"…), `minutes`, `servings`, `blurb`, `ingredients`, `steps` |
 
-All three also take `image_url`, `published` (default `true`) and `sort_order`.
+All three also take `image_url`, `published` (default `true`), `sort_order`
+and `instructor_id` (the guide, optional).
 Leave `id` empty. The database assigns it.
 
 ## 1. Add the row
@@ -56,14 +57,13 @@ with no connection.
 
 - **Edit freely.** A member's history keeps the title as it was when they
   practised it.
-- **Never change or reuse an `id`.** The practice ledger, guide credits,
-  digital-retreat curricula and a member's saved journal reflections all point
-  at it by id.
+- **Never change or reuse an `id`.** The practice ledger, digital-retreat
+  curricula and a member's saved journal reflections all point at it by id.
 - **Take a practice down with `published = false`, not a delete.** It leaves the
   lists. A digital-retreat day that included it shrinks to what remains. Its
   history stays intact.
 
-## 4. Optional: put it in a digital retreat, or credit a guide
+## 4. Optional: put it in a digital retreat, or name its guide
 
 A digital retreat's `curriculum` points at the practice by kind and id:
 
@@ -71,12 +71,12 @@ A digital retreat's `curriculum` points at the practice by kind and id:
 {"kind": "recipe", "content_id": 4, "note": "Make enough for tomorrow."}
 ```
 
-To show a "Your guide" card on its page, add a credit. See
-`ADDING-AN-INSTRUCTOR.md`:
+To show a "Your guide" card on its page and list it in the guide's library,
+set `instructor_id` to the guide's id (see `ADDING-AN-INSTRUCTOR.md`). A guide
+who doesn't exist is refused:
 
 ```sql
-insert into public.practice_credits (content_kind, content_id, instructor_id)
-values ('recipe', 4, 'noa-castell');
+update public.recipes set instructor_id = 'noa-castell' where id = 4;
 ```
 
 ## 5. Check it

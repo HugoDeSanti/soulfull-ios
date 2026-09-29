@@ -39,18 +39,18 @@ enum Fixtures {
                 imageUrl: "", toneTop: .clear, toneMid: .clear, toneBase: .clear)
     }
 
-    static func journal(_ id: Int) -> JournalPrompt {
-        JournalPrompt(id: id, title: "Prompt \(id)", prompt: "", theme: "", imageUrl: "")
+    static func journal(_ id: Int, guide: String? = nil) -> JournalPrompt {
+        JournalPrompt(id: id, title: "Prompt \(id)", prompt: "", theme: "", imageUrl: "", instructorID: guide)
     }
 
-    static func exercise(_ id: Int) -> Exercise {
+    static func exercise(_ id: Int, guide: String? = nil) -> Exercise {
         Exercise(id: id, title: "Sequence \(id)", focus: "", durationSeconds: 600, imageUrl: "",
-                 blurb: "", steps: [ExerciseStep(id: 1, name: "Step", detail: nil)])
+                 blurb: "", steps: [ExerciseStep(id: 1, name: "Step", detail: nil)], instructorID: guide)
     }
 
-    static func recipe(_ id: Int) -> Recipe {
+    static func recipe(_ id: Int, guide: String? = nil) -> Recipe {
         Recipe(id: id, title: "Recipe \(id)", angle: "", minutes: 10, servings: 2, imageUrl: "",
-               blurb: "", ingredients: ["One thing"], steps: ["Cook it"])
+               blurb: "", ingredients: ["One thing"], steps: ["Cook it"], instructorID: guide)
     }
 
     static func session(_ id: Int) -> PracticeSession {
@@ -60,8 +60,8 @@ enum Fixtures {
 
     /// A written library holding exactly these ids, in the order given.
     static func library(journals: [Int] = [], exercises: [Int] = [], recipes: [Int] = []) -> WrittenLibrary {
-        WrittenLibrary(journals: journals.map(journal), exercises: exercises.map(exercise),
-                       recipes: recipes.map(recipe))
+        WrittenLibrary(journals: journals.map { journal($0) }, exercises: exercises.map { exercise($0) },
+                       recipes: recipes.map { recipe($0) })
     }
 
     static func progress(_ kind: PracticeContentKind = .journal, contentID: Int = 1,

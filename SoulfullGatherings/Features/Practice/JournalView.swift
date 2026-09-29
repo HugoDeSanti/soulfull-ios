@@ -170,7 +170,7 @@ struct JournalDetailView: View {
                 // At the foot, not above the editor: the page is for writing,
                 // and a card between the question and the words would push
                 // the editor down every time the question comes back.
-                GuideCard(kind: .journal, contentID: prompt.id, from: "Journal prompt")
+                GuideCard(instructorID: prompt.instructorID, from: "Journal prompt")
                     .padding(.top, 10)
 
                 Color.clear.frame(height: 120)

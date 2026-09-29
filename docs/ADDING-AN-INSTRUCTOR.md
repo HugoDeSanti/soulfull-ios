@@ -2,11 +2,11 @@
 
 **No app release required.** A guide is a row in `instructors`, a portrait in
 Storage, and their content pointed at them. All three are done in the Supabase
-dashboard. Migrations `0019_instructors.sql` and `0020_practice_credits.sql` are
-applied (2026-09-28).
+dashboard. Migrations `0019_instructors.sql` (2026-09-28) and
+`0022_written_practice_guides.sql` (2026-09-29) are applied.
 
 A guide appears on the pages of what they made: a "Your guide" card on each
-digital retreat, movement sequence, recipe and journal prompt credited to them,
+digital retreat, movement sequence, recipe and journal prompt that names them,
 and a face chip in the player for their sessions. They never appear on the
 Practice landing. Content with no guide shows no card.
 
@@ -67,25 +67,23 @@ payout snapshot, taken at play time, and history does not move.
 
 The profile's library is their **published** digital retreats, their sessions
 that appear on the Practice tab (`program_only` media belongs to its program and
-is reached from there), and the written practices credited to them below.
+is reached from there), and the written practices that name them below.
 
 ### Written practices: journal prompts, movement, recipes
 
-These are credited in `practice_credits` (migration 0020) by kind and id —
-the `id` of the row in `journal_prompts`, `exercises` or `recipes` (0021). The
-credit predates those tables, which is why it is a row of its own rather than
-a column on the practice:
+Each one names its guide on its own row, the same `instructor_id` column
+sessions and digital retreats have (migration 0022). A guide who doesn't exist
+is refused:
 
 ```sql
-insert into public.practice_credits (content_kind, content_id, instructor_id)
-values ('exercise', 4, 'alma-guerra'), ('journal', 1, 'alma-guerra')
-on conflict (content_kind, content_id) do update set instructor_id = excluded.instructor_id;
+update public.exercises       set instructor_id = 'alma-guerra' where id = 4;
+update public.journal_prompts set instructor_id = 'alma-guerra' where id = 1;
 ```
 
-A credit is **display only**. It puts the guide on the page and in their
-library, and it does not pay them: the written libraries record no creator in
-the payout ledger. Sessions can't be credited here; they carry their guide on
-their own row.
+It is **display only**. It puts the guide on the page and in their library,
+and it does not pay them: the written libraries record no creator in the
+payout ledger. (Until 0022 this was a separate `practice_credits` table, from
+when these libraries were Swift code with no row to hold the column.)
 
 ## 4. Optional: link their own account
 
@@ -118,8 +116,9 @@ abbreviated names.
 ## Removing the placeholder guides
 
 ```sql
--- Content pointing at them falls back to its plain `lead` text (on delete set null).
--- Follows and practice credits go with them (cascade).
+-- Content pointing at them loses its guide card (on delete set null); sessions
+-- and digital retreats fall back to their plain `lead` text.
+-- Follows go with them (cascade).
 delete from public.instructors
  where id in ('alma-guerra', 'ines-aranda', 'tomas-ferrer', 'noa-castell', 'julian-ros');
 ```

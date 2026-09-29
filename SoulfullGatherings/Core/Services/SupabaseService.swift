@@ -42,8 +42,6 @@ actor SupabaseService {
     private var availableCategoriesCacheDate: Date?
     private var instructorsCache: [Instructor]?
     private var instructorsCacheDate: Date?
-    private var creditsCache: [PracticeCredit]?
-    private var creditsCacheDate: Date?
     private var writtenCache: WrittenLibrary?
     private var writtenCacheDate: Date?
     private let cacheTTL: TimeInterval = 300
@@ -697,26 +695,6 @@ actor SupabaseService {
         return instructors
     }
 
-    /// Which guide each written practice is credited to (0020). Catalog data,
-    /// cached like the rest of it; a few dozen rows at most.
-    func fetchPracticeCredits() async throws -> [PracticeCredit] {
-        if let cache = creditsCache,
-           let date = creditsCacheDate,
-           Date().timeIntervalSince(date) < cacheTTL {
-            return cache
-        }
-        let rows: [PracticeCreditRow] = try await client
-            .from("practice_credits")
-            .select()
-            .limit(500)
-            .execute()
-            .value
-        let credits = rows.compactMap(\.credit)
-        creditsCache = credits
-        creditsCacheDate = Date()
-        return credits
-    }
-
     /// The numbers on a guide's page, through `instructor_social()`. Nil for a
     /// guide who isn't published (or doesn't exist). Uncached: it moves every
     /// time someone follows, and the caller's own follow is part of it.
@@ -729,10 +707,11 @@ actor SupabaseService {
     }
 
     /// What a guide has published: their published digital retreats, their
-    /// Practice-tab sessions, and the written practices credited to them.
+    /// Practice-tab sessions, and the written practices that name them.
     /// `program_only` media is left out — it belongs to its program and is
     /// reached from there, the same line the Practice tab draws. Uncached,
-    /// except for the credits, which are catalog.
+    /// except for the written libraries, which are catalog and taken whole
+    /// from their cache rather than queried per guide.
     func fetchInstructorLibrary(id: String) async throws -> InstructorLibrary {
         let sessionRows: [PracticeSessionRow] = try await client
             .from("practice_sessions")
@@ -753,14 +732,13 @@ actor SupabaseService {
             .limit(50)
             .execute()
             .value
-        let credits = try await fetchPracticeCredits().filter { $0.instructorID == id }
-        // Throws with the rest when it's needed: a guide known only for written
-        // practices would otherwise read as having published nothing.
-        let library = credits.isEmpty ? WrittenLibrary.empty : try await fetchWrittenLibrary()
+        // Throws with the rest: a guide known only for written practices would
+        // otherwise read as having published nothing.
+        let written = try await fetchWrittenLibrary()
         return InstructorLibrary(programs: programRows.map(\.program),
                                  sessions: sessionRows.map(\.session),
-                                 credits: credits,
-                                 library: library)
+                                 written: written,
+                                 instructorID: id)
     }
 
     /// Follows a guide. Idempotent: a second follow is a duplicate key, and
@@ -1095,8 +1073,6 @@ actor SupabaseService {
         availableCategoriesCacheDate = nil
         instructorsCache = nil
         instructorsCacheDate = nil
-        creditsCache = nil
-        creditsCacheDate = nil
         writtenCache = nil
         writtenCacheDate = nil
     }
@@ -1376,28 +1352,31 @@ private struct PracticeSessionRow: Codable {
 
 /// Read model for `journal_prompts`.
 private struct JournalPromptRow: Decodable {
-    static let columns = "id, title, prompt, theme, image_url"
+    static let columns = "id, title, prompt, theme, image_url, instructor_id"
 
     let id: Int
     let title: String
     let prompt: String
     let theme: String
     let imageUrl: String?
+    let instructorId: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, prompt, theme
-        case imageUrl = "image_url"
+        case imageUrl     = "image_url"
+        case instructorId = "instructor_id"
     }
 
     var journalPrompt: JournalPrompt {
-        JournalPrompt(id: id, title: title, prompt: prompt, theme: theme, imageUrl: imageUrl ?? "")
+        JournalPrompt(id: id, title: title, prompt: prompt, theme: theme, imageUrl: imageUrl ?? "",
+                      instructorID: instructorId)
     }
 }
 
 /// Read model for `exercises`. The steps' shape is enforced by the table's
 /// check constraint (0021), so a strict decode can't meet a malformed one.
 private struct ExerciseRow: Decodable {
-    static let columns = "id, title, focus, duration_seconds, image_url, blurb, steps"
+    static let columns = "id, title, focus, duration_seconds, image_url, blurb, steps, instructor_id"
 
     struct Step: Decodable {
         let name: String
@@ -1411,11 +1390,13 @@ private struct ExerciseRow: Decodable {
     let imageUrl: String?
     let blurb: String
     let steps: [Step]
+    let instructorId: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, focus, blurb, steps
         case durationSeconds = "duration_seconds"
         case imageUrl        = "image_url"
+        case instructorId    = "instructor_id"
     }
 
     var exercise: Exercise {
@@ -1424,13 +1405,14 @@ private struct ExerciseRow: Decodable {
                  steps: steps.enumerated().map { index, step in
                      ExerciseStep(id: index + 1, name: step.name,
                                   detail: step.detail.flatMap { $0.isEmpty ? nil : $0 })
-                 })
+                 },
+                 instructorID: instructorId)
     }
 }
 
 /// Read model for `recipes`.
 private struct RecipeRow: Decodable {
-    static let columns = "id, title, angle, minutes, servings, image_url, blurb, ingredients, steps"
+    static let columns = "id, title, angle, minutes, servings, image_url, blurb, ingredients, steps, instructor_id"
 
     let id: Int
     let title: String
@@ -1441,15 +1423,18 @@ private struct RecipeRow: Decodable {
     let blurb: String
     let ingredients: [String]
     let steps: [String]
+    let instructorId: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, angle, minutes, servings, blurb, ingredients, steps
-        case imageUrl = "image_url"
+        case imageUrl     = "image_url"
+        case instructorId = "instructor_id"
     }
 
     var recipe: Recipe {
         Recipe(id: id, title: title, angle: angle, minutes: minutes, servings: servings,
-               imageUrl: imageUrl ?? "", blurb: blurb, ingredients: ingredients, steps: steps)
+               imageUrl: imageUrl ?? "", blurb: blurb, ingredients: ingredients, steps: steps,
+               instructorID: instructorId)
     }
 }
 
@@ -1775,25 +1760,5 @@ private struct InstructorSocialRow: Decodable {
         InstructorSocial(followers: followers, following: following,
                          followedByMe: followedByMe, isMe: isMe,
                          faces: faces.map(\.member))
-    }
-}
-
-/// Read model for `practice_credits`.
-private struct PracticeCreditRow: Decodable {
-    let contentKind: String
-    let contentId: Int
-    let instructorId: String
-
-    enum CodingKeys: String, CodingKey {
-        case contentKind  = "content_kind"
-        case contentId    = "content_id"
-        case instructorId = "instructor_id"
-    }
-
-    /// Nil for a kind this build doesn't know: better no credit than the
-    /// wrong page's.
-    var credit: PracticeCredit? {
-        guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
-        return PracticeCredit(kind: kind, contentID: contentId, instructorID: instructorId)
     }
 }

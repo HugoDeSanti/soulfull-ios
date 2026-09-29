@@ -35,7 +35,9 @@ struct WrittenPracticeStoreTests {
     private let cacheURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("written-library-\(UUID().uuidString).json")
 
-    private let live = Fixtures.library(journals: [1, 2], exercises: [1], recipes: [1, 2, 3])
+    private let live = WrittenLibrary(journals: [Fixtures.journal(1), Fixtures.journal(2)],
+                                      exercises: [Fixtures.exercise(1)],
+                                      recipes: [Fixtures.recipe(1, guide: "noa-castell"), Fixtures.recipe(2), Fixtures.recipe(3)])
 
     @Test func aReadIsTheLibraryAndItsAnswerIsAuthoritative() async {
         let store = WrittenPracticeStore(fetch: { [live] in live }, cacheURL: nil)
@@ -87,6 +89,7 @@ struct WrittenPracticeStoreTests {
 
         #expect(next.library.journals.map(\.id) == [1, 2])
         #expect(next.library.exercises.first?.steps.map(\.name) == ["Step"])
+        #expect(next.library.recipes.first?.instructorID == "noa-castell", "Its guide card shows offline too")
         #expect(!next.isAuthoritative, "A kept copy can't say what doesn't exist")
         try? FileManager.default.removeItem(at: cacheURL)
     }

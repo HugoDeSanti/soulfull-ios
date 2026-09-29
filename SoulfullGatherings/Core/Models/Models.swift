@@ -1045,9 +1045,10 @@ enum PracticeMenuItem: String, Identifiable, Hashable, CaseIterable {
 // read through `WrittenPracticeStore`. They lived here as `.all` arrays until
 // 2026-09-29, which made every new prompt and every typo fix a release.
 //
-// The ids are a contract with the practice ledger, `practice_credits`, program
-// curricula and a member's saved reflections, none of which can follow a
-// renumbering. `.mock` on each type is a preview / DEBUG fixture only — never a
+// The ids are a contract with the practice ledger, program curricula and a
+// member's saved reflections, none of which can follow a renumbering. Each one
+// names its guide on its own row (`instructorID`, 0022), as sessions and
+// digital retreats do. `.mock` on each type is a preview / DEBUG fixture only — never a
 // fallback for a library that failed to load.
 
 struct JournalPrompt: Identifiable, Hashable, Codable {
@@ -1059,6 +1060,9 @@ struct JournalPrompt: Identifiable, Hashable, Codable {
     /// Theme label (e.g. "Self-compassion"), used as the eyebrow.
     let theme: String
     let imageUrl: String
+    /// The guide on its page and in whose library it appears. Display only —
+    /// the written libraries take no part in payouts (`creditsCreator`).
+    var instructorID: String? = nil
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: JournalPrompt, rhs: JournalPrompt) -> Bool { lhs.id == rhs.id }
@@ -1092,6 +1096,8 @@ struct Exercise: Identifiable, Hashable, Codable {
     let imageUrl: String
     let blurb: String
     let steps: [ExerciseStep]
+    /// See `JournalPrompt.instructorID`.
+    var instructorID: String? = nil
 
     var durationLabel: String {
         let minutes = max(0, durationSeconds) / 60
@@ -1122,7 +1128,7 @@ struct Recipe: Identifiable, Hashable, Codable {
     let id: Int
     let title: String
     /// A dietary angle, e.g. "Anti-inflammatory" — never a person. A recipe's
-    /// guide, if it has one, is credited in `practice_credits`.
+    /// guide, if it has one, is `instructorID`.
     let angle: String
     let minutes: Int
     let servings: Int
@@ -1130,6 +1136,8 @@ struct Recipe: Identifiable, Hashable, Codable {
     let blurb: String
     let ingredients: [String]
     let steps: [String]
+    /// See `JournalPrompt.instructorID`.
+    var instructorID: String? = nil
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: Recipe, rhs: Recipe) -> Bool { lhs.id == rhs.id }
@@ -1478,26 +1486,8 @@ struct InstructorSocial: Hashable, Sendable {
     }
 }
 
-/// A written practice — a journal prompt, a movement sequence, a recipe —
-/// credited to a guide, from `practice_credits` (0020). It predates those
-/// libraries having tables of their own (0021), which is why the credit is a
-/// row beside the practice rather than a column on it. Display only: it does
-/// not touch payouts, which the written libraries don't take part in
-/// (`creditsCreator`).
-///
-/// Sessions are not credited here: a session row carries its own
-/// `instructor_id`, which also keeps its `lead` (the payout snapshot) in step.
-struct PracticeCredit: Hashable, Sendable {
-    let kind: PracticeContentKind
-    let contentID: Int
-    let instructorID: String
-
-    /// "exercise-4" — `PracticeProgress.id`'s shape.
-    var key: String { "\(kind.rawValue)-\(contentID)" }
-}
-
 /// What a guide has published: their digital retreats, their sessions on the
-/// Practice tab, and the written practices credited to them.
+/// Practice tab, and the written practices that name them.
 struct InstructorLibrary: Hashable, Sendable {
     var programs: [Program]
     var sessions: [PracticeSession]
@@ -1508,20 +1498,15 @@ struct InstructorLibrary: Hashable, Sendable {
     var isEmpty: Bool { count == 0 }
     var count: Int { programs.count + sessions.count + exercises.count + recipes.count + journals.count }
 
-    /// Resolves a guide's credits against the written libraries, in each
-    /// library's own order. A credit naming a practice the library doesn't
-    /// hold — unpublished, or never there — is dropped, and a session credit is
-    /// ignored, because sessions are credited on their row.
-    init(programs: [Program], sessions: [PracticeSession], credits: [PracticeCredit],
-         library: WrittenLibrary) {
-        func ids(_ kind: PracticeContentKind) -> Set<Int> {
-            Set(credits.filter { $0.kind == kind }.map(\.contentID))
-        }
-        let exerciseIDs = ids(.exercise), recipeIDs = ids(.recipe), journalIDs = ids(.journal)
+    /// Takes the guide's own practices from the written libraries, in each
+    /// library's order. The libraries hold published rows only, so a practice
+    /// that has been taken down isn't listed.
+    init(programs: [Program], sessions: [PracticeSession], written: WrittenLibrary,
+         instructorID: String) {
         self.programs = programs
         self.sessions = sessions
-        self.exercises = library.exercises.filter { exerciseIDs.contains($0.id) }
-        self.recipes = library.recipes.filter { recipeIDs.contains($0.id) }
-        self.journals = library.journals.filter { journalIDs.contains($0.id) }
+        self.exercises = written.exercises.filter { $0.instructorID == instructorID }
+        self.recipes = written.recipes.filter { $0.instructorID == instructorID }
+        self.journals = written.journals.filter { $0.instructorID == instructorID }
     }
 }

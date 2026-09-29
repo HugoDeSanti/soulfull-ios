@@ -112,7 +112,7 @@ struct ExerciseDetailView: View {
                 .onPhoto()
 
                 // Glass, so outside the header's halo.
-                GuideCard(kind: .exercise, contentID: exercise.id, from: exercise.title)
+                GuideCard(instructorID: exercise.instructorID, from: exercise.title)
 
                 Text("THE SEQUENCE")
                     .font(Theme.eyebrow(11))

@@ -2,11 +2,11 @@
 //  InstructorLibraryTests.swift
 //  SoulfullTests
 //
-//  A guide's library includes the written practices credited to them in
-//  `practice_credits`, resolved against the written libraries as read from
-//  their tables. A credit and its practice are separate rows, so a credit for
-//  a practice that isn't published must cost that line, not the page; and
-//  sessions are credited on their own row, never through a credit.
+//  A guide's library includes the written practices that name them on their
+//  own row (`instructor_id`, 0022), taken from the written libraries in each
+//  library's order — the team's order, not the guide's. Another guide's
+//  practices never leak in, and a guide known only for written practices has
+//  a library, not an empty page.
 //
 
 import Testing
@@ -15,51 +15,47 @@ import Testing
 @Suite("Instructor library")
 struct InstructorLibraryTests {
 
-    private func credit(_ kind: PracticeContentKind, _ id: Int) -> PracticeCredit {
-        PracticeCredit(kind: kind, contentID: id, instructorID: "alma-guerra")
+    /// The team's order is deliberately not id order. Alma made sequences 4
+    /// and 1, recipe 2 and prompt 5; Mara made sequence 3; the rest name no
+    /// guide.
+    private let written = WrittenLibrary(
+        journals: [Fixtures.journal(1), Fixtures.journal(5, guide: "alma-guerra")],
+        exercises: [Fixtures.exercise(4, guide: "alma-guerra"), Fixtures.exercise(2),
+                    Fixtures.exercise(1, guide: "alma-guerra"), Fixtures.exercise(3, guide: "mara-sole")],
+        recipes: [Fixtures.recipe(1), Fixtures.recipe(2, guide: "alma-guerra")])
+
+    private func libraryOf(_ id: String) -> InstructorLibrary {
+        InstructorLibrary(programs: [], sessions: [], written: written, instructorID: id)
     }
 
-    /// The live libraries' shape: five prompts, five sequences, three recipes.
-    private let written = Fixtures.library(journals: [1, 2, 3, 4, 5], exercises: [1, 2, 3, 4, 5], recipes: [1, 2, 3])
+    @Test func aGuidesWrittenPracticesAreTheOnesThatNameThem() {
+        let alma = libraryOf("alma-guerra")
 
-    private func resolve(_ credits: [PracticeCredit]) -> InstructorLibrary {
-        InstructorLibrary(programs: [], sessions: [], credits: credits, library: written)
+        #expect(alma.exercises.map(\.id) == [4, 1])
+        #expect(alma.recipes.map(\.id) == [2])
+        #expect(alma.journals.map(\.id) == [5])
+        #expect(alma.count == 4)
     }
 
-    @Test func creditedPracticesAreResolvedFromTheirLibraries() {
-        let library = resolve([credit(.exercise, 4), credit(.recipe, 1), credit(.journal, 2)])
+    @Test func theyKeepTheLibrarysOwnOrder() {
+        let alma = libraryOf("alma-guerra")
 
-        #expect(library.exercises.map(\.id) == [4])
-        #expect(library.recipes.map(\.id) == [1])
-        #expect(library.journals.map(\.id) == [2])
-        #expect(library.count == 3)
+        #expect(alma.exercises.map(\.id) == [4, 1], "Library order, not id order")
     }
 
-    @Test func theyKeepTheLibrarysOwnOrderNotTheCreditsOrder() {
-        let library = resolve([credit(.exercise, 5), credit(.exercise, 1), credit(.exercise, 3)])
+    @Test func anotherGuidesPracticesAreLeftOut() {
+        let mara = libraryOf("mara-sole")
 
-        #expect(library.exercises.map(\.id) == [1, 3, 5])
-    }
-
-    @Test func aCreditForAPracticeTheLibraryDoesntHoldIsDropped() {
-        let library = resolve([credit(.recipe, 999), credit(.recipe, 2)])
-
-        #expect(library.recipes.map(\.id) == [2])
-    }
-
-    @Test func aSessionCreditIsIgnoredBecauseSessionsCarryTheirOwnGuide() {
-        let library = resolve([credit(.session, 1)])
-
-        #expect(library.isEmpty)
+        #expect(mara.exercises.map(\.id) == [3])
+        #expect(mara.recipes.isEmpty)
+        #expect(mara.journals.isEmpty)
     }
 
     @Test func aGuideWithOnlyWrittenPracticesIsNotEmpty() {
-        let library = resolve([credit(.journal, 1)])
-
-        #expect(!library.isEmpty)
+        #expect(!libraryOf("mara-sole").isEmpty)
     }
 
-    @Test func theKeyMatchesTheShapeProgressAndPresenceUse() {
-        #expect(credit(.exercise, 4).key == "exercise-4")
+    @Test func aGuideWhoMadeNothingHasAnEmptyLibrary() {
+        #expect(libraryOf("noa-castell").isEmpty)
     }
 }
