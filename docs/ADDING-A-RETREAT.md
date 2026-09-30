@@ -23,6 +23,11 @@ Dashboard → **Storage** → `retreat-images` → Upload.
   ids mean nothing to a human scanning a bucket, and if a row is ever recreated
   the file would be misnamed while the photo is unchanged. Lowercase and hyphens,
   so the URL needs no escaping.
+- **Three names are a year off, on purpose.** Kyoto, Sedona and Bali moved from
+  2026 to 2027 on 2026-09-30 and still point at `kyoto-2026-05.jpg`,
+  `sedona-2026-06.jpg` and `bali-2026-07.jpg`. Those files are also the
+  placeholder art on the written practices and *Finding Ground*, so renaming one
+  means updating those rows too. Leave them until a new shoot replaces them.
 - **Size:** it is used full-bleed behind type on the detail hero and the
   retreats stack. ~2000px on the long edge is plenty; bigger only costs the
   user bandwidth.
@@ -176,14 +181,12 @@ Uploaded 2026-09-14 when the post-purchase screens stopped hardcoding them:
 |---|---|
 | `mallorca-2027-07/{welcome,featured-todo,todos,packing,guides}.jpg` | the four trip screens, via `post_booking` |
 | `mallorca-2027-07/{hero,checkout,cycle,dinner,recover,swim,yoga}.jpg` | **nothing yet** — they were in the app bundle unreferenced. Parked here so a future brochure can point at them (element photography, say) without a release. |
-| `members/g-martinez.jpg` | **nothing** — the testimonial renders quote, author and attribution, never a photograph. See below. |
 
-> **The member photograph has never been displayed.** `member-gmartinez` sat in
-> the asset catalog at 1.1MB, referenced by no view and no mirror card — the
-> testimonial section renders text only. It is now in Storage and out of the
-> bundle, but showing it would need a design decision and an avatar in
-> `testimonialSection`, which nobody has asked for. If you do want it, the field
-> to add is `testimonial.image`.
+`members/g-martinez.jpg` was here too and was **deleted on 2026-09-30**. It was a
+person's photograph at a public URL, and nothing had ever displayed it: the
+testimonial section renders quote, author and attribution only. If a
+testimonial should ever show a face, upload one with that person's consent
+and add a `testimonial.image` field and an avatar in `testimonialSection`.
 
 ## What still needs a release
 

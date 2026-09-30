@@ -26,19 +26,32 @@ final class RetreatBrochureTests: XCTestCase {
     func testMallorcaBrochureComesFromTheDatabase() {
         let app = XCUIApplication()
         // Straight to the Gatherings tab, which is the retreats stack. Not via
-        // Home's shelf: it scrolls horizontally and Mallorca is its third card,
-        // so it exists but has no valid activation point — even `isHittable`
-        // throws on it. The stack is a vertical list of every retreat.
+        // Home's shelf: it scrolls horizontally and Mallorca is cards deep, so
+        // it exists but has no valid activation point — even `isHittable`
+        // throws on it.
         app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "gatherings"]
         app.launch()
 
-        // Each name in the stack is a button labelled "<name>, <country>". The
-        // first tap on a name that isn't centred brings it into focus; the
-        // card under the stack then opens whichever retreat is focused.
-        let name = app.buttons["Mallorca, Spain"]
-        XCTAssertTrue(name.waitForExistence(timeout: 20), "Mallorca never appeared in the stack")
+        // Through the catalog grid, not the stack's names. The stack shows the
+        // focused name and the two after it, and Mallorca's place in it moves
+        // whenever a retreat is added or dated earlier (third, then sixth from
+        // 2026-09-30). XCUITest scrolls an off-screen name to the centre before
+        // tapping it, and a tap on the centred name opens the retreat outright,
+        // skipping the card this test goes through. A cover in the grid
+        // refocuses the stack on its retreat wherever it sits.
+        let toggle = app.buttons["Show all retreats"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 20), "The stack never loaded")
         shot(app, "02-retreats-stack")
-        name.tap()
+        toggle.tap()
+
+        // A cover reads "<name>, <country>, <dates>"; the stack's name is just
+        // "<name>, <country>", so the trailing comma picks the cover.
+        let cover = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Mallorca, Spain, ")
+        ).firstMatch
+        XCTAssertTrue(cover.waitForExistence(timeout: 10), "Mallorca has no cover in the catalog")
+        shot(app, "02-catalog")
+        cover.tap()
 
         // The card's label names the focused retreat ("Explore Mallorca. Spain,
         // July 21–26, 2027"), so this only matches once Mallorca is centred.
