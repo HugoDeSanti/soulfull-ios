@@ -39,6 +39,7 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 `AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which restores or opens an **anonymous** Supabase session so catalog reads work immediately, then routes on `hasOnboarded` alone.
 
 - **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (authenticated **and** not anonymous), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too.
+- **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive.
 - **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create, hydrates on sign-in, and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
 - **Sign in with Apple is the only third-party provider.** Google was built and then removed, so there is no GoogleSignIn and no web-auth flow. `signInWithApple` calls `signInWithIdToken`, which *replaces* the guest instead of upgrading it.
 - **Email confirmation has three completion paths. Don't reduce it to the deep link:** the PKCE verifier lives in this iPhone's Keychain, and `soulfull://` doesn't open on a laptop.
@@ -75,7 +76,7 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0022 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0024 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
@@ -202,7 +203,9 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
   - Runbook: `docs/ADDING-AN-INSTRUCTOR.md`.
 
 **Member data** (owner RLS; guests refused on writes):
-- **`profiles`**: one row per auth user, created by a trigger (guests included).
+- **`profiles`**: one row per **member**, created by `handle_new_user` at sign-up, or when a guest's upgrade is confirmed (`is_anonymous` flips off). Guests have none and can't write one (0023).
+  - The guest check is `caller_has_account()`, which reads `auth.users`, not the JWT claim, because the token still says anonymous just after confirmation, exactly when `pushOnboardingAnswers` writes.
+  - Before 0024 every client upsert failed (42501): the email guard read `auth.users` as the client. Members from before 2026-09-30 have no answers on their row.
   - `upsertProfile` never writes `stripe_customer_id`, the timestamps, `avatar_url` or `share_activity`. The last two have their own targeted setters.
   - `avatar_url` is check-constrained to `avatars/<own id>/<uuid>.jpg`. Each upload is centre-cropped on the device to a 512px JPEG and gets a **fresh uuid**, because the path is every phone's cache key.
 - **`practice_plays`** and the **`practice_progress`** view: see *Practice progress*.
