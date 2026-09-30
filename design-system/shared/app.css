@@ -399,9 +399,9 @@
 .presence .faces i:nth-child(3) { background: linear-gradient(135deg, #4f5c29, #333d17); z-index: 1; }
 
 /* ---- Your guide — Features/Instructors/GuideCard.swift ------------------
-   On the page of anything a guide made, when its content names one: a digital
-   retreat and a session by their row's instructor_id, a journal prompt /
-   movement sequence / recipe by practice_credits. Never on the Practice
+   On the page of anything a guide made, when its content names one — a digital
+   retreat, a session, a journal prompt, movement sequence or recipe, each by
+   its own row's instructor_id. Never on the Practice
    landing. 50pt face in a 1px honey ring 3pt out, YOUR GUIDE eyebrow, name
    (headline 19), what they teach (body 12, muted), chevron. Glass — so never
    inside a text halo. Absent when nothing names a guide. Tap → the guide's
