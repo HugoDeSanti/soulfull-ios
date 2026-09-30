@@ -39,7 +39,7 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 `AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which restores or opens an **anonymous** Supabase session so catalog reads work immediately, then routes on `hasOnboarded` alone.
 
 - **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (authenticated **and** not anonymous), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too.
-- **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive.
+- **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive. A second job, `purge-stale-auth-flows` (0025), deletes `auth.flow_state` rows older than 7 days: confirmations left behind by the code path, another device, a deleted account or nobody.
 - **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create, hydrates on sign-in, and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
 - **Sign in with Apple is the only third-party provider.** Google was built and then removed, so there is no GoogleSignIn and no web-auth flow. `signInWithApple` calls `signInWithIdToken`, which *replaces* the guest instead of upgrading it.
 - **Email confirmation has three completion paths. Don't reduce it to the deep link:** the PKCE verifier lives in this iPhone's Keychain, and `soulfull://` doesn't open on a laptop.
@@ -76,7 +76,7 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0024 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0025 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
