@@ -1,738 +1,465 @@
 # Soulfull Gatherings — iOS App
 
-SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial aesthetic throughout. Backend is Supabase (PostgreSQL + Storage + Auth — Sign in with Apple or email/password). Browsing is open to an anonymous guest; an account is asked for only at the first practice. Mock data still exists in `Models.swift` and is used while real Supabase tables are being seeded.
+SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial aesthetic. Backend is Supabase (Postgres + Storage + Auth — Sign in with Apple or email/password). Browsing is open to an anonymous guest; an account is asked for only when someone reaches for something personal (see *Account gate*).
 
-**Minimum deployment target: iOS 18.** Always use the latest Swift and SwiftUI idioms — `@Observable` over `ObservableObject`, `@Environment` over `@EnvironmentObject`, `@State` over `@StateObject`/`@ObservedObject`, typed throws, `NavigationStack` with typed `Route` enums, etc. Do not reach for deprecated patterns for compatibility — there is no older OS to support. Swift language version is pinned to 6.0 in `project.yml`.
+**iOS 18 minimum, Swift 6.0 (pinned in `project.yml`).** Always use current idioms — `@Observable` (not `ObservableObject`), `@Environment(Type.self)` (not `@EnvironmentObject`), `@State` (not `@StateObject`/`@ObservedObject`), typed throws, `NavigationStack` with typed `Route` enums. No compatibility shims — there is no older OS to support.
 
 ## Build & Run
 
-This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate the `.xcodeproj` from `project.yml`. `project.yml` is the single source of truth for the build (target, Swift 6, iOS 18 deployment, bundle ID `com.soulfullgatherings.app`, the Supabase SPM dependency (**Stripe was dropped in v1** — see `AppFeatures.paymentsEnabled`), Geist font resources, the Sign in with Apple entitlement, `Secrets.xcconfig` injection). Regenerate `.xcodeproj` whenever you edit `project.yml`.
-
-> **`SoulfullGatherings/Info.plist` and `SoulfullGatherings/SoulfullGatherings.entitlements` are generated artifacts.** XcodeGen writes them from `project.yml`'s `info.properties` / `entitlements.properties` on every `xcodegen generate`, so hand-edits are silently reverted. Add or change bundle keys and entitlements in **`project.yml`**. Both are gitignored.
-
-> Stripe is pulled from **`github.com/stripe/stripe-ios-spm`** (the slim, SPM-optimized distribution), **not** `stripe/stripe-ios` — the main repo's multi-GB history makes SPM resolution extremely slow. Don't switch it back.
+[XcodeGen](https://github.com/yonaskolb/XcodeGen): `project.yml` is the single source of truth (target, Swift 6, iOS 18, bundle ID `com.soulfullgatherings.app`, the Supabase SPM package, Geist fonts, entitlements, `Secrets.xcconfig` injection). Run `xcodegen generate` after editing `project.yml` **or adding any file** — targets use explicit file references.
 
 ```bash
-# Regenerate the Xcode project after editing project.yml
 xcodegen generate
-
-# Open in Xcode
-open SoulfullGatherings.xcodeproj
+open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 ```
 
-Build and run via Xcode (⌘R). Target: iPhone, iOS 18+. Portrait only. Dark mode is forced at the `WindowGroup` level via `.preferredColorScheme(.dark)`.
+- `SoulfullGatherings/Info.plist` and `SoulfullGatherings.entitlements` are **generated and gitignored** — hand edits are silently reverted. Change keys and entitlements in `project.yml` (`info.properties` / `entitlements.properties`).
+- Dark mode is forced at the `WindowGroup` with `.preferredColorScheme(.dark)`.
+- The build only sources `SoulfullGatherings/` and `Resources/Fonts` (Geist, at the **repo root**, listed in `UIAppFonts`). `supabase/`, `docs/` and `design-system/` are not part of it.
 
 ## Architecture
 
-**Pattern:** MVVM with SwiftUI. Each screen that needs state has a paired `ViewModel` declared `@Observable @MainActor final class …` (the Observation framework, not `ObservableObject`/`@Published`). App-level singletons — `AppState`, `AppSettings`, `AuthManager` — are also `@Observable @MainActor` and are injected into the SwiftUI environment from `@main` and read with `@Environment(Type.self)`.
+**MVVM.** Each stateful screen has a ViewModel declared `@Observable @MainActor final class`. The app singletons `AppState`, `AppSettings` and `AuthManager` are the same, injected from `@main` and read with `@Environment(Type.self)`.
 
-**Three-tier navigation:**
-1. **Stage level** — `AppState.stage` (`Stage` enum: `loading → welcome → onboarding → main`) drives the top-level switch in `RootView`. Transitions are animated (`withAnimation(.easeInOut(…))`) and the onboarded flag is persisted in `UserDefaults` (`sg.hasOnboarded`) via `AppSettings`.
-2. **Tab level** — `App/MainTabView.swift` hosts six tabs (`MainTab`: `home`, `gatherings`, `programs`, `practice`, `community`, `you` — on the bar: Home · Gatherings · Digital Retreats · Practice · Community · You) with the custom `BottomNav` — a flat, docked, **deliberately static** bar (no lens, bounce or press animation — the owner found the old springy glass capsule too childish, 2026-09-22) whose You item is the member's own `AvatarView` — which builds itself from `MainTab.allCases`. At six, equal slots no longer fit ("Digital Retreats" is ~77pt against a ~64pt sixth), so its private `NavBarLayout` gives each item its label's width plus an equal share of the spare. Gatherings, Digital Retreats, Practice and Community each wrap their content in a private per-tab `NavigationStack` root (`GatheringsRoot`, `ProgramsRoot`, `PracticeRoot`, `CommunityRoot`); Home and You render directly with no stack. **"Programs" is called "Digital Retreats" everywhere a member can see it (2026-09-25; with the Gatherings tab, shipped in 1.0 (8))** — tab label, headings, buttons, VoiceOver — while the code, the tables and the `-tab programs` launch arg keep the original name. Write new copy as "digital retreat", never "program". (The old `circle` placeholder tab was cut from v1 under Guideline 4.2; **Community** is its real successor — added 2026-09-22, see *Community* below.)
-3. **Item level** — each tab root holds a typed `Route` enum and a `@State private var path: [Route]`. `GatheringsRoot.Route` covers `retreatDetail` and the post-purchase screens, over `RetreatsStackView(isTabRoot: true)` (no Back, bottom card lifted by `BottomNav.height`). Home owns no routes: its two shelves at the foot — Digital Retreats, then Upcoming gatherings (moved last on 2026-09-25) — hand off to their tabs, a card through `pendingProgram` / `pendingRetreat`. ⚠️ **`pendingRetreat` is consumed by the stack once its catalog has loaded, not on appear** — pushing in the same update the tab appears built the stack underneath a detail it had never been on screen for, and its scroll position then re-evaluated forever (100% CPU, caught by `GatheringsTabTests`); `ProgramsRoot.Route` covers program detail, one day (**by day number, not by `ProgramDay` value** — the curriculum is editable under a live member and a stale copy in the path would keep rendering the old day), and the same journal/movement/recipe detail destinations Practice pushes; `PracticeRoot.Route` covers the practice session list plus journal/movement/recipe list and detail destinations, and `instructor(id, from:)` — a guide's profile. **Guides are met only on the pages of what they made, never on the Practice landing** (a Guides shelf was built and removed on 2026-09-28 at the owner's request): every practice page and digital retreat carries a "Your guide" `GuideCard`, which opens the profile through the `openInstructor` environment action that `PracticeRoot` and `ProgramsRoot` put on their stacks — a sheet inherits it, which is how the session player's chip reaches the stack below. `from` is the page's title, the profile's back label; a guide already on top isn't pushed again. From the Practice tab a library digital retreat hands off to its tab through `pendingProgram`; `ProgramsRoot` pushes it directly. `CommunityRoot.Route` is just `friends`. Native swipe-back works because navigation is value-based.
+### Navigation (three tiers)
+1. **Stage** — `AppState.stage` (`loading → welcome → onboarding → main`) drives the switch in `RootView`, animated. The onboarded flag is persisted as `sg.hasOnboarded` via `AppSettings`.
+2. **Tab** — `MainTabView` hosts six `MainTab`s: `home`, `gatherings`, `programs`, `practice`, `community`, `you` (bar labels: Home · Gatherings · Digital Retreats · Practice · Community · You). `BottomNav` is a flat, docked, **deliberately static** bar with no lens, bounce or press animation (the owner found the springy glass capsule childish). Its You item is the member's `AvatarView`. `NavBarLayout` sizes each slot to its label plus an equal share of the spare, because six equal slots can't fit "Digital Retreats".
+3. **Item** — Gatherings, Digital Retreats, Practice and Community each wrap a private `NavigationStack` root (`GatheringsRoot`, `ProgramsRoot`, `PracticeRoot`, `CommunityRoot`) with a typed `Route` enum and `@State path: [Route]`. Home and You have no stack. Value-based navigation is what makes swipe-back work.
+   - `GatheringsRoot.Route`: retreat detail and the post-purchase screens, over `RetreatsStackView(isTabRoot: true)`.
+   - `ProgramsRoot.Route`: program detail, a day **by day number** (not a `ProgramDay` value: the curriculum can be edited while a member is on it, and a stale copy in the path would keep rendering), and the journal/movement/recipe details.
+   - `PracticeRoot.Route`: session list, journal/movement/recipe lists and details, `instructor(id, from:)`.
+   - `CommunityRoot.Route`: `friends`, `notifications`.
+   - Cross-tab hand-offs go through `pendingPractice` / `pendingProgram` / `pendingRetreat`. ⚠️ **`pendingRetreat` is consumed once the stack's catalog has loaded, not on appear.** Pushing in the same update the tab appears pinned the CPU at 100% (`GatheringsTabTests` catches it).
 
-**Auth:** `AppState.initializeAuth()` runs from the app entry `.task`; it calls `AuthManager.initialize()` and then routes to the correct stage. **No account is needed to browse** — see *Account gate* below. `AuthManager` establishes (or restores) an **anonymous** Supabase session on launch (so catalog reads work during welcome/onboarding), then lets the user **upgrade that guest into a permanent email/password account** in place (`createAccount` calls `auth.update` on the anonymous user so the same `id` and any data carry over; a non-anonymous user falls through to `signUp`). Also exposes `signIn`, `signOut` (signs out then re-opens a fresh anonymous session so the app keeps working). Liveness is `AuthManager.State` (`initializing`, `authenticated`, `failed(String)`); identity is `isAnonymous`, `hasAccount` (= authenticated **and** not anonymous — gate paid/Reserve flows on this, not `isAuthenticated`), `email`, and `userID`. **Sign in with Apple:** `signInWithApple(_ credential: AppleCredential)` exchanges the token from `SignInWithAppleButton` via `signInWithIdToken`, then fires `storeAppleRefreshToken` (see *Apple token revocation* below). It is the **only** third-party provider — Google was built (hosted OAuth in an `ASWebAuthenticationSession`) and then deliberately removed before shipping on 2026-09-03, so there is no GoogleSignIn dependency and no web-auth flow anywhere in the app. Apple sign-in does *not* upgrade the anonymous guest — Supabase signs the Apple identity in as its own user and the guest session is replaced. Nothing user-visible is lost: onboarding answers live in `AppSettings` and `AccountViewModel.mergeProfile` reconciles them with the server row (hydrate if the row already has answers, push if it doesn't). Preserving the guest id would need `linkIdentity`, which requires manual linking enabled in the dashboard. **Email confirmation** (if enabled in Supabase) has **three** completion paths, because the link alone only works on one device. (1) *Same device*: the link deep-links back at `soulfull://auth-callback` — `SoulfullGatheringsApp`'s `.onOpenURL` calls `AuthManager.handleDeepLink(_:)`, which runs `auth.session(from:)` (PKCE) to finalize the session. (2) *Any device*: the email leads with a **numeric code** (length = the project's `mailer_otp_length`, **6** on the live project — the app pins no length and the server validates); `AccountView`'s confirm panel takes it and `AuthManager.confirmEmail(code:email:)` calls `verifyOTP`, which needs no PKCE verifier and returns a real session. (3) *Confirmed elsewhere*: opening the link on a laptop confirms the address server-side but tells this device nothing, so `AuthManager.refreshConfirmationState()` re-reads `GET /user` — polled every 5s while the confirm panel is up, and once at launch for a guest session — and rotates the token when it finds the address confirmed. **Don't reduce this to the deep link again**: the PKCE verifier lives in *this* iPhone's Keychain and `soulfull://` doesn't resolve in a desktop browser, so a link-only flow strands anyone who reads mail on a computer. **Sign in with Apple is wired** — the `com.apple.developer.applesignin` entitlement is generated from `project.yml`, and the `APPLE_ID_AUTH` capability is enabled on the App ID (verified against the App Store Connect API, 2026-09-03).
+**"Programs" are called "Digital Retreats" everywhere a member can see them** (labels, headings, VoiceOver). The code, the tables and the `-tab programs` launch arg keep "program". Write new copy as "digital retreat".
 
-**Apple token revocation (Guideline 5.1.1(v)) — don't unpick this.** An app offering both Sign in with Apple and account deletion **must** call Apple's `/auth/revoke` when the account is deleted. Deleting the Supabase auth user does *not* do that: until Apple is told, the app keeps appearing under **Settings → Apple ID → Sign in with Apple**, and that is what a reviewer checks. Revoking needs an Apple *refresh token*; the refresh token comes from exchanging the *authorization code*; the code is single-use and expires in ~5 minutes — so it cannot be deferred to deletion time and the work is split in two. (1) **At sign-in**: `AppleSignInButton` puts `credential.authorizationCode` into `AppleCredential`, and `AuthManager.storeAppleRefreshToken` posts it to the **`store-apple-token`** Edge Function, which exchanges it with Apple and writes the refresh token to **`apple_credentials`** (service-role only). (2) **At deletion**: `delete-account` reads that token *before* deleting the user (the row cascades away with them) and calls `/auth/revoke`. **Both steps are best-effort by design** — a failed exchange must never cost the user the sign-in they asked for, and a failed revoke must never block the deletion they're entitled to. That is affordable because Apple mints a fresh authorization code on *every* authorization, so a miss self-heals on the next sign-in; both failures are logged, and deletion reports `apple_revoked` in its response. Setup and the end-to-end check (delete the account, then look in Settings) are in `supabase/functions/README.md`.
+**Guides (instructors) appear only on the pages of what they made:** a "Your guide" `GuideCard` on every practice page and digital retreat, and a face chip in the session player. They **never** appear on the Practice landing (a shelf there was removed at the owner's request). Cards open the profile through the `openInstructor` environment action that `PracticeRoot` and `ProgramsRoot` install, and sheets inherit it. `from` is the back label. A guide who is already on top isn't pushed again.
 
-**Account gate (just-in-time).** Browsing is free; the account is asked for at the moment the user reaches for something personal. `Features/Auth/AccountGate.swift` is an `@Observable` that holds the interrupted action, raises `AccountView` as a sheet, and **replays the action** on `onDismiss` if an account now exists — so signing in never costs the user the tap they were making.
+### Auth
+`AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which restores or opens an **anonymous** Supabase session so catalog reads work immediately, then routes on `hasOnboarded` alone.
+
+- **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (authenticated **and** not anonymous), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too.
+- **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create, hydrates on sign-in, and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
+- **Sign in with Apple is the only third-party provider.** Google was built and then removed, so there is no GoogleSignIn and no web-auth flow. `signInWithApple` calls `signInWithIdToken`, which *replaces* the guest instead of upgrading it.
+- **Email confirmation has three completion paths. Don't reduce it to the deep link:** the PKCE verifier lives in this iPhone's Keychain, and `soulfull://` doesn't open on a laptop.
+  1. Same device: `soulfull://auth-callback` → `.onOpenURL` → `AuthManager.handleDeepLink` (PKCE `session(from:)`).
+  2. Any device: the emailed numeric code → `confirmEmail(code:email:)` (`verifyOTP`). The server sets the code length (6 today); never hardcode it.
+  3. Confirmed elsewhere: `refreshConfirmationState()` re-reads `GET /user`. It is polled by `beginConfirmationWatch`, which `AuthManager` owns so the watch survives the sheet closing (backs off from 5s to 60s), and it runs once at launch for a guest.
+  The guest upgrade is an email **change**, so most people get the *Change Email Address* template, not *Confirm signup*. Both are branded in `supabase/templates/`.
+
+**Apple token revocation (Guideline 5.1.1(v)). Don't unpick this.** Deleting an account must call Apple's `/auth/revoke`. That needs a refresh token, and the refresh token comes from a single-use authorization code that expires in about 5 minutes, so it has to be captured at sign-in:
+- **At sign-in:** `AppleSignInButton` puts `authorizationCode` into `AppleCredential` (don't drop it from the struct) → `AuthManager.storeAppleRefreshToken` → the `store-apple-token` Edge Function → `apple_credentials`.
+- **At deletion:** `delete-account` reads the token *before* deleting the user, then revokes.
+- **Both steps are best-effort by design.** A failed exchange must not cost someone their sign-in, and a failed revoke must not block their deletion. Apple issues a fresh code on every sign-in, so a miss fixes itself next time.
+
+Setup and the end-to-end check are in `supabase/functions/README.md`.
+
+### Account gate (just-in-time)
+Browsing is free. The account is asked for at the moment someone reaches for something personal. `Features/Auth/AccountGate.swift` holds **only the pending action** and is not `@Observable`. `require(signedIn:_:)` returns `Bool`, and the caller raises `AccountView` from a plain `@State` Bool. On dismiss, `resume(signedIn:)` **replays the interrupted tap** if an account now exists.
 
 | Open to a guest | Gated on `auth.hasAccount` |
 |---|---|
-| Home, mood chips, ritual card | Playing a practice session (`PracticePlayerView`) |
-| Retreats stack + retreat detail | Journal prompt / movement sequence / recipe detail |
-| Practice landing **and every list screen** | Reserve / checkout (already gated) |
-| Community feed (the **All** scope) | The **Friends** scope, and the Friends screen (search / requests) |
-| Instructor profiles and their libraries, every "Your guide" card | **Follow** on a guide's profile (the replay asks for the state, never toggles — see `InstructorProfileViewModel.setFollowing`) |
+| Home, the retreat catalog and detail, every Practice list, browsing digital retreats | Playing a session; journal / movement / recipe detail; joining a program |
+| Community feed (All) | The Friends scope and screen; liking |
+| Instructor profiles, "Your guide" cards | Follow (the replay *sets* the state and never toggles it: `InstructorProfileViewModel.setFollowing`) |
+| | The retreat application ("Request a place") |
 
-The gate lives in `MainTabView` — one sheet for the whole shell — and is handed to `PracticeRoot` as `requireAccount: (@escaping () -> Void) -> Void`. `PracticeRoot` wraps only the four detail pushes; `PracticeListView` takes the same closure and wraps the player. Both default to `{ $0() }` so previews and any un-gated host run straight through. **Note the `@escaping` inside the function type — it is required there and easy to get wrong; without it the closure can't be stored and the build fails.**
+There is one gate and one sheet, both in `MainTabView`, handed down as `requireAccount: (@escaping () -> Void) -> Void` (default `{ $0() }` for previews). **The `@escaping` inside the function type is required.** Without it the closure can't be stored and the build fails.
 
-`AccountGate` holds **only the pending action** and is not `@Observable`; `require(signedIn:_:)` returns `Bool` and the caller raises the sheet off a plain `@State` Bool, matching every other sheet here.
+**Never gate browsing.** A registration wall at the end of onboarding was built and removed the same day because it fell under **Guideline 5.1.1(i)** (registration can't be required for core functionality). Don't add a gate in `AppState.initializeAuth()`, in onboarding, or on a whole tab.
 
-> **Why not a hard gate.** A required-registration wall at the end of onboarding was built first (2026-09-03) and removed the same day: it put the app in scope for **App Store Guideline 5.1.1(i)** — registration may not be required unless directly relevant to core functionality — because it blocked a browsable catalog behind a login. Gating the *doing* rather than the *browsing* keeps that argument easy to make. Don't reintroduce a gate in `AppState.initializeAuth()` or as an onboarding step.
+## Code map
 
-## File Map
+This lists only what the file names don't make obvious. Features follow `Features/<Area>/<Screen>View.swift` + `…ViewModel.swift`.
 
 ```
-Config/
-├── Secrets.xcconfig                   # Gitignored — real Supabase host + anon key + DEVELOPMENT_TEAM (never commit)
-└── Secrets.xcconfig.example           # Template; copy to Secrets.xcconfig on a new machine
-
-supabase/                              # Backend-as-code. NOT part of the Xcode build (project.yml only sources SoulfullGatherings/ + Resources/Fonts).
-├── templates/                         # Branded auth emails (confirm-signup + change-email) + README.
-│                                      # Apply by PATCHing the four mailer_* fields on the project's auth config —
-│                                      # NEVER `supabase config push`, which resets every unspecified setting to CLI
-│                                      # defaults, incl. anonymous sign-ins. (scripts/apply-auth-emails.sh did this and
-│                                      # was removed 2026-09-07: `git show d20e3f6:scripts/apply-auth-emails.sh`.)
-│                                      # The "Supabase Auth" SENDER name needs custom SMTP — see the README.
-│
-├── migrations/
-│   ├── 0022_written_practice_guides.sql # A written practice names its guide on its own row: `instructor_id` on the three 0021 tables,
-│   │                                  # FK → instructors, on delete SET NULL (as 0019's), partial indexes. The 13 practice_credits copied
-│   │                                  # across, then `practice_credits` DROPPED (no function/view read it; no shipped build did either).
-│   │                                  # DISPLAY ONLY. APPLIED 2026-09-29 (Management API, recorded; dry-run rolled back first; unknown
-│   │                                  # guide → 23503; guest reads 200, PATCH 401; practice_credits → 404)
-│   ├── 0021_written_practices.sql     # The written libraries become tables: `journal_prompts`, `exercises` (steps = jsonb
-│   │                                  # [{name, detail?}], shape enforced by a CHECK through `is_valid_exercise_steps`, EXECUTE revoked
-│   │                                  # from clients), `recipes` (`angle` — a dietary angle, NOT `lead`, which names a paid guide
-│   │                                  # elsewhere; ingredients/steps text[], no nulls). Published-only select for anon + authenticated,
-│   │                                  # grants narrowed, no client write. Seeded from the old Swift arrays UNDER THE SAME IDS (5/5/3) —
-│   │                                  # the ledger, curricula and saved reflections all key on them; never change or reuse one,
-│   │                                  # unpublish instead. APPLIED 2026-09-29 (Management API, recorded; dry-run in a rolled-back
-│   │                                  # transaction first; every curriculum reference and credit resolves; guest reads 200, writes 42501)
-│   ├── 0020_practice_credits.sql      # SUPERSEDED by 0022, which dropped the table. Was: which guide a written practice is credited to,
-│   │                                  # (content_kind, content_id) → instructor_id, while those libraries were Swift arrays with no row.
-│   │                                  # APPLIED 2026-09-28.
-│   ├── 0019_instructors.sql           # Instructor profiles. APPLIED 2026-09-28 (Management API, recorded; guest + member + linked-guide
-│   │                                  # paths verified live). `instructors` (slug pk, name/title/bio/
-│   │                                  # photo_url, `user_id` → the guide's own account, published, sort_order): team-written, NO client
-│   │                                  # writes, and `user_id` withheld from both client roles by COLUMN grant — so the app lists columns
-│   │                                  # (`*` answers 42501). `practice_sessions`/`programs` gain `instructor_id`; a trigger keeps `lead`
-│   │                                  # = the guide's name (rename once, every credit follows). `instructor_follows` (owner RLS, guests
-│   │                                  # refused, no following yourself — checked by a definer fn because the policy can't read user_id).
-│   │                                  # `instructor_social(id)` (definer): followers, following (= guides the linked account follows; 0
-│   │                                  # unlinked), followed_by_me, is_me, ≤3 faces (friends first, share_activity only, never the caller).
-│   │                                  # Public `instructor-photos` bucket. Runbook: docs/ADDING-AN-INSTRUCTOR.md
-│   ├── 0018_presence.sql              # "75.7k present". APPLIED 2026-09-23 (Management API, recorded). Two SECURITY DEFINER RPCs granted to
-│   │                                  # `authenticated`: `practice_presence()` (distinct members who STARTED a practice in the last
-│   │                                  # 24h) and `program_presence()` (enrolled, unfinished, active in it in the last 14 days — joined,
-│   │                                  # finished a day, or started one of its activities). Both return ONLY rows with >= 3 people,
-│   │                                  # up to 3 faces (friends first, then photos, most recent; never the caller; never an opted-out
-│   │                                  # member — they count but aren't shown) and NO faces for a journal prompt.
-│   ├── 0017_push_tokens.sql           # Push for likes. APPLIED 2026-09-23 (Management API, recorded). `device_tokens` (pk the
-│   │                                  # APNs token; owner RLS, guests refused; a BEFORE INSERT trigger running as owner hands
-│   │                                  # the token to whoever registers it, so a shared phone follows the person signed in),
-│   │                                  # pg_net enabled, and an AFTER INSERT trigger on `notifications` that posts the row id to
-│   │                                  # the `send-like-push` Edge Function — URL and shared secret read from VAULT
-│   │                                  # (`push_function_url`, `push_webhook_secret`, created at apply time, never in the file).
-│   │                                  # Verified live: guest 42501, claim trigger moves the token, the like reached the
-│   │                                  # function (net._http_response 200 {"sent":0}). ⚠️ SENDS NOTHING until the .p8 has the
-│   │                                  # APNs service — see functions/README.md.
-│   ├── 0016_likes_and_notifications.sql # Likes on the feed + the notification they raise. APPLIED 2026-09-22 (Management
-│   │                                  # API, recorded). `practice_play_likes` (pk play+user; like anything visible in the
-│   │                                  # feed that isn't yours, unlike your own); `community_activity` gains `like_count`
-│   │                                  # and `liked_by_me` (auth.uid() inside an owner-rights view still reads the CALLER);
-│   │                                  # `notifications` (recipient-scoped RLS, NO insert policy — the like trigger writes it
-│   │                                  # as owner, unlike removes it while unread, `read_at` latches, identity frozen) and
-│   │                                  # `member_notifications` (security_invoker view: actor name/avatar + practice title).
-│   │                                  # IN-APP only — push would be a DB webhook on `notifications` → Edge Function → APNs
-│   │                                  # and needs an APNs key from the developer portal; the table is already the source.
-│   ├── 0015_community.sql             # The Community tab. APPLIED 2026-09-22 via the Management API and recorded in
-│   │                                  # schema_migrations. Verified live as a guest (views read 200, every write 42501)
-│   │                                  # and as two confirmed test members (search by surname answers "Theo R.", request →
-│   │                                  # accept, the trigger holds `accepted`, one row per pair, the avatar shape
-│   │                                  # constraint refuses an outside URL AND another member's folder, the bucket
-│   │                                  # refuses a cross-folder upload). ⚠️ LESSON: Supabase grants ALL on a new view to
-│   │                                  # `authenticated` by default, and an owner-rights view over one table is
-│   │                                  # auto-UPDATABLE — the first apply left members able to rewrite anyone's
-│   │                                  # avatar_url through `community_members`. Every `revoke` on an owner-rights view
-│   │                                  # must name `authenticated`, then grant SELECT back. Test-members were deleted.
-│   │                                  # `profiles.avatar_url` (check-constrained to `avatars/<own id>/<uuid>.jpg`, so a
-│   │                                  # member can't point every other phone at an outside image) + `share_activity`;
-│   │                                  # two OWNER-RIGHTS views — `community_members` (id, "Hugo D.", avatar; permanent
-│   │                                  # accounts only) and `community_activity` (finished plays, journal excluded,
-│   │                                  # opt-outs excluded) — granted to `authenticated` on purpose, unlike
-│   │                                  # `practice_creator_earnings`; `friendships` (owner RLS, guests refused, trigger
-│   │                                  # allows only pending→accepted); `search_members(q)` (by name, never email);
-│   │                                  # the public `avatars` bucket with per-folder write policies.
-│   ├── 0014_seed_program_finding_ground.sql # CONTENT, not schema: the first program, 7 days. APPLIED 2026-09-17 and
-│   │                                  # verified (7 declared = 7 authored, 14 activities, rendered on device — the
-│   │                                  # only way to catch a decode failure, which fails soft). Every activity points at
-│   │                                  # the WRITTEN libraries, because `practice_sessions` is empty and an activity
-│   │                                  # that can't be opened can't be completed — which, under the unlock rule,
-│   │                                  # would stall the program permanently. Upserts on the slug, so re-runnable.
-│   ├── 0013_digital_programs.sql      # The Programs tab. APPLIED 2026-09-17 and verified: an anonymous guest is
-│   │                                  # refused 42501, a member can enrol, and the completion date can be neither
-│   │                                  # re-stamped nor PATCHed (it IS the next day's unlock).
-│   │                                  # `programs` gains `curriculum` jsonb / `blurb` / `published` /
-│   │                                  # `sort_order` and loses NOT NULL on `date_range`; `practice_sessions` gains
-│   │                                  # `program_only`; `program_enrollments` + `program_day_completions` arrive with
-│   │                                  # owner-scoped RLS that also refuses anonymous guests. NO update policy on day
-│   │                                  # completions on purpose — the completion date IS the next day's unlock gate.
-│   ├── 0012_drop_massage_content_kind.sql  # Narrows the `practice_plays.content_kind` check to the four
-│   │                                  # libraries that still ship, after Personal Massages was removed.
-│   │                                  # Safe ONLY because the table had no massage rows — it carries the
-│   │                                  # query that proves it and says what to do instead if it doesn't.
-│   │                                  # APPLIED 2026-09-15 and verified: the constraint rejects 'massage'
-│   │                                  # (23514) and accepts 'exercise'; both plays survived.
-│   ├── 0011_retreats_self_serve.sql   # `retreats.experience` jsonb (the brochure) + the public `retreat-images`
-│   │                                  # bucket and its read policy. Applied 2026-09-11. Makes a new retreat a
-│   │                                  # row + an upload — see docs/ADDING-A-RETREAT.md
-│   └── 0010_apple_credentials.sql     # Service-role-only store for Sign in with Apple refresh tokens, so
-│                                      # delete-account can call Apple's /auth/revoke (Guideline 5.1.1(v)).
-│                                      # RLS on with ZERO policies + grants revoked — two independent locks,
-│                                      # because the row is a credential. APPLIED to the live project 2026-09-10,
-│                                      # alongside the key, the four APPLE_* secrets and both function deploys.
-│
-│   (0001–0009 were REMOVED on 2026-09-07. All 9 had been applied to the live project — `supabase migration
-│    list --linked` showed local and remote in step through 0009. Recover the SQL, incl. 0005's practice-media
-│    seeding instructions and 0009's verification checklist, with `git show d20e3f6:supabase/migrations/`.
-│    A new migration still goes here and is applied with `supabase db push`.)
-│
-└── functions/                         # Deno Edge Functions. See functions/README.md for deploy + secrets.
-    ├── create-payment-intent/         # Auth'd: reads authoritative retreat price, reuses/creates Stripe customer, returns PaymentIntent + ephemeral key
-    ├── stripe-webhook/                # Stripe-signed (deploy --no-verify-jwt): writes bookings on payment_intent.succeeded/payment_failed
-    ├── send-retreat-enquiry/           # Auth'd: emails one retreat application to info@soulfullgatherings.com via Resend.
-    │                                  # The applicant's address comes from the JWT, NEVER the body — it is the account's
-    │                                  # address, which is why the app shows that field locked. Needs RESEND_API_KEY +
-    │                                  # a verified sending domain; until it is deployed every application fails (visibly).
-    ├── delete-account/                # Auth'd: deletes the caller's Stripe customer (best-effort), REVOKES their Sign in
-    │                                  # with Apple grant (best-effort), removes their `avatars/<id>/` objects (best-effort,
-    │                                  # added and redeployed 2026-09-22), then the auth user (cascades to
-    │                                  # profiles/apple_credentials/friendships/instructor_follows) — App Store 5.1.1(v) compliance
-    ├── send-like-push/                # NOT auth'd (--no-verify-jwt): called by the 0017 trigger through pg_net with an
-    │                                  # x-webhook-secret. One APNs alert per device the recipient registered; dead tokens
-    │                                  # deleted; every failure logged and answered 200 (the bell is the record, this is the buzz)
-    ├── _shared/apns.ts                # Provider-token JWT (cached 50 min) + one sendAlert(); reuses the APPLE_* secrets
-    ├── store-apple-token/             # Auth'd: runs after every Apple sign-in. Exchanges Apple's single-use
-    │                                  # authorization code for a refresh token → apple_credentials, so the
-    │                                  # deletion above has something to revoke
-    └── _shared/apple.ts               # Apple client-secret JWT (ES256 over the .p8), token exchange, revoke
-
-SoulfullTests/                         # Unit tests (Swift Testing), hosted in the app. One folder per area; Support/Fixtures.swift
-                                       # holds zone-pinned calendars and model fixtures. See *Testing*.
-SoulfullUITests/                       # XCUITest journeys — the critical ones only. See *Testing* for the list.
-
+Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
+supabase/                          # Backend as code; not in the Xcode build
+├── migrations/                    # 0010–0022 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
+│                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
+│                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
+│                                  #   delete-account — Stripe customer, Apple revoke, avatars/<id>/ (each best-effort), then the user
+│                                  #   store-apple-token; send-like-push (--no-verify-jwt + x-webhook-secret; failures answered 200)
+└── templates/                     # Branded auth emails (see its README)
+SoulfullTests/ · SoulfullUITests/  # See *Testing*
 SoulfullGatherings/
-├── SoulfullGatheringsApp.swift        # @main entry; creates AppState, injects environment, forces dark mode, kicks off auth via .task; .onOpenURL routes soulfull:// auth deep links to AuthManager.handleDeepLink.
-│                                      # Renders nothing and runs no launch work while hosting SoulfullTests (isHostingUnitTests)
-├── SoulfullGatherings.entitlements    # GENERATED by XcodeGen from project.yml's `entitlements.properties`. Sign in with Apple
-│                                      # (`com.apple.developer.applesignin`). Gitignored; edit project.yml, not this file.
-├── Info.plist                         # GENERATED by XcodeGen from project.yml's `info.properties` — edit project.yml, not this file.
-│                                      # Gitignored (like *.xcodeproj): a fresh clone runs `xcodegen generate` before building.
-│                                      # SupabaseHost/SupabaseAnonKey resolve from xcconfig; UIAppFonts (Geist); portrait-only;
-│                                      # UILaunchScreen (LaunchBackground colour, no storyboard); ITSAppUsesNonExemptEncryption=false
-├── PrivacyInfo.xcprivacy              # Privacy manifest — UserDefaults required-reason (CA92.1) + collected-data types.
-│                                      # Covers THIS app only; Supabase/Stripe ship their own. Keep in sync with the ASC privacy answers.
-├── Assets.xcassets                    # Asset catalog: images, AppIcon (1024² opaque; its generator was removed 2026-09-07 —
-│                                      # `git show d20e3f6:scripts/make-app-icon.swift`),
-│                                      # LaunchBackground colour set (= Theme.bg, used by UILaunchScreen)
-│
-├── App/                               # App-level: global state, routing, auth, navigation shell
-│   ├── AppState.swift                 # @Observable stage router (loading/welcome/onboarding/main) + lifecycle; initializeAuth() (routes on hasOnboarded alone — no account needed)/resetAll()
-│   ├── AuthManager.swift              # @Observable Supabase auth; init(settings:) — holds AppSettings so sign-out/deletion clear
-│   │                                  # the answers that describe a person; initialize() restores/opens anonymous session; createAccount (upgrades guest in place)/signIn/signInWithApple (signInWithIdToken — the only third-party provider)/signOut/deleteAccount (delete-account fn → re-anon); storeAppleRefreshToken (posts Apple's authorization code to store-apple-token so deletion can revoke — 5.1.1(v)); handleDeepLink (email-confirmation callback via PKCE session(from:)); confirmEmail (verifyOTP on the emailed code — the cross-device path) / resendConfirmation / refreshConfirmationState (re-reads GET /user so a confirmation made elsewhere lands here); beginConfirmationWatch/endConfirmationWatch — the cross-device poll, owned HERE rather than by the account sheet so it survives dismissal, backing off 5s→60s; pushOnboardingAnswers (the single writer of the device's answers to `profiles`); exposes isAnonymous/hasAccount/email/userID/pendingConfirmation
-│   ├── AppSettings.swift              # @Observable UserDefaults wrapper (didSet persistence); hasOnboarded/userName/bodyState/frequency/intentions/
-│   │                                  # avatarUrl (a mirror of profiles.avatar_url, cleared with the other personal answers)
-│   ├── RootView.swift                 # Stage switcher with opacity + motion transitions
-│   ├── MainTabView.swift              # Six-tab container (home/gatherings/programs/practice/community/you) + private GatheringsRoot/ProgramsRoot/PracticeRoot/CommunityRoot
-│   │                                  # NavigationStacks (CommunityRoot owns the CommunityViewModel so the feed and the Friends screen share one set of
-│   │                                  # friendships); owns the AccountGate + its sheet;
-│                                      # DEBUG `-tab <name>` launch arg opens straight to a tab
-│   ├── BottomNav.swift                # Flat docked tab bar, no animation (@Binding current tab); You item = member's AvatarView (guest: person glyph); builds from MainTab.allCases;
-│   │                                  # NavBarLayout (content-sized slots + equal spare); BottomNav.height (56) for screens that pin something above it
-│   └── ConnectionBanner.swift         # Offline / failed-session notice + working Retry; shown when AuthManager.needsRetry
-│
-├── Core/                              # Shared foundational code
-│   ├── Models/
-│   │   └── Models.swift               # All domain models + mock data (Profile [+ avatarUrl / shareActivity], CommunityMember, CommunityActivity, Friendship, FriendStanding, Retreat [+ optional groupChatURL from the DB `group_chat_url`], RetreatExperience [optional long-form detail content; .curated(for:) matches by name; .mallorca holds the curated brochure copy + .postBooking — the post-purchase trip: checkout summary, to-do's, packing, 1:1 GuideOffers, mocked assistant replies], Program, CommunityCircle, PracticeCategory, MediaKind, MediaItem, PracticeSession, PracticeMenuItem, JournalPrompt, ExerciseStep, Exercise, Recipe [each with a small `.mock` fixture — the content is in tables since 0021], WrittenLibrary, IntentionOption, BodyStateOption, FrequencyOption, MoodChip)
-│   ├── DesignSystem/
-│   │   ├── Theme.swift                # Brand colors, gradients, Geist typography helpers, shape constants + Color(hex:)
-│   │   ├── Components.swift           # SGPrimaryButton, GlassCard, SectionLabel, PhotoBackdrop (blur/darken/pan/topScrim; image contained in a Color overlay so scaledToFill can't inflate layout; no grain — grain over photography was pulled as too busy), .onPhoto() (type-over-photography halo), CircleIconButton, TabPlaceholder, PulseModifier, BreathingModifier (.breathing — 5–6s idle loop)
-│   │   ├── Shaders.metal              # Stitchable shader suite: filmGrain, aurora, shimmer, noiseDissolve, ripple
-│   │   ├── ShaderFX.swift             # Wrappers for Shaders.metal (feature code never touches ShaderLibrary): .filmGrain, AuroraBackground, .shimmer(on:), NoiseDissolve Transition (+ .soulStage), .ripple, editorialRise/Page(/Soft) transitions. All Reduce Motion-aware.
-│   │   ├── SoulGlass.swift            # .soulGlass(in:)/.soulGlassCapsule/.soulGlassCard — real Liquid Glass on iOS 26+, material+hairline on 18–25. The only place that branches on OS.
-│   │   ├── Pressable.swift            # SoulPressableStyle (.soulPressable/.soulPressableChip/.soulPressableQuiet) + PressableCard — unified touch physics (spring squish + haptic on touch-down)
-│   │   ├── PinchBrowse.swift          # .pinchBrowsable(zoomedOut:) — interactive pinch zoom-out for catalogs (scrub → spring commit); pair w/ LazyVGrid column morph + a toggle button
-│   │   ├── PresenceBadge.swift        # PresenceBadge (3 overlapping faces + "75.7k present", count rounded DOWN) and PresenceLine —
-│   │   │                              # what feature code uses: reads PresenceStore, renders nothing when there's no count
-│   │   ├── AvatarView.swift           # A member's face: their photo through CatalogImage, or their initial on one of five brand tones picked
-│   │   │                              # by a stable hash of their id (not hashValue — that's salted per launch and would move the colour)
-│   │   ├── CatalogImage.swift         # Renders a photo from bundle or Storage, yielding the Image to the caller to style
-│   │   │                              # (every caller styles it differently); quiet gradient placeholder, never a silent blank
-│   │   └── Parallax.swift             # .listReveal() row-entrance scrollTransition
-│   ├── Services/
-│   │   ├── SupabaseConfig.swift       # Loads + validates Supabase host/anon key from Info.plist (Bundle.main); ConfigError (missingKey/malformedHost)
-│   │   ├── RemoteImage.swift          # ImageSource (asset vs Storage, routed by string shape) + RemoteImageCache
-│   │   │                              # (actor; NSCache of DECODED images over URLSession's byte cache, coalesces in-flight)
-│   │   ├── SupabaseService.swift      # Actor data layer: nonisolated client, 5-min TTL caches, fetchRetreats/Programs/PracticeSessions, fetchWrittenLibrary (the three written tables in one cached read, all or nothing), fetchRetreats(ids:)/fetchPrograms(ids:) (no date / published filter — the You tab's history), fetchProfile/upsertProfile/fetchBooking/fetchPaidBookings (uncached), recordPracticePlay/fetchPracticeProgress/fetchPracticeLedger (uncached; the ledger pages 1,000 rows at a time), fetchCommunityActivity(memberIDs:)/fetchCommunityMembers/searchMembers/fetchFriendships/sendFriendRequest/acceptFriendRequest/removeFriendship (all uncached), setAvatar (a NEW uuid per upload — the path is the cache key on every phone)/clearAvatar/setShareActivity, signedMediaURL, invalidateCache
-│   │   ├── LocalUserStore.swift       # @Observable per-member namespace. UserDefaults (`sg.u.<user id>.…`) for trip checklists;
-│   │   │                              # privateText/setPrivateText for journal reflections — file-backed under Application
-│   │   │                              # Support, NSFileProtectionComplete, isExcludedFromBackup (a plist IS included in
-│   │   │                              # iCloud/Finder backups, contradicting the privacy policy). adopt(userID:isAnonymous:) hands a
-│   │   │                              # guest's data forward when they become a member; purgeCurrentScope() on account deletion.
-│   │   ├── PracticeProgressStore.swift # @Observable singleton over `practice_progress` AND the raw `practice_plays` ledger: refresh/reloadAll/clear,
-│   │   │                              # progress(kind:contentID:), resumable (the Continue card), stats (PracticeStats: current/best streak,
-│   │   │                              # classes, minutes — the You tab), streakDays (= stats.currentStreak, what Home names), record(...)
-│   │   │                              # (fire-and-forget; also folds into the local ledger mirror so the numbers move at once).
-│   │   │                              # HistoryLoadStatus lives here too — "couldn't read it" vs "nothing there"
-    │   │   ├── ProgramStore.swift         # @Observable singleton: program enrolment + day completion, and THE UNLOCK RULE
-    │   │   │                              # (day N+1 needs day N's activities done AND the local date to have moved past the
-    │   │   │                              # day it was finished on) — as pure functions in `ProgramUnlockRule`, which the store feeds. Also resolves a curriculum to real content, dropping
-    │   │   │                              # activities whose content doesn't exist so a program can't be stalled by an
-    │   │   │                              # unseeded session id
-    │   │   ├── PushRegistrar.swift        # @Observable singleton + the AppDelegate. Push for LIKES only: registers the APNs token
-    │   │   │                              # under the signed-in member (`device_tokens`, never a guest), asks permission ONCE from a
-    │   │   │                              # card on the Community tab (never at launch; "Not now" is remembered per install),
-    │   │   │                              # registers silently when program nudges were already allowed, forgets the device on
-    │   │   │                              # sign-out, and turns a tapped like push into openNotificationsRequested → Community →
-    │   │   │                              # Notifications. Debug = sandbox, Release = production. Delegate callbacks are nonisolated
-    │   │   │                              # with completion handlers (UIApplicationDelegate makes the class main-actor)
-    │   │   ├── InstructorDirectory.swift  # @Observable singleton: every published guide, read once (SupabaseService caches 5 min), fails
-    │   │   │                              # soft. What GuideCard / GuideCredit look a row's `instructor_id` up in.
-    │   │   │                              # DEBUG `-preview-instructors`: two fixture guides with social and libraries, and `fixtureGuides`,
-    │   │   │                              # which WrittenPracticeStore stamps over the LIVE written rows (the live rows name the placeholder
-    │   │   │                              # guides); browsed as a MEMBER (the shell's gate lets it through); add `-preview-guest` for a guest
-    │   │   ├── WrittenPracticeStore.swift # @Observable singleton over fetchWrittenLibrary(): journal prompts, movement, recipes (0021). Keeps
-    │   │   │                              # the last library read in Caches (`written-library-v1.json`; not under `-uitest-reset`) so the
-    │   │   │                              # pages still open offline, as they did compiled in. `isAuthoritative` = the tables were read THIS
-    │   │   │                              # launch — only then is an absent practice gone rather than not-yet-heard (ProgramDayResolution).
-    │   │   │                              # Injectable fetch + cache URL (WrittenPracticeStoreTests)
-    │   │   ├── PresenceStore.swift        # @Observable singleton over practice_presence()/program_presence(): one read answers every row,
-    │   │   │                              # 60s TTL, concurrent callers share one request, fails soft (the line just isn't there).
-    │   │   │                              # DEBUG `-preview-presence` returns a fixture count + 3 faces for everything (PresenceTests)
-    │   │   ├── ProgramNotifications.swift # Local nudge at 08:00 on the morning a day opens; permission asked at
-    │   │   │                              # enrolment, never at launch; cancelled on leave / sign-out / deletion
-│   │   └── AppError.swift             # App-level LocalizedError enum (configurationMissing/authFailure/networkFailure/unknown)
-│   └── Utils/
-│       ├── Log.swift                  # os.Logger facade (auth/data/media/payment). Replaced every print(); interpolation is
-│       │                              # redacted by default in Release — mark safe values `\(x, privacy: .public)`.
-│       ├── Haptics.swift              # @MainActor UIKit haptic facade with cached generators (tap/bump/select/success/prepare)
-│       └── ArtworkTones.swift         # CIAreaAverage → (top/mid/base) tone triple from an asset; grades the player's aurora to the artwork
-│
-└── Features/                          # One folder per feature/tab; each owns its views + VMs
-    ├── Auth/
-    │   ├── AccountGate.swift          # Just-in-time gate: holds the interrupted action and replays it on dismiss if an account now exists. require(signedIn:_:) -> Bool (caller raises the sheet) / resume(signedIn:)
-    │   ├── AccountView.swift          # Create-account / sign-in sheet (You tab, Reserve, and the practice gate). Sign in with Apple first, "or" rule, then the glass email form; confirm-your-email panel when confirmation is pending — code field (`.oneTimeCode` autofill, no hardcoded length), Confirm, Send a new code (60s cooldown, matching the project's `smtp_max_frequency`), Use a different sign-in — and it dismisses automatically once hasAccount flips
-    │   ├── AppleSignInButton.swift    # Native SignInWithAppleButton + AppleNonce (random + SHA-256) for replay protection. Pure UI — hands an
-    │   │                              # AppleCredential (idToken/nonce/fullName/authorizationCode) back to the caller; the authorizationCode is
-    │   │                              # what makes deletion able to revoke the Apple grant, so don't drop it from the struct
-    │   └── AccountViewModel.swift     # @Observable; form state + validation; confirmCode/resendCode (the confirmation WATCH is AuthManager's — see there); calls AuthManager then syncs profile (auth.pushOnboardingAnswers on create / hydrate on sign-in / mergeProfile for social, which can't tell new from returning). Clears `password` on success and never replays it as a sign-in probe. Shows generic auth errors, never GoTrue's own — those distinguish "already registered" from "invalid credentials" and enumerate accounts. Treats Apple + web-session cancels as .cancelled, not an error
-    ├── Welcome/
-    │   └── WelcomeView.swift          # Splash (logo breathing) + 3 explainer slides → routes to onboarding
-    ├── Onboarding/
-    │   ├── OnboardingView.swift       # 4-question flow (name/intention/state/frequency) + finish screen; step sub-views inline. No account step — that moved to AccountGate
-    │   └── OnboardingViewModel.swift  # Step state machine, per-step validation (canAdvance), next/back, commit to AppSettings
-    ├── Home/
-    │   ├── HomeView.swift             # Dashboard: greeting (+ streak line at ≥2 days), mood chips, Continue card (when something is half-done), ritual card, retreat glimpse, programs shelf → opens Retreats
-    │   └── HomeViewModel.swift        # Greeting from hour, mood selection, loads retreats + programs from Supabase (circles still mock)
-    ├── Retreats/
-    │   ├── RetreatsStackView.swift    # Viewport-aligned scrolling name stack with crossfading photo backdrop; rows are the NAME ONLY (the bare
-    │   │                              # guest count was removed 2026-09-18) under a scroll-driven focus lens; "01 / 04" folio; glass card
-    │   │                              # (country / dates / tags + Explore). Shared top bar (Back + one grid↔list toggle) over both modes and
-    │   │                              # the loading / error / empty states. Pinch or toggle into the catalog. DEBUG -preview-retreats
-    │   ├── RetreatsViewModel.swift    # Retreat array + active index, loading/error state, fetches from Supabase
-    │   ├── RetreatDetailView.swift    # Scroll-graded editorial spread. If the retreat resolves a RetreatExperience (inline mock, or RetreatExperience.curated(for:) matched by name) it renders the full brochure story (invitation, who-it's-for, the four elements, member's word, guides, stay & inclusions) and prefers the experience's brochure date/cover line; else the concise pull-quote/days/details fallback. Reserve gated on auth.hasAccount → AccountView sheet; else pushes the checkout review (onCheckout); once paid the CTA flips to "View your experience" (onOpenExperience → hub). Closures wired from MainTabView.HomeRoot
-    │   ├── RetreatDetailViewModel.swift # @Observable; loadExistingBooking only — reflects a paid `bookings` row so a reserved retreat shows as such.
-    │   │                                # reserve()/confirmBooking() went with the Stripe dependency; recover from git history
-    │   ├── Enquiry/                   # The retreat application — what "Request a place" opens while reservations are off.
-    │   │   │                           # Mirrors the website's "Join a retreat" form field for field. GATED ON auth.hasAccount (the Email answer
-    │   │   │                           # IS the account's address) — RetreatDetailView raises AccountView first and replays the tap on dismiss.
-    │   │   │                           # DEBUG -preview-enquiry renders it in isolation.
-    │   │   ├── RetreatEnquiry.swift           # The completed application, Encodable straight into the Edge Function body (snake_case, DOB as yyyy-MM-dd, en_US_POSIX). Carries NO email — the server reads it from the JWT. `Question` holds the website's question text for the FORM; `send-retreat-enquiry` repeats the same strings for the email, with no build-time link, so change both. `Decision`/`Investment` raw values are the team's own answer labels (verbatim, incl. "€3500+" without its separator); `Retreat.enquiryLabel` is the retreat option's phrasing
-    │   │   ├── RetreatEnquiryViewModel.swift  # @Observable draft + validation; accountEmail is display-only; missingAnswers drives the "still to answer" line; loadOptions() widens the retreat question to the live catalog (best-effort — falls back to the one retreat they came from); makeEnquiry() gates a valid RetreatEnquiry; send() posts it and keeps every answer on failure
-    │   │   └── RetreatEnquiryView.swift       # The form. Questions on the retreat's own photo (topScrim + .onPhoto on COPY only — the fields are UIKit-backed); glass field surface, radio rows, wheel DOB bounded to 18+, Email shown locked; Submit → SupabaseService.sendRetreatEnquiry → the website's own thank-you copy, or a glass error banner with the answers intact
-    │   └── PostPurchase/              # Reserved-retreat experience — the UX team's WARM-ESPRESSO direction (terracotta/olive/gold on espresso, all-Geist), a retreat-specific palette distinct from the app-wide Theme. Routed via HomeRoot.Route (retreatExperience/Todos/Packing/Guides). DEBUG launch args -preview-experience/-todos/-packing/-guides render each in isolation.
-    │       ├── RetreatPalette.swift            # Warm-espresso palette (espresso/cream/terracotta/olive/gold) — mirrors the inline .mb tokens in the design-system mallorca-*/retreat-* cards; used ONLY by these screens, not the global Theme
-    │       ├── RetreatTripStore.swift          # @Observable singleton; device-local (UserDefaults) to-do completion + 1:1 bookings, keyed by retreat id (sg.trip.todos / sg.trip.sessions). Packing reuses to-do storage with pack- prefixed ids
-    │       ├── RetreatExperienceHubView.swift  # Welcome hub: hero, greeting, featured to-do card (live progress), experience grid; group-chat tile opens retreat.groupChatURL (WhatsApp);
-    │       │                                   # wide tile emails the team (was a mocked AI concierge — removed, the app has no AI)
-    │       ├── RetreatTodosView.swift          # Pre-retreat checklist (RetreatTripStore-backed) + "Go to my home"
-    │       ├── PackingListView.swift           # Packing checklist (RetreatTripStore-backed)
-    │       ├── RetreatGuidesView.swift         # 1:1 booking — joins RetreatExperience.guides with PostBooking.offers; slot pick → confirmation (RetreatTripStore)
-    ├── Programs/                       # The Programs tab — self-paced, multi-day digital retreats. Spec: docs/PLAN-digital-programs.md.
-    │   │                               # Free, but JOINING needs an account (AccountGate); browsing runs to the bottom of the day list.
-    │   │                               # DEBUG -preview-programs (tab, against Program.mock) / -preview-program / -preview-program-day.
-    │   ├── ProgramsViewModel.swift     # @Observable catalog load + ProgramsLoadFailure (offline vs failed — the twin of
-    │   │                               # RetreatsLoadFailure, separate only so the words fit this tab). No mock fallback in Release
-    │   ├── ProgramsView.swift          # Tab landing: the program in flight leads (current day, progress, what it asks of you),
-    │   │                               # catalog beneath. Multiple enrolments allowed; most recently joined leads
-    │   ├── ProgramDetailView.swift     # The program and its days, each carrying its own state; "Start this program" is the gate;
-    │   │                               # "Leave this program" clears enrolment + day rows and NOTHING in practice_plays
-    │   └── ProgramDayView.swift        # One day's activities. Opens the SAME screens the Practice tab opens, so a creator is paid
-    │                                   # identically either way; reads completion back and celebrates the day closing
-    ├── Instructors/                   # Instructor profiles (2026-09-28). Open to a guest; Follow and playing go through AccountGate.
-    │   ├── InstructorProfileView.swift       # The page: photo blurred to a colour field, breathing portrait, Followers | Following,
-    │   │                                     # "Followed by" faces + line, Follow (honey → glass "Following"; "This is your profile" for
-    │   │                                     # the guide), About (folds past ~260 chars), Library (digital retreats → onOpenProgram,
-    │   │                                     # sessions → player sheet). Offline / failed / unavailable states
-    │   ├── InstructorProfileViewModel.swift  # @Observable; injectable Backend (.live / DEBUG .preview). setFollowing(Bool) — optimistic,
-    │   │                                     # reverted on failure, a no-op when already true (the gate's replay after sign-in); a
-    │   │                                     # version counter discards a social read that started before a follow
-    │   └── GuideCard.swift                   # `openInstructor` (@Entry environment action) + GuideCard ("Your guide" on a digital retreat,
-    │                                         # movement, recipe and journal page; absent when nothing names a guide) + GuideCredit (the
-    │                                         # player's "with …" face chip; dismisses the sheet, then opens the profile on the stack below)
-    ├── Practice/
-    │   ├── PracticeView.swift         # Landing: scrolling cards for media categories (Somatic Exercises/Breathwork/Meditation) + menu items; onSelect callback. No guides here — they're on each practice's page
-    │   ├── PracticeShared.swift       # Shared chrome: PracticeBackBar, PracticeListScaffold, WrittenLibraryPlaceholder (a written list with
-    │   │                              # no rows: loading / offline / our end + Try again / nothing here yet), NumberedStepRow, ProgressRule
-    │   ├── PracticeActivity.swift     # PlaybackReporter (counts MEDIA time via MediaTimeMeter, not wall-clock or scrub position; finished = end reached with 80% heard; 20s heartbeat + resume point)
-    │   │                              # and .practiceActivity(_:enabled:completedWhen:) for the written libraries (dwell-based)
-    │   ├── PracticeListView.swift     # Audio/video sessions for one PracticeCategory (Supabase via PracticeViewModel) → player sheet
-    │   ├── PracticeViewModel.swift    # @Observable; loads sessions per category, falls back to PracticeSession.mock(for:)
-    │   ├── PracticePlayerView.swift   # Resolves MediaItem URL (signed Storage or direct http) and plays via AVKit; serves any library with media
-    │   ├── JournalView.swift          # JournalListView + JournalDetailView (prompt + device-local TextEditor reflection)
-    │   ├── ExerciseView.swift         # The "Movement" section: ExerciseListView + ExerciseDetailView (numbered steps)
-    │   └── RecipeView.swift           # RecipeListView + RecipeDetailView (full-bleed hero, meta pills, ingredients, method)
-    ├── Community/                     # The Community tab (2026-09-22). A feed of finished practices over the `community_activity` view —
-    │   │                              # "Alma G. practiced Confidence Boost", face beside it, grouped Today / Yesterday / Earlier — with an
-    │   │                              # All | Friends scope toggle, and friends. The feed is open to a guest; Friends is behind AccountGate.
-    │   │                              # DEBUG -preview-community installs a deterministic fixture (CommunityTests).
-    │   ├── CommunityViewModel.swift   # @Observable; toggleLike (optimistic in BOTH feeds, reverted on failure), notifications + unreadCount +
-    │   │                              # markAllRead; scope, the two feeds (Friends is fetched server-side by friend ids, NOT filtered from All —
-    │   │                              # a friend's last practice can be older than everyone's last hundred), friendships (friends / incoming /
-    │   │                              # outgoing, standing(for:)), optimistic send/accept/remove that re-reads on failure, debounced name search
-    │   ├── CommunityView.swift        # The tab: header with the bell (unread-likes badge → NotificationsView) and your own avatar (→ You tab),
-    │   │                              # ScopeToggle (cream lens on glass), Friends button with a request badge, ActivityRow feed — each row
-    │   │                              # carrying a LikeButton (heart + count, honey when yours, bounces; your own line shows the count only,
-    │   │                              # a guest's tap goes through the gate) — three empty states, offline/failed state
-    │   ├── NotificationsView.swift    # Pushed from the bell (and by a tapped push; clears the app badge): "Alma G. liked your Morning Mobility practice" rows, unread ones honey-dotted for
-    │   │                              # the visit (unreadAtOpen), then markAllRead — the dots must not vanish under the reader's eyes
-    │   └── FriendsView.swift          # Pushed: glass search field, Results / Requests (Accept · Decline) / Sent (Withdraw) / Friends (Remove,
-    │                                  # confirmed). Honey-fill pill for the primary verb, quiet glass for the rest
-    └── Profile/
-        ├── ProfileView.swift          # You tab (was ProfilePlaceholder): a member's AvatarView (92pt, camera badge; tap → Choose / Remove photo via
-        │                              # .photosPicker — no purpose string needed, the picker is out-of-process) where a guest sees the logo; greeting +
-        │                              # intentions + account status; for a member, a 2×2 stat grid (current streak,
-        │                              # best streak, classes taken, minutes practiced — from PracticeProgressStore.stats), Digital retreats (programs in
-        │                              # progress then completed; rows hand off to the Programs tab via pendingProgram) and In-person retreats (paid bookings
-        │                              # whose retreat has ended; "Explore retreats" switches to the Gatherings tab). A guest sees one "Keep it with
-        │                              # you" card instead. Pull to refresh. Sign out + Delete account / Create account + Sign in; DEBUG "Reset onboarding"
-        └── ProfileViewModel.swift     # @Observable; the member's joined programs (ProgramJourney: inProgress / completed) + past retreats, each with its
-                                       # own ProfileLoadFailure (offline vs failed); the profile row (shareActivity, avatar → AppSettings); setAvatar
-                                       # (centre-crops to a 512px JPEG on the device, ~40–80KB, orientation baked in) / removeAvatar / setShareActivity.
-                                       # DEBUG -preview-you installs a deterministic fixture (ProfileTests)
+├── SoulfullGatheringsApp.swift    # @main: environment, dark mode, auth .task, .onOpenURL. Renders nothing while hosting unit tests
+├── PrivacyInfo.xcprivacy          # This app only (UserDefaults CA92.1 + collected data). Keep in sync with the ASC privacy answers
+├── Assets.xcassets                # App chrome only (see *Assets*)
+├── App/                           # AppState, AppSettings, AuthManager, RootView, MainTabView (+ the four stack roots and the
+│                                  # AccountGate sheet), BottomNav (BottomNav.height = 56 for anything pinned above it),
+│                                  # ConnectionBanner (offline / failed session, with a working Retry)
+├── Core/
+│   ├── Models/Models.swift        # Every domain model. `.mock` fixtures are for previews / DEBUG screens only
+│   ├── DesignSystem/              # Theme, Components, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
+│   │                              # PresenceBadge, CatalogImage, AvatarView (tone from a STABLE hash: hashValue is salted per launch)
+│   ├── Services/                  # SupabaseService (actor), SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,
+│   │                              # LocalUserStore, and @Observable singletons: PracticeProgressStore, ProgramStore (+ the pure
+│   │                              # ProgramUnlockRule), WrittenPracticeStore, InstructorDirectory, PresenceStore,
+│   │                              # PushRegistrar (+ the AppDelegate), ProgramNotifications
+│   └── Utils/                     # Log (os.Logger), Haptics, ArtworkTones
+└── Features/                      # Auth, Welcome, Onboarding, Home, Retreats (+ Enquiry/, PostPurchase/), Programs,
+                                   # Instructors, Practice, Community, Profile (the You tab)
 ```
 
-> Geist fonts live in `Resources/Fonts/` at the **repo root**, not under `SoulfullGatherings/`. `project.yml` adds `Resources/Fonts` as a resources build phase. All images are managed through `SoulfullGatherings/Assets.xcassets`.
+- **`Retreats/Enquiry/`** is the website's "Join a retreat" form, which is what "Request a place" opens in v1. `RetreatEnquiry` encodes straight into the `send-retreat-enquiry` body and carries **no email**: the server reads it from the JWT, and the app shows the field locked. The question strings exist in both `RetreatEnquiry.Question` and the Edge Function, so change both together.
+- **`Retreats/PostPurchase/`** holds the reserved-retreat hub, to-do's, packing list and 1:1 guide booking, all unreachable in v1. These screens use their own warm-espresso `RetreatPalette`, not `Theme`. Their state is device-local (`RetreatTripStore`). Photos come from optional `post_booking` paths through `TripImage`, which shows the plain espresso ground when a path is missing and never borrows another retreat's photo.
+- **`WrittenPracticeStore`** keeps the last library it read in Caches, so the pages open offline. `isAuthoritative` means the tables were read *this launch*, and only then does an absent practice count as gone.
+- **`PushRegistrar`** registers a token only for a signed-in member, never a guest, and forgets the device on sign-out. It asks for permission once, from a card on the Community tab and never at launch. A tapped like opens Community → Notifications. Debug builds use the APNs sandbox and Release builds production.
+- **`CommunityViewModel`** fetches the Friends feed server-side by friend ids. It does **not** filter the All feed, because a friend's last practice can be older than everyone's last hundred.
+- **`AccountViewModel`** clears the password on success and never replays it. It shows generic auth errors, because GoTrue's own messages reveal which accounts exist. An Apple cancel is `.cancelled`, not an error.
+- **`InstructorProfileViewModel.setFollowing`** is optimistic and reverted on failure. A version counter throws away a social read that started before a follow.
 
-## Design System
+## Design system
 
-All brand values live in `Theme.swift` (a static-only `enum` namespace). Use `Theme.*` constants — never hardcode colors or font sizes. Colors are pre-converted from oklch design tokens to sRGB by hand; if tokens change they must be manually recalculated here.
+The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors or font sizes.** The colors were converted by hand from oklch tokens to sRGB, so if a token changes, recompute it by hand.
 
 | Token | Usage |
 |---|---|
-| `Theme.bg` / `Theme.bgDeep` | Near-black canvas (faint olive tint) |
+| `Theme.bg` / `bgDeep` | Near-black canvas (faint olive) |
 | `Theme.surface` | Card fills |
-| `Theme.ink` | Warm cream — primary text |
-| `Theme.inkSoft` | Muted cream — secondary text |
-| `Theme.muted` | Tertiary / metadata text — **on glass/solid only** |
-| `Theme.inkOnPhoto` | Body copy laid directly on a photo (ink @ 0.92) |
-| `Theme.accent` / `Theme.accentSoft` | Olive-green brand accent |
-| `Theme.honey` | Amber glow for selected states |
-| `Theme.line` / `Theme.glassBorder` / `Theme.glassBorderHigh` | Hairline / glass strokes |
-| `Theme.headline(_:weight:)` | Headline font (Geist at requested weight) |
-| `Theme.body(_:weight:)` | Body / UI font (Geist at requested weight) |
-| `Theme.eyebrow(_:)` | Small tracked caps (Geist Regular) |
+| `Theme.ink` / `inkSoft` | Cream primary / secondary text |
+| `Theme.muted` | Tertiary text: **on glass or solid only** |
+| `Theme.inkOnPhoto` | Body copy directly on a photo |
+| `Theme.accent` / `accentSoft` | Olive brand accent |
+| `Theme.honey` | Amber for selected states |
+| `Theme.line` / `glassBorder` / `glassBorderHigh` | Hairlines / glass strokes |
+| `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
+| `Theme.cardRadius` (22) / `pillRadius` | Shapes |
 
-- **Typography:** Geist family ships Thin/Light/Regular/Medium/SemiBold/Bold (registered in `Info.plist` `UIAppFonts`); heavier weights fall back to Bold, lighter to Regular. There is **no serif/SF Pro split — everything is Geist.** Headlines use negative `kerning` (e.g. `-0.2`/`-0.3`); body/eyebrow use positive `tracking` (2–3). `Text.sgEyebrow()` applies font + tracking + uppercase + color in one call.
-- **Glass surfaces:** `.ultraThinMaterial` + a `Theme.glassBorder` `strokeBorder`. `GlassCard` wraps this; `CircleIconButton` is the smaller glass chrome button. `SGPrimaryButton` is a ghost/fill pill using a `DragGesture(minimumDistance: 0)` for immediate press feedback.
-- **Photo backdrops:** `PhotoBackdrop(imageName:blur:darken:)` — solid `Theme.bg` floor, blurred/saturated image, vignette. Reused everywhere; `blur` and `darken` vary per screen.
-- **Type over photography (one rule, whole app).** The vignette is at its lightest up top (0.18) — exactly where every screen puts its header — so cream type over a bright sky washed out (it was reported first on Practice's "Choose a way in", and Home's greeting was worse). Three parts, and they belong together: `PhotoBackdrop` draws a **`topScrim`** (default 0.45 fading out over 340pt; pass `topScrim: 0` for a screen whose top is deliberately empty); photo-backed **text blocks carry `.onPhoto()`** (a tight shadow for edge definition + a wide halo, both invisible over dark ground, so it's safe anywhere); and the palette shifts — **eyebrows use `Theme.inkSoft`, never `Theme.muted`** (which sinks into the scrim), **sublines use `Theme.inkOnPhoto` at `Theme.body(14)`**. Type on glass or a card keeps `muted`/`inkSoft` as-is — the surface is its own ground. `.onPhoto()` goes on **text only**: a shadow over a UIKit-backed `TextField`/`TextEditor`/video is gotcha #1 territory, so wrap the copy, not the container holding the field. `RetreatDetailView`'s hero has no backdrop to scrim, so its own gradient holds ~0.22 through the middle instead of falling to 0.08.
-- **Shape constants:** `Theme.cardRadius` (22), `Theme.pillRadius` (999 / Capsule).
-- `PulseModifier` animates forever (`autoreverses`) — use only for persistent live indicators.
+- **Everything is Geist** (Thin to Bold). There is no serif and no SF Pro. Headlines use negative `kerning` (−0.2/−0.3); body text and eyebrows use positive `tracking` (2–3).
+- **Glass** always goes through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCapsule` / `.soulGlassCard`): real `glassEffect` on iOS 26+, material + hairline below that. It is the only place that branches on OS. Feature code never does.
+- **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which gives a spring squish and a haptic on touch-down. Don't put `onTapGesture` on cards.
+- **Shaders** go only through the `ShaderFX` wrappers (grain / aurora / shimmer / dissolve / ripple), which all respect Reduce Motion. `PulseModifier` loops forever, so use it only for persistent live indicators.
+- **Navigation:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`. Tab roots report pushes through a `navHidden` binding so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
+- **Type over photography is one rule in three parts, used together:**
+  1. `PhotoBackdrop` draws a `topScrim` (default 0.45 over 340pt). Pass `0` only for a screen with an empty top.
+  2. Text blocks on a photo carry `.onPhoto()`.
+  3. On a photo, eyebrows use `Theme.inkSoft` (never `muted`) and sublines use `Theme.inkOnPhoto` at `Theme.body(14)`. Type on glass or a card keeps `muted`/`inkSoft`.
 
-## Backend
+  Put `.onPhoto()` on **text only**, never on a container holding a `TextField`, `TextEditor` or video (gotcha 1).
 
-**Supabase** hosts content data (PostgreSQL), media (Storage), and the user session (Auth — anonymous guests upgradable to email/password accounts). The Swift SDK (`import Supabase`, `@preconcurrency`) is added via SPM.
+**Rendering gotchas that have bitten this codebase. Re-read them before adding effects:**
+1. **Metal effects (`layerEffect`/`colorEffect`/`distortionEffect`, even disabled) or blur over UIKit-backed views** (`NavigationStack`, `TextField`, video) render a yellow ⃠ placeholder. `blur(0)` still attaches a filter. Keep shaders and blur on pure-SwiftUI leaves, and use `editorialPageSoft` or plain transitions around platform views.
+2. **`visualEffect` offsets and scales escape ancestor clips.** Use scroll-driven image motion only on full-bleed surfaces. Cards animate as whole units (`listReveal`).
+3. **`scaledToFill` grows layout, not just drawing,** and pushes siblings off-screen. Contain fill images in `Color.clear.overlay { … }.clipped()`, as `PhotoBackdrop` does.
+4. **`GeometryReader` inside an `HStack` over-claims width.** Prefer leading-anchored `scaleEffect` fills.
+5. **A view only answers taps where it draws something.** A framed `Image` responds on its glyph alone, and on iOS 26 `glassEffect` adds no tappable fill. So `CircleIconButton` was an 11pt target inside a 38pt circle, and a glass `PressableCard` ignored taps between its lines of text. **Give every tappable glass surface a `.contentShape(...)`.** When a button feels dead, check its accessibility frame (a UI test's `app.debugDescription`), not its visual frame.
 
-**Migrations were removed from the repo on 2026-09-07.** All nine had been applied to the live project — `supabase migration list --linked` showed local and remote in step through 0009 before the delete — so the schema they describe is what the database actually is. **The live database is now the only description of the schema.** Recover the SQL (including 0005's practice-media seeding instructions and 0009's post-apply verification checklist) with `git show d20e3f6:supabase/migrations/`. A *new* migration still goes in `supabase/migrations/` and is applied with `supabase db push`; it is **not** part of the Xcode build — `project.yml` only sources `SoulfullGatherings/` and `Resources/Fonts`, so adding SQL needs no `xcodegen generate`.
+## Design ↔ code sync (Claude Design mirror)
 
-**`SupabaseService` is an actor singleton.** It exposes `client` `nonisolated` (so `AuthManager` can reach the `SupabaseClient` without an actor hop) and maintains three independent in-memory caches (retreats, programs, practice sessions) each with a 5-minute TTL. There is no automatic invalidation — call `invalidateCache()` on logout/explicit refresh. Bootstrap is fatal: if `SupabaseConfig.make()` throws (missing/placeholder credentials) the app crashes at startup with setup instructions.
+`design-system/` is an HTML/CSS mirror of the UI, pushed to a Claude Design project (projectId `76dcee6b-dc46-486b-abb7-a0c06852f1fb`) where the UX team edits it. `design-system/README.md` holds the Swift ↔ CSS token and component map.
 
-**Credentials flow:** `Config/Secrets.xcconfig` → build settings → `Info.plist` (`SupabaseHost`, `SupabaseAnonKey` via `$(SUPABASE_HOST)` / `$(SUPABASE_ANON_KEY)`) → `Bundle.main` → `SupabaseConfig` → `SupabaseService`. Never hardcode credentials in Swift source. The same xcconfig also carries `DEVELOPMENT_TEAM` (the Apple Team ID, injected into build settings) — empty builds fine for the simulator, but archiving for the App Store needs a real ID.
+1. **Code → mirror, in the same change.** Update the mirror whenever you change something design-relevant:
+   - `Theme.swift` → `shared/tokens.css`
+   - `Components`, `BottomNav`, `SoulGlass`, onboarding `OptionCard`, `PracticeShared` → `shared/app.css`
+   - a screen's layout, copy or structure → its `screens/*.html` (a new screen gets a new `@dsCard`)
 
-- `Config/Secrets.xcconfig` is gitignored and contains the real anon key. Copy `Secrets.xcconfig.example` to set up a new machine.
-- `SUPABASE_HOST` stores the host only (e.g. `abc123.supabase.co`) — no `https://` prefix because `//` is a comment delimiter in xcconfig. `SupabaseConfig` rejects empty values and anything starting with `YOUR_`, and validates the host builds a usable `https://` URL.
+   Logic-only and backend-only changes are exempt.
+2. **Mirror → Claude Design:** `/sync-design push`. It is incremental, pushing only the changed cards, because a blanket push overwrites the team's edits. It also writes to claude.ai, so pull and check first, and confirm before pushing. Never push unprompted. After a design change, remind the user that a push is needed.
+3. **Claude Design → code:** `/sync-design pull`, review the diff, then port the changes through the token map.
 
-**Database tables** (snake_case columns, mapped by private `…Row` DTO `CodingKeys` in `SupabaseService.swift`; each Row has a computed property returning the domain model):
+## Backend (Supabase)
 
-| Table | Key columns | Fetch | Limit |
-|---|---|---|---|
-| `retreats` | `id`, `name`, `country`, `start_date`, `end_date`, `max_guests`, `price_usd`, `tags` (array), `blurb`, **`image_url`** (`bucket/path.jpg` in Storage, *or* a bundled asset name — see `ImageSource`), `tone_top`, `tone_mid`, `tone_base`, `group_chat_url` (nullable; https-only WhatsApp invite), **`experience`** (jsonb; the long-form brochure — snake_case keys, decoded by `RetreatExperience`, **fails soft**) | `fetchRetreats()` — **filters `start_date > today`**, order by `start_date`. `fetchRetreats(ids:)` does **not** filter on date — it answers "which retreats has this member been on" (You tab) | 50 |
-| `programs` | `id` (slug), `title`, `lead`, `date_range` (**nullable** — a self-paced program has no calendar window; the meta line comes from `days`), `days`, `image_url`, `blurb`, **`curriculum`** (jsonb; the days and their activities, decoded by `ProgramCurriculum`, **fails soft**), `published`, `sort_order` | `fetchPrograms()` — **filters `published`**, order by `sort_order nulls last, title`. Read by `HomeViewModel` (the shelf) and `ProgramsViewModel` (the tab). `fetchPrograms(ids:)` skips the `published` filter so a program taken down after a member finished it stays in their You-tab history (not tappable) | 50 |
-| `practice_sessions` | `id`, `category` (`somatic`/`breathwork`/`meditation`), `title`, `lead`, `media_kind` (`audio`/`video`), `storage_path`, `duration_seconds`, `image_url`, `blurb`, **`program_only`** (hides it from the Practice tab, not from the program curriculum that references it) | `fetchPracticeSessions(category:)` (by `category`, `program_only = false`); `fetchPracticeSessions(ids:)` for a curriculum (**not** filtered on `program_only` — that flag hides media from the tab, not from its owner); `availablePracticeCategories()` returns `.known(Set)` or `.unknown` — offline is not the same as unseeded — and never throws | 100 |
-| `instructors` *(0019)* | `id` (slug), `name`, `title`, `bio`, `photo_url` (`instructor-photos/<id>.jpg`), `user_id` (**never granted to a client**), `published`, `sort_order` | `fetchInstructors()` — published, names its columns, cached 5 min; `fetchInstructorSocial(id:)` → `instructor_social()` RPC; `fetchInstructorLibrary(id:)` — sessions (`program_only = false`) + published programs by `instructor_id` (uncached). `practice_sessions` / `programs` carry `instructor_id` (optional in the Row DTOs, so pre-0019 rows decode) | 100 |
-| `journal_prompts` / `exercises` / `recipes` *(0021)* | `id` (bigint identity — **a contract**, see 0021), `title`, then per table: `prompt`, `theme` · `focus`, `duration_seconds`, `blurb`, `steps` (jsonb `[{name, detail?}]`, CHECK-shaped) · `angle`, `minutes`, `servings`, `blurb`, `ingredients` / `steps` (text[]); all three `image_url` (nullable), `published`, `sort_order`, **`instructor_id`** (0022; FK, on delete set null — the "Your guide" card and the guide's library; display only) | `fetchWrittenLibrary()` — all three concurrently, columns named, order `sort_order nulls last, id`, cached 5 min; RLS returns published rows only. Read through `WrittenPracticeStore` | 200 each |
-| `instructor_follows` *(0019)* | `user_id`, `instructor_id` (pk both, cascade), `created_at`. RLS: read your own, insert as a member for a published guide who isn't you, delete your own, no update | `followInstructor` (a duplicate key is treated as done) / `unfollowInstructor`. Counts only through `instructor_social()` | — |
-| `profiles` | `id` (uuid = `auth.users.id`), `email`, `full_name`, `intentions` (text[]), `body_state`, `frequency`, `stripe_customer_id` (server-only), **`avatar_url`** (0015; check-constrained to `avatars/<id>/<uuid>.jpg`), **`share_activity`** (0015; default true), `created_at`, `updated_at` | `fetchProfile(id:)` / `upsertProfile(_:)` (uncached; **never writes the two 0015 columns** — `setAvatar`/`clearAvatar`/`setShareActivity` do, as targeted updates) | 1 |
-| `community_members` *(view, **owner rights**, SELECT-only — see 0015's revoke lesson)* | `id`, `display_name` (**abbreviated in SQL** — `community_display_name(full_name)` → first word + the SECOND word's initial: "Hugo De Santiago" → "Hugo D."; the full name never leaves the row), `avatar_url`. Permanent accounts only (`email` non-empty) | `fetchCommunityMembers(ids:)`; `search_members(q)` RPC (`searchMembers`) matches `full_name` `ilike` server-side and answers with this shape — by name, **never by email** | 200 / 20 |
-| `community_activity` *(view, **owner rights**)* | `play_id`, `user_id`, `display_name`, `avatar_url`, `content_kind`, `content_id`, `content_title`, `category`, `completed_at` (= the play's `updated_at`). `completed` only, **`content_kind <> 'journal'`**, and only members with `share_activity`. Never seconds played | `fetchCommunityActivity(memberIDs:limit:)` — nil ids is everyone; the Friends scope passes the friend ids and is fetched, not filtered client-side | 100 |
-| `practice_play_likes` | `play_id` → `practice_plays` (cascade), `user_id` (cascade), `created_at`; pk both. RLS: read likes that concern you (yours, or on your plays), insert only for a line visible in `community_activity` whose `user_id <> auth.uid()`, delete your own, no update | `likeActivity` / `unlikeActivity` (uncached). Counts are read through `community_activity.like_count` / `liked_by_me`, never from this table | — |
-| `notifications` + `member_notifications` *(view, security_invoker)* | `id`, `user_id` (recipient, cascade), `kind` (`like`), `actor_id` (set null), `play_id` (cascade), `created_at`, `read_at`. **No client insert** — `notify_practice_like()` (security definer, after insert/delete on likes) writes one per like and removes it on unlike while unread; the integrity trigger freezes everything but `read_at`, which latches. The view adds `actor_name` / `actor_avatar_url` (through `community_members`) and `content_title` | `fetchNotifications(userID:)` / `markNotificationsRead(userID:)` (uncached) | 100 |
-| `device_tokens` | `token` (pk, APNs hex), `user_id` (cascade), `environment` (`sandbox`/`production`), `updated_at`. Owner RLS, guests refused; the claim trigger (owner rights) deletes another member's row for the same token on insert | `registerDeviceToken` (upsert on `token`) / `removeDeviceToken` (uncached) | — |
-| `friendships` | `requester_id`, `addressee_id` (pk; both `on delete cascade`), `status` (`pending`/`accepted`), `created_at`, `responded_at`; a unique index on the unordered pair. Owner RLS `to authenticated`, guests refused on insert, **update only by the addressee and only to `accepted`** (the trigger makes anything else a no-op), delete by either side | `fetchFriendships(userID:)` (resolves the other person through `community_members`), `sendFriendRequest`, `acceptFriendRequest`, `removeFriendship` (decline / withdraw / unfriend — one delete) | 500 |
-| `apple_credentials` | `user_id` (uuid pk = `auth.users.id`, `on delete cascade`), `refresh_token`, `created_at`, `updated_at` | **No client access at all** — RLS on with zero policies *and* grants revoked. Written by `store-apple-token`, read by `delete-account`, both with the service role. Migration 0010, **applied 2026-09-10** and verified: RLS on, **0 policies**, **0 grants** to `anon`/`authenticated`, FK `on delete cascade`. Both client roles get `42501 permission denied` — note that is the proof it *exists*, since a missing table answers `PGRST205`/404. | 1 |
-| `bookings` | `id`, `user_id` (**nullable**, `on delete set null`), `retreat_id`, `amount_cents` (Stripe's minor unit), `currency`, `status` (`pending`/`paid`/`failed`/`refunded`), `stripe_payment_intent_id`, `created_at`, `updated_at` | `fetchBooking(retreatID:userID:)` (uncached); `fetchPaidBookings(userID:)` — `status = paid`, the You tab's in-person history (uncached) | 1 / 100 |
-| `practice_plays` | `id`, `user_id` (nullable), `content_kind` (`session`/`journal`/`exercise`/`recipe`), `content_id`, `content_title`, `creator`, `category`, `seconds_played`, `position_seconds`, `duration_seconds`, `completed`, `client_event_id`, `started_at` | `recordPracticePlay(...)` — upsert on `(user_id, client_event_id)`, `nulls not distinct` (uncached). `fetchPracticeLedger(userID:)` reads the member's own rows back (4 columns, paged by 1,000, capped at 20 pages) for the streak and You-tab stats — the `practice_progress` aggregate keeps one date per practice and can't answer them | — |
-| `practice_progress` *(view)* | `user_id`, `content_kind`, `content_id`, `content_title`, `creator`, `category`, `position_seconds`, `duration_seconds`, `total_seconds_played`, `completed`, `play_count`, `last_played_at` | `fetchPracticeProgress(userID:)` (uncached) | 200 |
-| `program_enrollments` | `user_id`, `program_id`, `enrolled_at`, `completed_at` (pk `(user_id, program_id)`) | `fetchProgramEnrollments(userID:)` / `enrollInProgram` (upsert, `ignoreDuplicates` — re-joining keeps the original date) / `leaveProgram` / `markProgramCompleted` (uncached). **`enrolled_at` is day 1's unlock moment**, so the server's clock sets it — it is compared against `practice_plays.started_at` | 50 |
-| `program_day_completions` | `user_id`, `program_id`, `day_number`, `completed_at` (pk all three) | `fetchProgramDayCompletions(userID:)` / `completeProgramDay` (uncached). **Latched** — an existing row is never rewritten, because `completed_at` is what the next day's unlock is computed from, and re-doing a day must not push tomorrow further away. No update policy exists to rewrite it with | 500 |
+The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SDK comes through SPM (`@preconcurrency import Supabase`).
 
-- `RetreatRow` parses `start_date`/`end_date` with a per-call `DateFormatter` (`yyyy-MM-dd`, `en_US_POSIX`); `Retreat` then derives its display `when` string and `durationDays`/`priceFormatted` itself.
-- **Tone colors** are hex strings (e.g. `#728FA5`) decoded via `Color(hex:)` (extension in `Theme.swift`).
-- `CommunityCircle` has **no** Supabase fetch yet — it is mock-only (`CommunityCircle.mock`). `programs` **is** fetched by `HomeViewModel` (no mock fallback — an empty table hides the shelf).
+- **`SupabaseService`** is an actor singleton. Its `client` is `nonisolated`, so `AuthManager` can reach it without an actor hop. Catalog reads use 5-minute caches, and nothing invalidates them automatically, so call `invalidateCache()` on logout or an explicit refresh. Member data is never cached.
+- **Credentials** flow from `Config/Secrets.xcconfig` → build settings → `Info.plist` (`SupabaseHost`, `SupabaseAnonKey`) → `SupabaseConfig`. They never appear in Swift source. `SUPABASE_HOST` is the bare host with no `https://`, because `//` starts a comment in xcconfig. Missing or placeholder values crash at launch with setup instructions, by design.
+- **Adding a fetch:** add a private `Codable …Row` DTO in `SupabaseService.swift` with snake_case `CodingKeys` and a computed property that returns the model. Then add `func fetch…() async throws -> [T]`, cached if it's catalog data. Surface failures through `AppError`.
 
-**Adding a retreat needs no app release** (since 2026-09-11 — `0011_retreats_self_serve.sql`). Runbook: **`docs/ADDING-A-RETREAT.md`**. Two things used to force one:
+### Migrations
+- **The live database is the authoritative schema.** Migrations 0001–0009 were removed from the repo after being applied; recover them with `git show d20e3f6:supabase/migrations/`. Every file in `supabase/migrations/` has been applied, and each file's header explains its design and how it was verified.
+- A new migration goes in `supabase/migrations/` and is applied with `supabase db push`. If you apply it through the Management API instead (`POST /v1/projects/<ref>/database/query`), **backfill `supabase_migrations.schema_migrations` the same day** so `supabase migration list --linked` stays in step.
+- Apply auth-email templates by PATCHing the four `mailer_*` fields on the project's auth config. **Never run `supabase config push`**: it resets every unspecified auth setting to the CLI defaults, which turns off anonymous sign-ins.
+- **When probing a table, read the status code, not the body.**
+  - `200 []`: the table exists and is either empty or filtered by RLS (member tables always look empty to the anon key).
+  - `404`: the table is missing.
+  - `000`: curl timed out, so retry.
 
-1. **`image_url` did not hold a URL.** It held an *asset-catalog name* rendered with `Image(_ name:)`, a bundle lookup — so a photo had to be compiled in, and a name that wasn't drew **nothing at all**: no error, no placeholder, just a blank photo area. Now `ImageSource` routes on the string's shape (`https://…` → direct, `bucket/path.jpg` → that bucket's public URL, bare name → bundled asset) and `CatalogImage` renders it, falling back to a quiet gradient rather than silence. The bucket is the first path segment, so a *new* bucket needs no release either. Photos live in the public **`retreat-images`** bucket, named **`<place>-<yyyy>-<mm>.jpg`** (all seven uploaded 2026-09-14; every row points at Storage, and the `retreat-*` imagesets stay only because Practice mock content still borrows them). **Trip photography moved too**: the four post-purchase screens hardcoded `Image("mb-welcome")` / `("mb-villa")` — "mb" for *Mallorca brochure* — which would have shown a Mallorca villa on Patagonia's packing screen. They now read optional paths off `post_booking` (`welcome_image`, `featured_todo_image`, `todos_image`, `packing_image`, `guides_image`) through `TripImage`, which paints the espresso ground when one is absent rather than borrowing someone else's holiday. All 13 `mb-*`/`member-*` assets were uploaded under `mallorca-2027-07/…` and `members/…` and **deleted from the bundle — ~4.9MB off a 22MB asset catalog**; 7 of them were referenced nowhere at all, `member-gmartinez` (1.1MB) included, since the testimonial renders text only. ⚠️ Supabase answers `cache-control: no-cache` on public objects **whatever `cacheControl` you set at upload** — the value is kept in object metadata for its CDN, not echoed to the client — so every cold launch pays one ETag revalidation per photo (a 304 with an empty body). That is why `RemoteImageCache` caches *decoded* images rather than trusting `URLCache`. Public on purpose: catalog photography is marketing shown to anonymous guests, so a signed URL buys nothing and costs a round trip, cacheability, and a signature that expires mid-scroll. Private member media (`practice-media`) still signs.
-2. **The brochure lived in Swift.** `RetreatExperience.curated(for:)` was a switch on the retreat's *name* with one case, so any retreat that wasn't Mallorca got the concise layout and no amount of editing the database could change it. It is now the `experience` jsonb column. **Both the function and `RetreatExperience.mallorca` are deleted** — the Mallorca document was encoded from that literal (so it is identical) and written to the row.
+### RLS and grants: gotchas that have bitten
+- **Anonymous guests use the `authenticated` role, not `anon`.** `signInAnonymously()` issues a real JWT with `is_anonymous: true`. Catalog tables must therefore grant SELECT to **both** roles (`for select to anon, authenticated using (true)`); a policy written `to anon` returns nothing to anyone. Refuse guests explicitly on member writes.
+- **Supabase grants ALL on a new view to `authenticated`, and an owner-rights view over one table can be updated through.** The first apply of 0015 let members rewrite anyone's avatar through `community_members`. Every `revoke` on an owner-rights view must name `authenticated`, then grant SELECT back.
+- A `security_invoker` view (`practice_progress`, `member_notifications`) respects RLS. An owner-rights view bypasses RLS, so **its grants are its only protection.** `practice_creator_earnings` is owner-rights on purpose (it adds up earnings across all members). **Never grant it to a client role.**
+- Money and entitlement state is written only server-side (the service role, in Edge Functions). Clients read their own rows under RLS.
 
-> ⚠️ **A malformed `experience` fails soft, which means a broken brochure looks exactly like no brochure.** `RetreatRow.decodedExperience` catches, logs and returns nil, so the retreat renders the concise layout instead of taking down the catalog. That's the right trade for hand-authored content — but when someone says "the brochure isn't showing", check the log for a decode error before assuming the column is empty. `SoulfullUITests/RetreatBrochureTests` guards the happy path.
+### Tables
+**Catalog** (guests and members read published rows; no client writes):
+- **`retreats`**
+  - `image_url` (see *Retreat content*); `tone_top` / `tone_mid` / `tone_base` hex strings, read with `Color(hex:)`; a nullable `group_chat_url` (an https WhatsApp invite); `experience` jsonb (the brochure).
+  - `fetchRetreats()` returns only retreats that **haven't started yet** (`start_date > today`), because a retreat nobody can join is a wrong date and price in front of a customer. `fetchRetreats(ids:)` has no date filter (the You tab's history).
+- **`programs`**: slug id, nullable `date_range`, `days`, `curriculum` jsonb, `published`, `sort_order`, `instructor_id`. `fetchPrograms(ids:)` skips the `published` filter so a program that was taken down stays in a member's history.
+- **`practice_sessions`**
+  - `category` (`somatic` / `breathwork` / `meditation`), `media_kind`, `storage_path` (in the private `practice-media` bucket), `instructor_id`.
+  - `program_only` hides a session from the Practice tab but not from a curriculum.
+- **`journal_prompts` / `exercises` / `recipes`** (0021): the written libraries, read together by `fetchWrittenLibrary()` through `WrittenPracticeStore`.
+  - **Ids are a contract**: the ledger, curricula and saved reflections all key on them. Never change or reuse an id; unpublish instead.
+  - `recipes.angle` is a dietary angle, not `lead`.
+  - Runbook: `docs/ADDING-A-WRITTEN-PRACTICE.md`.
+- **`instructors`** (0019): rows written by the team, not member accounts.
+  - `user_id` (a guide's own account) is hidden from clients by a **column grant**, so the app lists columns explicitly (`select *` fails with 42501).
+  - A trigger keeps `lead` on sessions and programs equal to the guide's name.
+  - Runbook: `docs/ADDING-AN-INSTRUCTOR.md`.
 
-> **`date_range` is optional and normally omitted.** Present, it overrides the row's real dates on the cover. Absent, the line is derived from `start_date`/`end_date` and cannot drift. This existed as a documented trap — the old note said `RetreatExperience.mallorca.dateRange` hardcoded "July 21–26" and "those two must be changed together". Now there is one source of truth unless you deliberately opt out.
+**Member data** (owner RLS; guests refused on writes):
+- **`profiles`**: one row per auth user, created by a trigger (guests included).
+  - `upsertProfile` never writes `stripe_customer_id`, the timestamps, `avatar_url` or `share_activity`. The last two have their own targeted setters.
+  - `avatar_url` is check-constrained to `avatars/<own id>/<uuid>.jpg`. Each upload is centre-cropped on the device to a 512px JPEG and gets a **fresh uuid**, because the path is every phone's cache key.
+- **`practice_plays`** and the **`practice_progress`** view: see *Practice progress*.
+- **`program_enrollments`**: `enrolled_at` is day 1's unlock and is set by the server clock.
+- **`program_day_completions`**: **latched**, with no update policy, because the completion date is the next day's unlock.
+- **`bookings`**: read-only for the owner and written by `stripe-webhook`. `user_id` is nullable, `on delete set null`.
+- **`apple_credentials`**: **no client access at all** (RLS with zero policies *and* grants revoked). A 42501 response proves the table exists; a 404 would mean it's missing.
+- **`device_tokens`**: APNs tokens. A trigger hands a token to whoever registered it last.
 
-> **RLS role gotcha (bit us once, will again):** anonymous guests are **not** the `anon` Postgres role — `signInAnonymously()` issues a real JWT with `role: authenticated` (`is_anonymous: true`). So requests hit RLS as `authenticated`, the same role as permanent accounts. **Public/catalog tables must grant SELECT to *both* `anon` and `authenticated`** (or `to public`); a policy scoped `to anon` only returns 0 rows once anonymous sign-in is on (that's exactly why `0003_retreats_public_read.sql` exists). Write policies that omit a `to` clause default to `public`, which is why `profiles`/`bookings` were unaffected. `programs`/`practice_sessions` already follow this (`for select to anon, authenticated using (true)`); give any new catalog table the same. `practice_plays` is the exception and is deliberately scoped `to authenticated` with `auth.uid() = user_id` — it is per-member data, not catalog.
-- **`profiles` is protected by row-level security** (`auth.uid() = id` for select/insert/update; no delete; no client write to `stripe_customer_id`). A row is auto-created by an `auth.users` insert trigger (covers anonymous guests too), and `updated_at` is bumped by a trigger. The app only ever reads/writes its **own** row. `upsertProfile` deliberately omits `stripe_customer_id` and timestamps so it never clobbers server-managed columns. Account creation pushes local onboarding answers up; sign-in hydrates `AppSettings` from the row. **Email confirmation:** when Supabase "Confirm email" is on, the anonymous→permanent upgrade completes only once the address is verified — by the emailed code (`verifyOTP`, works from any device), by the emailed link on this iPhone (`soulfull://auth-callback` → `AuthManager.handleDeepLink`, PKCE `session(from:)`), or by `refreshConfirmationState` noticing a confirmation made elsewhere. `AccountView` shows the confirm panel after sign-up and auto-dismisses once `hasAccount` flips. Note which *template* fires: the guest upgrade is `auth.update(email:)`, i.e. an email **change**, so most users receive the *Change Email Address* email, not *Confirm signup* — both are branded in `supabase/templates/`. (With confirmation off, the upgrade completes immediately and the panel is skipped.)
+**Social:**
+- **`community_members`** (owner-rights view): id, avatar, and a `display_name` shortened **in SQL** ("Hugo De Santiago" → "Hugo D."), so the full name never leaves the row. Permanent accounts only. `search_members(q)` searches by name, **never by email**.
+- **`community_activity`** (owner-rights view): finished plays only, **never journal prompts**, and only from members with `share_activity` on. It never exposes seconds played. Adds `like_count` / `liked_by_me`.
+- **`friendships`**: one row per pair of members, in either order. Only the addressee can update a row, and only to `accepted`. Either side can delete it, which covers decline, withdraw and unfriend.
+- **Likes:** `practice_play_likes` → `notifications` → the `member_notifications` view.
+  - Only the like trigger writes `notifications`. An unlike removes the notification if it's still unread, and only `read_at` can change.
+  - Each new notification fires `send-like-push` through pg_net, with the URL and secret stored in Vault.
+- **`instructor_follows`** + the **`instructor_social(id)`** RPC: followers, following, `followed_by_me`, `is_me`, and up to 3 faces (friends first, `share_activity` members only, never the caller).
+- **`practice_presence()` / `program_presence()`** RPCs: see *Presence* under *Current state*.
 
-> **Required Supabase Auth dashboard settings (the app silently breaks without them):** (1) **Anonymous sign-ins = ON** — the app boots a guest session and upgrades it in place; if off, launch lands in `AuthManager.State.failed` with no session and both retreat reads and account creation misbehave. (`createAccount` falls back to `signUp` when there's no anonymous session, but the guest-upgrade UX needs it on.) (2) **Confirm email** — supported either way; when ON, you **must allow-list the redirect URL** under Authentication → URL Configuration → Redirect URLs: add `soulfull://auth-callback` (must match `SupabaseService.authRedirectURL` and the `CFBundleURLTypes` scheme in `project.yml`), or Supabase ignores the redirect and the email link won't reopen the app. (3) **Custom SMTP** — the built-in email service sends as `Supabase Auth <noreply@mail.app.supabase.io>` (that sender is not editable on any plan) and is rate-limited to a handful of emails per hour project-wide, which is explicitly not for production. Set Project Settings → Authentication → SMTP with sender name `Soulfull Gatherings`, and apply the branded templates (`supabase/templates/` — paste them in the dashboard, or recover the helper per that folder's README). (4) **Apple provider = ON** with the app's bundle ID (`com.soulfullgatherings.app`) in *Client IDs*, and *Secret Key* left blank (it is only used for Apple's web OAuth flow, which this app doesn't use) — the native token flow verifies the token's `aud` against the Client IDs list, so an empty field rejects every Apple sign-in. **A misconfigured Apple provider breaks every Apple sign-in, which is the primary way into an account — verify it before shipping.** No Google provider is needed; Google sign-in was removed on 2026-09-03.
+### Required Auth dashboard settings (the app breaks silently without them)
+1. **Anonymous sign-ins ON**, or launch lands in `State.failed` with no session.
+2. **Confirm email** works either way. If it's ON, allow-list `soulfull://auth-callback` under URL Configuration. It must match `SupabaseService.authRedirectURL` and the `CFBundleURLTypes` scheme.
+3. **Custom SMTP** with the sender name "Soulfull Gatherings". The built-in sender can't be renamed and is heavily rate-limited.
+4. **Apple provider ON**, with `com.soulfullgatherings.app` in *Client IDs* and *Secret Key* left blank. An empty Client IDs list rejects every Apple sign-in, so verify it before shipping.
 
-**Payments (Phase 2 — Stripe, retreat reservations). ⚠️ The CLIENT half of this is DELETED in v1** — the `StripePaymentSheet` dependency, `PaymentService`, `RetreatCheckoutView` and `RetreatDetailViewModel.reserve()` are all gone (recover from git history; see `AppFeatures.paymentsEnabled` for the full restore order). The **server** half below is untouched and still deployed. Retreats are real-world services, so Stripe (not Apple IAP) is the correct, App-Store-allowed rail. The flow *as built*: `RetreatDetailView` Reserve → (gate on `auth.hasAccount`, else present `AccountView`) → `PaymentService.createPaymentIntent` invokes the **`create-payment-intent`** Edge Function (authoritative price read server-side from `retreats`; reuses/creates the Stripe customer on `profiles.stripe_customer_id`) → `PaymentService.presentPaymentSheet` shows Stripe's `PaymentSheet` → on success the **`stripe-webhook`** function writes the `bookings` row with the service role. The client **never** writes payment state and never holds Stripe secrets — even the publishable key is returned by the function. `bookings` RLS is read-only for the owner. Stripe keys live only in Supabase function secrets (`STRIPE_API_KEY` — a **restricted** `rk_` key needing **Customers + PaymentIntents + Ephemeral Keys** write; the ephemeral-key permission is separate and easy to miss — plus `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET`). Server calls omit `payment_method_types` (dynamic payment methods) and use the account-default API version. The app sends its `STPAPIClient.apiVersion` so the function mints the ephemeral key with the matching version — no server/SDK version coordination needed. See `supabase/functions/README.md` for deploy steps + restricted-key permissions.
+### Retreat content is self-serve (adding a retreat needs no release)
+Runbook: `docs/ADDING-A-RETREAT.md`.
+- **`image_url`** is routed by its shape through `ImageSource` → `CatalogImage`. If an image fails to load, it shows a quiet gradient, never a blank.
+  - `https://…` is loaded directly.
+  - `bucket/path.jpg` is a public Storage object (the first segment is the bucket).
+  - A bare name is a bundled asset.
+- **Retreat photos** live in the public `retreat-images` bucket, named `<place>-<yyyy>-<mm>.jpg`. Catalog photography is public on purpose. Private member media (`practice-media`) is served through signed URLs (`signedMediaURL`, valid for 1h).
+- **Image caching:** Supabase serves public objects with `cache-control: no-cache` no matter what you upload them with, so `RemoteImageCache` caches **decoded** images instead of relying on `URLCache`.
+- **The brochure** is the `retreats.experience` jsonb column.
+  - ⚠️ **A malformed `experience` fails soft:** the error is logged and the retreat shows the short layout. When "the brochure isn't showing", check the log for a decode error first. `programs.curriculum` fails soft the same way.
+  - A `date_range` field inside it is optional and normally left out. If present, it overrides the row's dates.
 
-**Practice media** lives in a Supabase **Storage** bucket (default `practice-media`); `practice_sessions.storage_path` stores only the bucket-relative path. `SupabaseService.signedMediaURL(path:bucket:expiresIn:)` (default 1-hour expiry) turns a private path into a time-limited signed URL. `PracticePlayerView` plays a `storagePath` that is an absolute `http(s)` URL directly (without signing) and signs everything else; the `.mock` sessions carry an **empty** `storagePath` and are preview fixtures only (the old public sample URLs were removed — see the Practice note under App Store Submission).
+### Practice progress = creator payouts
+Every practice opened is recorded to `practice_plays`. That table is the member's resume and streak history, and it is also **the record creator payouts are calculated from** (the `practice_creator_earnings` view). Because both come from one ledger, they can never disagree.
+- **Rows:** each row has a client-generated `client_event_id`, so a retried write can't pay a creator twice. `content_title` / `creator` / `category` are copies taken at the time. **There is no delete policy**, because deleting a play would erase a creator's earnings.
+- **A DB trigger enforces integrity:**
+  - The identity columns, `duration_seconds`, title and category are frozen.
+  - `seconds_played` can only go up and is capped at the frozen duration.
+  - `completed` latches.
+  - **When you change the trigger, test the cap as well as `seconds_played`.** The cap was once client-writable, which made it useless.
+- ⚠️ **`user_id` is frozen only when the new value isn't null.** `on delete set null` is itself an UPDATE, and a blanket freeze undid it. RLS (`with check (auth.uid() = user_id)`) stops a client from nulling its own row. As a result, deleting an account **anonymises** its plays rather than deleting them, because the creator still earned them.
+- ⚠️ **Retiring a library once real rows use it:**
+  - Keep the `PracticeContentKind` case and the `content_kind` constraint. An unknown kind decodes as `.session`, which would quietly credit another creator.
+  - Drop only the `PracticeMenuItem` case, and make `PracticeProgress.menuItem` optional.
+  - Migration 0012 shows the `count(*)` query that tells you whether real rows exist.
+- **Measurement:**
+  - **Media sessions:** `PlaybackReporter` counts *media* time, so seeking and pausing count for nothing, and it reports every 20s. A session **completes only when its end is reached with at least 80% actually heard** (`MediaTimeMeter.requiredShare`), counted across unfinished sittings.
+  - **Written practices** count time on screen (`.practiceActivity(_:)`), in the foreground only and capped at 30 minutes per visit. A journal prompt completes once something is written; the others after 45s. Journal plays declare a nominal 900s duration so the server cap applies to them too.
+  - **A written practice with media** passes `enabled: false` so a sitting isn't counted twice.
+- **Client-reported seconds are capped, not proven.** Making payouts defensible against a determined cheat would need an Edge Function that cross-checks the Storage access logs.
 
-**Practice progress (and creator payouts).** Every practice a member opens is recorded server-side, because the rows are two things at once: the member's "Continue where you left off", and **the record content-creator payouts are calculated from**. One append-mostly table (`practice_plays`) and two views over it — a single source of truth, so the resume point and the payout total can never disagree. Defined by 0008 (applied 2026-09-06, hardened by 0009; both since removed from the repo — `git show d20e3f6:supabase/migrations/`).
+### Digital programs (the Programs tab)
+Spec: `docs/PLAN-digital-programs.md`. A program is free to join (behind the account gate), self-paced, and opens a day at a time.
+- **The unlock rule is the feature.** Day 1 opens on enrolment. Day N+1 opens when **every activity of day N is done _and_ the local date has moved past the day day N was finished on** (`startOfDay + 1 day`, not `+86400`).
+  - The rule lives in `ProgramUnlockRule`.
+  - `ProgramDayState` keeps `complete` / `open` / `opens(date)` / `awaitingPreviousDay` separate, because "come back tomorrow" and "not finished yet" call for different actions.
+- ⚠️ **An activity counts toward a day only if it was completed after that day unlocked** (`lastPlayedAt >= dayUnlockedAt`). `practice_progress.completed` never resets, so without this rule a member's past practice would complete days the moment they enrol.
+- **Day completion is latched,** even though activity completion is not.
+- **Programs record nothing of their own.** Activities open the same screens as the Practice tab and write `practice_plays` the same way, so a creator is paid identically either way. Leaving a program clears the enrolment and day rows and **touches no play history**.
+- **Missing activities:**
+  - An activity whose content doesn't exist is **dropped and logged**, because an activity that can't be opened would block the member forever.
+  - A day with no activities left closes on its own.
+  - ⚠️ **Missing is not the same as not loaded yet** (`ActivityLookup.pending`, `ProgramDayResolution`). If a library hasn't been read this launch, or a lookup failed, the activity is hidden but **the day stays open**. Completion is latched and can't be undone.
+- **Program reminders are local notifications** (`ProgramNotifications`), sent at **08:00** on the morning a day opens (days open at midnight). Permission is asked at enrolment, never at launch. Push is used only for likes.
+- **Yoga has no category of its own.** It is step content in Movement (`exercises`).
 
-- **`practice_plays`** — one row per playback/reading session, addressed by a client-minted `client_event_id` so a heartbeat retry can't pay a creator twice. `content_title` / `creator` / `category` are **snapshots**: retitling a session or reassigning a guide must not move historical payouts.
-- **Integrity is enforced in the DB, not the client.** A `before insert or update` trigger freezes the identity columns, keeps `seconds_played` monotonic, latches `completed`, and clamps consumption to the practice's own length. There is no delete policy at all — deleting a play would erase a creator's earnings.
-- ⚠️ **The clamp is only as strong as its bound, and 0008's bound was client-writable.** 0008 froze the identity columns but not `duration_seconds` — and the clamp is `least(seconds_played, duration_seconds)` against the value sent *in that same UPDATE*. Since `recordPracticePlay` sends duration on every heartbeat, a modified client could send `duration_seconds: 999999, seconds_played: 999999` and bill it in full. `content_title` and `category` were unfrozen too, so a payout report's labels could be rewritten after the fact. `0009_integrity_hardening.sql` freezes all three (duration via `coalesce(old, new)`, so a later heartbeat can still fill in a length the first didn't know). **The earlier note here claimed this was verified against the live table; it was not — the test raised `seconds_played` alone, never the bound.** When you change this trigger, test the bound too.
-- ⚠️ **The trigger must not freeze `user_id` unconditionally** — a lesson from the first version, which did. `ON DELETE SET NULL` performs an *UPDATE*, so a blanket `new.user_id := old.user_id` silently reverts the FK's own anonymisation: the deleted member's uuid stays bolted to their history and the foreign key ends up violated. The freeze is therefore conditional on `new.user_id is not null`. The gap that opens is closed by RLS, not by the trigger: `with check (auth.uid() = user_id)` runs *after* the trigger, and `auth.uid() = NULL` is NULL rather than true, so a client cannot null its own row to escape RLS. Verified both ways on the live table.
-- **Account deletion anonymises rather than cascades.** `user_id` is nullable with `on delete set null`, so when a member deletes their account the play survives without them (the creator still earned it) and RLS then hides it from every client. This is why `delete-account` doesn't take the ledger with it.
-- ⚠️ **Retiring a library means touching the ledger's vocabulary — and that is only cheap while the table is empty.** Personal Massages was removed on 2026-09-15: the `PracticeMenuItem` case, the `PracticeContentKind` case and `'massage'` in the `content_kind` check constraint (migration **0012**) all went, because the app had no users and so no massage history to protect. **Do not copy that shape once there are rows.** `practice_plays` is never deleted from, and an unknown kind decodes as `.session` (`PracticeContentKind(rawValue:) ?? .session`), so dropping a case that real rows still use silently re-credits another creator. With history present the move is the opposite: keep the `PracticeContentKind` case and the constraint, drop only the `PracticeMenuItem` case, and make `PracticeProgress.menuItem` optional so `PracticeProgressStore.resumable` can skip a practice with no screen. 0012 carries the `select content_kind, count(*)` check that tells you which situation you're in.
-- **`practice_progress`** (view, `security_invoker = on`) is what the app reads. ⚠️ That setting is load-bearing — without it the view runs as its owner, bypasses RLS on `practice_plays`, and every member reads everyone else's history.
-- **`practice_creator_earnings`** (view, owner rights **on purpose**, so it can aggregate across all members) is the payout report. It is `revoke`d from `anon` and `authenticated`; those GRANTs are the only thing between it and a full history leak. **Never grant it to a client role.**
-- **Measurement.** `PlaybackReporter` counts *media* time (not wall-clock, not the scrubber), so seeking to the end banks nothing and a paused player accrues nothing. **Nor does seeking to the end finish a session** (2026-09-27): it completes only when the end is reached with at least **80%** of its length actually played (`MediaTimeMeter.requiredShare`), counting what was heard in earlier *unfinished* sittings so a session heard across two days still finishes — a finished one starts again from nothing, so a replay counts only if it is replayed. Until then a scrub to the last seconds counted as a class, kept a streak and ticked off a program activity. Rows already recorded that way stay — the ledger is never rewritten. The reporter heartbeats every 20s so a force-quit loses little. The written libraries have no transport, so `.practiceActivity(_:)` measures time on screen instead — a journal prompt counts as done once something is written against it, the others after 45s. That clock is **foreground-only** (`scenePhase`) and capped at 30 minutes per visit: `onDisappear` doesn't fire on backgrounding, so before that a prompt left open overnight banked eight hours — and `PracticePlay.journal` carried no `durationSeconds`, so the DB clamp was skipped entirely and nothing bounded it. Journal plays now declare a nominal 900s so the server-side bound applies to them as well. A written practice that also has media reports through the player and passes `enabled: false` to the modifier so one sitting isn't counted twice.
-- **Client-reported seconds are client-reported.** The trigger bounds inflation; it doesn't eliminate it. If payouts ever need to be defensible against a determined attacker rather than a buggy client, move the write behind an Edge Function that cross-checks the Storage access log.
+### Device-local private data (`LocalUserStore`)
+Journal reflections and trip checklists stay on the phone. The privacy policy promises reflections never leave it.
+- **Per-member namespace:** keys are `sg.u.<user id>.…`, never a flat key. A flat `sg.journal.<id>` once let two people on the same phone read each other's writing.
+- **Storage:** reflections go through `privateText` / `setPrivateText`, which write a file under Application Support with `NSFileProtectionComplete`, excluded from backup. A plist would travel in iCloud and Finder backups and break the promise.
+- **Lifecycle:** `AuthManager.apply(_:)` calls `adopt(userID:isAnonymous:)`, which hands a guest's data to the member they become. `deleteAccount()` calls `purgeCurrentScope()`.
 
-**Digital programs (the Programs tab).** Self-paced, multi-day journeys — breathwork, meditation, movement, reflection, food — that a member joins for free and works through a day at a time. Full spec: **`docs/PLAN-digital-programs.md`**.
+### Payments (server-side only in v1)
+- **The Stripe server side is deployed and tested in test mode:**
+  - `create-payment-intent` reads the real price from `retreats`, keeps the Stripe customer on `profiles`, and refuses with `409 already_booked` / `409 sold_out`.
+  - `stripe-webhook` writes `bookings` with the service role.
+- **The client side was deleted** (`StripePaymentSheet`, `PaymentService`, the checkout view, `reserve()`). It pulled in a card scanner, which forced a camera permission prompt the app couldn't justify.
+- **Why Stripe:** retreats are real-world services, so Stripe (not in-app purchase) is the right rail. A future membership would need StoreKit.
+- **Restoring it:** the steps are in `AppFeatures.paymentsEnabled`'s doc comment, and the keys and permissions are in `supabase/functions/README.md`. If Stripe comes back, use `github.com/stripe/stripe-ios-spm`, not `stripe/stripe-ios`, whose multi-GB history makes package resolution crawl.
 
-- **The unlock rule is the feature.** Day 1 opens on enrolment. Day N+1 opens when **both**: every activity in Day N is complete, **and** the local calendar date has moved past the date Day N was finished on. `startOfDay(prev) + 1 day`, not `+86400s`, so the clocks changing doesn't shift the boundary. All of it lives in `ProgramStore`; `ProgramDayState` carries four cases (`complete` / `open` / `opens(date)` / `awaitingPreviousDay`) because "come back tomorrow" and "you're not finished yet" send someone to completely different actions and must never collapse into one "Locked" chip.
-- ⚠️ **An activity counts toward a day only if it was completed *after* that day unlocked** (`lastPlayedAt >= dayUnlockedAt`). This looks redundant next to `completed` and is not: `practice_progress.completed` is latched for all time, so without it a member with any history at all would have days 1–4 marked done the instant they enrolled, and the pacing — the whole point — would evaporate. The visible consequence is intentional: the same prompt can appear on day 2 and day 6 and must genuinely be re-done the second time.
-- **Day completion is latched even though activity completion is not.** Seeding media into a live program must not retroactively un-finish someone's week.
-- **Nothing new records anything.** A day's activities open the *same* screens the Practice tab opens and write to `practice_plays` identically, so a creator is paid the same whether their session was found in the library or inside a program. Membership state gets its own two tables instead of a new `content_kind` — a program day is not a payable event, and that ledger is append-mostly with no delete policy, so "leave this program" could not be honoured there. Leaving clears the enrolment and its day rows and **touches no play history**.
-- **An activity whose content can't be resolved is dropped from the day**, logged, not rendered as a broken row. A curriculum may reference media before it is uploaded, and an activity that cannot be opened cannot be completed — which under the unlock rule would stall the member permanently. The day quietly shrinks to what exists and grows back when the media lands. (A day that resolves to *nothing* is completed outright, with an error logged: trapping someone on it forever is the worse failure.) ⚠️ **"Missing" is not "not loaded yet"** (`ActivityLookup.pending`, `ProgramDayResolution`, 2026-09-29): an activity whose library hasn't been read this launch, or whose session lookup failed, is hidden but **holds the day open** — completion is latched, so closing a day around a practice that simply hadn't arrived can't be undone. Before 0021 the written libraries could never be pending, and a failed session read counted as missing.
-- **Program notifications are local, never push** (`ProgramNotifications`); push exists only for likes (`PushRegistrar`). Permission is asked at enrolment, not at launch. The day *opens* at local midnight; the notification fires at **08:00** — a separate decision, and the reason a card saying "opens tomorrow" and a mid-morning notification are consistent rather than contradictory. Home carries the in-app half ("Day N is open") for everyone who declined.
-- **Yoga has no category of its own.** It is step content, so it lives in the **Movement** library (the `exercises` table) alongside mobility and core work, and appears on the Practice tab like everything else there. The three `PracticeCategory` tracks stay audio/video.
+## Key conventions
 
-**Per-member device-local data (`LocalUserStore`).** Some things deliberately never leave the phone — journal reflections above all, since the privacy policy makes that an explicit promise, plus the post-purchase trip checklists. They are namespaced **per member** under `sg.u.<user id>.…`, not per device. `AuthManager.apply(_:)` calls `adopt(userID:isAnonymous:)` on every identity refresh (cheap no-op when unchanged); it hands a guest's data forward when that guest becomes a member, sweeps an abandoned guest scope, and leaves a permanent account's data alone in case they sign back in. `deleteAccount()` calls `purgeCurrentScope()` — the confirmation dialog promises to delete "saved data", and before this it deleted the server row and left the writing on the phone. **A flat `sg.journal.<id>` key is a bug, not a shortcut:** it let two people sharing an iPhone read each other's reflections.
-
-> **Reflections are not in `UserDefaults` any more** (2026-09-07). Namespacing fixed *who* could read them; it didn't fix *where* they lived. A plist in `Preferences/` is included in encrypted iCloud and Finder backups, so `privacy-policy.md`'s promise that reflections "do not move with you to a new phone" was false — a backup restore moved them, and any trusted machine could read them in plaintext. They now go through `LocalUserStore.privateText` / `setPrivateText`: a file under Application Support, written `NSFileProtectionComplete`, in a directory flagged `isExcludedFromBackup`. Existing entries migrate on first read and the plist copy is deleted. `JournalDetailView` debounces the write by 600ms — it used to rewrite the whole entry on every keystroke.
-
-**Adding a new fetch:** add a private `Codable` `…Row` DTO inside `SupabaseService.swift` with `CodingKeys` mapping snake_case → camelCase and a computed property returning the app model. Then add a `func fetch…() async throws -> [T]` (consider a cache + TTL if it mirrors the existing pattern). Wrap/surface failures through `AppError`.
-
-## Design System & Motion (2026-06 overhaul)
-
-See `docs/DESIGN.md` for the full direction ("quiet luxury, editorial"). The short version:
-
-- **Glass:** every glass surface goes through `SoulGlass` (`.soulGlass(in:)`/`.soulGlassCapsule`/`.soulGlassCard`) — real `glassEffect` on iOS 26+, material+hairline below. Never branch on OS in feature code.
-- **Touch physics:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in `PressableCard`) — spring squish + haptic on touch-down. Don't add `onTapGesture` to cards.
-- **Shaders** only via `ShaderFX` wrappers (grain/aurora/shimmer/dissolve/ripple); all are Reduce Motion-aware.
-- **Navigation delight:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`; tab roots report pushes via a `navHidden` binding so `BottomNav` hides (instantly — it never animates) on detail screens. Retreats & Practice support pinch-out into "catalog" contact sheets (always paired with a visible grid-toggle button for discoverability).
-- **UI tests are how a dead control gets diagnosed.** `SoulfullUITests` came back on 2026-09-03 for gotcha #5, which was invisible to inspection and to two rounds of reasoning. How to run them, and the testing policy as a whole: *Testing*.
-
-**Rendering gotchas that have actually bitten this codebase — re-read before adding effects:**
-1. **Metal effects (layerEffect/colorEffect/distortionEffect, incl. disabled ones) over UIKit-backed views** (NavigationStack, TextField, video) render the yellow ⃠ placeholder. Blur-carrying transitions count (blur(0) still attaches a filter). Keep shader/blur effects on pure-SwiftUI leaf subtrees; use `editorialPageSoft`/plain transitions around platform views.
-2. **`visualEffect` offsets/scales escape ancestor clips** — scroll-parallax imagery inside clipped cards bleeds outside the card. Scroll-driven image motion only on full-bleed surfaces; cards animate as whole units (`listReveal`).
-3. **`scaledToFill` grows layout, not just drawing** — an unconstrained fill image inflates its ZStack and pushes siblings offscreen (capsules render as full-width bands, buttons land past the screen edge). Contain fill images in a `Color.clear.overlay { … }.clipped()` (as `PhotoBackdrop` does).
-4. GeometryReader inside an HStack over-claims width; prefer leading-anchored `scaleEffect` fills (see onboarding progress bar).
-5. **An `Image` stretched by `.frame(width:height:)` only hit-tests its drawn glyph.** The surrounding area is inert unless something fills it or you declare `.contentShape(...)`. `CircleIconButton` had no content shape: on iOS 18–25 `.soulGlass` fell back to `.background(.ultraThinMaterial)`, which *is* hit-testable and hid the flaw, but on iOS 26 it resolves to `glassEffect`, which contributes no hit-testable fill — leaving every circular icon button in the app an ~11pt target inside a 38pt circle. Symptom: taps near the edge silently do nothing, and the accessibility frame reports the glyph size rather than the button's. It surfaced as the account sheet's close button "not working". Fixed with `.contentShape(Circle())`; **check the accessibility frame, not the visual frame, when a button feels dead.** **Glass *cards* have the same flaw:** a `PressableCard` whose label is `.soulGlassCard(...)` answers only on its text and any filled pill — the retreats stack's bottom card ignored a tap on the glass between them until it got a `.contentShape(RoundedRectangle(...))` (2026-09-18). XCUITest taps an element's centre, so the dead zone only showed once the card's text got short enough to leave the centre empty. Give every tappable glass surface a content shape.
-
-## Design ↔ Code Sync (Claude Design mirror)
-
-`design-system/` (repo root) is an HTML/CSS **mirror** of the app's UI, pushed to a **Claude Design** project where the UX team edits the design visually. It is **not** part of the Xcode build (`project.yml` only sources `SoulfullGatherings/` + `Resources/Fonts`). `design-system/README.md` holds the full Swift↔CSS token/component map; the Claude Design **projectId is `76dcee6b-dc46-486b-abb7-a0c06852f1fb`**.
-
-**`design-system/` is the single reconciliation point** between code and Claude Design. There are three flows, and only the first is automatic:
-
-1. **Code → local mirror (do this in the same change).** When you change *design-relevant* code, update the matching `design-system/` file(s) in the **same edit/commit** so the local mirror never drifts. Design-relevant = `Theme.swift` (tokens → `shared/tokens.css`), `Components.swift`/`BottomNav`/`SoulGlass`/onboarding `OptionCard`/`PracticeShared` (→ `shared/app.css`), or a screen's layout/copy/structure in `Features/**` (→ the matching `screens/*.html`). Pure logic/backend/auth/payment changes with **no visual effect are exempt** — don't touch the mirror for those. Keep the 1:1 mapping in `README.md` intact; if you add a new screen, add a new `@dsCard` HTML card for it.
-2. **Local mirror → Claude Design (deliberate, never automatic).** Push with `/sync-design push` (see `.claude/commands/sync-design.md`). Push is **incremental — only the changed cards — never a wholesale re-push**, because the UX team edits these cards and a blanket push clobbers their work. Pushing is outward-facing (writes to claude.ai): **pull/check first and confirm before pushing.** Hooks/scripts cannot push — the `DesignSync` tool needs a live session.
-3. **Claude Design → code (deliberate).** `/sync-design pull` reads the team's edits back into `design-system/`, surfaces them as a diff, then ports the deltas to Swift via the `README.md` token map (e.g. a changed `--honey` hex → recompute `Theme.honey`'s RGB 0–1).
-
-After a design-relevant code change, update the local mirror automatically (flow 1), then **remind the user** that `/sync-design push` is needed to publish to Claude Design — don't push unprompted.
-
-## Key Conventions
-
-- `@Observable @MainActor` on all ViewModels and app-level singletons (`AppState`, `AppSettings`, `AuthManager`). No `ObservableObject`/`@Published`.
-- Haptics are mandatory on every interactive tap: `Haptics.tap()` for secondary, `Haptics.bump()` for primary CTAs, `Haptics.select()` for scroll/toggle updates, `Haptics.success()` for confirmations; `Haptics.prepare()` to warm the engine on gesture start. `SoulPressableStyle` fires `tap` on touch-down — actions using it shouldn't double-fire.
-- Navigation is value-based (`NavigationStack` + typed `Route` enums per tab root), not `NavigationLink` with destinations.
-- All onboarding answers are validated before `canAdvance` returns `true`; never allow advancing with empty state. The step machine has 5 cases but `questionCount = 4` (the `finish` case is not a question).
-- Mock data is defined as static `.mock` / `.mock(for:)` / `.all` properties on model types in `Models.swift`.
-- **Anything private and device-local goes through `LocalUserStore`, never a flat `UserDefaults` key.** It namespaces per member (`sg.u.<user id>.…`), which is what stops two people sharing a phone from reading each other's journal, and what makes "delete my account" actually delete the writing. `AppSettings` (below) is the exception: onboarding answers are device preferences, not private content, and are copied to `profiles` on sign-up anyway.
-- **Practice history is server-side, never local.** `PracticeProgressStore` → `practice_plays`. It is not just UX state: it is the record creator payouts are drawn from, so it has to survive a reinstall. Never add a local mirror as the source of truth.
-- **`AppSettings` holds device preferences, but the personal answers in it belong to a *person*.** `signOut()` and `deleteAccount()` call `AppSettings.clearPersonalAnswers()` (name / intentions / body state / frequency; `hasOnboarded` survives). Without it the You tab greeted a deleted user by name, and — worse — `AccountViewModel.mergeProfile` uploaded the *previous* member's answers to the *next* member's `profiles` row, because it saw an empty server row and took the "new account" branch.
-- **Persisted user settings live in `AppSettings`, not `@AppStorage`** — properties are backed by `UserDefaults` with `didSet` writes. All keys are prefixed `sg.` (`sg.hasOnboarded`, `sg.userName`, `sg.bodyState`, `sg.frequency`, `sg.intentions`).
-- `AppSettings.intentions` is exposed as a `Set<String>` but serialized to a comma-joined string (`intentionsRaw`) — always read/write the `Set` property, never `intentionsRaw` (which is `private`).
-- Domain models are value types conforming to `Identifiable` + `Hashable` (keyed on `id`) for `NavigationStack` use. Durations are stored in seconds (`durationSeconds`) with a `.durationLabel` computed property.
-- **Browsing never requires an account.** Gate individual *actions* through `AccountGate`, never the route into `.main` or a whole tab — see the 5.1.1(i) note above.
-- **Gate paid / account-only flows on `auth.hasAccount`, never `auth.isAuthenticated`** — the latter is true for anonymous guests. Read/write money or entitlement state server-side only (RLS for reads; webhooks via service role for writes); never trust the client.
-- **Behaviour changes ship with their tests** — see *Testing* for what needs which.
+- **Observation:** `@Observable @MainActor` on every ViewModel and app singleton. No `ObservableObject` / `@Published`.
+- **Haptics on every interactive tap:**
+  - `Haptics.tap()` for secondary actions, `.bump()` for primary CTAs, `.select()` for scroll and toggle changes, `.success()` for confirmations, `.prepare()` on gesture start.
+  - `SoulPressableStyle` already fires `tap` on touch-down, so don't fire it twice.
+- **Navigation** is value-based (typed `Route` enums), never `NavigationLink(destination:)`.
+- **Onboarding** has 4 questions. The step machine has 5 cases because `finish` isn't a question. `canAdvance` is false whenever an answer is empty.
+- **Models** are value types, `Identifiable` + `Hashable` on `id`. Durations are stored in seconds (`durationSeconds`) with a `.durationLabel`.
+- **Settings live in `AppSettings`** (UserDefaults with `didSet`, keys prefixed `sg.`), not `@AppStorage`.
+  - Read and write `intentions` as the `Set`, never `intentionsRaw`.
+  - `signOut()` and `deleteAccount()` call `clearPersonalAnswers()` (`hasOnboarded` survives). Without it, `mergeProfile` uploaded the previous member's answers to the next member's row.
+- **Private device-local data goes through `LocalUserStore`**, never a flat `UserDefaults` key.
+- **Practice history is server-side only** (`PracticeProgressStore` → `practice_plays`). Never make a local copy the source of truth.
+- **No sample-data fallbacks, ever.**
+  - A failed fetch shows a failure state that tells **offline** ("you'll need to be online") apart from **our fault** ("something went wrong at our end").
+  - `Error.isOffline` counts only `notConnectedToInternet` / `networkConnectionLost` / `dataNotAllowed` / `internationalRoamingOff`. `timedOut` may be our backend.
+  - A sample catalog shown as real is Guideline 2.1(a) temporary content. For the same reason, **never invent state**: no fake progress, no fake "present" counts.
+- **No `print()`.** Use `Log` (`auth` / `data` / `media` / `payment`). Interpolated values are redacted in Release, so mark safe values `\(x, privacy: .public)`.
+- **Account gating:** browsing never requires an account. Gate actions through `AccountGate`, on `auth.hasAccount`.
+- **Tests:** behaviour changes ship with their tests (see *Testing*).
 
 ## Testing
 
-Two test targets in the one `SoulfullGatherings` scheme, both scoped `[test]` so an archive never builds them. This section is the single source for testing policy; the README points here.
+There are two test targets in the `SoulfullGatherings` scheme, both scoped `[test]` so an archive never builds them.
 
 | Layer | Where | Framework | What belongs there |
 |---|---|---|---|
-| Unit | `SoulfullTests/<Area>/…Tests.swift` (+ `Support/Fixtures.swift`) | Swift Testing — `@Suite`, `@Test`, `#expect`, `#require` | Business rules, state transitions, validation, data transformation, error handling. Milliseconds, no network. |
-| UI | `SoulfullUITests/…Tests.swift` | XCTest / XCUITest | The critical journeys below — and nothing else. |
+| Unit | `SoulfullTests/<Area>/…Tests.swift` (+ `Support/Fixtures.swift`) | Swift Testing | Business rules, state transitions, validation, data transformation, error handling. No network. |
+| UI | `SoulfullUITests/…Tests.swift` | XCUITest | The critical journeys below, and nothing else. |
 
-There is **no separate integration target**. Two components that must be tested together (a view model and its injected fake fetch) go in `SoulfullTests`; what only exists live (RLS, decoding real rows, hit-testing) is what the UI journeys are for.
+There is no integration target. A view model tested with an injected fake goes in `SoulfullTests`. What only exists live (RLS, decoding real rows, hit-testing) is what the UI journeys are for.
 
-### Running them (verified 2026-09-27, Xcode 26.3, iOS 26.3 simulator)
-
+### Running
 ```bash
-xcodegen generate   # after adding ANY test file — targets use explicit file references
-# Unit tests — ~1 min with the build, <1 s to run
+xcodegen generate   # after adding ANY test file
+# Unit (~1 min including the build)
 xcodebuild test -project SoulfullGatherings.xcodeproj -scheme SoulfullGatherings \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:SoulfullTests
-# UI journeys — ~8 min, against the live Supabase project, on a signed-out simulator (below)
+# UI (~8 min, against live Supabase), on a signed-out simulator
 xcrun simctl create "Soulfull Tests" "iPhone 17 Pro"   # once
 xcodebuild test -project SoulfullGatherings.xcodeproj -scheme SoulfullGatherings \
   -destination 'platform=iOS Simulator,name=Soulfull Tests' \
   -resultBundlePath build/ui.xcresult -only-testing:SoulfullUITests
-# Narrow either: -only-testing:SoulfullTests/PracticeStatsTests  ·  -only-testing:SoulfullUITests/OnboardingTests
-# Everything: drop -only-testing
+# Narrow a run: -only-testing:SoulfullTests/PracticeStatsTests · -only-testing:SoulfullUITests/OnboardingTests
 ```
+To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.xcresult --output-path build/attach` and map the files through `manifest.json`.
 
-UI screenshots: `xcrun xcresulttool export attachments --path build/ui.xcresult --output-path build/attach`, then map names through `build/attach/manifest.json` (the file order is not the test order). **Reach for a UI test whenever a control "doesn't work"** — `app.debugDescription` reports real hit frames, which is what exposed gotcha #5's 11pt button.
+**Get the environment right, or failures mean nothing:**
+- Both targets need `Config/Secrets.xcconfig`, and UI tests need network.
+- **Run UI tests on a simulator nobody is signed in on.** `-uitest-reset` resets `AppSettings` but not the Keychain session. With a member signed in, the guest tests fail and `RetreatEnquiryTests` sends a **real application email** to the team.
+- Two runs on one simulator kill each other, so check `ps aux | grep xcodebuild` first.
 
-**Environment, or a failure isn't a failure:**
-- Both targets need `Config/Secrets.xcconfig` — the host app builds its Supabase client even under unit tests (nothing is fetched).
-- UI tests need network: the catalog, programs, presence and the guest gate are read live.
-- **Run UI tests on a simulator nobody is signed in on** — the dedicated "Soulfull Tests" one above, or `xcrun simctl erase` another. `-uitest-reset` resets `AppSettings`, not the Keychain session: with a member signed in, the guest tests fail, and `RetreatEnquiryTests` sends a **real application email** to the team — `send-retreat-enquiry` refuses only anonymous guests.
-- Two test runs on one simulator kill each other ("Test crashed with signal kill"). Check `ps aux | grep xcodebuild` first; another session may be using it.
+### Unit tests
+- **Setup:** `@testable import SoulfullGatherings`. The host app renders nothing while hosting unit tests (`isHostingUnitTests`).
+- **Isolation:**
+  - **Never touch** `SupabaseService.shared`, any `.shared` store, `UserDefaults.standard`, the Keychain, notifications or the real clock.
+  - Inject dependencies through an init parameter whose default is the production value (`RetreatsViewModel(fetchRetreats:)`, `LocalUserStore(defaults:privateRoot:)`).
+  - Move a rule that's tangled up with live state into a pure type next to its owner (`ProgramUnlockRule`, `MediaTimeMeter`). Don't widen `private` for a test.
+- **Time is an argument** (`PracticeStats(_:calendar:now:)`, `ProgramUnlockRule.*(…, now:, calendar:)`).
+  - Build dates with `Calendar.gregorian(in: "Europe/Madrid").at(2026, 9, 16, 12)`. Never use `Date()` or `Calendar.current` when the day matters.
+  - Test daylight-saving edges with a named zone and date (São Paulo 2018-11-04 skips midnight; Madrid 2026-10-25 is 25 hours long).
+- **Style:** one behaviour per test, and the name states the scenario and result. Separate arrange / act / assert with blank lines, use `@Test(arguments:)` for tables, and `await` rather than sleep.
+- **Suites that guard the riskiest rules:**
+  - `PracticeStatsTests`: streaks, classes, minutes.
+  - `ProgramUnlockRuleTests` and `ProgramDayResolutionTests`: day unlocks, and pending vs missing activities.
+  - `MediaTimeMeterTests`: the payout measurement.
+  - `LocalUserStoreTests`: per-member privacy.
+  - `AccountGateReplayTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
 
-### Writing unit tests
-
-- `@testable import SoulfullGatherings`. The bundle is hosted in the app, which renders `Color.clear` and skips all launch work while it is (`SoulfullGatheringsApp.isHostingUnitTests`).
-- **Never touch** `SupabaseService.shared`, any `….shared` store, `UserDefaults.standard`, the Keychain, notifications or the real clock. Inject instead, through an init parameter whose default is the production value — `RetreatsViewModel(fetchRetreats:)`, `LocalUserStore(defaults:privateRoot:)` — and add the same shape when a new type needs it. A rule tangled with live state is lifted into a pure type beside its owner, which then delegates (`ProgramUnlockRule` in `ProgramStore.swift`, `MediaTimeMeter` in `PracticeActivity.swift`). Don't widen `private` just for a test.
-- **Time is an argument:** `PracticeStats(_:calendar:now:)`, `ProgramUnlockRule.*(…, now:, calendar:)`, `RetreatEnquiry.dayString(_:in:)`. Build dates with `Calendar.gregorian(in: "Europe/Madrid").at(2026, 9, 16, 12)` from `Fixtures.swift` — never `Date()` or `Calendar.current` when the answer depends on the day. A DST edge is a named zone and date (São Paulo 2018-11-04 skips midnight; Madrid 2026-10-25 is 25 hours long).
-- One behaviour per test; the name states scenario and result; arrange / act / assert separated by blank lines; tables via `@Test(arguments:)`; async with `await`, never a sleep.
-
-| Suite | Guards |
+### UI journeys: the only ones that earn a UI test
+| File | Journey |
 |---|---|
-| `PracticeStatsTests` | Streak, best streak, classes, minutes — the You tab and Home's streak |
-| `ProgramUnlockRuleTests` | Day N+1 = day N done **and** the local date turned over; latched history doesn't count |
-| `ProgramCurriculumTests` | The fail-soft curriculum decode: days sorted, one bad activity skipped, not the program |
-| `MediaTimeMeterTests` | Creator payouts count media time — seeks and pauses bank nothing — and a scrub to the end never finishes a session |
-| `LocalUserStoreTests` | Per-member privacy: no cross-member reads, guest → member handover, deletion erases the writing |
-| `RetreatEnquiryFormTests` | Application completeness, the wire format, and the date-of-birth regression |
-| `RetreatCatalogLoadTests` | No sample-data fallback; offline vs ours; a failed refresh keeps the catalog |
-| `ErrorClassificationTests` | `isOffline` / `isCancellation` — the words every failure state picks |
-| `AccountGateReplayTests` | The interrupted tap replays once on sign-in, never after backing out |
-| `AccountFormTests` · `OnboardingFlowTests` · `PresenceCountTests` | Form validation, no advancing on empty answers, "75.7k" rounded down |
-| `WrittenPracticeStoreTests` | Offline vs our end; a failed refresh keeps the library; the kept copy (guides included) opens offline but never proves a practice is gone |
-| `ProgramDayResolutionTests` | A gone practice is dropped; a not-yet-loaded one holds the day open; a day of nothing but gone practices still closes |
-| `FollowedByLineTests` · `InstructorFollowTests` · `InstructorLibraryTests` | "Followed by you, Theo R. and 211 others"; follow/unfollow optimistic and reverted, guests and the guide themselves refused, the replay never unfollows, a stale read never undoes a follow; a guide's written practices are the ones naming them, in library order, no one else's |
+| `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it |
+| `AccountGateTests` | A guest opens a recipe → account sheet → closes it (button and swipe) |
+| `RetreatEnquiryTests` | Request a place → gate → form → Submit settles |
+| `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Catalog, detail, and the brochure (which fails soft) |
+| `ProgramTests` | Catalog → days → Home hand-off → a guest can't join |
+| `ProfileTests` | You-tab numbers and history against `-preview-you` |
+| `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines and the 3-person minimum |
+| `InstructorProfileTests` | The guide card on each page → profile → library hand-off; Follow; a guest's Follow → gate |
 
-### Writing UI tests — and which journeys earn one
+- **Start from explicit state:** launch with `-uitest-reset`, usually plus `-uitest-onboarded` and `-tab <name>`, with fixtures from the DEBUG `-preview-*` args. No test may depend on another having run.
+- **Selectors:** select by accessibility identifier wherever the label is copy. Grep `accessibilityIdentifier(` before renaming one.
+- **Waiting:** wait for state (`waitForExistence`, or polls with a deadline), never `sleep`.
+- **Assertions:** assert what a person would notice and attach a screenshot at each step. Mark new classes `@MainActor`.
+- **When a control "doesn't work", reach for a UI test.** `app.debugDescription` shows the real hit frames.
 
-| File | Journey | Why it earns a UI test |
+### Policy
+- For every behaviour change and bug fix, decide its testing impact and **say what you decided** in the report.
+- **What a change needs:**
+  - Logic, a state transition, validation, a data transformation or error handling changed → a unit test.
+  - A journey above changed, or a new critical one appeared (spanning screens, crossing the gate or a system boundary) → a UI test **and an update to this table**. Keep its identifiers, launch args and fixtures working.
+  - Copy-only or visual-only changes, docs, SQL and Edge Functions need no test. Verify SQL and Edge Functions live, per their READMEs.
+- A reproducible defect gets a regression test that fails before the fix, where practical.
+- **Before calling work done:** run `SoulfullTests` plus the UI tests for every journey touched. Run the whole UI suite when shared chrome changes (`RootView`, `MainTabView`, `BottomNav`, `AccountGate`, `AppState`, `SoulfullGatheringsApp`). Report what ran, the results, and any environment problem.
+- **Never delete, skip or loosen a test to make a change pass.** If the product decision behind an assertion changed, change the assertion and say why in the commit.
+
+## App Store (v1)
+
+The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Review is in `docs/APP-REVIEW-NOTES.md`. The build-level items (icon, launch screen, signing, privacy manifest, export compliance, push and Apple entitlements) are done. Rules to keep:
+- **Launch screen:** use the `UILaunchScreen` dict + the `LaunchBackground` colour. Don't bring back `UILaunchStoryboardName`.
+- **Devices and signing:** iPhone only (`TARGETED_DEVICE_FAMILY: "1"`). Archiving needs a real `DEVELOPMENT_TEAM` in `Secrets.xcconfig`.
+- **Age rating:** the app is rated 4+ **because nothing in it mentions alcohol, tobacco or drugs.** Check brochure copy for these before adding it (Guideline 2.3.6).
+- **Privacy answers:** onboarding answers are declared as `OtherDataTypes`, not Health. Revisit that if the questions become clinical.
+- **App icon:** only the "SOUL" block of the logo. The generator script: `git show d20e3f6:scripts/make-app-icon.swift`.
+- **Demo account:** give the reviewer one, because no practice opens without an account.
+- **Apple revocation** is deployed. The one unproven step is the real authorization-code exchange, which needs an Apple sign-in on a **physical device**.
+
+**v1 ships less than the codebase contains.** The flags are in `Core/Services/AppFeatures.swift`:
+
+| Flag | v1 | Notes |
 |---|---|---|
-| `OnboardingTests` | Splash → slides → 4 questions → Home by name; a relaunch skips it | Every new user's first minute; every other test starts past it |
-| `AccountGateTests` | A guest opens a recipe → account sheet → closes it (button and swipe) | The just-in-time gate (5.1.1(i)) and gotcha #5's dead close button |
-| `RetreatEnquiryTests` | Request a place → gate → the website's questions → Submit settles | The only route to the retreat team in v1 |
-| `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Browse the catalog, open a retreat, read its brochure | The in-person catalog; the brochure decode fails soft, so only the screen shows it broke |
-| `ProgramTests` | Catalog from the DB → days → Home hand-off → a guest can't join | The Programs tab; its curriculum also fails soft |
-| `ProfileTests` | You tab numbers and captions against `-preview-you`, history, hand-off | Numbers that fail quietly, rendered |
-| `CommunityTests` · `PresenceTests` | Feed, Friends, likes and the bell; presence lines | Cross-screen social state and the ≥3-people rule |
-| `InstructorProfileTests` | No guides on the Practice landing; a movement / recipe / prompt / digital retreat page names its guide (and an uncredited one doesn't) → profile (numbers, "Followed by", bio, library) → a library retreat hands off to its tab; Follow and back; a guest's Follow → gate | Crosses tabs and the account gate; the counts must move together |
+| `paymentsEnabled` | `false` | The retreat button reads "Request a place" → `RetreatEnquiryView` → `send-retreat-enquiry` emails info@soulfullgatherings.com. Turning payments on is a checklist, not a one-line flip (see the flag's doc comment). |
+| `depositInstallmentsEnabled` | `false` | Deposit + instalments exists only as brochure copy (`docs/PLAN-deposit-installments.md`, unbuilt); the server charges the full price. **Never put brochure copy on a pay button.** |
 
-- **Start from explicit state.** Every test launches with `-uitest-reset` (fresh `AppSettings`) and usually `-uitest-onboarded` plus `-tab <name>`; fixtures come from DEBUG launch args — `-preview-you` (+ `-preview-you-today …`), `-preview-community`, `-preview-presence`, `-preview-enquiry`, `-preview-retreat` (full list under *Other v1 changes → DEBUG launch args*). No test may depend on another having run.
-- **Select by accessibility identifier** wherever the label is copy (`onboarding-option`, `account-close`, `enquiry-submit`, `activity-row`, …). Grep `accessibilityIdentifier(` before renaming or removing one.
-- **Synchronise on state:** `waitForExistence` / `waitForNonExistence`, or a deadline-bounded poll (see `CommunityTests`). Never `sleep`.
-- Assert the outcome a person would notice, attach a screenshot at each step, and mark new classes `@MainActor` (the older files predate it and carry Swift 6 warnings).
+**Practice media appears only once data exists, with no code switch.** `PracticeViewModel` has no mock fallback, because shipping sample media is a Guideline 2.1 rejection. `availablePracticeCategories()` returns `.known(Set)` or `.unknown`:
+- A track **known to be empty** is dimmed and marked "SOON".
+- When the answer is **unknown** (offline), the track stays open, and the list's own error state and retry handle it.
 
-### Policy — what a change needs
+**Legal links** are in `Core/Services/LegalLinks.swift`: privacy, terms and retreat policy on www.soulfullgatherings.com, plus the support email. They appear on the You tab and wherever a document is named. The live pages are the only copy of the text; the sources are recoverable with `git show d20e3f6:website/legal/`.
 
-- **Every behaviour change and bug fix: decide its testing impact, and say what you decided in the report.**
-- Business logic, a state transition, validation, a data transformation or error handling changed → add or update a unit test.
-- A journey in the table changed, or a new critical one appeared (spans screens, crosses the account gate, or a system boundary) → add or update its UI test **and this table**. Keep its identifiers, launch args and fixtures working in the same change.
-- Neither: copy or visual changes with no behaviour (the design mirror covers those), docs, SQL and Edge Functions (not in the Xcode build — verify those live, per their READMEs).
-- A reproducible defect gets a regression test that fails before the fix, whenever practical (`theDateOfBirthSentIsTheDayThatWasPicked` is the model).
-- Before calling work done: run `SoulfullTests`, plus the UI tests for every journey touched — the whole UI suite when shared chrome changes (`RootView`, `MainTabView`, `BottomNav`, `AccountGate`, `AppState`, `SoulfullGatheringsApp`). Report which ran, their result, and any environmental blocker.
-- **Never delete, skip (`.disabled`, `XCTSkip`) or loosen a test to make a change pass.** If the product decision behind an assertion changed, change the assertion and say why in the commit.
+**DEBUG launch args** (compiled out of Release):
+- **Navigation and state:** `-tab <name>`, `-mood <id>`, `-uitest-reset`, `-uitest-onboarded`.
+- **Retreats:** `-preview-retreat`, `-preview-retreats`, `-preview-enquiry`.
+- **Post-purchase screens:** `-preview-experience`, `-preview-todos`, `-preview-packing`, `-preview-guides`. These load a real retreat through `PreviewRetreat`.
+- **Programs:** `-preview-programs`, `-preview-program`, `-preview-program-day`. `PreviewProgram` prefers a real program.
+- **Social and profile:** `-preview-community`, `-preview-presence`, `-preview-you` (+ `-preview-you-today`).
+- **Guides and auth:** `-preview-instructors` (+ `-preview-guest` to browse as a guest), `-preview-confirm-email`.
 
-## App Store Submission
+## Current state (2026-09-29)
 
-Full audit with per-item evidence and fixes: **`docs/APP-STORE-READINESS.html`** (2026-08-31, verified against the repo, the compiled Release bundle, and the live Supabase project).
+**Built and live:**
+- Guest browsing with just-in-time accounts (email/password and Apple), and account deletion.
+- Welcome, Onboarding and Home (mood chips, ritual card, a Continue card, and a streak line from 2 days).
+- Gatherings: the retreat catalog, brochure and application.
+- Practice: three media tracks, plus journal / movement / recipes (now in the database).
+- Server-side practice history, which drives resume, streaks and payouts.
+- Digital Retreats: one live program, `finding-ground`.
+- Community: feed, friends, likes, notifications and push.
+- Presence counts, instructor profiles, and the You tab (stats and history).
 
-**Build-level blockers are cleared** — the app now has an icon, a launch screen, a signing hook, a privacy manifest and an encryption declaration:
+**Open items:**
+- ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
+- **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
+- **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.
+- **`practice_sessions` is empty.** Seeding it (upload to `practice-media`, insert rows) lights up the three media tracks with no app release.
+- **The post-purchase screens are unreachable** while payments are off, and only Mallorca has `PostBooking` content.
+- **Not built yet:** a bookings history screen, refunds, and a membership (which would need StoreKit in-app purchase).
 
-| Item | State |
-|---|---|
-| App icon | `AppIcon.appiconset/AppIcon.png`, 1024², opaque, no alpha. The generator was removed 2026-09-07 — restore it with `git show d20e3f6:scripts/make-app-icon.swift > /tmp/make-app-icon.swift && swift /tmp/make-app-icon.swift`. The mark is the **"SOUL" block only** — the "full" script is hairline (4–20px of ink per row vs SOUL's 42–258) and dissolves below ~120px. |
-| Launch screen | `UILaunchScreen` dict + `LaunchBackground` colour set (= `Theme.bg`). The old `UILaunchStoryboardName: LaunchScreen` pointed at a file that never existed. **Don't reintroduce it.** |
-| Signing | `DEVELOPMENT_TEAM` flows from `Secrets.xcconfig`; `CODE_SIGN_STYLE: Automatic`. Fill in the Team ID before archiving. |
-| Privacy manifest | `SoulfullGatherings/PrivacyInfo.xcprivacy` — `UserDefaults` / `CA92.1` plus collected-data types. Onboarding answers are declared `OtherDataTypes`, **not** Health; revisit if the questions become clinical. |
-| Export compliance | `ITSAppUsesNonExemptEncryption: false` in `project.yml`. |
-| Push notifications | `aps-environment` entitlement generated from `project.yml` (`development`; an App Store export rewrites it to `production`). The App ID already carries `PUSH_NOTIFICATIONS` (verified via the ASC API 2026-09-23). |
-| Sign in with Apple | `com.apple.developer.applesignin` entitlement generated from `project.yml`; the `APPLE_ID_AUTH` capability is enabled on the App ID (verified 2026-09-03). It is the only third-party login, which satisfies Guideline 4.8 outright. Still give the reviewer a demo account — browsing is open, but no practice can be opened without one. **Token revocation on deletion (5.1.1(v)) is built; one step short of live.** Done 2026-09-10: the `.p8` key exists (Key ID `5224W8727Y`, validated against Apple's own `/auth/revoke` — it answered 200, so key/team/bundle ID all authenticate), the four `APPLE_*` secrets are set, and `store-apple-token` + `delete-account` are deployed. Migration 0010 applied and verified the same day. **The one thing still unproven is the real authorization-code exchange**, which needs an Apple sign-in on a physical device — no simulator can produce a usable code. |
-| Age rating | **No alcohol, tobacco or drug references anywhere in the app**, so the App Store Connect rating questionnaire can honestly answer "None" to *Alcohol, Tobacco, or Drug Use or References* and the app rates 4+. Mallorca's brochure carried "A winery experience" until 2026-09-11 — one line on a screen any guest can reach, and enough to make a "None" answer an inaccurate rating under **Guideline 2.3.6**. Sweep before adding brochure copy. |
-| Device family | `TARGETED_DEVICE_FAMILY: "1"` — iPhone only. Xcode's default of `1,2` was silently claiming iPad support, which would have demanded iPad screenshots and put this portrait-only phone UI in front of a reviewer on an iPad. |
+**Product rules:**
+- **Presence** ("75.7k present" + 3 faces):
+  - A practice counts distinct members who **started** it in the last 24h. A program counts enrolled, unfinished members who were **active in the last 14 days**.
+  - **Nothing is shown below 3 people** (enforced server-side). Faces show friends first. Journal prompts get a count but no faces. Opted-out members are counted but never shown.
+  - **Never seed or pad these numbers.**
+- **Community:** other members see exactly your id, "First L." name, photo, and the title, kind and time of your finished practices. They **never** see journal prompts, because reflections are private and a prompt's title gives away the subject. "Share my practice" (`profiles.share_activity`) removes you from the feed but leaves you findable. A profile without a `full_name` shows as "A member".
+- **You-tab stats** are defined in `PracticeStats` and nowhere else:
+  - A *practice day* is a local calendar day on which any practice was **finished**.
+  - A *class* is a finished session or Movement sitting (`countsAsClass`).
+  - *Minutes* are time actually spent in those kinds, finished or not.
+  - Home's "N days in a row" reads the same `streakDays`.
+  - The streak caption tells *kept today* (finished something) apart from *practised today* (only opened something).
+  - In-person history is paid bookings for retreats that have ended, so it's empty for everyone while payments are off.
+- **No AI anywhere, and none planned.** A mocked concierge and a "Soul AI" welcome slide were removed. Don't bring back anything that advertises an AI: it misdescribes the app, and a real one would bring Guideline 1.2 obligations the app can't meet. "Assistant" appears only as a person's job title.
+- **No Google sign-in.** It was removed on 2026-09-03. If it ever returns, prefer the native GoogleSignIn SDK.
+- **Mood chips** on Home each point at a written section with real content, routed through `MainTabView.pendingPractice`.
 
-**Review blockers are cleared too** — by narrowing v1's scope rather than finishing every feature. See `docs/APP-REVIEW-NOTES.md` for the App Store Connect text.
+## Assets
 
-### v1 ships narrower than the codebase
+The asset catalog holds **app chrome only**:
+- Four backdrops: `home-bg`, `welcome-bg`, `onb-bg`, `finish-bg`.
+- Six `practice-*` category cards.
+- `soulfull-logo-white`, the app icon, and the `LaunchBackground` colour.
 
-Two flags in `Core/Services/AppFeatures.swift` gate what's reachable. **Nothing was deleted** — restoring a feature is flipping its flag plus the follow-up work its doc comment lists.
-
-| Flag | v1 | Why |
-|---|---|---|
-| `paymentsEnabled` | `false` | The Stripe rail is built and test-verified, but shipping it needs live keys, a demo account with a seeded `paid` booking (a reviewer can't complete a charge), an IAP justification, and — the real blocker — curated `PostBooking` content for **every** reservable retreat, which only Mallorca has. The retreat CTA becomes **"Request a place"**, which opens `RetreatEnquiryView` — the website's "Join a retreat" application form — and the `send-retreat-enquiry` Edge Function mails the answers to `info@soulfullgatherings.com`. (It opened a bare `mailto:` with only a subject until 2026-09-14; that asked the guest to guess what the team needed and gave the team an inbox of applications that each answered something different. It then briefly handed the answers to the iPhone's Mail composer, which needed Mail configured and put the application in the *applicant's* outbox.) **Flipping this is not a one-line change** — the flag's doc comment carries the full checklist. |
-| `depositInstallmentsEnabled` | `false` | Deposit + monthly installments are **copy only** — `docs/PLAN-deposit-installments.md` is unbuilt and the server charges the full `price_usd` in one payment. The copy had reached the pay button: the since-deleted `RetreatCheckoutView` rendered `PostBooking.Checkout.dueToday` (the hardcoded `"€800"`) into the label while `create-payment-intent` charged ~$5,678 USD. With this off, every amount on the checkout comes from `retreat.priceFormatted`. **Never put brochure copy on a pay button.** |
-| ~~`circleTabEnabled`~~ | — | **Retired 2026-09-22.** The placeholder tab it documented cutting (Guideline 4.2) was replaced by the real **Community** tab; `CommunityPlaceholder.swift` was deleted (git history has it). |
-
-### Practice media is data-gated, not code-gated
-
-`PracticeViewModel` has **no mock fallback** — the old one served public sample media (Big Buck Bunny, a stock MP3), which shipped is a Guideline 2.1 rejection. All sample URLs are gone from `Models.swift`; the `.mock` arrays are preview fixtures with empty `storagePath`.
-
-`PracticeView` asks `SupabaseService.availablePracticeCategories()` which of Somatic Exercises / Breathwork / Meditation have rows. It answers `.known(Set)` or `.unknown`, and **the distinction is the point**: it used to collapse "the table is empty" and "we're offline" into an empty set, so a user on a train was told the content doesn't exist. Only `.known` emptiness dims a track (`SOON` badge, not tappable, header drops its "listen or watch" promise); on `.unknown` the tracks stay open and `PracticeListView`'s own error state and retry handle it. **Seeding `practice_sessions` lights them up with no app release.** The table, its RLS and the `practice-media` bucket already exist (0005 is applied) — the remaining work is upload media, insert rows. The seeding instructions were in the migration, now removed: `git show d20e3f6:supabase/migrations/0005_practice_sessions.sql`.
-
-### Quality pass (Gate 3)
-
-- **No `print()` anywhere.** `Core/Utils/Log.swift` wraps `os.Logger` with four categories (`auth`/`data`/`media`/`payment`). Chosen over `#if DEBUG print` because interpolation is **redacted by default in Release** — an error carrying a token or email doesn't leak. Mark anything safe to read with `\(value, privacy: .public)`.
-- **Home no longer invents state.** "Continue your journey" (a hardcoded "DAY 3 OF 7" for a program nobody is enrolled in) and "Circles meeting now" (live community activity, for a tab that's cut) are **gone**. The programs shelf is data-gated like Practice — hidden until `programs` has rows (`0006_programs.sql`), no mock fallback, and informational only since there's no program detail screen.
-- **Mood chips do something.** Each `MoodChip` carries `suggests` / `ritual` / `ritualLead`. Selecting one rewrites the ritual card and "Begin now" **switches to the Practice tab and opens that section** — routed through `MainTabView.pendingPractice`, which `PracticeRoot` consumes on appear. Every mood points at a section with real content (journal / movement / recipes), never at a "Coming soon" track.
-- **Offline is visible.** `ConnectionBanner` renders above the tab content whenever `AuthManager.needsRetry`, with a working Retry. A failed launch-time sign-in used to be completely silent.
-- **The webhook race is closed.** `reserve(userID:)` no longer trusts the client: on PaymentSheet success it enters `.confirming` and polls `fetchBooking` (~9s, backing off) for the row the webhook writes. Previously a slow webhook left a **charged** customer seeing "Reserve" again on next launch.
-- **Double-charge and overselling are blocked server-side**, in `create-payment-intent` where they belong — a paid booking for the same `(user_id, retreat_id)` returns `409 already_booked`, and paid bookings at or over `max_guests` return `409 sold_out`. The capacity check is not airtight against two simultaneous final-seat checkouts; closing that needs a transactional hold.
-- **Accessibility** labels added to the mood chips, ritual card, retreat cards, both Reserve controls and the checkout pay bar.
-
-### Other v1 changes
-
-- **`fetchRetreats()` filters `start_date > today`.** The catalog was selling four retreats that had already finished, and then — with the first `end_date >= today` fix — one that was *currently running*: on 2026-09-10 Dolomites had begun two days earlier and still offered "Request a place". A retreat you can no longer join is a wrong price and a wrong date in front of a customer, so the rule is now **not started yet**. `Retreat.hasBegun` applies the same rule to the offline `Retreat.mock` fallback, which had been going out unfiltered. The original end-date fix hid **Mallorca** too — the only retreat with curated brochure + post-purchase content — which `0007_mallorca_dates.sql` fixed by moving it to 2027-07-21→26. `RetreatExperience.mallorca.dateRange` hardcodes "July 21–26" as brochure copy and **takes precedence on the detail screen**, so those two must be changed together.
-- **Legal links** live in `Core/Services/LegalLinks.swift` — **all live and verified 200 on 2026-09-07**, no TODOs left. Three hosted pages (`/soulfull-privacy-policy`, `/soulfull-terms-of-service`, `/soulfull-retreat-policy` on `www.soulfullgatherings.com`) plus `supportEmail` = `info@soulfullgatherings.com`. Surfaced as a Privacy · Terms · Retreat policy · Support row in the You tab, and the checkout fineprint links **both** documents it names — `retreatPolicy` is the one holding the cancellation windows, `terms` covers the app. The sources the pages were published from were removed on 2026-09-07 — **the live pages are now the only copy.** To edit one, recover the source first: `git show d20e3f6:website/legal/` (HTML bodies under `src/`, assembled by `build.sh`), then re-publish.
-- **DEBUG launch args** (all compiled out of Release, alongside `-uitest-*`): `-tab <name>` opens straight to a tab, `-preview-community` renders the Community tab against a four-member fixture, `-mood <id>` preselects a mood chip, `-preview-retreat` renders the retreat detail in isolation, `-preview-retreats` the retreats stack against the live catalog (with the detail push wired), `-preview-experience`/`-preview-todos`/`-preview-packing`/`-preview-guides` render the post-purchase screens — all five now **fetch a real retreat** (`PreviewRetreat`), because they rendered `Retreat.mock[0]` and the fixture stopped carrying a brochure once that content moved to the database, so every post-purchase preview came up empty — `-preview-enquiry` renders the retreat application form, `-preview-confirm-email` opens `AccountView` on the confirm-your-email panel, `-preview-instructors` installs two fixture guides — Alma Guerra (212 followers, following 12, three faces, a bio; Finding Ground, three sessions, Morning Mobility Flow and Golden Turmeric Lentils credited) and Mara Solé (75,712, already followed; the gratitude prompt) — with follows kept in memory for the launch and the shell's account gate letting the fixture member through; `-preview-guest` alongside it browses them as a guest so Follow meets the gate (`InstructorProfileTests`), `-preview-you` renders the You tab's member layout against a deterministic fixture (4-day streak, best 9, 13 classes, 250 minutes, two programs, two past retreats — what `ProfileTests` asserts), and `-preview-programs` / `-preview-program` / `-preview-program-day` cover the Programs tab, one program and one day (the last two through `PreviewProgram`, which prefers a **real** program with authored days and falls back to `Program.mock` — the same lesson `PreviewRetreat` learned). (`-preview-checkout` and `-preview-chat` went with the screens they rendered.)
-- **`group_chat_url` placeholder removed.** `Retreat.mock` carried `chat.whatsapp.com/REPLACE-WITH-MALLORCA-INVITE`; the offline fallback would have opened a dead link. Real invites come from the DB column.
-
-## Current State
-
-- **Instructor profiles (2026-09-28; migrations 0019 + 0020 applied and verified live; 0020 superseded by 0022 on 2026-09-29).** Every guide gets a page: portrait, title, **Followers | Following**, "Followed by" (≤3 faces + at most two names, "you" first once you follow), **Follow**, bio, and their library (digital retreats, sessions, and the movement / recipes / prompts that name them). **Reached only from the pages of what they made** — a "Your guide" card on each digital retreat and written practice, a face chip in the session player — never from the Practice landing (the owner's call, 2026-09-28; the shelf that was there first is gone). Sessions, programs and — since 0022 — the written practices all name their guide on the row (`instructor_id`); for the written ones it is display only. Decisions: a guide is a **team-written row, not a member account**; a guide optionally links their own account (`user_id`, server-only), and only that gives them a **Following** count (= guides their account follows — members follow guides, nothing else). Follower faces honour **Share my practice** (counted, never shown when off) — the You tab's caption now says so; no minimum count. Browsing is open; Follow is gated. ⚠️ **The five live guides are PLACEHOLDERS**, seeded at the owner's request so the feature has something to show: invented people (Alma Guerra, Inés Aranda, Tomás Ferrer, Noa Castell, Julián Ros), written bios, and AI-generated faces (thispersondoesnotexist — nobody real, and not licensed for release). Alma is linked to Finding Ground, and all 13 written practices carry a placeholder `instructor_id` (set null when the guides are deleted). **They must be removed or replaced with real guides before a build goes to App Review** (Guideline 2.1(a) — temporary content) — the removal steps are in `docs/ADDING-AN-INSTRUCTOR.md`. No build before 1.0 (11) has the instructor code, so no shipped TestFlight build shows them. Several `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are REAL people — Mallorca guides and a customer — so never lift names from the mocks for a guide. **Also by hand:** the App Store Connect privacy answers (which guides a member follows is now visible to other members, as a face).
-- **Presence (2026-09-23, 0018 applied and recorded; shipped in 1.0 (7)).** Every practice row and detail, and every program card / hero / Home shelf card, carries `PresenceLine`: "75.7k present" with three faces. Decisions made with the product owner: a practice counts distinct members who **started** it in the last 24h; a program counts members enrolled, not finished and **active in the last 14 days**; **nothing is shown below 3 people** (enforced server-side — a count of one beside a face names someone's practice); faces are **friends first**; journal prompts get the **count without faces**; opted-out members count but are never shown. **Never seed or pad these numbers** — a fake "present" count is Guideline 2.1(a) temporary content and a lie to the member. With today's handful of members the lines are simply absent; `-preview-presence` shows them. `PresenceTests` (3 tests) covers fixture rendering, journal-without-faces and the live below-3 absence.
-- **Community tab (2026-09-22).** A feed of what members have finished — sessions, movement and recipes, **never journal prompts** (reflections are promised private and the prompt's title gives away the subject) — one glass row per finished play: `AvatarView` + "**Alma G.** practiced **Confidence Boost**" + `BREATHWORK · 12 MIN AGO`, grouped Today / Yesterday / Earlier. An **All | Friends** toggle (a cream lens sliding on glass); the Friends scope is fetched server-side by friend ids. Friends are a `friendships` row: search by name on the pushed Friends screen, Add → Requested → Accept, Decline / Withdraw / Remove (one delete). Profile photos are picked with `PhotosPicker` on the You tab, centre-cropped to a 512px JPEG on the device and uploaded under a **fresh uuid** to the public `avatars` bucket (the path is every phone's cache key, so overwriting a fixed name would leave the old face up until caches turned over); the previous object is deleted best-effort, and `delete-account` clears the folder. **What other members can see of you is exactly three things** — id, "First L.", photo — plus a finished practice's title, kind and time; the abbreviation happens in SQL so the full name never crosses the wire, and "Share my practice" on the You tab (`profiles.share_activity`) takes you out of the feed while leaving you findable. **The feed is open to a guest** (browsing); the Friends scope and screen go through `AccountGate` and the server refuses a guest anyway. **Likes (same day, 0016):** a heart on every line that isn't yours; liking notifies the practice's owner — a bell on the tab with an unread badge and a Notifications screen. **Push is wired (2026-09-23, 0017 + `send-like-push`)**: the like trigger → pg_net → the function → APNs, one alert per registered device, badge = unread count, tap opens Community → Notifications. The app asks permission once, from a card on the Community tab. ⚠️ **It sends nothing until the Sign in with Apple key (`5224W8727Y`) has the APNs service ticked in the developer portal** — APNs answers `403 InvalidProviderToken` until then (verified with a locally-minted provider token whose signature checks out), and the function logs it and keeps the token. No code or secret changes are needed after the tick. Verified live: a guest and the owner are refused (42501), a second like is a duplicate key, the owner sees one notification and the liker none, unliking removes an unread one and leaves a read one, and a PATCH can't re-point a notification. Migration 0015 is **applied and verified** (2026-09-22) and `delete-account` redeployed; a member whose profile has no `full_name` (two such accounts exist) appears as "A member". **Still to do by hand:** the App Store Connect privacy labels — a photo is now collected, and name + activity are shown to other users (there is no API for the questionnaire). The Circle placeholder and `AppFeatures.circleTabEnabled` are gone.
-- **Implemented:** anonymous Supabase auth on launch; **just-in-time account gating** (`AccountGate`) — browsing is free, the account sheet is raised at the first practice and replays the interrupted tap, with **Sign in with Apple** (native button → `signInWithIdToken`) alongside email/password; **email/password accounts (Phase 1)** — create-account upgrades the anonymous guest in place, sign-in/sign-out, **account deletion** (`delete-account` Edge Function → re-anon; App Store 5.1.1(v) compliant), email-confirmation deep linking, `profiles` table with RLS + sync (You tab → `AccountView`); Welcome flow; Onboarding (4 questions + finish); Home dashboard; Retreats stack + detail; **the retreat application** — "Request a place" opens the website's "Join a retreat" form in-app and the `send-retreat-enquiry` Edge Function mails the answers to `info@soulfullgatherings.com` (**an account is required to apply** — the Email answer is the account's address, shown locked and stamped from the JWT server-side; browsing stays open to a guest); full Practice tab (category/menu landing → list → detail/player for the 3 media tracks plus Journal Prompts, Movement, Food Recipes; media plays via `PracticePlayerView`); **server-side practice history** — every practice opened is recorded to `practice_plays`, driving resume, completion state, the Home Continue card and streak, and the creator-payout report; **the Programs tab** — self-paced multi-day journeys with a two-condition day unlock (activities done *and* the date turned over), free to join but account-gated, backed by `programs.curriculum` jsonb so a new program is a row rather than a release.
-- **Retreat payments (Phase 2) — SERVER BUILT, CLIENT REMOVED IN v1.** `AppFeatures.paymentsEnabled = false` and the retreat CTA is "Request a place" → the application form (`Features/Retreats/Enquiry/`), emailed to the team by `send-retreat-enquiry`, with no other state. The **client** rail (`StripePaymentSheet` dependency, `PaymentService`, `RetreatCheckoutView`, `reserve()`/`confirmBooking()`, the `retreatCheckout` route) was **deleted** — it linked a card scanner, which forced an `NSCameraUsageDescription` for a capability the app could not reach. The **server** rail is intact and deployed, verified in Stripe test mode: `create-payment-intent` + `stripe-webhook` write `bookings` with the service role. Restoring the client half is the checklist in `AppFeatures.paymentsEnabled`; going **live** additionally needs live Stripe keys + a live webhook endpoint/secret (see `supabase/functions/README.md`).
-- **Post-purchase experience (Mallorca) — unreachable in v1** (payments off; also gated on Mallorca being the only retreat with `PostBooking` content — its date is no longer a blocker — 0007 moved it to 2027-07-21). Once reserved, `RetreatDetailView` → `RetreatExperienceHubView` (welcome hub) → to-do's, packing and 1:1 guide booking. (The checkout step and the **mocked concierge chat** are both deleted — see the payments note above, and *No AI* below.) State (to-do/packing checks, 1:1 bookings) is device-local via `RetreatTripStore`; content is curated in `RetreatExperience.PostBooking` (Mallorca only). Built in a **warm-espresso palette** (`RetreatPalette` — terracotta/olive/gold on espresso, all-Geist), the UX team's retreat-specific dark direction (distinct from the app-wide `Theme`); the matching `design-system/screens/` mirror cards carry the same inline `.mb` palette, and the original brochure-light cards are in git history (`git show d20e3f6:docs/design-brochure-backup/`). The group-chat tile links an external **WhatsApp** group (`retreats.group_chat_url`). Future work parked: `docs/PLAN-deposit-installments.md` (deposit + 2 installments) and `docs/PLAN-group-chat.md` (native in-app chat, currently WhatsApp).
-- **Backend wiring:** `SupabaseService` (actor + caching) is live. `retreats` is fetched from Supabase by both `HomeViewModel` and `RetreatsViewModel`; `programs` by `HomeViewModel`. `practice_sessions` is fetched per category by `PracticeViewModel` with **no fallback** — an unseeded table yields an empty track that `PracticeView` renders as "Coming soon" (via `availablePracticeCategories()`, which distinguishes that from being offline). `profiles` is read/written via `fetchProfile`/`upsertProfile`; `bookings` is read via `fetchBooking`; practice history is written via `recordPracticePlay` and read via `fetchPracticeProgress` (all uncached, RLS-protected).
-- **Mock-driven:** `CommunityCircle` on Home. (Journal / Movement / Recipe content was too, as `.all` arrays in `Models.swift`, until **2026-09-29** — it is now the `journal_prompts` / `exercises` / `recipes` tables (0021: 5 prompts, 5 sequences, 3 recipes), editable in the dashboard with no release; runbook `docs/ADDING-A-WRITTEN-PRACTICE.md`.) `JournalDetailView` stores reflections device-locally only, namespaced per member by `LocalUserStore`.
-- **Parked (cut from v1):** Circle tab (Community) — `CommunityPlaceholder` / `TabPlaceholder` still exist but nothing routes to them. The You tab is real (see *You tab* under Current State); its "Reset onboarding" button is gated behind `#if DEBUG`.
-- **Deliberately not built: any AI.** There is **no AI companion, assistant or chat in this app, and none is planned.** Removed 2026-09-11: `RetreatAssistantView` / `RetreatAssistantViewModel` (a mocked concierge — keyword-matched canned replies with simulated typing), the `PostBooking.assistant*` fixture fields and `CannedReply` type, the `retreatChat` route, the `-preview-chat` arg, the hub's "Chat with the Soulfull Gatherings assistant" tile (now emails the team), and the **third welcome slide** — *"Soul AI · Meet Soul, your companion through the journey"* — which ran on every first launch and promised every new user a feature that does not exist. The `design-system` mirror's `mallorca-chatbot` card (a live `window.claude.complete` prototype) went with it. **Do not reintroduce any of this**: shipping UI that advertises an AI the app doesn't have is a metadata-accuracy problem, and a real one would pull in Guideline 1.2 obligations — content filtering, in-app reporting of objectionable output, a block mechanism — none of which exist. Note "Assistant" survives as a **human job title** ("Retreat Assistant & Physical Therapist"); that is a person, not a feature.
-- **Deliberately not built:** Google sign-in. It was implemented (Supabase hosted OAuth in an `ASWebAuthenticationSession`) and removed on 2026-09-03 — Apple is the only third-party provider. Re-adding it means a Google Cloud OAuth client, the Supabase Google provider, and a second button in `AccountView`; prefer the native GoogleSignIn SDK over the web flow if it ever comes back.
-- **Not yet built (next phases):** a bookings list/history UI (data exists in `bookings`); refund handling; **membership** subscription (a "mix" of digital + real-world perks → must use StoreKit IAP, not Stripe).
-- **Tests:** `SoulfullTests` — 109 Swift Testing unit tests in 17 suites (added 2026-09-27; the three instructor suites 2026-09-28; the written-library two 2026-09-29) — and `SoulfullUITests` — 33 XCUITest journeys in 11 files, onboarding included. All passing on 2026-09-28. What each covers, how to run them and when a change needs one: *Testing*.
-- **No offline fallbacks anywhere.** Neither `retreats` nor `practice_sessions` substitutes sample data when a fetch fails. The retreat fallback was the last one and went on 2026-09-11: it swapped in `Retreat.mock`, so a user with no signal was shown a catalog of already-finished retreats, with prices and a live "Request a place" button, as though it were the live one. **Guideline 2.1(a) is explicit** — "placeholder text, empty websites, and other temporary content should be scrubbed before submission" — and a sample catalog presented as real is exactly that. Instead both surfaces render `RetreatsLoadFailure`, which distinguishes **`.offline`** ("You'll need to be online to browse our retreats") from **`.failed`** ("Something went wrong at our end"), because telling someone on a train to "try again" is useless and telling someone with a working connection to "check your connection" sends them after the wrong problem. The split is `Error.isOffline`, deliberately conservative: only `notConnectedToInternet` / `networkConnectionLost` / `dataNotAllowed` / `internationalRoamingOff` count as offline — `timedOut` and `cannotConnectToHost` are as likely to mean *our* backend is down, so they get the generic message. `ConnectionBanner` no longer promises "saved content" either, because there is none. `Retreat.mock` survives only for SwiftUI previews and the DEBUG `-preview-*` screens. The Supabase project (`qkepgohdosmzebdmsctn.supabase.co`, "Soulfull iOS") is **ACTIVE_HEALTHY**.
-- **Live backend state, re-verified 2026-09-07** (anon-key REST probe, read-only):
-  | Table | State |
-  |---|---|
-  | `retreats` | 7 rows; **4 upcoming** — Dolomites (2026-09-08), Lapland (2027-01-10), Chamonix (2027-02-02), **Mallorca (2027-07-21)**. Kyoto, Sedona and Bali have finished and are correctly hidden. Every `group_chat_url` is still `null`. |
-  | `profiles` / `bookings` | Exist, RLS-protected. **Their row counts are not observable with the anon key** — RLS filters to the caller, so an empty result proves nothing about the contents. Don't read one as "the table is empty" (this applies to `practice_plays` below too). |
-  | `programs` | **1 row, published** — `finding-ground` ("Finding Ground", 7 days, 14 activities) seeded by 0014 on 2026-09-17. Home's Digital Retreats shelf is visible for the first time, and the Programs tab lists it. |
-| `program_enrollments` / `program_day_completions` | **Live** (0013, 2026-09-17), both empty. Like `profiles`/`bookings` their contents are not observable with the anon key — RLS filters to the caller, so an empty result proves nothing. |
-  | `practice_sessions` | **Table exists, zero rows** (200 + `[]`). All three media tracks read "Coming soon" — seeding lights them up with no app release. |
-  | `practice_plays` + the `practice_progress` / `practice_creator_earnings` views | **Live** (0008 applied 2026-09-06; hardened by 0009 on 2026-09-07). Recording starts with the next practice opened on a build carrying this code. |
-  | Schema hardening | **0012 applied 2026-09-15**, narrowing `practice_plays.content_kind` to the four shipping libraries. **0009 applied 2026-09-07** via `supabase db push`, which also reconciled 0008 into `supabase_migrations.schema_migrations` (it had been applied by hand and never recorded). `supabase migration list --linked` showed local and remote in step through 0009 — verified immediately before the migration files were removed from the repo the same day. **0010 and 0011 had been applied by hand and never recorded**; they were backfilled into `supabase_migrations.schema_migrations` on 2026-09-15 alongside 0012, so the CLI now shows local and remote in step for every migration the repo still carries. |
-  > This corrects an earlier note claiming `programs`/`practice_sessions` return 404. They were applied; they were never seeded — a different problem with a different fix (upload media + insert rows, no migration needed).
-  > **0013 and 0014 were applied through the Management API** (`POST /v1/projects/<ref>/database/query`) rather than `supabase db push`, and then **backfilled into `supabase_migrations.schema_migrations`** the same day, so `supabase migration list --linked` remains in step through 0014. Do the backfill whenever you apply this way — it is the thing that was forgotten for 0010 and 0011.
-  > **When you re-probe, read the status code, not the body.** A `200` with `[]` means the table exists and is unseeded; only a `404` means it is missing. A `000` is curl timing out, not an answer — retry it. Conflating these is what produced the 404 claim above, and it sends you to write a migration when the actual job is seeding.
-- **You tab — practice stats and history (2026-09-18).** A member sees current streak, best streak, classes taken and minutes practiced, then their digital retreats (programs, in progress then completed) and in-person retreats. **The definitions, decided with the product owner — keep them in `PracticeStats` and nowhere else:** a *practice day* is a local calendar day on which any practice was **finished** (journal and recipe included; opening one is not enough — the ledger writes after 5s); a *class* is a finished sitting of a **session or Movement sequence** (`PracticeContentKind.countsAsClass`), each sitting counting; *minutes* are time actually spent in those same kinds, finished or not. The streak tile's caption separates *kept* today (finished something) from *practised* today (anything in the ledger): someone who opened a prompt and didn't write gets "Finish a practice today to keep your streak", never "Practice today to keep your streak" (which is for someone who hasn't practised yet today); someone who finished one gets "You've completed a practice today"; with no streak it reads "Finish a practice today to start your streak". Home's "N days in a row" reads the same `streakDays`, which **changed meaning** with this: it used to count any practice *touched*, and only by each practice's latest date, so repeating one meditation daily read as a one-day streak. *In-person* history is **paid bookings whose retreat has ended** — so it is **empty for everyone while `paymentsEnabled` is off**, unless the team inserts a `paid` booking by hand; the section says so warmly and links to the retreats. Stats and lists each distinguish "couldn't load" (offline vs failed) from "nothing yet".
-- **Retention loop (new).** Home shows a **Continue** card for the most recently unfinished practice and a streak line once it reaches two days; session rows show a resume hairline or a completion seal. All of it is driven by real server-side history — nothing is invented, and with no history every one of these elements is simply absent. Requires the `practice_plays` table and the `practice_progress` view, both live since 2026-09-06 (0008, since removed from the repo).
-
-## Resources
-
-Geist fonts live in `Resources/Fonts/` at the **repo root** (not inside `SoulfullGatherings/`) and must be listed in `Info.plist` `UIAppFonts` (currently the six shipped Geist weights).
-
-**Nothing that lives in Supabase is also bundled.** As of 2026-09-14 the asset catalog holds **only app chrome**: the four backdrops (`home-bg`, `welcome-bg`, `onb-bg`, `finish-bg`), the **six** `practice-*` category cards (`practice-massage` went with the Personal Massages section on 2026-09-15 — ~2MB), `soulfull-logo-white`, the app icon and the launch colour. Every one is referenced from Swift and none exists in Storage.
-
-Everything photographic that belongs to *content* is in the public `retreat-images` bucket and addressed as `bucket/path.jpg` through `CatalogImage`. That took the catalog from **22MB to 16MB**: the seven `retreat-*` heroes, the twelve `mb-*` trip images and `member-gmartinez` are all gone from the binary.
-
-⚠️ **Consequence to keep in mind:** Practice content (journal prompts, movement sequences, recipes) is in tables since 0021 and kept on the device between launches (`WrittenPracticeStore`), and its *artwork* points at Storage — it borrows the retreat photography as placeholder art. So a member with no connection sees the text they last loaded with gradient placeholders where uncached thumbnails should be. `CatalogImage` crossfades each photo in as it lands so the staggered arrival reads as deliberate. If that trade ever stops being worth it, the fix is to give Practice its own artwork rather than to re-bundle retreat photos.
+**Nothing stored in Supabase is also bundled.** Content photography lives in Storage and loads through `CatalogImage`. The written practices borrow retreat photos as placeholder art, so offline they show their cached text over gradient placeholders. If that becomes a problem, the fix is giving Practice its own artwork, not bundling retreat photos again.
