@@ -82,7 +82,8 @@ supabase/                          # Backend as code; not in the Xcode build
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
 │                                  #   delete-account — Stripe customer, Apple revoke, avatars/<id>/ (each best-effort), then the user
 │                                  #   store-apple-token; send-like-push (--no-verify-jwt + x-webhook-secret; failures answered 200)
-└── templates/                     # Branded auth emails (see its README)
+├── templates/                     # Branded auth emails (see its README)
+└── placeholder-media/             # Generated test sessions: seed.sql / remove.sql + the generators (see its README)
 SoulfullTests/ · SoulfullUITests/  # See *Testing*
 SoulfullGatherings/
 ├── SoulfullGatheringsApp.swift    # @main: environment, dark mode, auth .task, .onOpenURL. Renders nothing while hosting unit tests
@@ -437,7 +438,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
 - **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
 - **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.
-- **`practice_sessions` is empty.** Seeding it (upload to `practice-media`, insert rows) lights up the three media tracks with no app release.
+- ⚠️ **`practice_sessions` holds three generated PLACEHOLDERS** (seeded 2026-09-30 so TestFlight testers can use the media tracks): an illustrated somatic video and two synthetic-voice audio sessions, credited to "Soulfull Studio" with no guide. **Remove or replace them before App Review** (Guideline 2.1(a)): run `supabase/placeholder-media/remove.sql` and delete the three objects in `practice-media`. A track left with no rows goes back to "SOON" by itself. Test plays stay in `practice_plays` under that creator, so leave it out of payouts.
 - **The post-purchase screens are unreachable** while payments are off, and only Mallorca has `PostBooking` content.
 - **Not built yet:** a bookings history screen, refunds, and a membership (which would need StoreKit in-app purchase).
 
