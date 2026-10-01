@@ -88,6 +88,13 @@ enum ProgramNotifications {
         }
     }
 
+    /// Drops one day's pending nudge — once that day is done. An early riser who
+    /// finished Day 2 at 6:30 was still told at 8:00 that Day 2 was waiting.
+    static func cancel(programID: String, day: Int) {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [identifier(programID: programID, day: day)])
+    }
+
     /// Drops every program nudge, whatever the program — used when the member
     /// signs out or deletes their account.
     static func cancelAll() {

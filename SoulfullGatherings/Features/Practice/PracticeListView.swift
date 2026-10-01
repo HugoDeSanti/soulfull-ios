@@ -28,14 +28,18 @@ struct PracticeListView: View {
             systemImage: category.systemImage,
             backdrop: category.imageName
         ) {
-            if vm.isLoading {
+            // A reload (the tab coming back) keeps the rows it has: swapping
+            // them for a spinner jumped the scroll back to the top. The
+            // spinner is for a list with nothing in it yet — including before
+            // the first load has begun, which is not yet "nothing here".
+            if vm.sessions.isEmpty && (vm.isLoading || !vm.hasLoaded) {
                 ProgressView()
                     .tint(Theme.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
-            } else if let error = vm.loadError {
-                errorState(error)
-            } else if vm.sessions.isEmpty {
+            } else if let failure = vm.loadFailure {
+                errorState(failure)
+            } else if vm.isEmpty {
                 emptyState
             } else {
                 VStack(spacing: 10) {
@@ -55,11 +59,13 @@ struct PracticeListView: View {
         }
         .task(id: category) { await vm.load(category: category) }
         .task { await history.refresh() }
-        // A listen writes on dismiss, so re-read once the player closes.
-        .onChange(of: nowPlaying) { _, new in
-            guard new == nil else { return }
-            Task { await history.refresh(force: true) }
-        }
+        // No re-read when the player closes. Its last write lands in
+        // `onDisappear`, after `nowPlaying` has already gone nil, and
+        // `PracticeProgressStore.record` folds every write into `history`
+        // the moment it's made. A forced read here started before that
+        // write reached the server, could answer after it, and put the
+        // older row back: "N MIN LEFT" went stale and the next resume
+        // started early.
         .sheet(item: $nowPlaying) { session in
             PracticePlayerView(media: session.media)
         }
@@ -160,17 +166,17 @@ struct PracticeListView: View {
         .padding(.top, 60)
     }
 
-    /// The fetch itself failed — say so and offer a way back, rather than
-    /// implying the library is empty.
-    private func errorState(_ message: String) -> some View {
+    /// The fetch itself failed — say why (offline, or our end) and offer a way
+    /// back, rather than implying the library is empty.
+    private func errorState(_ failure: PracticeLoadFailure) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: "wifi.exclamationmark")
+            Image(systemName: failure.systemImage)
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(Theme.muted)
-            Text("Couldn't load")
+            Text(failure.title)
                 .font(Theme.headline(20))
                 .foregroundStyle(Theme.ink)
-            Text(message)
+            Text(failure.detail)
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)

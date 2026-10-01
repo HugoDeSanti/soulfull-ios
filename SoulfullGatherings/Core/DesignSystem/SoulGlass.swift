@@ -18,7 +18,12 @@ private struct SoulGlassModifier<S: Shape & InsettableShape>: ViewModifier {
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.glassEffect(glass, in: shape)
+            // `glassEffect` adds no tappable fill (rendering gotcha 5): a glass
+            // card or pill answered taps only on its text and icons. The shape
+            // makes it hit-test like the material fallback below.
+            content
+                .glassEffect(glass, in: shape)
+                .contentShape(shape)
         } else {
             content
                 .background(.ultraThinMaterial, in: shape)

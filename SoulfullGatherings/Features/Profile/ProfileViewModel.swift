@@ -66,8 +66,11 @@ final class ProfileViewModel {
     private(set) var retreatsLoaded = false
 
     /// Whether this member's finished practices appear in the Community feed.
-    /// Mirrors `profiles.share_activity`; true until the row says otherwise.
-    private(set) var shareActivity = true
+    /// Mirrors `profiles.share_activity`, and nil until the row has been read:
+    /// the switch shows no position the server hasn't confirmed. It used to
+    /// start at true, so it read ON until the row arrived, stayed ON offline
+    /// whatever the member had chosen, and carried across to the next account.
+    private(set) var shareActivity: Bool?
     private(set) var isUploadingAvatar = false
     private(set) var isSavingShare = false
     /// A photo or sharing change that failed, for an alert. Cleared when read.
@@ -145,6 +148,12 @@ final class ProfileViewModel {
             let path = try await SupabaseService.shared.setAvatar(jpegData: jpeg, userID: userID,
                                                                   replacing: previous)
             guard store.currentUserID == userID else { return }
+            // The picture this phone just made goes straight into the cache
+            // under its new URL, so the new face is there the moment the path
+            // changes rather than after downloading it straight back.
+            if case .remote(let url) = ImageSource(path), let uploaded = UIImage(data: jpeg) {
+                RemoteImageCache.shared.insert(uploaded, for: url)
+            }
             settings.avatarUrl = path
             Haptics.success()
         } catch where error.isCancellation {
@@ -198,12 +207,13 @@ final class ProfileViewModel {
 
     // MARK: - Sharing
 
-    /// The feed opt-out. Optimistic, reverted if the server says no.
+    /// The feed opt-out. Optimistic, reverted if the server says no. Nothing
+    /// to change from until the row has been read.
     func setShareActivity(_ share: Bool) async {
-        guard let userID = store.currentUserID, share != shareActivity, !isSavingShare else { return }
+        guard let userID = store.currentUserID, let before = shareActivity,
+              share != before, !isSavingShare else { return }
         isSavingShare = true
         defer { isSavingShare = false }
-        let before = shareActivity
         shareActivity = share
         Haptics.select()
         do {
@@ -230,7 +240,8 @@ final class ProfileViewModel {
         }
 
         let ids = Set(store.enrollments.keys)
-        guard force || ids != Set(programs.map(\.id)) || !programsLoaded else { return }
+        guard Self.needsProgramsRead(force: force, loaded: programsLoaded, failure: programsFailure,
+                                     joined: ids, shown: Set(programs.map(\.id))) else { return }
         do {
             let fetched = try await SupabaseService.shared.fetchPrograms(ids: Array(ids))
             guard store.currentUserID == userID else { return }
@@ -243,6 +254,17 @@ final class ProfileViewModel {
             if programs.isEmpty { programsFailure = ProfileLoadFailure(offline: error.isOffline) }
         }
         programsLoaded = true
+    }
+
+    /// Whether the joined programs have to be read (again).
+    ///
+    /// A failure always counts: an earlier failed read — the enrolments
+    /// unreachable offline — left "You're offline" on the section for good,
+    /// because once back online the joined set matched what was shown (often
+    /// both empty) and the read was skipped before anything cleared it.
+    nonisolated static func needsProgramsRead(force: Bool, loaded: Bool, failure: ProfileLoadFailure?,
+                                              joined: Set<String>, shown: Set<String>) -> Bool {
+        force || !loaded || failure != nil || joined != shown
     }
 
     private func loadRetreats(for userID: UUID, force: Bool) async {
@@ -267,13 +289,18 @@ final class ProfileViewModel {
         retreatsLoaded = true
     }
 
-    private func reset() {
+    /// Drops everything that belonged to whoever was here. The view calls it
+    /// for a guest as well, on every change of the person behind the session,
+    /// so a sign-out never leaves the last member's answers in memory.
+    func reset() {
         programs = []
         retreats = []
         programsFailure = nil
         retreatsFailure = nil
         programsLoaded = false
         retreatsLoaded = false
+        shareActivity = nil
+        profileError = nil
         loadedFor = nil
     }
 
@@ -421,6 +448,7 @@ final class ProfileViewModel {
         let kyoto = Retreat.mock.first { $0.name == "Kyoto" } ?? Retreat.mock[0]
         let sedona = Retreat.mock.first { $0.name == "Sedona" } ?? Retreat.mock[1]
         retreats = [past(kyoto, monthsAgo: 4), past(sedona, monthsAgo: 14)]
+        shareActivity = true
 
         programsLoaded = true
         retreatsLoaded = true

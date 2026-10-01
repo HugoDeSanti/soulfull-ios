@@ -238,6 +238,17 @@
   background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.21), transparent);
 }
 
+/* MainTabView's StatusBarScrim: a soft --bg-deep band behind the status bar,
+   fading out just below it, over every screen inside the tab shell (not the
+   welcome / onboarding stages, and not sheets). Scroll content runs up under
+   the clock, and nothing used to sit between them. Drawn behind the clock and
+   glyphs, above the page. */
+.statusbar--scrim::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 76px;
+  z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(16,18,10,0.94) 0%, rgba(16,18,10,0.86) 62%, rgba(16,18,10,0) 100%);
+}
+
 /* ---------------------------------------------------------------------------
    Type over photography  (View.onPhoto() in Components.swift)
 

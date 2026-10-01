@@ -49,6 +49,38 @@ final class AppState {
         withAnimation(.easeInOut(duration: 0.35)) { stage = .onboarding }
     }
 
+    /// After Welcome's "I already have an account" sheet closes. A sign-in has
+    /// already pulled the profile down by then: the sheet stays up until the
+    /// hydration that follows it is done (see `AccountView.trySubmit`).
+    ///
+    /// That button used to call `beginOnboarding()`, exactly like Begin, so a
+    /// returning member answered four questions and landed as a guest.
+    func returnFromWelcomeSignIn() {
+        switch Self.stageAfterWelcomeSignIn(hasAccount: auth.hasAccount, userName: settings.userName) {
+        case .main?:
+            // Not `finishOnboarding()`: the sign-in has just given its own
+            // success haptic, and there are no new answers to push.
+            settings.hasOnboarded = true
+            withAnimation(.easeInOut(duration: 0.45)) { stage = .main }
+        case .onboarding?:
+            beginOnboarding()
+        default:
+            break
+        }
+    }
+
+    /// Where a sign-in from Welcome leads.
+    /// - `nil`: the sheet closed without a sign-in, so Welcome stays. It is an
+    ///   offer, never a gate (Guideline 5.1.1).
+    /// - `.main`: the profile brought a name down, and the answers with it,
+    ///   so Home can greet them straight away.
+    /// - `.onboarding`: signed in, but the profile had no name to greet them
+    ///   by (rows from before 0024 can be empty), so ask.
+    static func stageAfterWelcomeSignIn(hasAccount: Bool, userName: String) -> Stage? {
+        guard hasAccount else { return nil }
+        return userName.trimmingCharacters(in: .whitespaces).isEmpty ? .onboarding : .main
+    }
+
     func finishOnboardingSkipping(name: String) {
         settings.userName = name.trimmingCharacters(in: .whitespaces)
         finishOnboarding()
@@ -56,6 +88,12 @@ final class AppState {
 
     func finishOnboarding() {
         settings.hasOnboarded = true
+        // A member who signed in from Welcome answered these with the account
+        // already in place, after every other push (create, confirm, Apple's
+        // merge) had run. A guest's answers go up when they make an account.
+        if auth.hasAccount {
+            Task { await auth.pushOnboardingAnswers() }
+        }
         Haptics.success()
         withAnimation(.easeInOut(duration: 0.45)) { stage = .main }
     }

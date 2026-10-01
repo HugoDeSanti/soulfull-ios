@@ -218,20 +218,11 @@ private struct PracticeActivityModifier: ViewModifier {
     /// Long enough to mean the screen was read rather than glanced at.
     private static let dwellForCompletion: TimeInterval = 45
     private static let heartbeat: Duration = .seconds(30)
-    /// A reading session longer than this is someone who walked away with the
-    /// screen open, not someone reading. Wall-clock needs a ceiling because
-    /// most of these practices have no length to clamp against server-side:
-    /// `PracticePlay.journal` carries no `durationSeconds` at all, so the DB
-    /// trigger's `least(seconds_played, duration_seconds)` is skipped and
-    /// nothing bounded the number.
-    private static let maxDwell: TimeInterval = 30 * 60
 
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var openedAt: Date?
-    /// Foreground seconds from sittings that have already ended (the screen was
-    /// backgrounded and returned to) within this same visit.
-    @State private var banked: TimeInterval = 0
+    /// Foreground, on-screen time for this visit — see `DwellClock`.
+    @State private var clock = DwellClock()
     @State private var reported: TimeInterval = 0
     /// One id for this screen's whole visit, so every heartbeat upserts the
     /// same ledger row instead of adding another. Created once per view
@@ -243,7 +234,11 @@ private struct PracticeActivityModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                openedAt = .now
+                // Also fires on coming back from a screen pushed over this one
+                // ("Your guide", say). The visit carries on from where it was:
+                // restarting the clock here meant a recipe left for its guide's
+                // page and returned to could never reach its 45 seconds.
+                clock.appeared(at: .now, foreground: scenePhase == .active)
                 if owner == nil { owner = PracticeProgressStore.shared.currentUserID }
             }
             .task {
@@ -255,37 +250,29 @@ private struct PracticeActivityModifier: ViewModifier {
                     write()
                 }
             }
-            .onDisappear { write() }
+            // Bank the sitting and stop the clock: time spent on a screen
+            // pushed over this one isn't time on this one.
+            .onDisappear {
+                clock.disappeared(at: .now)
+                write()
+            }
             // `onDisappear` does NOT fire when the app is backgrounded, so
             // without this the clock ran through it: open a prompt, background
             // the phone overnight, come back and tap Back, and the ledger got
             // eight hours of "reading". Stop the clock on the way out and
-            // restart it on the way back in.
+            // restart it on the way back in — banked, so returning continues
+            // the count rather than restarting it (the row's seconds are
+            // monotonic server-side, so a restart would silently discard the
+            // shorter sitting).
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
-                    if openedAt == nil { openedAt = .now }
-                } else {
-                    write()
-                    // Bank this sitting before stopping the clock, so returning
-                    // to the screen continues the count rather than restarting
-                    // it (the row's seconds are monotonic server-side, so a
-                    // restart would silently discard the shorter sitting).
-                    if let openedAt { banked += Date.now.timeIntervalSince(openedAt) }
-                    openedAt = nil
-                }
+                clock.sceneChanged(active: phase == .active, at: .now)
+                if phase != .active { write() }
             }
     }
 
-    /// Foreground time on this screen across every sitting of this visit,
-    /// capped. `banked` covers sittings already ended; `openedAt` the live one.
-    private var dwell: TimeInterval {
-        let live = openedAt.map { Date.now.timeIntervalSince($0) } ?? 0
-        return min(banked + live, Self.maxDwell)
-    }
-
     private func write() {
-        guard enabled, openedAt != nil || banked > 0 else { return }
-        let dwell = self.dwell
+        guard enabled, clock.hasStarted else { return }
+        let dwell = clock.dwell(at: .now)
         guard dwell >= 5, dwell > reported else { return }
         reported = dwell
         let completed = completedWhen?() ?? (dwell >= Self.dwellForCompletion)
@@ -301,6 +288,74 @@ private struct PracticeActivityModifier: ViewModifier {
                                                       secondsPlayed: seconds,
                                                       positionSeconds: seconds,
                                                       completed: completed)
+        }
+    }
+}
+
+/// The arithmetic `.practiceActivity(_:)` credits a written practice by: time
+/// its screen was actually in front of the member, over every sitting of one
+/// visit. Kept apart from SwiftUI so it can be tested
+/// (`SoulfullTests/DwellClockTests`).
+///
+/// The clock runs only while the screen is both on top (between `appeared`
+/// and `disappeared`) and in an active scene. Each stop banks the sitting, so
+/// leaving for a pushed screen or the home screen and coming back continues
+/// the count. A visit is one view identity: popping the screen ends it.
+struct DwellClock {
+
+    /// A visit longer than this is someone who walked away with the screen
+    /// open, not someone reading. Wall-clock needs a ceiling of its own: the
+    /// lengths the server clamps against are nominal for these libraries (a
+    /// journal prompt's 900 seconds, a recipe's cooking time), and a screen
+    /// left open would otherwise run up to them every time.
+    static let maxDwell: TimeInterval = 30 * 60
+
+    /// Time from sittings that have already ended within this visit.
+    private(set) var banked: TimeInterval = 0
+    /// When the live sitting began, while the clock is running.
+    private var runningSince: Date?
+    private var onScreen = false
+    private var foreground = false
+
+    /// Whether any sitting has begun — before one has, there is nothing to
+    /// write.
+    var hasStarted: Bool { runningSince != nil || banked > 0 }
+
+    /// The screen is on top. Picks up where the visit left off; a second
+    /// `appeared` without a `disappeared` between them changes nothing.
+    mutating func appeared(at now: Date, foreground: Bool) {
+        onScreen = true
+        self.foreground = foreground
+        settle(at: now)
+    }
+
+    /// Another screen was pushed over this one, or it was popped.
+    mutating func disappeared(at now: Date) {
+        onScreen = false
+        settle(at: now)
+    }
+
+    /// The scene went to or from the foreground. Coming back to the app
+    /// restarts the clock only for a screen that is still on top — one under
+    /// a pushed screen stays stopped.
+    mutating func sceneChanged(active: Bool, at now: Date) {
+        foreground = active
+        settle(at: now)
+    }
+
+    /// Foreground time on screen across every sitting of this visit, capped.
+    func dwell(at now: Date) -> TimeInterval {
+        let live = runningSince.map { max(0, now.timeIntervalSince($0)) } ?? 0
+        return min(banked + live, Self.maxDwell)
+    }
+
+    private mutating func settle(at now: Date) {
+        let shouldRun = onScreen && foreground
+        if shouldRun {
+            if runningSince == nil { runningSince = now }
+        } else if let since = runningSince {
+            banked += max(0, now.timeIntervalSince(since))
+            runningSince = nil
         }
     }
 }

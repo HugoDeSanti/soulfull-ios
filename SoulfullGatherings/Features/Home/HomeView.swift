@@ -13,6 +13,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppState.self) private var app
     @Environment(AppSettings.self) private var settings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = HomeViewModel()
     /// Server-held practice history — the continue card and the streak line.
     /// Read inside `body`, which is what registers the observation.
@@ -58,6 +59,11 @@ struct HomeView: View {
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 24)
+            // The day card and the Continue card arrive after the page has
+            // drawn, above the ritual. Animated, the ritual eases down rather
+            // than jumping out from under a reaching thumb.
+            .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: openProgramDay?.1.id)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: history.resumable?.id)
         }
         .scrollIndicators(.hidden)
         .background {
@@ -80,15 +86,17 @@ struct HomeView: View {
     }
 
     /// Shared scroll-in reveal: sections rise out of a blur as they enter
-    /// from the bottom; nothing happens scrolling back past the top.
+    /// from the bottom; nothing happens scrolling back past the top. Under
+    /// Reduce Motion they only fade.
     private func section(@ViewBuilder _ content: () -> some View) -> some View {
-        content()
+        let still = reduceMotion
+        return content()
             .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
                 let entering = max(phase.value, 0) // only the bottom edge
                 return view
                     .opacity(1 - entering * 0.6)
-                    .blur(radius: entering * 3)
-                    .offset(y: entering * 26)
+                    .blur(radius: still ? 0 : entering * 3)
+                    .offset(y: still ? 0 : entering * 26)
             }
     }
 
@@ -298,6 +306,25 @@ struct HomeView: View {
 
             if let failure = vm.retreatsFailure {
                 retreatsUnavailable(failure)
+            } else if vm.retreats.isEmpty {
+                // Not a bare heading over nothing: the shelf holds its height
+                // while the first read is out, and says so when nothing is
+                // announced.
+                Group {
+                    if vm.retreatsLoaded {
+                        Text("New gatherings are on their way. Dates appear here as they're announced.")
+                            .font(Theme.body(13))
+                            .foregroundStyle(Theme.inkOnPhoto)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .onPhoto()
+                    } else {
+                        ProgressView()
+                            .tint(Theme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 150)
+                    }
+                }
+                .padding(.horizontal, 20)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
@@ -402,6 +429,7 @@ struct HomeView: View {
                         PressableCard(action: { onOpenProgram(p.id) }) {
                             programCard(p)
                         }
+                        .accessibilityIdentifier("home-program-card")
                     }
                 }
                 .padding(.horizontal, 20)

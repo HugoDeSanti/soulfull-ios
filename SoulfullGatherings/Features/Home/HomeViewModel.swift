@@ -30,6 +30,9 @@ final class HomeViewModel {
     /// Set when the retreat shelf has nothing to show and why — the shelf
     /// renders the reason instead of quietly disappearing.
     var retreatsFailure: RetreatsLoadFailure? = nil
+    /// The retreat shelf has had an answer, so an empty one is "none
+    /// announced" rather than "not here yet".
+    private(set) var retreatsLoaded = false
     let moods: [MoodChip] = MoodChip.all
 
     /// The chip currently selected, if any.
@@ -45,7 +48,7 @@ final class HomeViewModel {
     var ritualDestination: PracticeMenuItem { mood?.suggests ?? MoodChip.defaultRitual.destination }
 
     var greeting: String {
-        let h = Calendar.current.component(.hour, from: .now)
+        let h = Calendar.current.component(.hour, from: AppClock.shared.now)
         switch h {
         case ..<12:  return "Good morning,"
         case 12..<18: return "Good afternoon,"
@@ -53,10 +56,22 @@ final class HomeViewModel {
         }
     }
 
+    /// Runs every time Home appears. The two reads go side by side: the "Day N
+    /// is open" card waits on the programs, and used to wait behind the
+    /// retreats as well.
     func load() async {
+        async let retreatsRead: Void = loadRetreats()
+        async let programsRead: Void = loadPrograms()
+        _ = await (retreatsRead, programsRead)
+    }
+
+    private func loadRetreats() async {
         do {
-            retreatsFailure = nil
             retreats = try await SupabaseService.shared.fetchRetreats()
+            // Cleared on an answer, not before asking: clearing it up front
+            // blanked the failure card for the length of every retry.
+            retreatsFailure = nil
+            retreatsLoaded = true
         } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
             // `is CancellationError` never matched — the SDK surfaces
@@ -69,17 +84,21 @@ final class HomeViewModel {
             if retreats.isEmpty {
                 retreatsFailure = error.isOffline ? .offline : .failed
             }
+            retreatsLoaded = true
         }
+    }
 
-        // Programs are additive: the shelf only appears once the table is
-        // seeded. No mock fallback — an invented catalogue of programs nobody
-        // can enrol in is exactly the kind of filler App Review rejects.
+    /// Programs are additive: the shelf only appears once the table is seeded.
+    /// No mock fallback — an invented catalogue of programs nobody can enrol in
+    /// is exactly the kind of filler App Review rejects.
+    private func loadPrograms() async {
         do {
             programs = try await SupabaseService.shared.fetchPrograms()
         } catch where error.isCancellation {
         } catch {
+            // What's on screen stays. Emptying it on a failed refresh made the
+            // shelf and the "Day N is open" card vanish on a flaky connection.
             Log.data.info("Programs unavailable: \(error.localizedDescription)")
-            programs = []
         }
     }
 

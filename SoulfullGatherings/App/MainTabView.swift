@@ -7,6 +7,17 @@
 //  Gatherings is the retreats stack, pushing into Retreat Detail through its
 //  own NavigationStack so native swipe-back works.
 //
+//  Each tab lives in its own hosting controller inside `TabPager`, so it keeps
+//  its state — loaded data, scroll position, pushed screens — while another is
+//  showing, exactly as a tab bar should. They used to be a `switch`, which tore
+//  the old tab down and built the new one from blank view models on every tap:
+//  the screen flashed its empty state ("New gatherings are on their way",
+//  "Quiet for now") before its data arrived. Only the showing tab is in the
+//  window, so a hidden one costs nothing and its `.task`s run again when it
+//  comes back. Not a system `TabView`: past five tabs, iPhone moves the rest
+//  into a "More" navigation controller, which put a stray back button (and,
+//  behind it, a system list of tabs) on Community and You.
+//
 //  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
 //  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
 //  request on appear. `pendingProgram` and `pendingRetreat` work the same way
@@ -55,8 +66,13 @@ enum MainTab: String, Hashable, CaseIterable {
 }
 
 struct MainTabView: View {
+    @Environment(AppState.self) private var app
     @Environment(AuthManager.self) private var auth
     @Environment(AppSettings.self) private var settings
+    /// Forwarded into each tab (see `page(_:)`): written practices time
+    /// themselves by it, and a hosting controller of our own doesn't inherit
+    /// it from the scene the way a SwiftUI child would.
+    @Environment(\.scenePhase) private var scenePhase
     @State private var tab: MainTab = Self.initialTab
     /// Holds an interrupted action while the account sheet is up, then replays
     /// it. Scoped to the tab shell because that's the only place that gates.
@@ -81,9 +97,19 @@ struct MainTabView: View {
         #endif
         return .home
     }
-    /// True while a tab root has something pushed — the nav bows out so
-    /// detail screens own the full canvas.
-    @State private var navHidden = false
+    /// The tabs whose stack has something pushed — on the showing one, the
+    /// nav bows out so detail screens own the full canvas. Per tab because
+    /// every tab keeps its stack: a hand-off can leave one tab with a screen
+    /// pushed and push onto another in the same update, and a single shared
+    /// flag ended up with whichever wrote last.
+    @State private var pushed: Set<MainTab> = []
+    /// Bumped when a member signs out or deletes their account, which rebuilds
+    /// every tab from scratch. Tabs keep their screens and view models while
+    /// another is showing; without this, a guest inherited the last member's
+    /// pushed pages (a journal entry left open by a cross-tab jump) and their
+    /// half-filled screens. Not bumped on sign-in: the account gate replays
+    /// the interrupted tap into the tab it came from, which must still exist.
+    @State private var shell = 0
     /// Set when another tab asks to open a Practice section (Home's ritual
     /// card). `PracticeRoot` consumes and clears it, which is what makes the
     /// jump land on the right screen rather than just the Practice landing.
@@ -106,67 +132,17 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Tab content
-            Group {
-                switch tab {
-                case .home:
-                    HomeView(onOpenRetreats: { tab = .gatherings },
-                             onOpenRetreat: { retreat in
-                        pendingRetreat = retreat
-                        tab = .gatherings
-                    }, onOpenPractice: { item in
-                        pendingPractice = item
-                        tab = .practice
-                    }, onOpenProgram: { programID in
-                        pendingProgram = programID
-                        tab = .programs
-                    })
-                case .gatherings:
-                    GatheringsRoot(navHidden: $navHidden, pending: $pendingRetreat,
-                                   onGoHome: { tab = .home })
-                case .programs:
-                    ProgramsRoot(navHidden: $navHidden, pending: $pendingProgram,
-                                 requireAccount: { action in
-                                     if gate.require(signedIn: hasAccount, action) {
-                                         showAccount = true
-                                     }
-                                 })
-                case .practice:
-                    PracticeRoot(navHidden: $navHidden, pending: $pendingPractice,
-                                 requireAccount: { action in
-                                     if gate.require(signedIn: hasAccount, action) {
-                                         showAccount = true
-                                     }
-                                 },
-                                 onOpenProgram: { programID in
-                                     pendingProgram = programID
-                                     tab = .programs
-                                 })
-                case .community:
-                    CommunityRoot(navHidden: $navHidden, openNotifications: $pendingNotifications,
-                                  requireAccount: { action in
-                                      if gate.require(signedIn: hasAccount, action) {
-                                          showAccount = true
-                                      }
-                                  },
-                                  onOpenProfile: { tab = .you })
-                case .you:
-                    ProfileView(onOpenProgram: { programID in
-                        pendingProgram = programID
-                        tab = .programs
-                    }, onOpenRetreats: { tab = .gatherings })
-                }
-            }
-            .ignoresSafeArea(.keyboard)
+            TabPager(selection: tab, pages: Dictionary(uniqueKeysWithValues:
+                MainTab.allCases.map { ($0, page($0)) }))
+                // Edge to edge: each tab's hosting controller takes its safe
+                // area (and keyboard avoidance) from the window itself.
+                .ignoresSafeArea()
+                .id(shell)
 
-            // Offline / failed-session notice, above the content but below the
-            // nav. Renders nothing when the session is healthy.
-            VStack {
-                ConnectionBanner()
-                    .padding(.top, 8)
-                Spacer()
-            }
-            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: auth.needsRetry)
+            // Keeps scrolled text from running into the clock — every screen's
+            // content scrolls up under the status bar, and nothing sat between
+            // them.
+            StatusBarScrim()
 
             // Docked nav. Static: it hides on detail pushes without moving.
             BottomNav(current: $tab)
@@ -174,12 +150,27 @@ struct MainTabView: View {
                 .allowsHitTesting(!navHidden)
                 .transaction { $0.animation = nil }
         }
-        .onChange(of: tab) { navHidden = false }
+        // Member → guest: sign-out, deletion, or a session lost for good. Keyed
+        // on `isAnonymous` rather than `hasAccount`, which also dips while a
+        // member's session is merely being retried.
+        .onChange(of: auth.isAnonymous) { wasGuest, isGuest in
+            guard !wasGuest, isGuest else { return }
+            pushed = []
+            shell += 1
+        }
         .onChange(of: push.openNotificationsRequested, initial: true) { _, requested in
             guard requested else { return }
             push.openNotificationsRequested = false
             pendingNotifications = true
             tab = .community
+        }
+        // A program's morning nudge was tapped: the same hand-off as Home's
+        // "Day N is open" card, which lands on the open day.
+        .onChange(of: push.openProgramRequested, initial: true) { _, programID in
+            guard let programID else { return }
+            push.openProgramRequested = nil
+            pendingProgram = programID
+            tab = .programs
         }
         // One sheet for the whole shell, so a gated tap works from any tab and
         // survives the tab switch Home's ritual card performs.
@@ -187,6 +178,90 @@ struct MainTabView: View {
             gate.resume(signedIn: hasAccount)
         }) {
             AccountView(initialName: settings.userName)
+        }
+    }
+
+    /// The showing tab has a screen pushed.
+    private var navHidden: Bool { pushed.contains(tab) }
+
+    /// One tab's entry in `pushed`, for its stack root to report through.
+    private func navHidden(_ item: MainTab) -> Binding<Bool> {
+        Binding(get: { pushed.contains(item) },
+                set: { if $0 { pushed.insert(item) } else { pushed.remove(item) } })
+    }
+
+    /// One tab, ready for its own hosting controller. Everything a SwiftUI
+    /// child would inherit from above is handed over explicitly — the app's
+    /// observable objects, dark mode, the tint and the scene phase — because a
+    /// `UIHostingController` starts a fresh environment.
+    ///
+    /// The offline / failed-session banner is an inset on each tab root and
+    /// pushed screen (`connectionBannerInset`), not an overlay here, so it
+    /// never covers a Back link.
+    private func page(_ item: MainTab) -> AnyView {
+        AnyView(
+            content(item)
+                .ignoresSafeArea(.keyboard)
+                .environment(app)
+                .environment(settings)
+                .environment(auth)
+                .environment(\.scenePhase, scenePhase)
+                .environment(\.colorScheme, .dark)
+                .tint(Theme.ink)
+        )
+    }
+
+    @ViewBuilder
+    private func content(_ item: MainTab) -> some View {
+        switch item {
+        case .home:
+            HomeView(onOpenRetreats: { tab = .gatherings },
+                     onOpenRetreat: { retreat in
+                pendingRetreat = retreat
+                tab = .gatherings
+            }, onOpenPractice: { item in
+                pendingPractice = item
+                tab = .practice
+            }, onOpenProgram: { programID in
+                pendingProgram = programID
+                tab = .programs
+            })
+            .connectionBannerInset()
+        case .gatherings:
+            GatheringsRoot(navHidden: navHidden(.gatherings), pending: $pendingRetreat,
+                           onGoHome: { tab = .home })
+        case .programs:
+            ProgramsRoot(navHidden: navHidden(.programs), pending: $pendingProgram,
+                         requireAccount: { action in
+                             if gate.require(signedIn: hasAccount, action) {
+                                 showAccount = true
+                             }
+                         })
+        case .practice:
+            PracticeRoot(navHidden: navHidden(.practice), pending: $pendingPractice,
+                         requireAccount: { action in
+                             if gate.require(signedIn: hasAccount, action) {
+                                 showAccount = true
+                             }
+                         },
+                         onOpenProgram: { programID in
+                             pendingProgram = programID
+                             tab = .programs
+                         })
+        case .community:
+            CommunityRoot(navHidden: navHidden(.community), openNotifications: $pendingNotifications,
+                          requireAccount: { action in
+                              if gate.require(signedIn: hasAccount, action) {
+                                  showAccount = true
+                              }
+                          },
+                          onOpenProfile: { tab = .you })
+        case .you:
+            ProfileView(onOpenProgram: { programID in
+                pendingProgram = programID
+                tab = .programs
+            }, onOpenRetreats: { tab = .gatherings })
+            .connectionBannerInset()
         }
     }
 }
@@ -216,11 +291,16 @@ private struct GatheringsRoot: View {
 
     var body: some View {
         NavigationStack(path: $path) {
+            // Replaces the path rather than appending: the root only calls this
+            // with nothing pushed, except for a hand-off, which may arrive while
+            // the tab is still holding a screen from an earlier visit.
             RetreatsStackView(isTabRoot: true, pending: $pending,
-                              onSelect: { r in path.append(.retreatDetail(r)) })
+                              onSelect: { r in path = [.retreatDetail(r)] })
+                .connectionBannerInset()
                 .navigationDestination(for: Route.self) { route in
                     destination(route)
                         .toolbar(.hidden, for: .navigationBar)
+                        .connectionBannerInset()
                 }
                 .toolbar(.hidden, for: .navigationBar)
         }
@@ -288,15 +368,19 @@ private struct ProgramsRoot: View {
 
     var body: some View {
         NavigationStack(path: $path) {
+            // Replace rather than append, as on the Gatherings tab: a hand-off
+            // can arrive while the tab is holding a screen from an earlier visit.
             ProgramsView(
-                onOpenProgram: { path.append(.detail($0, zoom: $1)) },
-                onOpenDay: { program, day in path.append(.day(program, day.day)) },
+                onOpenProgram: { path = [.detail($0, zoom: $1)] },
+                onOpenDay: { program, day in path = [.day(program, day.day)] },
                 pending: $pending,
                 zoomNamespace: zoomNS
             )
+            .connectionBannerInset()
             .navigationDestination(for: Route.self) { route in
                 destination(route)
                     .toolbar(.hidden, for: .navigationBar)
+                    .connectionBannerInset()
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -304,10 +388,19 @@ private struct ProgramsRoot: View {
         .onChange(of: path) { navHidden = !path.isEmpty }
     }
 
-    /// Pushes a guide's profile — unless it is already on top, which is where
-    /// a session's player was opened from when its guide chip is tapped.
+    /// Pushes a guide's profile — unless it is already in the stack: on top
+    /// (where a session's player was opened from when its guide chip is
+    /// tapped) it stays put, and further down it is popped back to, so
+    /// profile → recipe → "Your guide" doesn't grow a second copy of the same
+    /// profile for Back to walk through.
     private func openInstructor(_ id: String, from: String) {
-        if case .instructor(let current, _) = path.last, current == id { return }
+        if let index = path.lastIndex(where: {
+            if case .instructor(let open, _) = $0 { return open == id }
+            return false
+        }) {
+            path.removeLast(path.count - 1 - index)
+            return
+        }
         path.append(.instructor(id, from: from))
     }
 
@@ -384,6 +477,7 @@ private struct CommunityRoot: View {
                           onOpenNotifications: { path.append(.notifications) },
                           onOpenProfile: onOpenProfile,
                           requireAccount: requireAccount)
+                .connectionBannerInset()
                 .onAppear(perform: consumeOpenNotifications)
                 .onChange(of: openNotifications) { consumeOpenNotifications() }
                 .navigationDestination(for: Route.self) { route in
@@ -391,9 +485,11 @@ private struct CommunityRoot: View {
                     case .friends:
                         FriendsView(vm: vm)
                             .toolbar(.hidden, for: .navigationBar)
+                            .connectionBannerInset()
                     case .notifications:
                         NotificationsView(vm: vm)
                             .toolbar(.hidden, for: .navigationBar)
+                            .connectionBannerInset()
                     }
                 }
                 .toolbar(.hidden, for: .navigationBar)
@@ -405,6 +501,10 @@ private struct CommunityRoot: View {
         guard openNotifications else { return }
         openNotifications = false
         path = [.notifications]
+        // The like that was just tapped: with Notifications already on top,
+        // setting the path recreates nothing, so read the list here — the
+        // screen then marks the new row read as it arrives.
+        Task { await vm.loadNotifications(force: true) }
     }
 }
 
@@ -441,11 +541,13 @@ private struct PracticeRoot: View {
     var body: some View {
         NavigationStack(path: $path) {
             PracticeView(onSelect: open, zoomNamespace: zoomNS)
+                .connectionBannerInset()
                 .onAppear(perform: consumePending)
                 .onChange(of: pending) { consumePending() }
                 .navigationDestination(for: Route.self) { route in
                     destination(route)
                         .toolbar(.hidden, for: .navigationBar)
+                        .connectionBannerInset()
                 }
                 .toolbar(.hidden, for: .navigationBar)
         }
@@ -453,10 +555,19 @@ private struct PracticeRoot: View {
         .onChange(of: path) { navHidden = !path.isEmpty }
     }
 
-    /// Pushes a guide's profile — unless it is already on top, which is where
-    /// a session's player was opened from when its guide chip is tapped.
+    /// Pushes a guide's profile — unless it is already in the stack: on top
+    /// (where a session's player was opened from when its guide chip is
+    /// tapped) it stays put, and further down it is popped back to, so
+    /// profile → recipe → "Your guide" doesn't grow a second copy of the same
+    /// profile for Back to walk through.
     private func openInstructor(_ id: String, from: String) {
-        if case .instructor(let current, _) = path.last, current == id { return }
+        if let index = path.lastIndex(where: {
+            if case .instructor(let open, _) = $0 { return open == id }
+            return false
+        }) {
+            path.removeLast(path.count - 1 - index)
+            return
+        }
         path.append(.instructor(id, from: from))
     }
 
@@ -534,6 +645,90 @@ private struct PracticeRoot: View {
                                   },
                                   requireAccount: requireAccount)
         }
+    }
+}
+
+// MARK: - Tab pager
+
+/// What `UITabBarController` does for the tabs, minus the bar and minus its
+/// five-tab limit: one hosting controller per tab, made the first time the tab
+/// is shown and kept from then on, with only the selected one in the window.
+/// Keeping it is what keeps the tab's state; taking it out of the window is
+/// what pauses it and runs its `.task`s again when it comes back.
+private struct TabPager: UIViewControllerRepresentable {
+    let selection: MainTab
+    let pages: [MainTab: AnyView]
+
+    func makeUIViewController(context: Context) -> TabPagerController {
+        TabPagerController()
+    }
+
+    func updateUIViewController(_ controller: TabPagerController, context: Context) {
+        controller.show(selection, pages: pages)
+    }
+}
+
+final class TabPagerController: UIViewController {
+    private var hosts: [MainTab: UIHostingController<AnyView>] = [:]
+    private var showing: MainTab?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+    }
+
+    func show(_ selection: MainTab, pages: [MainTab: AnyView]) {
+        // Tabs already made get this update's view (fresh closures and
+        // environment); a tab is only made once it is first selected.
+        for (tab, host) in hosts {
+            if let page = pages[tab] { host.rootView = page }
+        }
+        if hosts[selection] == nil, let page = pages[selection] {
+            let host = UIHostingController(rootView: page)
+            host.view.backgroundColor = .clear
+            host.overrideUserInterfaceStyle = .dark
+            addChild(host)
+            host.didMove(toParent: self)
+            hosts[selection] = host
+        }
+        guard showing != selection, let host = hosts[selection] else { return }
+        if let showing, let previous = hosts[showing] {
+            previous.view.removeFromSuperview()
+        }
+        host.view.frame = view.bounds
+        host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(host.view)
+        showing = selection
+    }
+}
+
+// MARK: - Status bar scrim
+
+/// A soft dark band behind the status bar, fading out just below it. Scroll
+/// content runs up under the clock on every screen, and cream headlines and
+/// glass chips used to collide with it there. `PhotoBackdrop`'s top scrim sits
+/// behind the content, so it couldn't separate them.
+private struct StatusBarScrim: View {
+    var body: some View {
+        // A 14pt tail at the top of the safe area, whose background reaches up
+        // through the status bar to the screen's edge — whatever its height on
+        // this device.
+        Color.clear
+            .frame(height: 14)
+            .frame(maxWidth: .infinity)
+            .background {
+                // Near-solid behind the clock, falling away over the tail: a
+                // plain fade from the top let headlines read straight through.
+                LinearGradient(stops: [
+                    .init(color: Theme.bgDeep.opacity(0.94), location: 0),
+                    .init(color: Theme.bgDeep.opacity(0.86), location: 0.62),
+                    .init(color: Theme.bgDeep.opacity(0), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea(edges: .top)
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 

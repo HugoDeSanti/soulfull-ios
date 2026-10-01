@@ -36,17 +36,19 @@ struct ProgramsView: View {
                     continueCard(active, day: day)
                 }
 
-                if vm.isLoading && vm.programs.isEmpty {
+                if !vm.programs.isEmpty {
+                    catalog
+                } else if let failure = vm.loadFailure {
+                    unavailable(failure)
+                } else if vm.isLoading || !vm.hasLoaded {
+                    // Including the frame before the load has even started,
+                    // which is empty but not yet the answer.
                     ProgressView()
                         .tint(Theme.ink)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 60)
-                } else if let failure = vm.loadFailure, vm.programs.isEmpty {
-                    unavailable(failure)
-                } else if vm.programs.isEmpty {
-                    emptyState
                 } else {
-                    catalog
+                    emptyState
                 }
 
                 Color.clear.frame(height: 120)
@@ -200,9 +202,28 @@ struct ProgramsView: View {
                     .strokeBorder(Theme.glassBorderHigh, lineWidth: 1)
             )
         }
+        // The same zoom source the program's catalog card registered: once
+        // joined, the program moves up here, and a detail that was zoomed open
+        // from the catalog closes back onto this card instead of a card that
+        // is no longer there.
+        .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
         .padding(.horizontal, 20)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(program.title), day \(day.day) of \(total): \(day.title)")
+        // CONTINUE vs UP NEXT, and the state line, are what say what a tap
+        // will do — so they're read too.
+        .accessibilityLabel("\(state.isOpen ? "Continue" : "Up next"). \(program.title), day \(day.day) of \(total): \(day.title). \(stateText(state, day: day, program: program))")
+    }
+
+    /// `dayStateLine`'s words, for VoiceOver.
+    private func stateText(_ state: ProgramDayState, day: ProgramDay, program: Program) -> String {
+        switch state {
+        case .open:
+            let done = store.doneCount(of: day, in: program)
+            return done == 0 ? "Begin day \(day.day)" : "\(done) of \(store.resolved(day, in: program).count) done"
+        case .opens(let when):    return "Opens \(Self.relativeDay(when))"
+        case .awaitingPreviousDay: return "Finish the previous day first"
+        case .complete:            return "Complete"
+        }
     }
 
     /// The one line that says what the member can do right now. The two locked
@@ -246,12 +267,12 @@ struct ProgramsView: View {
     /// think about their week in ISO dates.
     static func relativeDay(_ date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInTomorrow(date) { return "tomorrow" }
-        if calendar.isDateInToday(date) { return "later today" }
         let days = calendar.dateComponents([.day],
-                                           from: calendar.startOfDay(for: .now),
+                                           from: calendar.startOfDay(for: AppClock.shared.now),
                                            to: calendar.startOfDay(for: date)).day ?? 0
-        if days > 0 && days < 7 {
+        if days == 1 { return "tomorrow" }
+        if days == 0 { return "later today" }
+        if days > 1 && days < 7 {
             return "on \(date.formatted(.dateTime.weekday(.wide)))"
         }
         return "on \(date.formatted(.dateTime.month(.abbreviated).day()))"
@@ -259,21 +280,29 @@ struct ProgramsView: View {
 
     // MARK: - Catalog
 
+    /// Everything but the program in flight, which the continue card leads
+    /// with. With nothing else to offer, no section at all — an enrolled member
+    /// with the one live program used to see "More digital retreats" over
+    /// nothing.
+    @ViewBuilder
     private var catalog: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(title: active == nil ? "All digital retreats" : "More digital retreats")
+        let others = vm.programs.filter { $0.id != active?.id }
+        if !others.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionLabel(title: active == nil ? "All digital retreats" : "More digital retreats")
 
-            VStack(spacing: 14) {
-                ForEach(vm.programs.filter { $0.id != active?.id }) { program in
-                    PressableCard(action: { onOpenProgram(program, true) }) {
-                        programCard(program)
+                VStack(spacing: 14) {
+                    ForEach(others) { program in
+                        PressableCard(action: { onOpenProgram(program, true) }) {
+                            programCard(program)
+                        }
+                        .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
+                        .accessibilityIdentifier("program-card")
+                        .listReveal()
                     }
-                    .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
-                    .accessibilityIdentifier("program-card")
-                    .listReveal()
                 }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
         }
     }
 
@@ -380,7 +409,7 @@ struct ProgramsView: View {
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
             SGPrimaryButton(title: "Try again") {
-                Task { await vm.load(force: true) }
+                Task { await vm.load() }
             }
             .padding(.top, 4)
         }

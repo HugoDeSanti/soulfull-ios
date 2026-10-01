@@ -77,4 +77,72 @@ struct RetreatCatalogLoadTests {
 
         #expect(vm.loadFailure == nil)
     }
+
+    // MARK: - Empty is an answer, not a starting state
+
+    /// The screen draws before its load starts. An empty catalog then must not
+    /// read as "none announced", or the tab flashes its empty state.
+    @Test func anEmptyCatalogIsNotAnAnswerBeforeAnyLoad() {
+        let vm = viewModel()
+
+        #expect(!vm.hasLoaded)
+        #expect(vm.retreats.isEmpty)
+    }
+
+    @Test(arguments: [
+        Result<[Retreat], any Error>.success([]),
+        .failure(URLError(.notConnectedToInternet)),
+        .failure(URLError(.badServerResponse)),
+    ])
+    func aLoadThatAnswersCountsAsLoaded(_ result: Result<[Retreat], any Error>) async {
+        let vm = viewModel(result)
+
+        await vm.load()
+
+        #expect(vm.hasLoaded)
+    }
+
+    @Test func aCancelledLoadHasNotAnswered() async {
+        let vm = viewModel(.failure(URLError(.cancelled)))
+
+        await vm.load()
+
+        #expect(!vm.hasLoaded)
+    }
+
+    // MARK: - Coming back to the tab
+
+    /// The tab reloads every time it comes back. The stack has to stay on the
+    /// retreat the member left it on.
+    @Test func aReloadKeepsTheRetreatInFocus() async {
+        let vm = viewModel(.success(catalog), .success(catalog))
+        await vm.load()
+        vm.activeIndex = 1
+
+        await vm.load()
+
+        #expect(vm.active?.name == "Lapland")
+    }
+
+    @Test func aReloadFollowsTheFocusedRetreatToItsNewPlace() async {
+        let reordered = [Fixtures.retreat(id: 3, name: "Kyoto")] + catalog
+        let vm = viewModel(.success(catalog), .success(reordered))
+        await vm.load()
+        vm.activeIndex = 1
+
+        await vm.load()
+
+        #expect(vm.activeIndex == 2)
+        #expect(vm.active?.name == "Lapland")
+    }
+
+    @Test func aReloadWithoutTheFocusedRetreatStartsFromTheTop() async {
+        let vm = viewModel(.success(catalog), .success([Fixtures.retreat(id: 1, name: "Mallorca")]))
+        await vm.load()
+        vm.activeIndex = 1
+
+        await vm.load()
+
+        #expect(vm.activeIndex == 0)
+    }
 }

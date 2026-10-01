@@ -33,6 +33,9 @@ struct ProfileView: View {
     @State private var accountMode: AccountViewModel.Mode = .createAccount
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
+    /// Sign-out forgets the device for push and opens a fresh guest session —
+    /// a few round-trips, during which the button said nothing at all.
+    @State private var isSigningOut = false
     @State private var deleteError: String?
     @State private var showPhotoOptions = false
     @State private var showPhotoPicker = false
@@ -93,11 +96,13 @@ struct ProfileView: View {
             }
         }
         .task(id: identity) {
-            guard isMember else { return }
+            // A guest has nothing to load, but whatever the last member left
+            // here still has to go — their sharing answer included.
+            guard isMember else { vm.reset(); return }
             await vm.load(settings: settings)
         }
         .sheet(isPresented: $showAccount) {
-            AccountView(mode: accountMode)
+            AccountView(mode: accountMode, initialName: settings.userName)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
@@ -152,8 +157,20 @@ struct ProfileView: View {
             Haptics.success()
         } catch {
             Haptics.bump()
-            deleteError = error.localizedDescription
+            Log.auth.error("Account deletion failed: \(error.localizedDescription)")
+            // Offline or ours, never the raw error — that read "Edge Function
+            // returned a non-2xx status code: 500". Either way the account is
+            // still there, which is the one thing they need to know.
+            deleteError = error.isOffline
+                ? "You're offline, so your account hasn't been deleted. Reconnect and try again."
+                : "Something went wrong at our end, and your account hasn't been deleted. Please try again in a moment."
         }
+    }
+
+    private func signOut() async {
+        isSigningOut = true
+        defer { isSigningOut = false }
+        await auth.signOut()
     }
 
     // MARK: - Header
@@ -481,12 +498,15 @@ struct ProfileView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Toggle("", isOn: Binding(
-                    get: { vm.shareActivity },
+                    get: { vm.shareActivity ?? false },
                     set: { on in Task { await vm.setShareActivity(on) } }
                 ))
                 .labelsHidden()
                 .tint(Theme.honey)
-                .disabled(vm.isSavingShare)
+                // Unknown until the profile row is read: dimmed and untouchable
+                // rather than a position the server never confirmed.
+                .disabled(vm.shareActivity == nil || vm.isSavingShare)
+                .opacity(vm.shareActivity == nil ? 0.45 : 1)
                 .accessibilityLabel("Share my practice in the Community feed")
                 .accessibilityIdentifier("share-activity")
             }
@@ -560,7 +580,7 @@ struct ProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
             Button {
-                Task { await vm.load(force: true) }
+                Task { await vm.load(force: true, settings: settings) }
             } label: {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
@@ -610,8 +630,12 @@ struct ProfileView: View {
     private var accountActions: some View {
         VStack(spacing: 12) {
             if auth.hasAccount {
-                SGPrimaryButton(title: "Sign out") {
-                    Task { await auth.signOut() }
+                // Each one waits for the other: a sign-out mid-deletion would
+                // pull the session out from under the delete call, and a delete
+                // mid-sign-out would be asked of the session being closed.
+                SGPrimaryButton(title: isSigningOut ? "Signing out…" : "Sign out",
+                                enabled: !isSigningOut && !isDeleting) {
+                    Task { await signOut() }
                 }
                 Button {
                     Haptics.tap()
@@ -622,9 +646,10 @@ struct ProfileView: View {
                         .foregroundStyle(Color(red: 0.85, green: 0.36, blue: 0.33))
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
+                        .opacity(isSigningOut ? 0.45 : 1)
                 }
                 .buttonStyle(.plain)
-                .disabled(isDeleting)
+                .disabled(isDeleting || isSigningOut)
             } else {
                 SGPrimaryButton(title: "Create account", filled: true) {
                     accountMode = .createAccount

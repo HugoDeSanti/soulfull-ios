@@ -33,6 +33,9 @@ import SwiftUI
 
 struct RetreatsStackView: View {
     @Environment(\.dismiss) private var dismiss
+    /// Under Reduce Motion the two modes crossfade: no recede, swell, blur or
+    /// rise, and the focus lens marks the centred name by ink and weight alone.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = RetreatsViewModel()
     @State private var scrollerHeight: CGFloat = 0
 
@@ -56,32 +59,38 @@ struct RetreatsStackView: View {
     private let commitSpring = Animation.spring(response: 0.5, dampingFraction: 0.82)
 
     /// There is a catalog to browse — the mode toggle and the pinch mean
-    /// nothing while loading, failed, or empty.
-    private var hasCatalog: Bool {
-        !vm.isLoading && vm.loadFailure == nil && !vm.retreats.isEmpty
-    }
+    /// nothing while loading, failed, or empty. A reload over a catalog on
+    /// screen (the tab coming back) leaves it browsable rather than swapping it
+    /// for a spinner.
+    private var hasCatalog: Bool { !vm.retreats.isEmpty }
 
     var body: some View {
         ZStack {
             backdrop
 
-            if vm.isLoading {
-                ProgressView().tint(Theme.ink)
-            } else if let failure = vm.loadFailure {
-                errorState(failure)
-            } else if vm.retreats.isEmpty {
-                emptyState
-            } else {
+            if hasCatalog {
                 // The stack stays mounted under the catalog so its scroll
                 // state survives — tapping a cover animates the live
                 // scroller to the chosen retreat as the catalog lifts.
                 stackMode
                     .allowsHitTesting(mode == .stack)
+                    // Out of the accessibility tree too: hit-testing off isn't
+                    // enough, and VoiceOver met every retreat twice — the covers,
+                    // then the faded rows still mounted underneath them.
+                    .accessibilityHidden(mode == .catalog)
 
                 if mode == .catalog {
                     catalogMode
-                        .transition(.editorialRise)
+                        .transition(reduceMotion ? .opacity : .editorialRise)
                 }
+            } else if let failure = vm.loadFailure {
+                errorState(failure)
+            } else if vm.isLoading || !vm.hasLoaded {
+                // Including the frame before the load has even started, which
+                // is empty but not yet the answer.
+                ProgressView().tint(Theme.ink)
+            } else {
+                emptyState
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) { topBar }
@@ -189,7 +198,9 @@ struct RetreatsStackView: View {
 
     /// Live scrub applied while the fingers are down — recede when pinching
     /// out of the stack, swell slightly when pinching out of the catalog.
+    /// Held at rest under Reduce Motion; the pinch still commits.
     private var scrub: CGFloat {
+        guard !reduceMotion else { return 1 }
         switch mode {
         case .stack:   return min(1, max(0.88, 0.88 + 0.12 * pinch))
         case .catalog: return max(1, min(1.06, pinch))
@@ -206,9 +217,11 @@ struct RetreatsStackView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8 + navClearance)
         }
-        .scaleEffect(mode == .catalog ? 0.92 : scrub)
-        .blur(radius: mode == .catalog ? 22 : (1 - scrub) * 24)
-        .opacity(mode == .catalog ? 0.25 : 1)
+        .scaleEffect(mode == .catalog && !reduceMotion ? 0.92 : scrub)
+        .blur(radius: reduceMotion ? 0 : (mode == .catalog ? 22 : (1 - scrub) * 24))
+        // Without the blur, a quarter-ink stack would read as ghost names
+        // behind the covers, so Reduce Motion fades it out entirely.
+        .opacity(mode == .catalog ? (reduceMotion ? 0 : 0.25) : 1)
     }
 
     /// What this list is, and where in it you are.
@@ -310,9 +323,10 @@ struct RetreatsStackView: View {
 
     private func row(idx: Int, retreat r: Retreat) -> some View {
         let isActive = idx == vm.activeIndex
-        // A local copy: `visualEffect` runs off the main actor and can't read
+        // Local copies: `visualEffect` runs off the main actor and can't read
         // the view's properties.
         let height = rowHeight
+        let lensScales = !reduceMotion
         return Button {
             if isActive {
                 Haptics.bump()
@@ -350,7 +364,7 @@ struct RetreatsStackView: View {
             let distance = abs(viewport.midY - proxy.size.height / 2) / height
             let focus = max(0, 1 - distance)
             return content
-                .scaleEffect(0.8 + 0.2 * focus, anchor: .leading)
+                .scaleEffect(lensScales ? 0.8 + 0.2 * focus : 1, anchor: .leading)
                 .opacity(0.4 + 0.6 * focus)
         }
         .accessibilityLabel("\(r.name), \(r.country)")
@@ -372,7 +386,7 @@ struct RetreatsStackView: View {
                     ZStack(alignment: .leading) {
                         cardDetails(r)
                             .id(r.id)
-                            .transition(.opacity.combined(with: .offset(y: 5)))
+                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 5)))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .animation(.easeInOut(duration: 0.28), value: r.id)
@@ -548,12 +562,15 @@ struct RetreatsStackView: View {
         }
         .accessibilityLabel("\(r.name), \(r.country), \(Self.dateLine(r))")
         .accessibilityHint("Brings it into focus")
-        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { [reduceMotion] view, phase in
             let entering = max(phase.value, 0)
+            // Covers rise and settle into place as they scroll in; under
+            // Reduce Motion they only fade up.
+            let travel: CGFloat = reduceMotion ? 0 : 1
             return view
                 .opacity(1 - entering * 0.5)
-                .scaleEffect(1 - entering * 0.06)
-                .offset(y: entering * 18)
+                .scaleEffect(1 - entering * 0.06 * travel)
+                .offset(y: entering * 18 * travel)
         }
     }
 

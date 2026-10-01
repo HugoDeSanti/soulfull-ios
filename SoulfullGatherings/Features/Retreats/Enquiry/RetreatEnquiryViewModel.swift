@@ -117,6 +117,16 @@ final class RetreatEnquiryViewModel {
         Calendar.current.date(byAdding: .year, value: -32, to: Date()) ?? latestDateOfBirth
     }()
 
+    /// What the date-of-birth wheel shows and sets. It opens on
+    /// `defaultDateOfBirth`, but only turning it answers the question: opening
+    /// the wheel used to write that default straight into `dateOfBirth`, so a
+    /// glance at it counted as an answer and sent the team a birthday nobody
+    /// had chosen.
+    var dateOfBirthWheel: Date {
+        get { dateOfBirth ?? Self.defaultDateOfBirth }
+        set { dateOfBirth = newValue }
+    }
+
     /// Deliberately loose. Numbers arrive with country codes, spaces, dashes
     /// and parentheses from a dozen countries, and a strict pattern would
     /// reject more real numbers than fake ones. Enough digits to be dialable

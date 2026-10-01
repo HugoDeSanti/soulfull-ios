@@ -58,6 +58,10 @@ struct BottomNav: View {
                     // Only ever used when the bar is too narrow for every label
                     // at full size — see `NavBarLayout`.
                     .minimumScaleFactor(0.7)
+                    // The bar's height is fixed, so the labels stop growing at
+                    // the largest standard size; past it, a long press shows
+                    // the large content viewer, as the system tab bar does.
+                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
             }
             .foregroundStyle(active ? Theme.ink : Theme.muted)
             .frame(maxWidth: .infinity)
@@ -65,6 +69,9 @@ struct BottomNav: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(StaticNavButtonStyle())
+        .accessibilityShowsLargeContentViewer {
+            Label(tab.label, systemImage: tab.systemImage)
+        }
         .accessibilityLabel(tab.label)
         .accessibilityAddTraits(active ? .isSelected : [])
     }

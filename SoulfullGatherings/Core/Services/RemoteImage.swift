@@ -86,7 +86,10 @@ enum ImageSource: Hashable, Sendable {
 actor RemoteImageCache {
     static let shared = RemoteImageCache()
 
-    private let memory: NSCache<NSURL, UIImage> = {
+    /// `nonisolated(unsafe)` so a view can read a hit synchronously, in `body`
+    /// (see `cached`). NSCache is documented as thread-safe; the actor still
+    /// owns the coalescing of downloads.
+    nonisolated(unsafe) private let memory: NSCache<NSURL, UIImage> = {
         let cache = NSCache<NSURL, UIImage>()
         // ~40MB of decoded pixels. Retreat photography is full-bleed, so this
         // is a handful of images — enough for a catalog, not enough to matter.
@@ -129,9 +132,19 @@ actor RemoteImageCache {
         }
     }
 
-    /// Already-decoded hit, if any. Lets a view paint a cached photo on its
-    /// first frame instead of flashing the placeholder for a frame.
-    func cached(_ url: URL) -> UIImage? {
+    /// Already-decoded hit, if any. Synchronous so a view can paint a cached
+    /// photo on its first frame: asked from a `.task`, the answer only arrived
+    /// after the placeholder had already been drawn, so every new screen
+    /// flashed the gradient before photos it already had.
+    nonisolated func cached(_ url: URL) -> UIImage? {
         memory.object(forKey: url as NSURL)
+    }
+
+    /// Seeds the cache with an image this device made itself — a just-uploaded
+    /// profile photo — so it shows at once under its new URL instead of being
+    /// downloaded straight back.
+    nonisolated func insert(_ image: UIImage, for url: URL) {
+        let cost = Int(image.size.width * image.size.height * image.scale * image.scale * 4)
+        memory.setObject(image, forKey: url as NSURL, cost: cost)
     }
 }

@@ -14,6 +14,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(AppState.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = OnboardingViewModel()
 
     var body: some View {
@@ -36,7 +37,8 @@ struct OnboardingView: View {
                     }
                     // Soft (blur-free) variant: the name step's TextField is
                     // UIKit-backed and can't sit under a Metal filter pass.
-                    .transition(.editorialPageSoft)
+                    // A plain fade under Reduce Motion, which drops the slide.
+                    .transition(reduceMotion ? .opacity : .editorialPageSoft)
                     .id(vm.step)
                 }
                 .transition(.opacity)
@@ -112,6 +114,16 @@ private struct OnboardingShell<StepBody: View>: View {
                     Text("skip")
                         .font(Theme.body(14))
                         .foregroundStyle(Color.white.opacity(0.78))
+                        // A 44pt target around a 14pt word without moving it:
+                        // the padding grows the hit area, and the negative
+                        // padding hands the room back so the bar keeps its
+                        // height. Plain buttons answer only where they draw
+                        // (gotcha #5).
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 10)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, -14)
+                        .padding(.horizontal, -10)
                 }
                 .buttonStyle(.plain)
             }
@@ -168,10 +180,14 @@ private struct NameStep: View {
                     .foregroundStyle(Color.white.opacity(0.45))
             )
             .focused($focused)
+            .textContentType(.givenName)
             .textInputAutocapitalization(.words)
             .autocorrectionDisabled()
             .submitLabel(.next)
             .onSubmit { vm.next() }
+            // The title is empty (the prompt does the visual work), which left
+            // VoiceOver nothing to call the field once it had text in it.
+            .accessibilityLabel("Your name")
             .accessibilityIdentifier("onboarding-name")
             .multilineTextAlignment(.center)
             .font(Theme.headline(22))
@@ -326,6 +342,8 @@ private struct FinishStepView: View {
                     .frame(width: 160, height: 160)
                     .shadow(color: .white.opacity(0.18), radius: 24)
                     .breathing(scale: 0.94...1.06, opacity: 0.85...1.0, period: 5)
+                    // Decorative: the welcome line under it does the talking.
+                    .accessibilityHidden(true)
 
                 Text("WELCOME, \(name.isEmpty ? "friend" : name.uppercased())")
                     .font(Theme.eyebrow(11))
@@ -366,6 +384,7 @@ private struct FinishStepView: View {
 // MARK: - Option card (glass tile with index + label + honey glow when selected)
 
 private struct OptionCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let index: Int?
     let label: String
     let selected: Bool
@@ -410,7 +429,9 @@ private struct OptionCard: View {
                             .blur(radius: 8)
                             .frame(width: 220, height: 220)
                             .offset(x: 60, y: 50)
-                            .transition(.opacity.combined(with: .scale(scale: 0.4, anchor: .bottomTrailing)))
+                            .transition(reduceMotion
+                                        ? .opacity
+                                        : .opacity.combined(with: .scale(scale: 0.4, anchor: .bottomTrailing)))
                     }
                 }
             }
@@ -420,10 +441,16 @@ private struct OptionCard: View {
                     .strokeBorder(selected ? Theme.honey.opacity(0.6) : Color.white.opacity(0.20), lineWidth: 1)
             }
             .shimmer(on: selected)
-            .scaleEffect(selected ? 1.02 : 1.0)
-            .animation(.spring(response: 0.38, dampingFraction: 0.66), value: selected)
+            // Under Reduce Motion a choice is marked by its fill, stroke and
+            // glow alone: no swelling, no bounce.
+            .scaleEffect(selected && !reduceMotion ? 1.02 : 1.0)
+            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.38, dampingFraction: 0.66),
+                       value: selected)
         }
         .buttonStyle(.soulPressableQuiet)
+        // A choice shows only as colour (fill, stroke, glow), which VoiceOver
+        // can't see: say "selected" out loud.
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("onboarding-option")
     }
 }

@@ -86,4 +86,36 @@ final class OnboardingTests: XCTestCase {
                       "A returning user should land on Home")
         XCTAssertFalse(app.staticTexts["TAP TO CONTINUE"].exists, "A returning user was sent back through onboarding")
     }
+
+    /// "I already have an account" on the last slide offers sign-in. It used to
+    /// start the questions exactly like Begin, so a returning member answered
+    /// four questions and landed as a guest. It's an offer, not a gate
+    /// (Guideline 5.1.1): closing the sheet leaves them on Welcome, free to Begin.
+    func testIAlreadyHaveAnAccountOffersSignInAndCanBeClosed() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset"]
+        app.launch()
+
+        let splash = app.staticTexts["TAP TO CONTINUE"]
+        XCTAssertTrue(splash.waitForExistence(timeout: 30), "A first launch should open on the welcome splash")
+        splash.tap()
+        let next = app.buttons["Next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 10), "The explainer slides never appeared")
+        next.tap()
+
+        let haveAccount = app.buttons["I already have an account"]
+        XCTAssertTrue(haveAccount.waitForExistence(timeout: 10), "The last slide should offer sign-in")
+        haveAccount.tap()
+
+        let close = app.buttons["account-close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10), "\"I already have an account\" didn't offer sign-in")
+        XCTAssertFalse(app.textFields["onboarding-name"].exists, "It started the questions instead of offering sign-in")
+        shot(app, "06-welcome-sign-in-offer")
+        close.tap()
+
+        XCTAssertTrue(app.buttons["Begin"].waitForExistence(timeout: 10),
+                      "Closing the sign-in sheet should leave the member on Welcome, free to Begin")
+        shot(app, "07-back-on-welcome")
+    }
 }

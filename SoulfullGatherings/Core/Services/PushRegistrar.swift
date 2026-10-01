@@ -25,6 +25,9 @@ final class PushRegistrar {
     /// A like push was tapped: the shell switches to Community → Notifications
     /// and clears this.
     var openNotificationsRequested = false
+    /// A digital retreat's "Day N is open" nudge was tapped: the shell opens
+    /// that program (on its open day) and clears this.
+    var openProgramRequested: String?
     /// The card was declined with "Not now". Per install, not per member — a
     /// refusal is a refusal.
     var promptDismissed: Bool {
@@ -165,13 +168,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         completionHandler([.banner, .sound, .badge])
     }
 
-    /// Tapped: a like opens Community → Notifications.
+    /// Tapped: a like opens Community → Notifications; a program's morning
+    /// nudge opens that digital retreat, on the day it announced.
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
-        let kind = response.notification.request.content.userInfo["kind"] as? String
-        if kind == "like" {
+        let userInfo = response.notification.request.content.userInfo
+        if userInfo["kind"] as? String == "like" {
             Task { @MainActor in PushRegistrar.shared.openNotificationsRequested = true }
+        } else if let programID = userInfo["programID"] as? String {
+            Task { @MainActor in PushRegistrar.shared.openProgramRequested = programID }
         }
         completionHandler()
     }

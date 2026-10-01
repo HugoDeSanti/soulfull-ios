@@ -178,11 +178,36 @@ struct RecipeDetailView: View {
                     Text("Recipes").font(Theme.body(13)).underline()
                 }
                 .foregroundStyle(.white)
+                .onPhoto()
+                // The drawn label is ~20pt tall; give the thumb a full row.
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                // The link is pinned while the page scrolls under it. Over the
+                // photo it reads on its own; once the hero has gone, it sat on
+                // the title and the ingredients. The page's own ground rises
+                // behind it as the photo leaves, under the status bar too.
+                LinearGradient(stops: [.init(color: Theme.bg, location: 0),
+                                       .init(color: Theme.bg.opacity(0.92), location: 0.7),
+                                       .init(color: Theme.bg.opacity(0), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+                    .padding(.bottom, -14)
+                    .ignoresSafeArea(edges: .top)
+                    .opacity(backScrim)
+                    .allowsHitTesting(false)
+            }
         }
+    }
+
+    /// 0 while the link is over the hero, 1 by the time the title reaches it.
+    /// The hero runs 320pt from the top of the screen and the link's row ends
+    /// ~105pt down, so the title arrives under it at ~230pt of scroll.
+    private var backScrim: Double {
+        Double(min(1, max(0, (scrollY - 170) / 60)))
     }
 
     /// Tappable pantry row: ticking an ingredient springs the check in and

@@ -47,6 +47,20 @@ struct RetreatEnquiryView: View {
         /// Accessibility identifier. Stable names so `RetreatEnquiryTests` can
         /// fill the form without matching on placeholder copy.
         var id: String { "enquiry-\(rawValue)" }
+
+        /// The field after this one, in the order the form asks — where the
+        /// keyboard bar's Next goes. Nil for the last.
+        var next: Field? {
+            switch self {
+            case .firstName: .lastName
+            case .lastName:  .basedIn
+            case .basedIn:   .phone
+            case .phone:     .instagram
+            case .instagram: .about
+            case .about:     .referral
+            case .referral:  nil
+            }
+        }
     }
 
     /// - Parameters:
@@ -75,6 +89,18 @@ struct RetreatEnquiryView: View {
             closeButton
         }
         .preferredColorScheme(.dark)
+        // The phone's number pad has no Return key and the About box spends
+        // Return on new lines, so neither had a way on or a way out of the
+        // keyboard. One bar over every field gives both.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                if let next = focus?.next {
+                    keyboardButton("Next") { focus = next }
+                }
+                keyboardButton("Done") { focus = nil }
+            }
+        }
         .task { await vm.loadOptions() }
         // A half-written application is worth more than a tidy gesture, so the
         // swipe is off while there is one and the X asks instead.
@@ -157,7 +183,8 @@ struct RetreatEnquiryView: View {
                 Button {
                     Haptics.tap()
                     focus = nil
-                    if vm.dateOfBirth == nil { vm.dateOfBirth = RetreatEnquiryViewModel.defaultDateOfBirth }
+                    // Opens the wheel and nothing more — turning it is what
+                    // answers (`dateOfBirthWheel`).
                     showDateWheel.toggle()
                 } label: {
                     HStack {
@@ -181,10 +208,7 @@ struct RetreatEnquiryView: View {
                     // rejected after the fact.
                     DatePicker(
                         RetreatEnquiry.Question.dateOfBirth,
-                        selection: Binding(
-                            get: { vm.dateOfBirth ?? RetreatEnquiryViewModel.defaultDateOfBirth },
-                            set: { vm.dateOfBirth = $0 }
-                        ),
+                        selection: $vm.dateOfBirthWheel,
                         in: ...RetreatEnquiryViewModel.latestDateOfBirth,
                         displayedComponents: .date
                     )
@@ -441,11 +465,27 @@ struct RetreatEnquiryView: View {
                 }
                 .accessibilityLabel("Close")
                 .accessibilityIdentifier("enquiry-close")
+                // Not while sending: closing then left the send running in a
+                // Task nobody was watching, and the application went out from
+                // a sheet that had been discarded.
+                .disabled(vm.isSending)
+                .opacity(vm.isSending ? 0.45 : 1)
             }
             Spacer()
         }
         .padding(.horizontal, 22)
         .padding(.top, 16)
+    }
+
+    private func keyboardButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            Text(title)
+                .font(Theme.body(15, weight: .medium))
+                .foregroundStyle(Theme.honey)
+        }
     }
 
     // MARK: - Building blocks

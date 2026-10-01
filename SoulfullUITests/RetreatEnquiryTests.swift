@@ -200,9 +200,25 @@ final class RetreatEnquiryTests: XCTestCase {
         // Answer everything. The two optional questions stay blank on purpose.
         fill(app, "enquiry-lastName", "De Santiago")
 
+        // The form's keyboard bar (Next / Done) sits on top of the keyboard,
+        // and right where the date field lands: put the keyboard away first.
+        let done = app.toolbars.buttons["Done"]
+        if done.exists { done.tap() }
+
         let dob = app.buttons["enquiry-dob"]
         reveal(app, dob)
-        dob.tap()   // opens the wheel already set to a valid, above-age date
+        // Opening the wheel no longer answers the question — it used to, so a
+        // date nobody chose was sent as the applicant's. Turning it does. The
+        // year wheel is found by its value rather than its position, which
+        // depends on the region's date order.
+        dob.tap()
+        let wheels = app.pickerWheels
+        XCTAssertTrue(wheels.firstMatch.waitForExistence(timeout: 5), "The date wheel never opened")
+        let year = wheels.allElementsBoundByIndex.first {
+            ($0.value as? String)?.range(of: "^[0-9]{4}$", options: .regularExpression) != nil
+        }
+        XCTAssertNotNil(year, "The date wheel has no year column")
+        year?.adjust(toPickerWheelValue: "1990")
 
         fill(app, "enquiry-basedIn", "Barcelona, Spain")
         fill(app, "enquiry-phone", "+34600000000")

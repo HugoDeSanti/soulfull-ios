@@ -2,17 +2,20 @@
 //  NotificationsView.swift
 //  Soulfull Gatherings
 //
-//  Who liked your practices. Pushed from the bell on the Community tab.
-//  Unread rows carry a honey dot for this visit; everything is marked read
-//  once the screen has shown them, and the server latches that.
+//  Who liked your practices. Pushed from the bell on the Community tab, or by
+//  a tapped like push. Unread rows carry a honey dot for this visit; each is
+//  marked read once the screen has shown it — by id, so a like that lands
+//  later stays unread until it too is on screen — and the server latches that.
 //
 
 import SwiftUI
 
 struct NotificationsView: View {
     @Bindable var vm: CommunityViewModel
-    /// What was unread when the screen opened — kept so the dots don't vanish
-    /// under the reader's eyes the moment they're marked read.
+    /// Everything that was unread when this screen showed it — kept so the
+    /// dots don't vanish under the reader's eyes the moment they're marked
+    /// read. Grows when a refresh (or a like push while the screen is open)
+    /// brings in more.
     @State private var unreadAtOpen: Set<UUID> = []
 
     var body: some View {
@@ -33,10 +36,24 @@ struct NotificationsView: View {
         .refreshable { await vm.loadNotifications(force: true) }
         .task {
             PushRegistrar.shared.clearBadge()
-            await vm.loadNotifications()
-            unreadAtOpen = Set(vm.notifications.filter(\.isUnread).map(\.id))
-            await vm.markAllRead()
+            // Forced: opening this screen is asking what's new, and the list
+            // the bell counted from may be minutes old.
+            await vm.loadNotifications(force: true)
+            // Whether or not that read worked — what's on screen has been seen.
+            markShownRead()
         }
+        // A refresh, or a reload for a like push tapped while this screen is
+        // already open, can bring in rows the task above never saw.
+        .onChange(of: vm.notifications) { markShownRead() }
+    }
+
+    /// Marks read what is unread on screen now, keeping its dot for this visit.
+    /// Only those ids: anything that arrives later is marked when it shows.
+    private func markShownRead() {
+        let shown = Set(vm.notifications.filter(\.isUnread).map(\.id))
+        guard !shown.isEmpty else { return }
+        unreadAtOpen.formUnion(shown)
+        Task { await vm.markRead(shown) }
     }
 
     private var header: some View {

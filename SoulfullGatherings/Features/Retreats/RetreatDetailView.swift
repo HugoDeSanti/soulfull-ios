@@ -16,6 +16,7 @@ import SwiftUI
 
 struct RetreatDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AuthManager.self) private var auth
     @Environment(AppSettings.self) private var settings
     let retreat: Retreat
@@ -78,6 +79,7 @@ struct RetreatDetailView: View {
                 topBar
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
+                    .background(alignment: .top) { topBarScrim }
                 Spacer()
             }
 
@@ -86,7 +88,7 @@ struct RetreatDetailView: View {
                 Spacer()
                 if scrollY > 260 {
                     reserveBar
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: scrollY > 260)
@@ -105,7 +107,8 @@ struct RetreatDetailView: View {
         .sheet(isPresented: $showAccount, onDismiss: {
             if auth.hasAccount { showEnquiry = true }
         }) {
-            AccountView()
+            // Onboarding already asked their name — same as the shared gate.
+            AccountView(initialName: settings.userName)
         }
         .sheet(isPresented: $showEnquiry) {
             // Seeded with what we already know so the form asks for as little
@@ -132,8 +135,11 @@ struct RetreatDetailView: View {
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .clipped()
-                .scaleEffect(1 + max(0, -scrollY) / 700)          // stretch on pull-down
-                .blur(radius: min(14, max(0, scrollY) / 26))       // soften under the story
+                // Stretch on pull-down, soften under the story. Under Reduce
+                // Motion the photo holds still and a deeper dim does the
+                // softening's job of grounding the story's type.
+                .scaleEffect(reduceMotion ? 1 : 1 + max(0, -scrollY) / 700)
+                .blur(radius: reduceMotion ? 0 : min(14, max(0, scrollY) / 26))
 
                 // The middle stops used to fall to 0.08 — right where the
                 // cover's kind line and blurb sit, on an unblurred photo. They
@@ -145,7 +151,7 @@ struct RetreatDetailView: View {
                 )
 
                 // Extra dim as the story scrolls up.
-                Color.black.opacity(min(0.45, Double(max(0, scrollY)) / 700))
+                Color.black.opacity(min(reduceMotion ? 0.62 : 0.45, Double(max(0, scrollY)) / 700))
             }
         }
         .ignoresSafeArea()
@@ -693,6 +699,11 @@ struct RetreatDetailView: View {
                         .underline()
                 }
                 .foregroundStyle(.white)
+                .onPhoto()
+                // The drawn label is ~20pt tall and only its glyphs answered
+                // (rendering gotcha #5); give the thumb a full 44pt target.
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             Spacer()
@@ -702,9 +713,35 @@ struct RetreatDetailView: View {
                     .foregroundStyle(Theme.ink)
                     .frame(width: 38, height: 38)
                     .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
+                    // Glass adds no tappable fill on iOS 26: without this only
+                    // the glyph answered, an 11pt target in a 38pt circle.
+                    .contentShape(Circle())
             }
             .buttonStyle(.soulPressableChip)
         }
+    }
+
+    /// Ground for the top bar once the story scrolls under it. The bar floats
+    /// over the scroller, so brochure type used to slide straight through the
+    /// plain "‹ Back" and read as one jumble with it. Invisible at rest, where
+    /// the cover photo should stay open, and fading in as the cover title rises
+    /// toward the bar — by the time anything reaches it, it sinks into the
+    /// canvas colour first. Runs from the top edge of the screen through the
+    /// bar, then fades out below it.
+    private var topBarScrim: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Theme.bg.opacity(0.94), location: 0),
+                .init(color: Theme.bg.opacity(0.82), location: 0.7),
+                .init(color: Theme.bg.opacity(0), location: 1),
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+        .padding(.bottom, -44)
+        .ignoresSafeArea(edges: .top)
+        .opacity(min(1, max(0, Double(scrollY) - 80) / 180))
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var shareMessage: String {

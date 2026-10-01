@@ -12,16 +12,9 @@ final class AuthManager {
     enum State: Equatable {
         case initializing
         case authenticated
-        case failed(String)
-
-        static func == (lhs: State, rhs: State) -> Bool {
-            switch (lhs, rhs) {
-            case (.initializing, .initializing):   return true
-            case (.authenticated, .authenticated): return true
-            case (.failed(let a), .failed(let b)): return a == b
-            default:                               return false
-            }
-        }
+        /// No session could be established. Any session already stored on the
+        /// device is still there, so Retry can restore it once the network is.
+        case failed(ConnectionFailure)
     }
 
     private(set) var state: State = .initializing
@@ -35,6 +28,16 @@ final class AuthManager {
     /// plain *signup*. Cleared once the account is permanent.
     enum PendingConfirmation { case signup, emailChange }
     private(set) var pendingConfirmation: PendingConfirmation?
+
+    /// The address a confirmation started this launch is waiting on. Kept here
+    /// because the account sheet's view model dies with the sheet, and a guest
+    /// who closed it and came back used to get a blank create form: submitting
+    /// it again either hit the send rate limit or invalidated the code they
+    /// already had.
+    private var pendingConfirmationEmail: String?
+    /// Set when someone leaves the code panel for "Use a different sign-in",
+    /// so the sheet stops steering them back to it for the rest of the launch.
+    private var confirmationSetAside = false
 
     /// Email of the signed-in permanent account, if any.
     private(set) var email: String?
@@ -68,20 +71,32 @@ final class AuthManager {
         return false
     }
 
-    /// User-facing reason for the current failure, if any.
-    var failureMessage: String? {
-        if case .failed(let message) = state { return message }
+    /// Why there's no session, while `needsRetry` is true. The banner words
+    /// itself from this: "you're offline" and "we couldn't reach Soulfull"
+    /// send someone after different problems.
+    var connectionFailure: ConnectionFailure? {
+        if case .failed(let failure) = state { return failure }
         return nil
     }
 
+    /// True while `retry()` runs.
+    ///
+    /// Deliberately not a `state`. Retry used to set `.initializing`, which
+    /// turned `needsRetry` off: the banner slid away the moment Retry was
+    /// tapped and slid back on failure, so its spinner was never seen. `state`
+    /// now stays `.failed` until the attempt settles.
+    private(set) var isRetrying = false
+
     /// Re-attempt a session after a failed launch. Safe to call repeatedly.
     func retry() async {
-        state = .initializing
+        guard !isRetrying else { return }
+        isRetrying = true
+        defer { isRetrying = false }
         await initialize()
     }
 
     /// Restores an existing session or creates an anonymous one.
-    /// Called once from `AppState.initializeAuth()` at launch.
+    /// Called once from `AppState.initializeAuth()` at launch, and by `retry()`.
     func initialize() async {
         do {
             let session = try await supabase.auth.session
@@ -96,8 +111,57 @@ final class AuthManager {
                 Task { await self.refreshConfirmationState() }
             }
         } catch {
-            await signInAnonymously()
+            // Only a session that is really gone may be replaced by a guest.
+            //
+            // This used to send every error here to `signInAnonymously()`. An
+            // expired access token makes the SDK refresh it, and a refresh that
+            // fails on the *network* is thrown with the stored session left in
+            // place, so a two-second glitch at launch signed a member out: the
+            // new guest overwrote their session in the Keychain, and `apply`
+            // saw a new identity and cleared their history and program
+            // reminders. A session that merely couldn't be checked is kept,
+            // and the banner's Retry restores it.
+            switch SessionRestoreDecision(after: error) {
+            case .openGuest:
+                // First launch, a purged guest, a refresh token the server
+                // refused: there is nothing to keep.
+                await signInAnonymously()
+            case .keepSession(let failure):
+                Log.auth.error("Session restore failed, keeping the stored session: \(error.localizedDescription)")
+                state = .failed(failure)
+            }
         }
+    }
+
+    /// The address the account sheet should ask for a code for, or `nil` to
+    /// open on the form. Read when the sheet appears, so closing it (or
+    /// relaunching) no longer loses a sign-up halfway through.
+    ///
+    /// After a relaunch the only record is the stored guest's pending
+    /// `newEmail`, which the email-change upgrade leaves on the user until
+    /// it's confirmed. The no-session `signUp` fallback leaves nothing behind,
+    /// so it resumes only within the launch it started in.
+    var confirmationToResume: String? {
+        let stored = supabase.auth.currentUser
+        return PendingConfirmationRule.address(
+            hasAccount: hasAccount,
+            startedThisLaunch: pendingConfirmationEmail,
+            setAside: confirmationSetAside,
+            storedUser: stored.map {
+                PendingConfirmationRule.StoredUser(isAnonymous: $0.isAnonymous,
+                                                   newEmail: $0.newEmail,
+                                                   sentAt: $0.emailChangeSentAt)
+            },
+            now: .now
+        )
+    }
+
+    /// "Use a different sign-in": stop steering the sheet back to the code
+    /// panel for this launch. The pending change stays on the server, and a
+    /// new create replaces it.
+    func setAsidePendingConfirmation() {
+        pendingConfirmationEmail = nil
+        confirmationSetAside = true
     }
 
     // MARK: - Account creation / sign-in
@@ -127,9 +191,11 @@ final class AuthManager {
             _ = try await supabase.auth.signUp(email: email, password: password, data: metadata)
             pendingConfirmation = .signup
         }
+        pendingConfirmationEmail = email
+        confirmationSetAside = false
+        // With confirmation off (or already satisfied) the account is permanent
+        // here, and `apply` clears what was just marked pending.
         apply(supabase.auth.currentUser)
-        // Confirmation is off (or already satisfied) — nothing is pending.
-        if hasAccount { pendingConfirmation = nil }
     }
 
     // MARK: - Email confirmation
@@ -158,6 +224,7 @@ final class AuthManager {
                 let response = try await supabase.auth.verifyOTP(email: email, token: digits, type: type)
                 apply(response.session?.user ?? response.user)
                 pendingConfirmation = nil
+                pendingConfirmationEmail = nil
                 return
             } catch {
                 lastError = error
@@ -208,7 +275,6 @@ final class AuthManager {
             } else {
                 apply(user)
             }
-            if hasAccount { pendingConfirmation = nil }
         } catch {
             Log.auth.debug("Confirmation refresh skipped: \(error.localizedDescription)")
         }
@@ -272,6 +338,14 @@ final class AuthManager {
     /// at someone else's address.
     func pushOnboardingAnswers() async {
         guard let id = userID, hasAccount else { return }
+        // A device with no answers has nothing to say, and the upsert writes
+        // every field, so pushing would blank the row. That is exactly the
+        // device of a member who signs in from Welcome before onboarding has
+        // asked anything, and `mergeProfile` treats a row with a name but no
+        // answers as new and pushes.
+        let hasAnswers = !settings.userName.isEmpty || !settings.intentions.isEmpty
+            || !settings.bodyState.isEmpty || !settings.frequency.isEmpty
+        guard hasAnswers else { return }
         do {
             try await SupabaseService.shared.upsertProfile(
                 Profile(
@@ -420,6 +494,8 @@ final class AuthManager {
         await SupabaseService.shared.invalidateCache()
         endConfirmationWatch()
         pendingConfirmation = nil
+        pendingConfirmationEmail = nil
+        confirmationSetAside = false
         // The answers describe the person who is leaving, not this phone. Left
         // in place they were shown to whoever signed in next AND uploaded to
         // their profile row by AccountViewModel.mergeProfile — see
@@ -462,8 +538,7 @@ final class AuthManager {
             apply(session.user)
             state = .authenticated
         } catch {
-            let msg = AppError.authFailure(error).localizedDescription
-            state = .failed(msg)
+            state = .failed(ConnectionFailure(error))
             Log.auth.error("Anonymous sign-in failed: \(error.localizedDescription)")
         }
     }
@@ -482,6 +557,12 @@ final class AuthManager {
         isAnonymous = (user?.isAnonymous ?? true) && !confirmed
         email = hasEmail ? mail : nil
         if user != nil { state = .authenticated }
+        if !isAnonymous {
+            // A permanent account: whatever confirmation was pending is done,
+            // or belonged to a guest this account replaced.
+            pendingConfirmation = nil
+            pendingConfirmationEmail = nil
+        }
 
         // Device-local private data is namespaced per member, so tell the store
         // whose data is now in scope. It hands a guest's writing forward when
@@ -501,5 +582,113 @@ final class AuthManager {
             ProgramStore.shared.clear()
             ProgramNotifications.cancelAll()
         }
+    }
+}
+
+// MARK: - Launch-session rules
+
+/// Why there's no session, in the terms the banner needs.
+enum ConnectionFailure: Equatable, Sendable {
+    /// This device has no connection (`Error.isOffline`).
+    case offline
+    /// The connection is there but Soulfull didn't answer usefully: a
+    /// timeout, our backend erroring, a host that can't be reached.
+    case unreachable
+
+    init(_ error: any Error) {
+        self = error.isOffline ? .offline : .unreachable
+    }
+}
+
+/// What a failed session restore at launch means for the session stored on
+/// this device. Decided from the error alone so the rule can be tested
+/// without a network or a Keychain.
+///
+/// Leaning toward `keepSession` is the safe side. Keeping a dead session costs
+/// one more tap on Retry; replacing a live one signs a member out and clears
+/// their device state.
+enum SessionRestoreDecision: Equatable, Sendable {
+    /// There's no usable session: none was stored (a first launch), or the
+    /// server refused its refresh token (signed out elsewhere, a purged guest,
+    /// a deleted account). Open a fresh guest.
+    case openGuest
+    /// The session couldn't be checked. It may be perfectly good, so keep it
+    /// and let Retry try again.
+    case keepSession(ConnectionFailure)
+
+    /// Statuses that mean GoTrue read the refresh token and said no. 408 and
+    /// 429 are 4xx too, but they say "not now", not "never".
+    private static let refusingStatuses: Set<Int> = [400, 401, 403]
+
+    /// Codes that mean the session is gone for good. The SDK already turns
+    /// the first four into `.sessionMissing` and deletes the session itself;
+    /// they're repeated so a change in that mapping can't strand anyone on a
+    /// session that will never refresh.
+    private static let goneCodes: Set<ErrorCode> = [
+        .sessionNotFound, .sessionExpired, .refreshTokenNotFound,
+        .refreshTokenAlreadyUsed, .userNotFound,
+    ]
+
+    init(after error: any Error) {
+        if let authError = error as? AuthError {
+            switch authError {
+            case .sessionMissing:
+                self = .openGuest
+                return
+            case let .api(_, code, _, response):
+                if Self.goneCodes.contains(code) {
+                    self = .openGuest
+                    return
+                }
+                // `.unexpectedFailure` is the SDK's label for a body it couldn't
+                // read as a GoTrue error: a captive portal's login page, a
+                // proxy's 403. That status is about the network, not the token.
+                if code != .unexpectedFailure, Self.refusingStatuses.contains(response.statusCode) {
+                    self = .openGuest
+                    return
+                }
+            default:
+                break
+            }
+        }
+        self = .keepSession(ConnectionFailure(error))
+    }
+}
+
+/// Whether an email confirmation is still waiting, and on which address, so
+/// the account sheet can open on the code panel instead of a blank form.
+enum PendingConfirmationRule {
+
+    /// What the rule reads from the session stored on this device.
+    struct StoredUser: Equatable, Sendable {
+        var isAnonymous: Bool
+        /// The address a guest's upgrade is waiting to confirm (`new_email`).
+        var newEmail: String?
+        /// When that confirmation email went out (`email_change_sent_at`).
+        var sentAt: Date?
+    }
+
+    /// How long after the email a relaunched app still reopens the code panel
+    /// by itself. The code may have expired sooner, but the panel can send a
+    /// new one to the same address. After a day, someone who abandoned the
+    /// sign-up shouldn't be steered back into it every time the sheet opens.
+    static let resumeWindow: TimeInterval = 24 * 60 * 60
+
+    static func address(hasAccount: Bool, startedThisLaunch: String?, setAside: Bool,
+                        storedUser: StoredUser?, now: Date) -> String? {
+        guard !hasAccount, !setAside else { return nil }
+        if let started = startedThisLaunch?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !started.isEmpty {
+            return started
+        }
+        guard let user = storedUser, user.isAnonymous,
+              let pending = user.newEmail?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !pending.isEmpty,
+              // With no send time there's no telling how stale it is, and no
+              // sign an email ever went out: the form is the safer opening.
+              let sentAt = user.sentAt,
+              now.timeIntervalSince(sentAt) < resumeWindow
+        else { return nil }
+        return pending
     }
 }

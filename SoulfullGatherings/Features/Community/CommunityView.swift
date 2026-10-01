@@ -262,12 +262,16 @@ struct CommunityView: View {
     @ViewBuilder
     private var feed: some View {
         let lines = vm.activity
-        if vm.isLoadingActivity && lines.isEmpty {
+        // "Quiet for now" is only true once the feed has answered, not on the
+        // frame before its load has even started — and the Friends feed can't
+        // answer before the friends have (`isAwaitingFeed`). A refresh over
+        // lines already on screen stays quiet: the spinner is for empty only.
+        if vm.isAwaitingFeed && lines.isEmpty {
             ProgressView()
                 .tint(Theme.ink)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 50)
-        } else if let failure = vm.activityFailure, lines.isEmpty {
+        } else if let failure = vm.feedFailure, lines.isEmpty {
             unavailable(failure)
         } else if lines.isEmpty {
             emptyState
@@ -323,9 +327,13 @@ struct CommunityView: View {
             emptyCard(title: "Quiet for now",
                       detail: "Finish a practice and you'll be the first line here. Everyone's finished sessions, movement and recipes gather in this feed.")
         case .friends where vm.friends.isEmpty:
+            // Through the gate like the Friends button: the Friends screen is
+            // personal, whichever way it's reached.
             emptyCard(title: "Practice alongside people you know",
                       detail: "Add the people you practise with, and what they finish will gather here — and yours with them.",
-                      action: "Find friends", perform: onOpenFriends)
+                      action: "Find friends") {
+                if isMember { onOpenFriends() } else { requireAccount(onOpenFriends) }
+            }
         case .friends:
             emptyCard(title: "Nothing from your friends yet",
                       detail: "When someone you know finishes a practice, it shows up here.")

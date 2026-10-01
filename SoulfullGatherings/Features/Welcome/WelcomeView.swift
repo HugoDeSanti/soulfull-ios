@@ -4,16 +4,22 @@
 //
 //  Splash (logo breathing over the tropical backdrop) → 3 explainer slides.
 //  The backdrop pans like a slow camera move as slides advance; copy rises
-//  out of a blur; a folio counter + hairline segments replace dots.
+//  out of a blur; a folio counter + hairline segments replace dots. Under
+//  Reduce Motion the camera holds still and copy simply fades.
+//
+//  "I already have an account" offers a sign-in sheet. Closing it leaves
+//  them here, free to Begin as a guest: it is an offer, not a gate.
 //
 
 import SwiftUI
 
 struct WelcomeView: View {
     @Environment(AppState.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 0 = splash, 1...3 = explainer slides.
     @State private var step: Int = 0
+    @State private var showSignIn = false
 
     private struct Slide: Identifiable {
         let id: String
@@ -48,10 +54,10 @@ struct WelcomeView: View {
 
             if step == 0 {
                 splash
-                    .transition(.editorialRise)
+                    .transition(rise)
             } else {
                 slideStack
-                    .transition(.editorialRise)
+                    .transition(rise)
             }
         }
         .contentShape(Rectangle())
@@ -61,8 +67,17 @@ struct WelcomeView: View {
                 step = 1
             }
         }
-        .animation(.spring(response: 0.65, dampingFraction: 0.85), value: step)
+        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.65, dampingFraction: 0.85),
+                   value: step)
+        .sheet(isPresented: $showSignIn, onDismiss: { app.returnFromWelcomeSignIn() }) {
+            AccountView(mode: .signIn)
+        }
     }
+
+    /// The blur-rise and the paired page handoff, or a plain fade under
+    /// Reduce Motion: both move copy 14–22pt as well as blurring it.
+    private var rise: AnyTransition { reduceMotion ? .opacity : .editorialRise }
+    private var page: AnyTransition { reduceMotion ? .opacity : .editorialPage }
 
     // MARK: - Splash
 
@@ -86,6 +101,7 @@ struct WelcomeView: View {
                 .scaledToFit()
                 .frame(width: 220, height: 220)
                 .breathing(scale: 0.93...1.07, opacity: 0.84...1.0, period: 5.5)
+                .accessibilityLabel("Soulfull")
 
             VStack {
                 Spacer()
@@ -116,6 +132,8 @@ struct WelcomeView: View {
                     .resizable().scaledToFit()
                     .frame(width: 56, height: 56)
                     .opacity(0.88)
+                    // The splash already named it; here it's the masthead.
+                    .accessibilityHidden(true)
                 Spacer()
                 folio
             }
@@ -140,7 +158,7 @@ struct WelcomeView: View {
             .padding(.horizontal, 30)
             .onPhoto()
             .id(slide.id)
-            .transition(.editorialPage)
+            .transition(page)
 
             // Hairline progress segments
             segments
@@ -156,16 +174,25 @@ struct WelcomeView: View {
                     }
                 }
                 if isLast {
+                    // Offers sign-in. This used to call `beginOnboarding()`,
+                    // exactly like Begin, so a returning member answered four
+                    // questions and landed as a guest. Where a sign-in leads
+                    // is `AppState.returnFromWelcomeSignIn()`.
                     Button {
-                        app.beginOnboarding()
+                        Haptics.tap()
+                        showSignIn = true
                     } label: {
                         Text("I already have an account")
                             .font(Theme.body(13))
                             .foregroundStyle(Color.white.opacity(0.6))
-                            .padding(12)
+                            .padding(.horizontal, 12)
+                            // 44pt tall, and tappable between the letters
+                            // (gotcha #5).
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.soulPressableQuiet)
-                    .transition(.editorialRise)
+                    .transition(rise)
                 }
             }
             .padding(.horizontal, 30)
@@ -232,5 +259,10 @@ struct WelcomeView: View {
 }
 
 #Preview {
-    WelcomeView().environment(AppState())
+    let app = AppState()
+    // The sign-in sheet reads both.
+    return WelcomeView()
+        .environment(app)
+        .environment(app.auth)
+        .environment(app.settings)
 }

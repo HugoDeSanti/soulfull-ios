@@ -43,6 +43,11 @@ struct SGPrimaryButton: View {
             .contentShape(Capsule())
         }
         .buttonStyle(SoulPressableStyle(scale: 0.975, hapticOnPress: false, dim: false))
+        // The dimming above is only how it looks. Without this VoiceOver
+        // announced a live button that did nothing when activated, and the
+        // press still squished. The look is unchanged: the label draws its own
+        // dim, and the style doesn't read `isEnabled`.
+        .disabled(!enabled)
     }
 }
 
@@ -103,6 +108,8 @@ struct SectionLabel: View {
 // MARK: - Blurred photo backdrop (welcome / onboarding / home / finish)
 
 struct PhotoBackdrop: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// Either a bundled asset name or a `bucket/path.jpg` in Supabase Storage —
     /// `ImageSource` routes on the shape, so the static backdrops ("home-bg")
     /// and a data-driven retreat photo both arrive here as a plain String and
@@ -112,6 +119,7 @@ struct PhotoBackdrop: View {
     var blur: CGFloat = 5
     var darken: Double = 0.5
     /// Horizontal camera pan, -1…1. Animate across paged content for parallax.
+    /// Ignored under Reduce Motion: the camera holds still.
     var pan: CGFloat = 0
     /// Extra darkening across the top band, fading out by `topScrimHeight`.
     ///
@@ -123,7 +131,11 @@ struct PhotoBackdrop: View {
     var topScrimHeight: CGFloat = 340
 
     var body: some View {
-        ZStack {
+        // Under Reduce Motion the photo neither pans nor zooms between pages:
+        // a 10% zoom plus a sideways slide is exactly the large, unrequested
+        // movement the setting asks apps to drop.
+        let pan = reduceMotion ? 0 : self.pan
+        return ZStack {
             // Solid floor so the blur edges don't bleed transparent.
             Theme.bg
             // The image lives in an overlay of a proposal-sized Color so

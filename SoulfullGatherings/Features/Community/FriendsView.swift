@@ -137,6 +137,35 @@ struct FriendsView: View {
                     .tint(Theme.inkSoft)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
+            } else if let failure = vm.searchFailure, vm.searchResults.isEmpty {
+                // Not "No one by that name yet": the directory never answered.
+                HStack(spacing: 10) {
+                    Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.circle")
+                        .font(.system(size: 13, weight: .medium))
+                    Text(failure == .offline
+                         ? "You're offline. Reconnect to search for members."
+                         : "Search isn't working at our end just now.")
+                        .font(Theme.body(13))
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Button {
+                        vm.retrySearch()
+                    } label: {
+                        Text("Try again")
+                            .font(Theme.body(13, weight: .medium))
+                            .foregroundStyle(Theme.honey)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.soulPressableQuiet)
+                }
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .soulGlassCard()
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("search-failure")
             } else if vm.searchResults.isEmpty {
                 Text("No one by that name yet. Names match what people entered when they joined.")
                     .font(Theme.body(13))

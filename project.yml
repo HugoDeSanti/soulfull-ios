@@ -143,6 +143,13 @@ targets:
           - Geist-Bold.otf
         SupabaseHost: $(SUPABASE_HOST)
         SupabaseAnonKey: $(SUPABASE_ANON_KEY)
+        # Audio sessions keep playing with the screen locked or the app in the
+        # background, the way any guided meditation is listened to. Without it
+        # iOS suspends the app, and the session, the moment the phone locks.
+        # Only the player's `.playback` audio session uses it; video still
+        # pauses in the background, which AVFoundation does by itself.
+        UIBackgroundModes:
+          - audio
     dependencies:
       - package: Supabase
         product: Supabase

@@ -28,8 +28,15 @@ struct PracticeBackBar: View {
                         .underline()
                 }
                 .foregroundStyle(Theme.ink)
+                // A 44pt-tall target, gap included — the link answered only on
+                // its chevron and its 13pt text. The negative padding below
+                // gives the layout its old height back.
+                .padding(.vertical, 14)
+                .padding(.trailing, 16)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .padding(.vertical, -14)
             .accessibilityIdentifier("back-bar")
             Spacer()
         }

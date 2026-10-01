@@ -49,6 +49,24 @@ final class GatheringsTabTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Back")).firstMatch
     }
 
+    /// One button per name in the stack, labelled "<name>, <country>" (see
+    /// `RetreatsStackTests.rows`).
+    private func rows(_ app: XCUIApplication) -> [XCUIElement] {
+        app.buttons
+            .matching(NSPredicate(format: "label MATCHES %@", "^[^,]+, [^,]+$"))
+            .allElementsBoundByIndex
+    }
+
+    private func waitForLabel(_ element: XCUIElement, toSatisfy test: @escaping (String) -> Bool,
+                              timeout: TimeInterval = 10) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, test(element.label) { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        return false
+    }
+
     /// Scrolls Home until `element` can be tapped. The gatherings shelf is the
     /// last thing on the page.
     private func scrollHome(to element: XCUIElement, _ app: XCUIApplication) {
@@ -81,6 +99,61 @@ final class GatheringsTabTests: XCTestCase {
         explore.tap()
         XCTAssertTrue(app.buttons["Request a place"].waitForExistence(timeout: 15),
                       "The card didn't open the retreat")
+    }
+
+    /// A tab keeps its state while another is showing. Tabs used to be rebuilt
+    /// from blank on every tap, which flashed the empty state ("New gatherings
+    /// are on their way") before the catalog arrived and dropped the member
+    /// back on the first retreat. The flash is too quick to catch here; the
+    /// stack still being where it was left is the proof the tab wasn't rebuilt.
+    func testTheStackKeepsItsPlaceAcrossATabSwitch() throws {
+        let app = launch(tab: "gatherings")
+        let folio = folio(app)
+        XCTAssertTrue(folio.waitForExistence(timeout: 30), "The retreats stack never loaded")
+        let names = rows(app)
+        guard names.count >= 2 else {
+            throw XCTSkip("Needs two upcoming retreats to scroll between; the catalog has \(names.count)")
+        }
+        names[0].swipeUp(velocity: .slow)
+        XCTAssertTrue(waitForLabel(folio) { !$0.hasPrefix("Retreat 1 of") },
+                      "Scrolling didn't move the focus — folio still reads \(folio.label)")
+        let leftOn = folio.label
+        shot(app, "05-stack-scrolled")
+
+        app.buttons["Home"].tap()
+        XCTAssertTrue(app.buttons["Home"].isSelected, "The Home tab didn't open")
+        app.buttons["Gatherings"].tap()
+
+        XCTAssertTrue(folio.waitForExistence(timeout: 5), "The stack wasn't there on coming back")
+        XCTAssertFalse(app.staticTexts["New gatherings are on their way"].exists,
+                       "Coming back to the tab showed the empty catalog")
+        XCTAssertEqual(folio.label, leftOn, "Coming back to the tab rebuilt the stack from the top")
+        shot(app, "06-stack-after-tab-switch")
+    }
+
+    /// The shelf hand-off into a Gatherings tab that is already open (and so
+    /// already has its catalog). The retreat is pushed in the same update the
+    /// tab comes back, the case that once pinned the CPU at 100% on a stack
+    /// that had never been on screen.
+    func testHomeShelfCardOpensTheRetreatInAnAlreadyOpenGatheringsTab() {
+        let app = launch(tab: "gatherings")
+        XCTAssertTrue(folio(app).waitForExistence(timeout: 30), "The retreats stack never loaded")
+
+        app.buttons["Home"].tap()
+        let card = app.buttons
+            .matching(NSPredicate(format: "label ENDSWITH %@", " guests"))
+            .firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 30), "No retreat card on Home")
+        scrollHome(to: card, app)
+        card.tap()
+
+        XCTAssertTrue(app.buttons["Request a place"].waitForExistence(timeout: 15),
+                      "Tapping a retreat on Home didn't open it in the open Gatherings tab")
+        shot(app, "07-retreat-from-home-into-open-tab")
+
+        back(app).tap()
+        XCTAssertTrue(folio(app).waitForExistence(timeout: 15), "Back from the retreat didn't land on the stack")
+        XCTAssertTrue(app.buttons["Gatherings"].isSelected, "Back landed outside the Gatherings tab")
     }
 
     /// Home's "All gatherings" switches to the tab rather than pushing a second

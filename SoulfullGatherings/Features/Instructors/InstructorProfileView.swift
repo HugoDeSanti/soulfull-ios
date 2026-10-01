@@ -87,10 +87,10 @@ struct InstructorProfileView: View {
         // sign-in, which is also when a gated Follow is replayed.
         .task(id: "\(auth.userID?.uuidString ?? "guest")-\(auth.hasAccount)") { await vm.load() }
         .task { await history.refresh() }
-        .onChange(of: nowPlaying) { _, new in
-            guard new == nil else { return }
-            Task { await history.refresh(force: true) }
-        }
+        // No re-read when the player closes: its last write lands after
+        // `nowPlaying` goes nil and is folded into `history` as it's made, and
+        // a forced read racing it could put the older row back — see
+        // `PracticeListView`.
         .sheet(item: $nowPlaying) { session in
             PracticePlayerView(media: session.media)
         }
@@ -253,8 +253,11 @@ struct InstructorProfileView: View {
                     .frame(height: 38)
                     .soulGlassCapsule()
             } else {
+                // Quieted until the numbers land: "Follow" may not be true
+                // yet. Still tappable — the model reads them first and never
+                // follows on a guess — so a failed read doesn't strand it.
                 FollowButton(following: vm.isFollowing, busy: vm.isFollowBusy,
-                             name: instructor.name) {
+                             settled: vm.social != nil, name: instructor.name) {
                     let follow = !vm.isFollowing
                     follow ? Haptics.bump() : Haptics.tap()
                     gated { Task { await vm.setFollowing(follow) } }
@@ -302,6 +305,12 @@ struct InstructorProfileView: View {
                         .font(Theme.body(13, weight: .medium))
                         .underline()
                         .foregroundStyle(Theme.ink)
+                        // A 44pt target around a ~17pt word (gotcha #5), padded
+                        // out and back so the page's spacing doesn't move.
+                        .frame(minWidth: 44, alignment: .leading)
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, -14)
                 }
                 .buttonStyle(.plain)
             }
@@ -628,6 +637,9 @@ struct InstructorProfileView: View {
 private struct FollowButton: View {
     let following: Bool
     let busy: Bool
+    /// Whether the member's follow state is known. Until it is, the button is
+    /// drawn quiet, like `busy`, but still answers a tap.
+    let settled: Bool
     let name: String
     let action: () -> Void
 
@@ -652,11 +664,12 @@ private struct FollowButton: View {
             }
             .modifier(GlassWhenFollowing(enabled: following))
             .contentShape(Capsule())
-            .opacity(busy ? 0.6 : 1)
+            .opacity(busy || !settled ? 0.6 : 1)
         }
         .buttonStyle(.soulPressableQuiet)
         .disabled(busy)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: following)
+        .animation(.easeOut(duration: 0.25), value: settled)
         .accessibilityLabel(following ? "Following" : "Follow")
         .accessibilityHint(following ? "Unfollows \(name)" : "Follows \(name)")
         .accessibilityIdentifier("instructor-follow")

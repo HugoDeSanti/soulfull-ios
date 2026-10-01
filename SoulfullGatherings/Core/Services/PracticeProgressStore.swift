@@ -166,7 +166,7 @@ final class PracticeProgressStore {
 
     /// The You tab's numbers, and the streak Home names. Computed from the
     /// ledger on each read; read it once per `body`.
-    var stats: PracticeStats { PracticeStats(ledger.values) }
+    var stats: PracticeStats { PracticeStats(ledger.values, now: AppClock.shared.now) }
 
     /// The current streak — see `PracticeStats` for what makes a day count.
     /// Home's "N days in a row" and the You tab read the same figure, so the
@@ -175,7 +175,7 @@ final class PracticeProgressStore {
 
     /// Practices touched in the last seven days.
     var practicesThisWeek: Int {
-        let cutoff = Date.now.addingTimeInterval(-7 * 24 * 3600)
+        let cutoff = AppClock.shared.now.addingTimeInterval(-7 * 24 * 3600)
         return progress.values.filter { $0.lastPlayedAt >= cutoff }.count
     }
 

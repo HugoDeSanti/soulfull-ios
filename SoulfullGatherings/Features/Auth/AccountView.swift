@@ -71,12 +71,31 @@ struct AccountView: View {
             closeButton
         }
         .preferredColorScheme(.dark)
+        // Swiping the sheet away mid-request used to strand the result on a
+        // view model nobody was showing: a sign-up that needed confirming
+        // never reached the panel, or the watch below.
+        .interactiveDismissDisabled(vm.isWorking)
+        .onAppear {
+            // A confirmation started earlier (this sheet was closed, or the app
+            // relaunched) goes straight back to its code panel. A fresh create
+            // form here invited a second submit, which either hit the send
+            // rate limit or invalidated the code they already had.
+            if !vm.awaitingConfirmation, let address = auth.confirmationToResume {
+                vm.resumeConfirmation(for: address)
+            }
+        }
         .onChange(of: auth.hasAccount) { _, hasAccount in
-            // The account went permanent while this sheet was open — the emailed
-            // link was tapped (deep link), the code was accepted, or the watch
-            // below noticed a confirmation made on another device. Either way,
-            // close back to what they were doing.
-            if hasAccount { dismiss() }
+            // The account went permanent while this sheet was open: the emailed
+            // link was tapped (deep link), or the watch below noticed a
+            // confirmation made on another device. Close back to what they
+            // were doing.
+            //
+            // Not while a request of this sheet's own is running. That request
+            // dismisses when it's done (see `trySubmit`). Closing here cut in
+            // ahead of the profile hydration that follows a sign-in, so the
+            // gate replayed the tap before the saved answers had arrived, and
+            // Welcome would route on a name that wasn't there yet.
+            if hasAccount, !vm.isWorking { dismiss() }
         }
         .onChange(of: vm.awaitingConfirmation) { _, awaiting in
             if awaiting {
@@ -139,13 +158,15 @@ struct AccountView: View {
             // this panel with no way back to the other sign-in options.
             Button {
                 Haptics.tap()
-                vm.awaitingConfirmation = false
+                auth.setAsidePendingConfirmation()
+                vm.leaveConfirmation()
             } label: {
                 Text("Use a different sign-in")
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.ink)
                     .underline()
                     .padding(.vertical, 10)
+                    .widerHitArea(vertical: 4)
             }
             .buttonStyle(.plain)
         }
@@ -186,6 +207,7 @@ struct AccountView: View {
                 .foregroundStyle(vm.resendCooldown > 0 ? Theme.muted : Theme.ink)
                 .underline(vm.resendCooldown == 0)
                 .padding(.vertical, 6)
+                .widerHitArea(vertical: 8)
         }
         .buttonStyle(.plain)
         .disabled(vm.resendCooldown > 0 || vm.isWorking)
@@ -199,6 +221,8 @@ struct AccountView: View {
                 .resizable().scaledToFit()
                 .frame(width: 64, height: 64)
                 .opacity(0.9)
+                // Decorative: the title under it says where they are.
+                .accessibilityHidden(true)
             Text(vm.mode.title)
                 .font(Theme.headline(30))
                 .foregroundStyle(Theme.ink)
@@ -222,9 +246,8 @@ struct AccountView: View {
             disabled: vm.isWorking,
             onCredential: { credential in
                 Task {
-                    if case .signedIn = await vm.submitApple(credential, auth: auth, settings: settings) {
-                        dismiss()
-                    }
+                    let outcome = await vm.submitApple(credential, auth: auth, settings: settings)
+                    if outcome == .signedIn || auth.hasAccount { dismiss() }
                 }
             },
             onFailure: { vm.reportAppleFailure($0) }
@@ -253,33 +276,59 @@ struct AccountView: View {
     // MARK: - Fields
 
     private var fields: some View {
-        VStack(spacing: 14) {
-            if vm.mode == .createAccount {
-                inputRow(icon: "person", placeholder: "Your name", text: $vm.fullName, field: .name)
+        let creating = vm.mode == .createAccount
+        return VStack(spacing: 14) {
+            if creating {
+                inputRow(icon: "person", placeholder: "Your name", text: $vm.fullName, field: .name,
+                         contentType: .name)
                     .textInputAutocapitalization(.words)
                     .submitLabel(.next)
                     .onSubmit { focus = .email }
             }
-            inputRow(icon: "envelope", placeholder: "Email", text: $vm.email, field: .email)
+            // `.username` on the address, not `.emailAddress`: it's what Password
+            // AutoFill pairs a saved (or newly suggested) password with.
+            inputRow(icon: "envelope", placeholder: "Email", text: $vm.email, field: .email,
+                     contentType: .username)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.next)
                 .onSubmit { focus = .password }
-            inputRow(icon: "lock", placeholder: "Password", text: $vm.password, field: .password, secure: true)
+            // `.newPassword` offers a strong password on create (20 characters,
+            // well past the rule); `.password` fills a saved one on sign-in.
+            inputRow(icon: "lock", placeholder: "Password", text: $vm.password, field: .password,
+                     contentType: creating ? .newPassword : .password,
+                     hint: creating ? "At least 8 characters" : "", secure: true)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
                 .submitLabel(.go)
                 .onSubmit { Task { await trySubmit() } }
+            if creating {
+                // The rule `canSubmit` enforces. Without it the button simply
+                // stayed dim at seven characters, with nothing saying why.
+                Text("At least 8 characters")
+                    .font(Theme.body(12))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 18)
+                    .padding(.top, -6)
+                    .onPhoto()
+                    // Spoken as the password field's hint instead.
+                    .accessibilityHidden(true)
+            }
         }
     }
 
     @ViewBuilder
     private func inputRow(icon: String, placeholder: String, text: Binding<String>,
-                          field: Field, secure: Bool = false) -> some View {
+                          field: Field, contentType: UITextContentType,
+                          hint: String = "", secure: Bool = false) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Theme.muted)
                 .frame(width: 22)
+                .accessibilityHidden(true)
             Group {
                 if secure {
                     SecureField("", text: text, prompt: prompt(placeholder))
@@ -288,9 +337,14 @@ struct AccountView: View {
                 }
             }
             .focused($focus, equals: field)
+            .textContentType(contentType)
             .font(Theme.body(16))
             .foregroundStyle(Theme.ink)
             .tint(Theme.ink)
+            // The empty title left VoiceOver with nothing to call the field
+            // once it had text in it; the prompt is only read while empty.
+            .accessibilityLabel(placeholder)
+            .accessibilityHint(hint)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
@@ -347,6 +401,7 @@ struct AccountView: View {
                     .underline()
             }
             .font(Theme.body(13))
+            .widerHitArea(vertical: 14)
         }
         .buttonStyle(.plain)
     }
@@ -368,19 +423,35 @@ struct AccountView: View {
         .padding(.top, 16)
     }
 
+    /// Dismisses on success, and also when the account went permanent by
+    /// another route (the emailed link, the watch) while this request was
+    /// running, which `onChange(of: auth.hasAccount)` stands aside for.
+    /// Otherwise the VM drives the confirmation panel and the error banner.
     private func trySubmit() async {
         focus = nil
-        switch await vm.submit(auth: auth, settings: settings) {
-        case .signedIn:
-            dismiss()
-        case .confirmationRequired, .cancelled, .failed:
-            break // VM drives the confirmation panel / error banner
-        }
+        let outcome = await vm.submit(auth: auth, settings: settings)
+        if outcome == .signedIn || auth.hasAccount { dismiss() }
     }
 
     private func tryConfirm() async {
         focus = nil
-        if case .signedIn = await vm.confirmCode(auth: auth, settings: settings) { dismiss() }
+        let outcome = await vm.confirmCode(auth: auth, settings: settings)
+        if outcome == .signedIn || auth.hasAccount { dismiss() }
+    }
+}
+
+private extension View {
+    /// Grows a line-of-text button's hit area to about 44pt tall without
+    /// moving anything: the padding widens the tappable shape, and the
+    /// negative padding hands the room back to the layout. Plain-style buttons
+    /// answer only where they draw, so these were 16–36pt targets
+    /// (gotcha #5). `vertical` is what each side needs to reach 44.
+    func widerHitArea(vertical: CGFloat, horizontal: CGFloat = 10) -> some View {
+        padding(.vertical, vertical)
+            .padding(.horizontal, horizontal)
+            .contentShape(Rectangle())
+            .padding(.vertical, -vertical)
+            .padding(.horizontal, -horizontal)
     }
 }
 

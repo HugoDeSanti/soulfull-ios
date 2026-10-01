@@ -10,9 +10,44 @@
 //  URL resolution: absolute http(s) paths play directly; bucket-relative
 //  paths are signed via `SupabaseService.signedMediaURL`.
 //
+//  Plays in a `.playback` audio session (`PlaybackAudioSession`), so the
+//  ringer switch doesn't silence it and an audio session carries on with the
+//  phone locked, with its card and controls on the lock screen
+//  (`AudioTransport`).
+//
 
 import SwiftUI
 import AVKit
+import MediaPlayer
+
+/// Why a session couldn't be opened — see `Error.isOffline`.
+private enum PlayerLoadFailure {
+    case offline
+    case failed
+
+    init(offline: Bool) { self = offline ? .offline : .failed }
+
+    var title: String {
+        switch self {
+        case .offline: "No internet connection"
+        case .failed:  "Couldn't load this session"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .offline: "You'll need to be online to play this session. Reconnect and try again."
+        case .failed:  "Something went wrong at our end. Please try again in a moment."
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .offline: "wifi.slash"
+        case .failed:  "exclamationmark.circle"
+        }
+    }
+}
 
 struct PracticePlayerView: View {
     let media: MediaItem
@@ -20,12 +55,16 @@ struct PracticePlayerView: View {
 
     @State private var player: AVPlayer?
     @State private var transport: AudioTransport?
-    @State private var loadError: String?
+    @State private var loadFailure: PlayerLoadFailure?
+    /// Bumped by "Try again": the load is `.task(id:)` on it, so a bump
+    /// re-runs it.
+    @State private var attempt = 0
     @State private var tones: (top: Color, mid: Color, base: Color)?
     /// Counts what is actually listened to and heartbeats it to the ledger the
-    /// creator payouts are drawn from. Built in `resolveAndPlay` (the `@State`
-    /// initialiser can't see `media`) and one per presentation, so each listen
-    /// is its own row. See `PracticeActivity.swift`.
+    /// creator payouts are drawn from. Built in `resolveAndPlay` once the
+    /// media has resolved (the `@State` initialiser can't see `media`) and one
+    /// per presentation, so each listen is its own row. See
+    /// `PracticeActivity.swift`.
     @State private var reporter: PlaybackReporter?
 
     var body: some View {
@@ -38,8 +77,8 @@ struct PracticePlayerView: View {
                 } else {
                     audioStage
                 }
-            } else if let loadError {
-                errorView(loadError)
+            } else if let loadFailure {
+                errorView(loadFailure)
             } else {
                 AuroraBackground(speed: 1.2)
                     .ignoresSafeArea()
@@ -62,13 +101,23 @@ struct PracticePlayerView: View {
             .padding(.top, 18)
         }
         .preferredColorScheme(.dark)
-        .task { await resolveAndPlay() }
+        .task(id: attempt) { await resolveAndPlay() }
         .onAppear { tones = ArtworkTones.extract(from: media.imageUrl) }
-        .onDisappear {
-            player?.pause()
-            transport?.stop()
-            reporter?.finish()
-        }
+        .onDisappear { tearDown() }
+    }
+
+    /// Everything the player started, stopped. The reporter's final write
+    /// reads only its own meter, so the item can go after it — and must go
+    /// before the audio session is handed back: deactivating a session that
+    /// still has a player item attached fails as busy, and whatever the member
+    /// was listening to before wouldn't be told it can resume.
+    private func tearDown() {
+        player?.pause()
+        transport?.stop()
+        reporter?.finish()
+        guard let player else { return }
+        player.replaceCurrentItem(with: nil)
+        PlaybackAudioSession.deactivate()
     }
 
     // MARK: - Audio stage
@@ -150,7 +199,7 @@ struct PracticePlayerView: View {
 
     private func transportButtons(_ transport: AudioTransport) -> some View {
         HStack(spacing: 44) {
-            skipButton(icon: "gobackward.15", by: -15, transport: transport)
+            skipButton(icon: "gobackward.15", by: -AudioTransport.skipInterval, transport: transport)
 
             Button {
                 Haptics.bump()
@@ -167,7 +216,7 @@ struct PracticePlayerView: View {
             .buttonStyle(SoulPressableStyle(scale: 0.92, hapticOnPress: false, dim: false))
             .accessibilityLabel(transport.isPlaying ? "Pause" : "Play")
 
-            skipButton(icon: "goforward.15", by: 15, transport: transport)
+            skipButton(icon: "goforward.15", by: AudioTransport.skipInterval, transport: transport)
         }
     }
 
@@ -179,6 +228,9 @@ struct PracticePlayerView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .frame(width: 52, height: 52)
+                // Gotcha #5: a framed glyph answers only where it draws, so
+                // the 52pt circle around it was dead.
+                .contentShape(Circle())
         }
         .buttonStyle(.soulPressableChip)
         .accessibilityLabel(seconds < 0 ? "Back 15 seconds" : "Forward 15 seconds")
@@ -217,15 +269,35 @@ struct PracticePlayerView: View {
         }
     }
 
-    private func errorView(_ message: String) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "wifi.exclamationmark")
+    /// The session couldn't be opened: why — offline, or our end — and a way
+    /// to try again without closing the player.
+    private func errorView(_ failure: PlayerLoadFailure) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: failure.systemImage)
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(Theme.muted)
-            Text(message)
-                .font(Theme.body(14))
+            Text(failure.title)
+                .font(Theme.headline(20))
+                .foregroundStyle(Theme.ink)
+            Text(failure.detail)
+                .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                Haptics.tap()
+                loadFailure = nil
+                attempt += 1
+            } label: {
+                Text("Try again")
+                    .font(Theme.body(13, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .soulGlassCapsule()
+            }
+            .buttonStyle(.soulPressableQuiet)
+            .padding(.top, 4)
         }
         .padding(.horizontal, 40)
     }
@@ -238,8 +310,6 @@ struct PracticePlayerView: View {
         // view is presented as a sheet from wherever media lives — so don't
         // assume a caller already loaded it. No-ops when it's current.
         await PracticeProgressStore.shared.refresh()
-        let reporter = PlaybackReporter(play: .media(media))
-        self.reporter = reporter
         do {
             let url: URL
             if media.storagePath.hasPrefix("http"), let direct = URL(string: media.storagePath) {
@@ -249,6 +319,11 @@ struct PracticePlayerView: View {
                 // Private bucket object → time-limited signed URL.
                 url = try await SupabaseService.shared.signedMediaURL(path: media.storagePath)
             }
+            // Closed while the URL was being signed. `onDisappear` has already
+            // been and gone, so carrying on would start a session nobody can
+            // see or stop.
+            guard !Task.isCancelled else { return }
+            let reporter = PlaybackReporter(play: .media(media))
             let avPlayer = AVPlayer(url: url)
 
             // Pick up where they left off. Only offered for a practice that was
@@ -257,20 +332,62 @@ struct PracticePlayerView: View {
             if resumeAt > 0 {
                 await avPlayer.seek(to: CMTime(seconds: resumeAt, preferredTimescale: 600),
                                     toleranceBefore: .zero, toleranceAfter: .zero)
+                guard !Task.isCancelled else { return }
             }
 
+            PlaybackAudioSession.activate(for: media.mediaKind)
             if media.mediaKind == .audio {
-                let t = AudioTransport(player: avPlayer, duration: Double(media.durationSeconds))
+                let t = AudioTransport(player: avPlayer, duration: Double(media.durationSeconds),
+                                       title: media.title, guide: media.lead)
                 t.currentTime = resumeAt
                 t.start()
                 transport = t
             }
+            self.reporter = reporter
             reporter.attach(to: avPlayer)
             player = avPlayer
             avPlayer.play()
+        } catch where error.isCancellation {
+            // Closed mid-load; there's nobody left to tell.
         } catch {
             Log.media.error("Couldn't resolve media: \(error.localizedDescription)")
-            loadError = "Couldn't load this session. Please try again."
+            loadFailure = PlayerLoadFailure(offline: error.isOffline)
+        }
+    }
+}
+
+// MARK: - Audio session
+
+/// The audio session a practice plays in.
+///
+/// `.playback`, because the session is the point of the screen: under the
+/// default `.soloAmbient` the ringer switch silenced it and locking the phone
+/// stopped it (the latter also needs `UIBackgroundModes: audio`, in
+/// `project.yml`). `.spokenAudio` for audio, so a navigation prompt pauses a
+/// guided voice rather than talking over it; `.moviePlayback` for video.
+/// Handed back with `.notifyOthersOnDeactivation` when the player closes, so
+/// music or a podcast it interrupted can resume.
+///
+/// Failures are logged, never fatal: AVPlayer still plays in the default
+/// session, just less well.
+@MainActor
+enum PlaybackAudioSession {
+
+    static func activate(for kind: MediaKind) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: kind == .video ? .moviePlayback : .spokenAudio)
+            try session.setActive(true)
+        } catch {
+            Log.media.error("Couldn't start the audio session: \(error.localizedDescription)")
+        }
+    }
+
+    static func deactivate() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            Log.media.error("Couldn't end the audio session: \(error.localizedDescription)")
         }
     }
 }
@@ -280,6 +397,10 @@ struct PracticePlayerView: View {
 private struct SoulScrubber: View {
     @Bindable var transport: AudioTransport
     @State private var dragging = false
+    /// The rail (0 or 1) the thumb is held against mid-drag, if any — so the
+    /// detent clicks once on arrival rather than on every drag event spent
+    /// pressed against the end.
+    @State private var rail: Double?
 
     var body: some View {
         VStack(spacing: 10) {
@@ -317,13 +438,16 @@ private struct SoulScrubber: View {
                             }
                             let f = min(1, max(0, value.location.x / max(width, 1)))
                             transport.currentTime = f * transport.duration
-                            // Detent at the rails.
-                            if f == 0 || f == 1 { Haptics.select() }
+                            // Detent at the rails, once on arrival.
+                            let atRail: Double? = (f == 0 || f == 1) ? f : nil
+                            if let atRail, atRail != rail { Haptics.select() }
+                            rail = atRail
                         }
                         .onEnded { _ in
                             transport.seek(to: transport.currentTime)
                             transport.isScrubbing = false
                             dragging = false
+                            rail = nil
                             Haptics.select()
                         }
                 )
@@ -341,6 +465,18 @@ private struct SoulScrubber: View {
             .foregroundStyle(Color.white.opacity(0.55))
         }
         .padding(.horizontal, 30)
+        // One element for VoiceOver, which can't perform the drag: swiping up
+        // or down moves 15 seconds, as the buttons beside it do.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(Self.time(transport.currentTime)) of \(Self.time(transport.duration))")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: transport.skip(AudioTransport.skipInterval)
+            case .decrement: transport.skip(-AudioTransport.skipInterval)
+            @unknown default: break
+            }
+        }
     }
 
     /// `mm:ss` from a seconds value, defensively clamping non-finite input.
@@ -355,8 +491,18 @@ private struct SoulScrubber: View {
 /// scrubber, and turns scrub/skip gestures back into seeks. The periodic time
 /// observer fires on the main queue, so `MainActor.assumeIsolated` lets it touch
 /// this `@MainActor` state without an extra hop.
+///
+/// It also owns the session's place on the lock screen and in Control Center:
+/// the Now Playing card (title, guide, length, position, rate) and the remote
+/// play / pause / ±15s / scrub commands, which go through the same methods as
+/// the controls on screen. None of it touches `PlaybackReporter`, which counts
+/// media time from the player itself: a skip from the lock screen is a seek
+/// like any other, and banks nothing.
 @Observable @MainActor
 final class AudioTransport {
+    /// The skip on screen, and the lock screen's.
+    static let skipInterval: Double = 15
+
     var currentTime: Double = 0
     var duration: Double
     var isPlaying = true
@@ -365,11 +511,25 @@ final class AudioTransport {
     var isScrubbing = false
 
     private let player: AVPlayer
-    private var observer: Any?
+    /// What the Now Playing card says.
+    private let title: String
+    private let guide: String
+    @ObservationIgnored private var observer: Any?
+    @ObservationIgnored private var remoteTargets: [RemoteTarget] = []
+    /// Between `start` and `stop`. A remote command that arrives after the
+    /// player has closed must not put its card back on the lock screen.
+    @ObservationIgnored private var isLive = false
 
-    init(player: AVPlayer, duration: Double) {
+    private struct RemoteTarget {
+        let command: MPRemoteCommand
+        let token: Any
+    }
+
+    init(player: AVPlayer, duration: Double, title: String, guide: String) {
         self.player = player
         self.duration = max(duration, 1)
+        self.title = title
+        self.guide = guide
     }
 
     func start() {
@@ -377,14 +537,26 @@ final class AudioTransport {
         observer = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             MainActor.assumeIsolated { self?.tick(time) }
         }
+        isLive = true
+        installRemoteCommands()
+        publishNowPlaying()
     }
 
     func stop() {
         if let observer { player.removeTimeObserver(observer) }
         observer = nil
+        isLive = false
+        for target in remoteTargets {
+            target.command.removeTarget(target.token)
+            target.command.isEnabled = false
+        }
+        remoteTargets = []
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
     private func tick(_ time: CMTime) {
+        let wasPlaying = isPlaying
+        let knownDuration = duration
         // Prefer the asset's true duration once it's known; fall back to metadata.
         if let itemDuration = player.currentItem?.duration, itemDuration.isNumeric {
             let secs = CMTimeGetSeconds(itemDuration)
@@ -392,32 +564,98 @@ final class AudioTransport {
         }
         if !isScrubbing { currentTime = CMTimeGetSeconds(time) }
         isPlaying = player.timeControlStatus != .paused
+        // The lock screen runs its own clock from the last position and rate
+        // it was given, so it needs telling only when one of those changes —
+        // a pause from a phone call, say — not five times a second.
+        if isPlaying != wasPlaying || duration != knownDuration { publishNowPlaying() }
+    }
+
+    func play() {
+        guard !isPlaying else { return }
+        // Replay from the top if we're parked at the end.
+        if currentTime >= duration - 0.25 { seek(to: 0) }
+        player.play()
+        isPlaying = true
+        publishNowPlaying()
+    }
+
+    func pause() {
+        guard isPlaying else { return }
+        player.pause()
+        isPlaying = false
+        publishNowPlaying()
     }
 
     func togglePlay() {
-        if isPlaying {
-            player.pause()
-            isPlaying = false
-        } else {
-            // Replay from the top if we're parked at the end.
-            if currentTime >= duration - 0.25 {
-                seek(to: 0)
-                currentTime = 0
-            }
-            player.play()
-            isPlaying = true
-        }
+        if isPlaying { pause() } else { play() }
     }
 
     func skip(_ seconds: Double) {
-        let target = min(max(currentTime + seconds, 0), duration)
-        currentTime = target
-        seek(to: target)
+        seek(to: min(max(currentTime + seconds, 0), duration))
     }
 
     func seek(to seconds: Double) {
+        currentTime = seconds
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600),
                     toleranceBefore: .zero, toleranceAfter: .zero)
+        publishNowPlaying()
+    }
+
+    // MARK: Lock screen and Control Center
+
+    private func publishNowPlaying() {
+        guard isLive else { return }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+            MPMediaItemPropertyTitle: title,
+            MPMediaItemPropertyArtist: guide,
+            MPMediaItemPropertyPlaybackDuration: duration,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
+            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+            MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
+        ]
+    }
+
+    private func installRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        let interval = [NSNumber(value: Self.skipInterval)]
+        center.skipBackwardCommand.preferredIntervals = interval
+        center.skipForwardCommand.preferredIntervals = interval
+
+        onRemote(center.playCommand) { $0.play() }
+        onRemote(center.pauseCommand) { $0.pause() }
+        onRemote(center.togglePlayPauseCommand) { $0.togglePlay() }
+        onRemote(center.skipBackwardCommand) { $0.skip(-AudioTransport.skipInterval) }
+        onRemote(center.skipForwardCommand) { $0.skip(AudioTransport.skipInterval) }
+
+        // Dragging the lock screen's scrubber.
+        let scrub = center.changePlaybackPositionCommand
+        scrub.isEnabled = true
+        let token = scrub.addTarget { @Sendable [weak self] event in
+            guard let self,
+                  let position = (event as? MPChangePlaybackPositionCommandEvent)?.positionTime
+            else { return .commandFailed }
+            Task { @MainActor in
+                if self.isLive { self.seek(to: position) }
+            }
+            return .success
+        }
+        remoteTargets.append(RemoteTarget(command: scrub, token: token))
+    }
+
+    /// Wires one remote command to this transport. The handler hops to the
+    /// main actor rather than assuming it is already there: MediaPlayer makes
+    /// no promise about which thread a command arrives on.
+    private func onRemote(_ command: MPRemoteCommand,
+                          perform: @escaping @Sendable @MainActor (AudioTransport) -> Void) {
+        command.isEnabled = true
+        let token = command.addTarget { @Sendable [weak self] _ in
+            guard let self else { return .noActionableNowPlayingItem }
+            Task { @MainActor in
+                if self.isLive { perform(self) }
+            }
+            return .success
+        }
+        remoteTargets.append(RemoteTarget(command: command, token: token))
     }
 }
 

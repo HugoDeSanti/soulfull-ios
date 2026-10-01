@@ -16,13 +16,24 @@ import SwiftUI
 
 extension View {
     /// Standard list-row entrance: rows rise and fade in as they enter from
-    /// the bottom of the viewport. Interactive (scrubs with the scroll).
+    /// the bottom of the viewport. Interactive (scrubs with the scroll). Under
+    /// Reduce Motion they only fade.
     func listReveal() -> some View {
-        scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
-            let entering = max(phase.value, 0)
-            return view
-                .opacity(1 - entering * 0.5)
-                .offset(y: entering * 18)
-        }
+        modifier(ListReveal())
+    }
+}
+
+private struct ListReveal: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let rise: CGFloat = reduceMotion ? 0 : 18
+        return content
+            .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+                let entering = max(phase.value, 0)
+                return view
+                    .opacity(1 - entering * 0.5)
+                    .offset(y: entering * rise)
+            }
     }
 }

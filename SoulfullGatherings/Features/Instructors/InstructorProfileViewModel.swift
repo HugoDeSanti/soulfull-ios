@@ -153,18 +153,24 @@ final class InstructorProfileViewModel {
     /// Optimistic: the button and the count move at once, and go back if the
     /// server says no. On success the numbers are re-read, so the faces and
     /// count settle on the server's.
+    ///
+    /// Never on numbers the page doesn't have. Whether this member already
+    /// follows is exactly what an unloaded page doesn't know, and counting
+    /// from `.empty` turned a tap in that window into "1 Follower" on a guide
+    /// with hundreds — so a follow asked for before they land reads them first.
     func setFollowing(_ follow: Bool) async {
         guard let userID = backend.userID(), !isFollowBusy else { return }
-        let original = social
-        let current = original ?? .empty
-        guard !current.isMe, current.followedByMe != follow else { return }
+        if social == nil {
+            guard await learnSocial() else { return }
+        }
+        guard let original = social, !original.isMe, original.followedByMe != follow else { return }
 
         isFollowBusy = true
         followError = nil
         socialVersion += 1
-        var next = current
+        var next = original
         next.followedByMe = follow
-        next.followers = max(0, current.followers + (follow ? 1 : -1))
+        next.followers = max(0, original.followers + (follow ? 1 : -1))
         social = next
 
         do {
@@ -180,14 +186,36 @@ final class InstructorProfileViewModel {
         } catch {
             Log.data.info("Follow failed: \(error.localizedDescription)")
             social = original
-            followError = error.isOffline
-                ? "You're offline. Reconnect and try again."
-                : "That didn't go through. Please try again."
+            followError = Self.followFailure(offline: error.isOffline)
             isFollowBusy = false
             return
         }
         isFollowBusy = false
         await refreshSocial()
+    }
+
+    /// Reads the numbers for a follow asked for before the page had them.
+    /// Busy while it reads, so a second tap waits; false — with the reason
+    /// under the button — when they still can't be read, and nothing is sent.
+    private func learnSocial() async -> Bool {
+        isFollowBusy = true
+        defer { isFollowBusy = false }
+        followError = nil
+        do {
+            social = try await backend.social(instructorID) ?? .empty
+            return true
+        } catch where error.isCancellation {
+            return false
+        } catch {
+            Log.data.info("Instructor social unavailable: \(error.localizedDescription)")
+            followError = Self.followFailure(offline: error.isOffline)
+            return false
+        }
+    }
+
+    private static func followFailure(offline: Bool) -> String {
+        offline ? "You're offline. Reconnect and try again."
+                : "That didn't go through. Please try again."
     }
 }
 

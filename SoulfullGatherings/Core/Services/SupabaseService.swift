@@ -924,8 +924,12 @@ actor SupabaseService {
         return rows.map(\.notification)
     }
 
-    /// Stamps every unread notification read. `read_at` latches server-side.
-    func markNotificationsRead(userID: UUID) async throws {
+    /// Stamps these notifications read — the ones the Notifications screen has
+    /// shown, never "everything unread", which also stamped a like that arrived
+    /// after the list was read, so it never showed as new. `read_at` latches
+    /// server-side. `member_notifications.id` is `notifications.id` (0016).
+    func markNotificationsRead(userID: UUID, ids: [UUID]) async throws {
+        guard !ids.isEmpty else { return }
         struct Update: Encodable {
             let readAt: Date
             enum CodingKeys: String, CodingKey { case readAt = "read_at" }
@@ -934,6 +938,7 @@ actor SupabaseService {
             .from("notifications")
             .update(Update(readAt: .now))
             .eq("user_id", value: userID)
+            .in("id", values: ids)
             .is("read_at", value: nil)
             .execute()
     }

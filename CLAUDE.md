@@ -24,12 +24,13 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 ### Navigation (three tiers)
 1. **Stage** — `AppState.stage` (`loading → welcome → onboarding → main`) drives the switch in `RootView`, animated. The onboarded flag is persisted as `sg.hasOnboarded` via `AppSettings`.
 2. **Tab** — `MainTabView` hosts six `MainTab`s: `home`, `gatherings`, `programs`, `practice`, `community`, `you` (bar labels: Home · Gatherings · Digital Retreats · Practice · Community · You). `BottomNav` is a flat, docked, **deliberately static** bar with no lens, bounce or press animation (the owner found the springy glass capsule childish). Its You item is the member's `AvatarView`. `NavBarLayout` sizes each slot to its label plus an equal share of the spare, because six equal slots can't fit "Digital Retreats".
+   - **Each tab lives in its own `UIHostingController` inside `TabPager`** (a small `UIViewControllerRepresentable` in `MainTabView`), made on first selection and kept, with only the selected one in the window. So a tab keeps its view models, scroll position and pushed screens while another is showing, costs nothing while hidden, and its `.task`s run again when it comes back. `MainTabView.page(_:)` hands each one the app's objects, dark mode, the tint and `scenePhase` explicitly, because a hosting controller starts a fresh environment: **anything new a tab reads from above must be forwarded there.** **Not a system `TabView`:** past five tabs, iPhone moves the rest into a "More" navigation controller, which put a stray back button (and a system list of tabs behind it) on Community and You. **Don't go back to a `switch` either:** rebuilding the tab on every tap flashed its empty state ("New gatherings are on their way") before the data arrived. Since a load now re-runs over data already on screen, it must not swap that data for a spinner or reset the focus, and an empty state needs a `hasLoaded`-style flag: empty only counts once a load has answered.
 3. **Item** — Gatherings, Digital Retreats, Practice and Community each wrap a private `NavigationStack` root (`GatheringsRoot`, `ProgramsRoot`, `PracticeRoot`, `CommunityRoot`) with a typed `Route` enum and `@State path: [Route]`. Home and You have no stack. Value-based navigation is what makes swipe-back work.
    - `GatheringsRoot.Route`: retreat detail and the post-purchase screens, over `RetreatsStackView(isTabRoot: true)`.
    - `ProgramsRoot.Route`: program detail, a day **by day number** (not a `ProgramDay` value: the curriculum can be edited while a member is on it, and a stale copy in the path would keep rendering), and the journal/movement/recipe details.
    - `PracticeRoot.Route`: session list, journal/movement/recipe lists and details, `instructor(id, from:)`.
    - `CommunityRoot.Route`: `friends`, `notifications`.
-   - Cross-tab hand-offs go through `pendingPractice` / `pendingProgram` / `pendingRetreat`. ⚠️ **`pendingRetreat` is consumed once the stack's catalog has loaded, not on appear.** Pushing in the same update the tab appears pinned the CPU at 100% (`GatheringsTabTests` catches it).
+   - Cross-tab hand-offs go through `pendingPractice` / `pendingProgram` / `pendingRetreat`, and **replace** the target tab's path, which may still hold a screen from an earlier visit. ⚠️ **`pendingRetreat` is consumed once the stack's catalog has loaded, not on appear.** Pushing in the same update the tab appears pinned the CPU at 100% (`GatheringsTabTests` catches it).
 
 **"Programs" are called "Digital Retreats" everywhere a member can see them** (labels, headings, VoiceOver). The code, the tables and the `-tab programs` launch arg keep "program". Write new copy as "digital retreat".
 
@@ -38,9 +39,12 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 ### Auth
 `AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which restores or opens an **anonymous** Supabase session so catalog reads work immediately, then routes on `hasOnboarded` alone.
 
+- **Only a session that is really gone becomes a guest** (`SessionRestoreDecision`): no stored session, or GoTrue rejecting the refresh token. Offline, timeouts, 5xx and the like keep the stored session and set `.failed(ConnectionFailure)` (`.offline` / `.unreachable`); the banner's Retry, or coming back to the foreground, runs `retry()` (which keeps `state` at `.failed` and flags `isRetrying` while it tries). Falling back to a guest on any error once overwrote a member's Keychain session after a network blip at launch, and wiped their stores.
+
 - **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (authenticated **and** not anonymous), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too.
-- **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive. A second job, `purge-stale-auth-flows` (0025), deletes `auth.flow_state` rows older than 7 days: confirmations left behind by the code path, another device, a deleted account or nobody.
-- **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create, hydrates on sign-in, and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
+- **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because the SDK reports the session missing and `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive. A second job, `purge-stale-auth-flows` (0025), deletes `auth.flow_state` rows older than 7 days: confirmations left behind by the code path, another device, a deleted account or nobody.
+- **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create (and from `finishOnboarding` for a member), hydrates on sign-in, does nothing when the device has no answers (it would blank the row), and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
+- **Welcome's "I already have an account" offers sign-in** (`AccountView(mode: .signIn)`, closable, never a gate); `AppState.returnFromWelcomeSignIn()` goes straight to main when the profile has a name, to onboarding when it doesn't, and stays on Welcome when the sheet was closed.
 - **Sign in with Apple is the only third-party provider.** Google was built and then removed, so there is no GoogleSignIn and no web-auth flow. `signInWithApple` calls `signInWithIdToken`, which *replaces* the guest instead of upgrading it.
 - **Email confirmation has three completion paths. Don't reduce it to the deep link:** the PKCE verifier lives in this iPhone's Keychain, and `soulfull://` doesn't open on a laptop.
   1. Same device: `soulfull://auth-callback` → `.onOpenURL` → `AuthManager.handleDeepLink` (PKCE `session(from:)`).
@@ -91,13 +95,15 @@ SoulfullGatherings/
 ├── Assets.xcassets                # App chrome only (see *Assets*)
 ├── App/                           # AppState, AppSettings, AuthManager, RootView, MainTabView (+ the four stack roots and the
 │                                  # AccountGate sheet), BottomNav (BottomNav.height = 56 for anything pinned above it),
-│                                  # ConnectionBanner (offline / failed session, with a working Retry)
+│                                  # ConnectionBanner (offline / failed session, with a working Retry; `connectionBannerInset()`
+│                                  # on every tab root AND pushed destination — an inset around the tab pager or a
+│                                  # NavigationStack never reaches the screens inside — so it pushes them down, never over Back)
 ├── Core/
 │   ├── Models/Models.swift        # Every domain model. `.mock` fixtures are for previews / DEBUG screens only
 │   ├── DesignSystem/              # Theme, Components, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
 │   │                              # PresenceBadge, CatalogImage, AvatarView (tone from a STABLE hash: hashValue is salted per launch)
 │   ├── Services/                  # SupabaseService (actor), SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,
-│   │                              # LocalUserStore, and @Observable singletons: PracticeProgressStore, ProgramStore (+ the pure
+│   │                              # LocalUserStore, and @Observable singletons: AppClock, PracticeProgressStore, ProgramStore (+ the pure
 │   │                              # ProgramUnlockRule), WrittenPracticeStore, InstructorDirectory, PresenceStore,
 │   │                              # PushRegistrar (+ the AppDelegate), ProgramNotifications
 │   └── Utils/                     # Log (os.Logger), Haptics, ArtworkTones
@@ -108,9 +114,9 @@ SoulfullGatherings/
 - **`Retreats/Enquiry/`** is the website's "Join a retreat" form, which is what "Request a place" opens in v1. `RetreatEnquiry` encodes straight into the `send-retreat-enquiry` body and carries **no email**: the server reads it from the JWT, and the app shows the field locked. The question strings exist in both `RetreatEnquiry.Question` and the Edge Function, so change both together.
 - **`Retreats/PostPurchase/`** holds the reserved-retreat hub, to-do's, packing list and 1:1 guide booking, all unreachable in v1. These screens use their own warm-espresso `RetreatPalette`, not `Theme`. Their state is device-local (`RetreatTripStore`). Photos come from optional `post_booking` paths through `TripImage`, which shows the plain espresso ground when a path is missing and never borrows another retreat's photo.
 - **`WrittenPracticeStore`** keeps the last library it read in Caches, so the pages open offline. `isAuthoritative` means the tables were read *this launch*, and only then does an absent practice count as gone.
-- **`PushRegistrar`** registers a token only for a signed-in member, never a guest, and forgets the device on sign-out. It asks for permission once, from a card on the Community tab and never at launch. A tapped like opens Community → Notifications. Debug builds use the APNs sandbox and Release builds production.
+- **`PushRegistrar`** registers a token only for a signed-in member, never a guest, and forgets the device on sign-out. It asks for permission once, from a card on the Community tab and never at launch. A tapped like opens Community → Notifications; a tapped program reminder opens that digital retreat (`openProgramRequested`, the same hand-off as Home's day card). Debug builds use the APNs sandbox and Release builds production.
 - **`CommunityViewModel`** fetches the Friends feed server-side by friend ids. It does **not** filter the All feed, because a friend's last practice can be older than everyone's last hundred.
-- **`AccountViewModel`** clears the password on success and never replays it. It shows generic auth errors, because GoTrue's own messages reveal which accounts exist. An Apple cancel is `.cancelled`, not an error.
+- **`AccountViewModel`** clears the password on success and never replays it. It shows generic auth errors, because GoTrue's own messages reveal which accounts exist, but `AuthFailureCopy` first tells apart offline, rate-limited (429) and our-end failures, which reveal nothing. The sheet reopens on the code panel while a confirmation is pending (`auth.confirmationToResume`: this launch's address, or the stored guest's `newEmail` sent within 24h). An Apple cancel is `.cancelled`, not an error.
 - **`InstructorProfileViewModel.setFollowing`** is optimistic and reverted on failure. A version counter throws away a social read that started before a follow.
 
 ## Design system
@@ -134,7 +140,7 @@ The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values 
 - **Glass** always goes through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCapsule` / `.soulGlassCard`): real `glassEffect` on iOS 26+, material + hairline below that. It is the only place that branches on OS. Feature code never does.
 - **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which gives a spring squish and a haptic on touch-down. Don't put `onTapGesture` on cards.
 - **Shaders** go only through the `ShaderFX` wrappers (grain / aurora / shimmer / dissolve / ripple), which all respect Reduce Motion. `PulseModifier` loops forever, so use it only for persistent live indicators.
-- **Navigation:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`. Tab roots report pushes through a `navHidden` binding so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
+- **Navigation:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`. Tab roots report pushes through a `navHidden` binding (one per tab, because every tab keeps its stack) so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
 - **Type over photography is one rule in three parts, used together:**
   1. `PhotoBackdrop` draws a `topScrim` (default 0.45 over 340pt). Pass `0` only for a screen with an empty top.
   2. Text blocks on a photo carry `.onPhoto()`.
@@ -147,7 +153,7 @@ The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values 
 2. **`visualEffect` offsets and scales escape ancestor clips.** Use scroll-driven image motion only on full-bleed surfaces. Cards animate as whole units (`listReveal`).
 3. **`scaledToFill` grows layout, not just drawing,** and pushes siblings off-screen. Contain fill images in `Color.clear.overlay { … }.clipped()`, as `PhotoBackdrop` does.
 4. **`GeometryReader` inside an `HStack` over-claims width.** Prefer leading-anchored `scaleEffect` fills.
-5. **A view only answers taps where it draws something.** A framed `Image` responds on its glyph alone, and on iOS 26 `glassEffect` adds no tappable fill. So `CircleIconButton` was an 11pt target inside a 38pt circle, and a glass `PressableCard` ignored taps between its lines of text. **Give every tappable glass surface a `.contentShape(...)`.** When a button feels dead, check its accessibility frame (a UI test's `app.debugDescription`), not its visual frame.
+5. **A view only answers taps where it draws something.** A framed `Image` responds on its glyph alone, and on iOS 26 `glassEffect` adds no tappable fill. So `CircleIconButton` was an 11pt target inside a 38pt circle, and a glass `PressableCard` ignored taps between its lines of text. `SoulGlass` now adds `.contentShape(shape)` on iOS 26, so glass surfaces hit-test like the material fallback; **any other tappable thing that draws less than its frame (a framed glyph, plain text with padding) still needs its own `.contentShape(...)` and a 44pt target.** When a button feels dead, check its accessibility frame (a UI test's `app.debugDescription`), not its visual frame.
 
 ## Design ↔ code sync (Claude Design mirror)
 
@@ -275,7 +281,7 @@ Spec: `docs/PLAN-digital-programs.md`. A program is free to join (behind the acc
   - An activity whose content doesn't exist is **dropped and logged**, because an activity that can't be opened would block the member forever.
   - A day with no activities left closes on its own.
   - ⚠️ **Missing is not the same as not loaded yet** (`ActivityLookup.pending`, `ProgramDayResolution`). If a library hasn't been read this launch, or a lookup failed, the activity is hidden but **the day stays open**. Completion is latched and can't be undone.
-- **Program reminders are local notifications** (`ProgramNotifications`), sent at **08:00** on the morning a day opens (days open at midnight). Permission is asked at enrolment, never at launch. Push is used only for likes.
+- **Program reminders are local notifications** (`ProgramNotifications`), sent at **08:00** on the morning a day opens (days open at midnight). Permission is asked at enrolment, never at launch. A day's pending reminder is cancelled the moment that day is completed. Push is used only for likes.
 - **Yoga has no category of its own.** It is step content in Movement (`exercises`).
 
 ### Device-local private data (`LocalUserStore`)
@@ -310,6 +316,11 @@ Journal reflections and trip checklists stay on the phone. The privacy policy pr
   - A failed fetch shows a failure state that tells **offline** ("you'll need to be online") apart from **our fault** ("something went wrong at our end").
   - `Error.isOffline` counts only `notConnectedToInternet` / `networkConnectionLost` / `dataNotAllowed` / `internationalRoamingOff`. `timedOut` may be our backend.
   - A sample catalog shown as real is Guideline 2.1(a) temporary content. For the same reason, **never invent state**: no fake progress, no fake "present" counts.
+- **Anything on screen that depends on the date reads `AppClock.shared.now`, never `Date.now`.** The app is mostly suspended, and SwiftUI only re-renders on observed changes; `SoulfullGatheringsApp` ticks the clock when the scene becomes active and at midnight / time-zone changes, which re-renders every view that read it (day unlocks, the greeting, the streak). Logic that takes time as an argument (`ProgramUnlockRule`, `PracticeStats`) is passed `AppClock.shared.now` by its live caller.
+- **Media plays in a `.playback` audio session** (`PlaybackAudioSession` in `PracticePlayerView`), with the `audio` background mode in `project.yml` and lock-screen / Control Center controls (`AudioTransport`). Without it, sessions were silent with the ringer switch on silent and stopped when the phone locked. Media time keeps counting in the background, which is real listening.
+- **Never force-refresh practice history as the player or a practice page closes.** `PracticeProgressStore.record` applies each write locally at once; a forced read that answers before the final write lands replaces that fresher copy (stale "N min left", a program day that doesn't close).
+- **Remote images (`CatalogImage`) are keyed by URL** and read the decoded cache synchronously in `body`. A new URL in the same place (a changed profile photo) must never show the old picture, and a cached photo paints on its first frame. Seed the cache with an image the device made itself (`RemoteImageCache.insert`).
+- **Tabs are rebuilt when a member becomes a guest** (sign-out, deletion: `MainTabView.shell`, keyed on `isAnonymous`), never on sign-in, because the account gate replays into the tab it came from.
 - **No `print()`.** Use `Log` (`auth` / `data` / `media` / `payment`). Interpolated values are redacted in Release, so mark safe values `\(x, privacy: .public)`.
 - **Account gating:** browsing never requires an account. Gate actions through `AccountGate`, on `auth.hasAccount`.
 - **Tests:** behaviour changes ship with their tests (see *Testing*).
@@ -365,10 +376,10 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 ### UI journeys: the only ones that earn a UI test
 | File | Journey |
 |---|---|
-| `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it |
+| `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it; "I already have an account" offers sign-in and can be closed |
 | `AccountGateTests` | A guest opens a recipe → account sheet → closes it (button and swipe) |
 | `RetreatEnquiryTests` | Request a place → gate → form → Submit settles |
-| `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Catalog, detail, and the brochure (which fails soft) |
+| `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Catalog, detail, and the brochure (which fails soft); a tab keeps its place across a tab switch |
 | `ProgramTests` | Catalog → days → Home hand-off → a guest can't join |
 | `ProfileTests` | You-tab numbers and history against `-preview-you` |
 | `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines and the 3-person minimum |

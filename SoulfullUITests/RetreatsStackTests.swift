@@ -101,13 +101,15 @@ final class RetreatsStackTests: XCTestCase {
         shot(app, "02-scrolled")
 
         // Catalog: the one toggle, then a cover — the last one — refocuses the
-        // stack on that retreat.
+        // stack on that retreat. The name is read first: in the catalog the
+        // stack's rows leave the accessibility tree (VoiceOver used to meet
+        // every retreat twice), so they can't be read from there.
+        let lastName = names[count - 1].label
         let toggle = app.buttons["Show all retreats"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5), "No catalog toggle")
         toggle.tap()
         XCTAssertTrue(app.buttons["Show as a list"].waitForExistence(timeout: 5),
                       "The toggle didn't flip to its list state")
-        let lastName = names[count - 1].label
         let lastCover = app.buttons
             .matching(NSPredicate(format: "label BEGINSWITH %@", "\(lastName), "))
             .firstMatch

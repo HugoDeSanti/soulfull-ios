@@ -22,6 +22,7 @@ struct ProgramDayView: View {
 
     private let store = ProgramStore.shared
     private let history = PracticeProgressStore.shared
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverOn
 
     @State private var nowPlaying: PracticeSession?
     /// Set when this visit is the one that completed the day, so the moment is
@@ -120,7 +121,10 @@ struct ProgramDayView: View {
                 Label("Day complete", systemImage: "checkmark.seal.fill")
                     .font(Theme.body(14, weight: .medium))
                     .foregroundStyle(Theme.accent)
-            } else if !isWaiting {
+            } else if resolution.isSettled {
+                // Only once every activity has an answer: with one still being
+                // looked up, "1 of 1 done" and a full bar would claim a day that
+                // can't actually close yet.
                 Text("\(doneCount) of \(activities.count) done")
                     .font(Theme.body(14, weight: .medium))
                     .foregroundStyle(Theme.ink)
@@ -286,7 +290,17 @@ struct ProgramDayView: View {
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
         .contentShape(Rectangle())
         .onTapGesture { withAnimation(.easeOut(duration: 0.25)) { justCompleted = false } }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isModal)
+        .accessibilityHint("Double-tap to close")
+        .accessibilityAction { withAnimation(.easeOut(duration: 0.25)) { justCompleted = false } }
         .task {
+            // VoiceOver hears the moment rather than missing a card that
+            // closes on its own — and keeps it until they dismiss it.
+            if voiceOverOn {
+                AccessibilityNotification.Announcement("Day \(day.day) complete. \(nextLine)").post()
+                return
+            }
             try? await Task.sleep(for: .seconds(3.4))
             withAnimation(.easeOut(duration: 0.3)) { justCompleted = false }
         }
@@ -313,13 +327,16 @@ struct ProgramDayView: View {
         }
     }
 
-    /// Re-reads practice history and asks whether the day is now finished.
+    /// Asks whether the day is now finished, and celebrates if this visit is
+    /// the one that finished it.
     ///
-    /// Twice, spaced. The written libraries write their dwell in `onDisappear`
-    /// and the player on dismissal, so the row can still be in flight when this
-    /// screen comes back — a single immediate read would show the practice
-    /// undone and, worse, decline to close a day that is actually complete
-    /// until the member left and returned.
+    /// Twice, spaced, on what this device knows. The written libraries record
+    /// their dwell in `onDisappear` and the player on dismissal, and
+    /// `PracticeProgressStore.record` applies each write locally at once — but
+    /// either can land just after this screen comes back. Only then, once,
+    /// does it read the server (a practice finished on another device). It
+    /// used to force that read first: one that answered before the final write
+    /// had landed replaced the fresher local copy, and the day didn't close.
     private func settle() async {
         await store.refresh()
         // Usually already done by the page that pushed this one; not when the
@@ -328,13 +345,18 @@ struct ProgramDayView: View {
         for delay in [0.35, 1.6] {
             try? await Task.sleep(for: .seconds(delay))
             guard !Task.isCancelled else { return }
-            await history.refresh(force: true)
-            if await store.syncCompletion(for: program) == day.day {
-                Haptics.success()
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { justCompleted = true }
-                return
-            }
+            if await closeIfFinished() { return }
         }
+        await history.refresh(force: true)
+        guard !Task.isCancelled else { return }
+        _ = await closeIfFinished()
+    }
+
+    private func closeIfFinished() async -> Bool {
+        guard await store.syncCompletion(for: program) == day.day else { return false }
+        Haptics.success()
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { justCompleted = true }
+        return true
     }
 }
 

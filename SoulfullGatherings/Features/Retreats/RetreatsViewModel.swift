@@ -40,6 +40,11 @@ final class RetreatsViewModel {
     var retreats: [Retreat] = []
     var isLoading = false
     var loadFailure: RetreatsLoadFailure? = nil
+    /// A load has answered, with retreats or a failure. Until then an empty
+    /// catalog means "not here yet", not "none announced": a screen that showed
+    /// its empty state on the first frame flashed "New gatherings are on their
+    /// way" every time the tab opened. A cancelled load doesn't count.
+    private(set) var hasLoaded = false
     var activeIndex: Int = 0
 
     var active: Retreat? {
@@ -62,8 +67,14 @@ final class RetreatsViewModel {
         defer { isLoading = false }
         loadFailure = nil
         do {
-            retreats = try await fetchRetreats()
-            activeIndex = 0
+            let fetched = try await fetchRetreats()
+            // A reload — the tab coming back — keeps the retreat in focus, so the
+            // stack doesn't jump back to the top under the member. The first
+            // load, or one that no longer has that retreat, starts at the top.
+            let focused = active?.id
+            retreats = fetched
+            activeIndex = fetched.firstIndex { $0.id == focused } ?? 0
+            hasLoaded = true
         } catch where error.isCancellation {
             // View was dismissed mid-fetch; leave existing data intact.
             // `is CancellationError` never matched — the SDK surfaces
@@ -77,6 +88,7 @@ final class RetreatsViewModel {
             if retreats.isEmpty {
                 loadFailure = error.isOffline ? .offline : .failed
             }
+            hasLoaded = true
         }
     }
 }

@@ -106,7 +106,7 @@ struct JournalDetailView: View {
                 // The question recedes while writing so the words take the
                 // room — but it stays one tap away. Forgetting what you were
                 // answering used to mean dismissing the keyboard to re-read it.
-                Button { peeking.toggle() } label: {
+                Button { if writing { peeking.toggle() } } label: {
                     VStack(alignment: .leading, spacing: 8) {
                         promptBlock
                             .opacity(receded ? 0.45 : 1)
@@ -126,8 +126,13 @@ struct JournalDetailView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(SoulPressableStyle(scale: 0.99, dim: false))
-                .disabled(!writing)
-                .accessibilityHint("Brings the prompt back while you write")
+                // A button only while writing. Out of the editor the block is
+                // just the question: `.disabled` made VoiceOver read it as
+                // "dimmed, button" with a hint about writing, so touches are
+                // turned off instead and the button's traits go with them.
+                .allowsHitTesting(writing)
+                .accessibilityRemoveTraits(writing ? [] : .isButton)
+                .accessibilityHint(writing ? "Brings the prompt back while you write" : "")
                 .animation(.easeInOut(duration: 0.35), value: receded)
 
                 GlassCard(radius: 18, padding: 16) {

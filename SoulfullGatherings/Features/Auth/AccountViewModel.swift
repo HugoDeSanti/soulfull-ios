@@ -8,6 +8,7 @@
 //
 
 import AuthenticationServices
+@preconcurrency import Supabase
 import SwiftUI
 
 @Observable @MainActor
@@ -94,6 +95,25 @@ final class AccountViewModel {
         errorMessage = nil
     }
 
+    /// Opens on the code panel for a confirmation started before this sheet
+    /// was: it was closed and reopened, or the app relaunched in between.
+    /// See `AuthManager.confirmationToResume`.
+    func resumeConfirmation(for address: String) {
+        email = address
+        errorMessage = nil
+        resendMessage = nil
+        awaitingConfirmation = true
+    }
+
+    /// "Use a different sign-in". Clears what the panel was showing, so a
+    /// "that code didn't work" doesn't follow them onto the form.
+    func leaveConfirmation() {
+        awaitingConfirmation = false
+        confirmationCode = ""
+        errorMessage = nil
+        resendMessage = nil
+    }
+
     /// Performs the auth call + profile sync.
     /// - `.signedIn`: dismiss (session is live).
     /// - `.confirmationRequired`: account created but email must be confirmed —
@@ -119,6 +139,11 @@ final class AccountViewModel {
                     return .signedIn
                 } else {
                     awaitingConfirmation = true
+                    // Started here as well as by the sheet's `onChange`: a
+                    // sheet closed while this request was in flight never sees
+                    // the change, and the watch is what notices a confirmation
+                    // made on a laptop. Starting it twice is a no-op.
+                    auth.beginConfirmationWatch()
                     Haptics.tap()
                     return .confirmationRequired
                 }
@@ -131,15 +156,11 @@ final class AccountViewModel {
             }
         } catch {
             Haptics.bump()
-            // Never the server's own words. GoTrue distinguishes "User already
-            // registered" from "Invalid login credentials", which turns this
-            // banner into an account-enumeration oracle: anyone could test
-            // whether a given address has an account with a wellness app.
-            // The detail stays in the (release-redacted) log.
+            // Never the server's own words — see `AuthFailureCopy`. The detail
+            // stays in the (release-redacted) log.
             Log.auth.error("Auth submit failed: \(error.localizedDescription)")
-            errorMessage = mode == .createAccount
-                ? "We couldn't create that account. Check the address and password, then try again."
-                : "That email and password didn't match. Try again."
+            errorMessage = AuthFailureCopy.message(for: error,
+                                                   during: mode == .createAccount ? .createAccount : .signIn)
             return .failed
         }
     }
@@ -160,7 +181,7 @@ final class AccountViewModel {
             return .signedIn
         } catch {
             Haptics.bump()
-            errorMessage = "That code didn't work. Check it against the email, or send a new one."
+            errorMessage = AuthFailureCopy.message(for: error, during: .confirmCode)
             Log.auth.error("Email code verification failed: \(error.localizedDescription)")
             return .failed
         }
@@ -181,7 +202,7 @@ final class AccountViewModel {
             startCooldown(60)
         } catch {
             Haptics.bump()
-            errorMessage = "Couldn't send a new code just now. Try again in a moment."
+            errorMessage = AuthFailureCopy.message(for: error, during: .resendCode)
             Log.auth.error("Resend confirmation failed: \(error.localizedDescription)")
         }
     }
@@ -235,9 +256,9 @@ final class AccountViewModel {
             Haptics.success()
             return .signedIn
         } catch {
-            guard !Self.isUserCancellation(error) else { return .cancelled }
+            guard !AuthFailureCopy.isUserCancellation(error) else { return .cancelled }
             Haptics.bump()
-            errorMessage = AppError.authFailure(error).localizedDescription
+            errorMessage = AuthFailureCopy.message(for: error, during: .apple)
             Log.auth.error("Apple sign-in failed: \(error.localizedDescription)")
             return .failed
         }
@@ -245,17 +266,16 @@ final class AccountViewModel {
 
     /// Surfaces an error raised by the Apple button itself (before we ever reach
     /// Supabase), so cancels stay silent and real failures get a banner.
+    ///
+    /// Not `error.localizedDescription`: that put "The operation couldn't be
+    /// completed. (com.apple.AuthenticationServices.AuthorizationError error
+    /// 1000.)" in front of someone whose phone simply isn't signed in to an
+    /// Apple ID.
     func reportAppleFailure(_ error: Error) {
-        guard !Self.isUserCancellation(error) else { return }
+        guard !AuthFailureCopy.isUserCancellation(error) else { return }
         Haptics.bump()
-        errorMessage = error.localizedDescription
-    }
-
-    /// Backing out of the Apple sheet is a normal choice, not a failure — it
-    /// must not raise a red banner.
-    private static func isUserCancellation(_ error: Error) -> Bool {
-        if let error = error as? ASAuthorizationError { return error.code == .canceled }
-        return error is CancellationError
+        Log.auth.error("Apple authorization failed: \(error.localizedDescription)")
+        errorMessage = AuthFailureCopy.message(for: error, during: .apple)
     }
 
     /// An Apple sign-in is indistinguishable from the token alone: the identity
@@ -269,6 +289,14 @@ final class AccountViewModel {
             let existing = try await SupabaseService.shared.fetchProfile(id: id)
             let hasSavedAnswers = existing.map { !$0.intentions.isEmpty || !$0.bodyState.isEmpty } ?? false
             settings.avatarUrl = existing?.avatarUrl
+            // A row can hold a name and no answers (members from before 0024).
+            // Take the name first if the device has none, or the push below
+            // writes the device's empty one over it. Apple hands a name over
+            // only on the first authorization, so a returning member signing
+            // in from Welcome arrives with nothing.
+            if let existing, settings.userName.isEmpty, !existing.fullName.isEmpty {
+                settings.userName = existing.fullName
+            }
             if let existing, hasSavedAnswers {
                 if !existing.fullName.isEmpty  { settings.userName  = existing.fullName }
                 if !existing.bodyState.isEmpty { settings.bodyState = existing.bodyState }
@@ -296,5 +324,69 @@ final class AccountViewModel {
         } catch {
             Log.auth.error("Profile hydrate failed: \(error.localizedDescription)")
         }
+    }
+}
+
+// MARK: - Failure copy
+
+/// The words for a failed auth call.
+///
+/// Never the server's own. GoTrue distinguishes "User already registered" from
+/// "Invalid login credentials", which turned the banner into an
+/// account-enumeration oracle: anyone could test whether a given address has
+/// an account with a wellness app. So the copy only separates what is equally
+/// true of every address — no connection, too many attempts, trouble at our
+/// end — and everything else gets the same words per action.
+enum AuthFailureCopy {
+
+    enum Action { case createAccount, signIn, confirmCode, resendCode, apple }
+
+    static let offline = "You're offline. Connect and try again."
+    static let rateLimited = "Too many attempts — try again in a minute."
+    static let unreachable = "We couldn't reach Soulfull just now. Try again in a moment."
+
+    static func message(for error: any Error, during action: Action) -> String {
+        // Offline used to read as wrong credentials, which sent people to
+        // retype a password that was fine.
+        if error.isOffline { return offline }
+        if isRateLimited(error) { return rateLimited }
+        if isTroubleAtOurEnd(error) { return unreachable }
+        switch action {
+        case .createAccount:
+            return "We couldn't create that account. Check the address and password, then try again."
+        case .signIn:
+            return "That email and password didn't match. Try again."
+        case .confirmCode:
+            return "That code didn't work. Check it against the email, or send a new one."
+        case .resendCode:
+            return "Couldn't send a new code just now. Try again in a moment."
+        case .apple:
+            return "Sign in with Apple didn't go through. Try again, or use your email instead."
+        }
+    }
+
+    /// Backing out of the Apple sheet is a normal choice, not a failure — it
+    /// must not raise a banner.
+    static func isUserCancellation(_ error: any Error) -> Bool {
+        if let error = error as? ASAuthorizationError { return error.code == .canceled }
+        return error.isCancellation
+    }
+
+    /// GoTrue limits by IP (sign-in, sign-up) or by address against
+    /// `smtp_max_frequency` (resending), never by whether an account exists,
+    /// so saying so gives nothing away.
+    private static func isRateLimited(_ error: any Error) -> Bool {
+        guard case let .api(_, code, _, response)? = error as? AuthError else { return false }
+        return response.statusCode == 429
+            || code == .overRequestRateLimit || code == .overEmailSendRateLimit
+    }
+
+    /// A 5xx or 408 from GoTrue, or a request that never got an answer (a
+    /// timeout, a host that can't be reached; offline is caught before this).
+    private static func isTroubleAtOurEnd(_ error: any Error) -> Bool {
+        if case let .api(_, _, _, response)? = error as? AuthError {
+            return response.statusCode >= 500 || response.statusCode == 408
+        }
+        return (error as NSError).domain == NSURLErrorDomain
     }
 }

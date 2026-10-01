@@ -60,7 +60,9 @@ final class ProgramTests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 25), "Programs catalog never appeared")
         card.tap()
 
-        let days = app.buttons.matching(identifier: "program-day-row")
+        // Any element type: a day a guest can't open isn't announced as a
+        // button (double-tapping it only buzzes), so the rows aren't all buttons.
+        let days = app.descendants(matching: .any).matching(identifier: "program-day-row")
         XCTAssertTrue(days.firstMatch.waitForExistence(timeout: 15), """
             The program rendered no days. The curriculum either failed to decode \
             (check the log for "unreadable curriculum" — it fails soft, so the \
@@ -100,6 +102,36 @@ final class ProgramTests: XCTestCase {
         let card = app.buttons.matching(identifier: "program-card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20), "Tapping ALL did not reach the Programs tab")
         shot(app, "07-handed-off-to-programs-tab")
+    }
+
+    /// A card on Home's shelf, handed to a Digital Retreats tab that is already
+    /// open. Tabs now stay alive, so the program is pushed in the same update
+    /// the tab comes back — the pattern that once pinned the CPU on the
+    /// Gatherings tab — and onto a stack that has been on screen before.
+    func testHomeShelfCardOpensTheProgramInAnAlreadyOpenProgramsTab() {
+        let app = launchOnProgramsTab()
+        XCTAssertTrue(app.buttons.matching(identifier: "program-card").firstMatch.waitForExistence(timeout: 25),
+                      "Programs catalog never appeared")
+
+        app.buttons["Home"].tap()
+        let card = app.buttons.matching(identifier: "home-program-card").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 30), "No digital retreat on Home's shelf")
+        var tries = 0
+        while !card.isHittable && tries < 6 {
+            app.swipeUp(velocity: .slow)
+            tries += 1
+        }
+        XCTAssertTrue(card.isHittable, "The Digital Retreats shelf never scrolled into reach")
+        card.tap()
+
+        XCTAssertTrue(app.buttons["Start this digital retreat"].waitForExistence(timeout: 15),
+                      "Tapping a digital retreat on Home didn't open it in the open Digital Retreats tab")
+        shot(app, "08-program-from-home-into-open-tab")
+
+        app.buttons.matching(identifier: "back-bar").firstMatch.tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "program-card").firstMatch.waitForExistence(timeout: 10),
+                      "Back from the program didn't land on the Digital Retreats catalog")
+        XCTAssertTrue(app.buttons["Digital Retreats"].isSelected, "Back landed outside the Digital Retreats tab")
     }
 
     /// Browsing is open all the way down to the day list; joining is not.

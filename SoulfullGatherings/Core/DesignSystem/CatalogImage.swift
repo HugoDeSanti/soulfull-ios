@@ -19,8 +19,11 @@ struct CatalogImage<Styled: View>: View {
     let source: ImageSource
     @ViewBuilder var style: (Image) -> Styled
 
-    @State private var loaded: UIImage?
-    @State private var failed = false
+    /// The downloaded image, with the URL it belongs to. Keyed so that a new
+    /// URL in the same place — a changed profile photo — is never answered with
+    /// the old picture: an unkeyed `UIImage` here kept showing the previous
+    /// face after a successful upload, until the app was relaunched.
+    @State private var loaded: (url: URL, image: UIImage)?
 
     init(_ raw: String, @ViewBuilder style: @escaping (Image) -> Styled) {
         self.source = ImageSource(raw)
@@ -45,8 +48,8 @@ struct CatalogImage<Styled: View>: View {
             }
 
         case .remote(let url):
-            if let loaded {
-                style(Image(uiImage: loaded))
+            if let loaded, loaded.url == url {
+                style(Image(uiImage: loaded.image))
                     // Crossfade rather than snap. A bundled image was simply
                     // *there* on the first frame; a fetched one cannot be, so a
                     // list of them pops in one by one as each download lands.
@@ -54,9 +57,15 @@ struct CatalogImage<Styled: View>: View {
                     // deliberate. Opacity only — nothing moves, so this is
                     // still calm under Reduce Motion.
                     .transition(.opacity)
-            } else if failed {
-                placeholder
+            } else if let hit = RemoteImageCache.shared.cached(url) {
+                // Already decoded: painted on this frame, with no fade — it was
+                // effectively already here, so fading it in would look like lag.
+                style(Image(uiImage: hit))
             } else {
+                // Also where a failed load waits. Its `.task` runs again when the
+                // screen next appears, so a photo that failed on a weak signal
+                // comes back once the connection does — tabs now stay alive, and
+                // used to be rebuilt (and so retried) on every visit.
                 placeholder
                     .task(id: url) { await load(url) }
             }
@@ -67,20 +76,11 @@ struct CatalogImage<Styled: View>: View {
     }
 
     private func load(_ url: URL) async {
-        // A cache hit paints on this frame instead of flashing the placeholder,
-        // and is assigned without animation: it was effectively already here,
-        // so fading it in would only look like lag.
-        if let hit = await RemoteImageCache.shared.cached(url) {
-            loaded = hit
-            return
-        }
         do {
             let image = try await RemoteImageCache.shared.image(for: url)
-            withAnimation(.easeOut(duration: 0.32)) { loaded = image }
-            failed = false
+            withAnimation(.easeOut(duration: 0.32)) { loaded = (url, image) }
         } catch {
             guard !Task.isCancelled else { return }
-            failed = true
             Log.media.error("Catalog image failed: \(error.localizedDescription)")
         }
     }

@@ -148,7 +148,9 @@ final class ProgramStore {
         ProgramUnlockRule.state(day: day,
                                 enrolledAt: enrollments[program.id]?.enrolledAt,
                                 completions: completions[program.id] ?? [:],
-                                now: .now,
+                                // Through the clock so a day opening overnight
+                                // re-renders whatever showed it locked.
+                                now: AppClock.shared.now,
                                 calendar: .current)
     }
 
@@ -234,9 +236,17 @@ final class ProgramStore {
     func enroll(in program: Program) async throws {
         guard let userID else { throw AppError.unknown }
         let enrollment = try await SupabaseService.shared.enrollInProgram(id: program.id, userID: userID)
+        if loadedFor != userID {
+            // Nothing of this member's has been read yet — typically a guest
+            // who signed in from "Start this digital retreat", which cleared the
+            // store. Marking it loaded here, with no day completions in it, used
+            // to show a member already part-way through as starting from Day 1
+            // (re-celebrating days done weeks ago) and their other programs as
+            // not joined, for the rest of the session. Read everything instead.
+            await refresh(force: true)
+        }
+        // Whatever that read said, the enrolment just written stands.
         enrollments[program.id] = enrollment
-        loadedFor = userID
-        status = .loaded
         // Deliberately NOT awaited. `requestAuthorizationIfNeeded` doesn't
         // return until the member answers the system dialog, and awaiting it
         // here would hold the push to day 1 behind a prompt about something
@@ -285,6 +295,7 @@ final class ProgramStore {
             let at = try await SupabaseService.shared.completeProgramDay(
                 programID: program.id, day: day.day, userID: userID)
             completions[program.id, default: [:]][day.day] = at
+            ProgramNotifications.cancel(programID: program.id, day: day.day)
             scheduleNextDayNudge(after: day, in: program, completedAt: at)
             await markFinishedIfNeeded(program)
             return day.day

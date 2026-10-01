@@ -15,6 +15,7 @@ struct SoulfullGatheringsApp: App {
     @State private var appState = AppState()
     /// For the APNs token and notification taps — see PushRegistrar.
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         #if DEBUG
@@ -53,6 +54,23 @@ struct SoulfullGatheringsApp: App {
                     .onOpenURL { url in
                         // Email-confirmation / magic-link callback (soulfull://auth-callback).
                         Task { await appState.auth.handleDeepLink(url) }
+                    }
+                    // Coming back from the background, or midnight passing while
+                    // the app is open: the day may have changed under the screen.
+                    // See AppClock.
+                    .onChange(of: scenePhase) { _, phase in
+                        guard phase == .active else { return }
+                        AppClock.shared.tick()
+                        // A session kept through a failed launch (offline, our
+                        // end down) tries again on the way back in, so the banner
+                        // clears itself once the network is back.
+                        if appState.auth.needsRetry {
+                            Task { await appState.auth.retry() }
+                        }
+                    }
+                    .onReceive(NotificationCenter.default.publisher(
+                        for: UIApplication.significantTimeChangeNotification)) { _ in
+                        AppClock.shared.tick()
                     }
             }
         }

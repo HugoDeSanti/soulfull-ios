@@ -22,6 +22,7 @@ struct ProgramDetailView: View {
     @State private var isJoining = false
     @State private var joinError: String?
     @State private var confirmingLeave = false
+    @State private var confirmingRestart = false
     @Environment(\.dismiss) private var dismiss
 
     private var enrolled: Bool { store.isEnrolled(program.id) }
@@ -89,6 +90,15 @@ struct ProgramDetailView: View {
         } message: {
             Text("Your day-by-day progress in this digital retreat will be cleared. The practices you've done stay in your history.")
         }
+        // Its own question: "Begin again" used to ask "Leave this digital
+        // retreat?" and then only leave, so the member had to start it again
+        // by hand.
+        .confirmationDialog("Begin this digital retreat again?", isPresented: $confirmingRestart, titleVisibility: .visible) {
+            Button("Begin again") { restart() }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("You'll start again from Day 1, a day at a time. The practices you've done stay in your history.")
+        }
     }
 
     // MARK: - Hero
@@ -150,8 +160,10 @@ struct ProgramDetailView: View {
         if days.isEmpty {
             EmptyView()
         } else if finished {
-            SGPrimaryButton(title: "Begin again", icon: "arrow.counterclockwise") {
-                confirmingLeave = true
+            SGPrimaryButton(title: isJoining ? "Starting…" : "Begin again",
+                            enabled: !isJoining,
+                            icon: "arrow.counterclockwise") {
+                confirmingRestart = true
             }
         } else if !enrolled {
             SGPrimaryButton(title: isJoining ? "Starting…" : "Start this digital retreat",
@@ -252,7 +264,11 @@ struct ProgramDetailView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("program-day-row")
-        .accessibilityLabel("Day \(day.day), \(day.title)")
+        // The status is what tells an open day from a locked or finished one —
+        // without it every row read the same. A row that can't be opened isn't
+        // announced as a button: double-tapping it only buzzes.
+        .accessibilityLabel("Day \(day.day), \(day.title). \(statusText(day, state: state))")
+        .accessibilityRemoveTraits(openable ? [] : .isButton)
     }
 
     private func dayMarker(_ day: ProgramDay, state: ProgramDayState) -> some View {
@@ -276,26 +292,35 @@ struct ProgramDetailView: View {
         }
     }
 
+    /// How many practices a day holds. The authored count until every one has
+    /// been looked up — a written library still loading (or offline on a fresh
+    /// install) used to make every row read "0 practices".
+    private func practiceCount(_ day: ProgramDay) -> Int {
+        let resolution = store.resolution(day)
+        return resolution.isSettled ? resolution.activities.count : day.activities.count
+    }
+
+    /// The row's one-line status, also what VoiceOver reads after the title.
+    private func statusText(_ day: ProgramDay, state: ProgramDayState) -> String {
+        let count = practiceCount(day)
+        let practices = "\(count) \(count == 1 ? "practice" : "practices")"
+        guard enrolled else { return practices }
+        switch state {
+        case .complete(let when):
+            return "Completed \(when.formatted(.dateTime.month(.abbreviated).day()))"
+        case .open:
+            let done = store.doneCount(of: day, in: program)
+            return done == 0 ? "\(practices) · open now" : "\(done) of \(count) done"
+        case .opens(let when):
+            return "Opens \(ProgramsView.relativeDay(when))"
+        case .awaitingPreviousDay:
+            return "Finish day \(day.day - 1) first"
+        }
+    }
+
     @ViewBuilder
     private func dayRowStatus(_ day: ProgramDay, state: ProgramDayState) -> some View {
-        let activities = store.resolved(day, in: program)
-        let label: String = {
-            guard enrolled else {
-                return "\(activities.count) \(activities.count == 1 ? "practice" : "practices")"
-            }
-            switch state {
-            case .complete(let when):
-                return "Completed \(when.formatted(.dateTime.month(.abbreviated).day()))"
-            case .open:
-                let done = store.doneCount(of: day, in: program)
-                return done == 0 ? "\(activities.count) practices · open now"
-                                 : "\(done) of \(activities.count) done"
-            case .opens(let when):
-                return "Opens \(ProgramsView.relativeDay(when))"
-            case .awaitingPreviousDay:
-                return "Finish day \(day.day - 1) first"
-            }
-        }()
+        let label = statusText(day, state: state)
 
         HStack(spacing: 6) {
             if case .opens = state {
@@ -372,11 +397,31 @@ struct ProgramDetailView: View {
                 try await store.enroll(in: program)
                 Haptics.success()
                 await store.resolveContent(for: program)
-                if let first = store.currentDay(program) { onOpenDay(first) }
+                // The day they're on, and only if it's open: a member who was
+                // already part-way through (and has just signed in) may be
+                // waiting for tomorrow's day, which this page already explains.
+                if let current = store.currentDay(program), store.state(program, day: current.day).isOpen {
+                    onOpenDay(current)
+                }
             } catch {
                 Log.data.error("Program enrolment failed: \(error.localizedDescription)")
                 joinError = "Couldn't start this digital retreat. Please try again."
             }
+        }
+    }
+
+    /// Clears the finished run, then joins afresh — which lands on Day 1.
+    private func restart() {
+        guard !isJoining else { return }
+        Task {
+            do {
+                try await store.leave(program)
+            } catch {
+                Log.data.error("Restarting program failed: \(error.localizedDescription)")
+                joinError = "Couldn't begin this digital retreat again. Please try again."
+                return
+            }
+            join()
         }
     }
 

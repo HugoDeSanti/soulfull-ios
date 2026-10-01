@@ -5,8 +5,9 @@
 //  Following a guide. The button and the count move at once and go back if
 //  the server says no; a guest and the guide themselves can't follow; asking
 //  for what is already true does nothing — which is what makes the account
-//  gate's replay after sign-in safe — and a read that started before a follow
-//  never lands on top of it.
+//  gate's replay after sign-in safe — a read that started before a follow
+//  never lands on top of it, and no follow is counted from numbers the page
+//  hasn't read yet.
 //
 
 import Foundation
@@ -26,6 +27,8 @@ struct InstructorFollowTests {
         var isMe = false
         var followedByMember = false
         var failure: Error?
+        /// Fails every read of the numbers.
+        var readFailure: Error?
         private(set) var followCalls = 0
         private(set) var unfollowCalls = 0
         /// What the page showed while the request was in flight.
@@ -45,6 +48,7 @@ struct InstructorFollowTests {
             .init(
                 instructor: { id in Instructor(id: id, name: "Alma Guerra", title: nil, bio: nil, photoUrl: nil) },
                 social: { _ in
+                    if let readFailure = self.readFailure { throw readFailure }
                     let snapshot = self.social
                     if self.holdNextRead {
                         self.holdNextRead = false
@@ -175,6 +179,46 @@ struct InstructorFollowTests {
         #expect(server.unfollowCalls == 0)
         #expect(vm.social?.followedByMe == true)
         #expect(vm.social?.followers == 11)
+    }
+
+    /// A tap before the numbers land used to count from zero: "1 Follower"
+    /// on a guide with ten. The page reads them first, then follows.
+    @Test func aFollowBeforeTheNumbersLandCountsFromTheRealNumbers() async {
+        let server = Server()
+        let vm = InstructorProfileViewModel(instructorID: "alma-guerra", backend: server.backend)
+
+        await vm.setFollowing(true)
+
+        #expect(server.followCalls == 1)
+        #expect(vm.social?.followedByMe == true)
+        #expect(vm.social?.followers == 11)
+    }
+
+    /// The same window, for a member who already follows: what the tap asked
+    /// for is already true, so nothing is sent and the count stays put.
+    @Test func aFollowBeforeTheNumbersLandSendsNothingWhenAlreadyFollowing() async {
+        let server = Server()
+        server.followedByMember = true
+        let vm = InstructorProfileViewModel(instructorID: "alma-guerra", backend: server.backend)
+
+        await vm.setFollowing(true)
+
+        #expect(server.followCalls == 0)
+        #expect(vm.social?.followedByMe == true)
+        #expect(vm.social?.followers == 11)
+    }
+
+    @Test func noFollowIsSentWhileTheNumbersCantBeRead() async {
+        let server = Server()
+        server.readFailure = URLError(.notConnectedToInternet)
+        let vm = InstructorProfileViewModel(instructorID: "alma-guerra", backend: server.backend)
+
+        await vm.setFollowing(true)
+
+        #expect(server.followCalls == 0)
+        #expect(vm.social == nil)
+        #expect(vm.followError == "You're offline. Reconnect and try again.")
+        #expect(!vm.isFollowBusy)
     }
 
     /// Signing in re-reads the page while the replayed follow is in flight.

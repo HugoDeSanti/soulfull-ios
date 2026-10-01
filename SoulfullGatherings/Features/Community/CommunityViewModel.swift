@@ -48,8 +48,50 @@ enum CommunityLoadFailure: Equatable {
     }
 }
 
+/// The reads the Community tab makes, and the clock it judges their age by.
+///
+/// Injectable so the loading rules — how long a read stays fresh, the Friends
+/// feed waiting for the friends, the reset between members, marking only what
+/// was shown — can be tested without a network
+/// (`SoulfullTests/Community/CommunityLoadTests`). The app always uses `.live`.
+/// Friend requests and likes are writes with their own optimistic handling and
+/// still go straight to `SupabaseService`.
+struct CommunityBackend {
+    var currentUserID: @MainActor () -> UUID?
+    /// Everyone's feed for nil; only these members' otherwise.
+    var fetchActivity: @MainActor (_ memberIDs: [UUID]?) async throws -> [CommunityActivity]
+    var fetchFriendships: @MainActor (_ userID: UUID) async throws -> [Friendship]
+    var fetchNotifications: @MainActor (_ userID: UUID) async throws -> [LikeNotification]
+    /// Stamps exactly these notifications read — never "everything unread".
+    var markNotificationsRead: @MainActor (_ userID: UUID, _ ids: [UUID]) async throws -> Void
+    var searchMembers: @MainActor (_ query: String) async throws -> [CommunityMember]
+    var now: @MainActor () -> Date
+
+    /// Computed rather than stored, so there is no shared global to make
+    /// `Sendable`.
+    static var live: CommunityBackend {
+        CommunityBackend(
+            currentUserID: { SupabaseService.shared.client.auth.currentUser?.id },
+            fetchActivity: { try await SupabaseService.shared.fetchCommunityActivity(memberIDs: $0) },
+            fetchFriendships: { try await SupabaseService.shared.fetchFriendships(userID: $0) },
+            fetchNotifications: { try await SupabaseService.shared.fetchNotifications(userID: $0) },
+            markNotificationsRead: { try await SupabaseService.shared.markNotificationsRead(userID: $0, ids: $1) },
+            searchMembers: { try await SupabaseService.shared.searchMembers($0) },
+            now: { Date.now }
+        )
+    }
+}
+
 @Observable @MainActor
 final class CommunityViewModel {
+
+    /// How long a read stays current. Coming back to the tab inside it shows
+    /// what is already there; after it, the tab reads again — quietly, over the
+    /// lines on screen, never a spinner over content — the same minute
+    /// `PresenceStore` allows its counts. The tab's view model lives for the
+    /// whole session, so without this the feed, the friends and the bell were
+    /// read on the first visit and never again.
+    static let freshFor: TimeInterval = 60
 
     var scope: CommunityScope = .all
 
@@ -65,16 +107,34 @@ final class CommunityViewModel {
     private(set) var notificationsLoaded = false
     private(set) var notificationsFailure: CommunityLoadFailure?
 
-    private(set) var isLoadingActivity = false
     private(set) var activityFailure: CommunityLoadFailure?
     private(set) var friendshipsFailure: CommunityLoadFailure?
-    private(set) var activityLoaded: Set<CommunityScope> = []
     private(set) var friendshipsLoaded = false
+
+    /// When each feed last answered. Absent means never, for this member.
+    private var activityLoadedAt: [CommunityScope: Date] = [:]
+    /// Who the friends were when the Friends feed was read. That feed is read
+    /// by their ids, so a different set — a request accepted, a friend removed
+    /// — makes it out of date however recent the read was.
+    private var friendsFeedReadFor: Set<UUID>?
+    private var friendshipsLoadedAt: Date?
+    private var notificationsLoadedAt: Date?
+    /// Feeds with a read in flight. Two tasks ask on every appear (the
+    /// identity load and the scope load), and only one of them should fetch.
+    private var activityInFlight: Set<CommunityScope> = []
+    /// Bumped by `reset()`. A read that started for the previous member checks
+    /// it before landing, so their lines never arrive on the next one's screen.
+    @ObservationIgnored private var generation = 0
+
+    var activityLoaded: Set<CommunityScope> { Set(activityLoadedAt.keys) }
+    var isLoadingActivity: Bool { activityInFlight.contains(scope) }
 
     // Search
     var searchQuery = "" { didSet { if searchQuery != oldValue { scheduleSearch() } } }
     private(set) var searchResults: [CommunityMember] = []
     private(set) var isSearching = false
+    /// Why the last search came back empty, when it isn't that nobody matched.
+    private(set) var searchFailure: CommunityLoadFailure?
     private var searchTask: Task<Void, Never>?
 
     /// A friend action that failed, for a banner. Cleared on the next action.
@@ -83,8 +143,13 @@ final class CommunityViewModel {
     private(set) var busy: Set<UUID> = []
 
     private var loadedFor: UUID?
+    private let backend: CommunityBackend
 
-    var userID: UUID? { SupabaseService.shared.client.auth.currentUser?.id }
+    init(backend: CommunityBackend = .live) {
+        self.backend = backend
+    }
+
+    var userID: UUID? { backend.currentUserID() }
 
     /// Whose lines read "You" in the feed.
     var selfID: UUID? {
@@ -117,6 +182,23 @@ final class CommunityViewModel {
     var friendIDs: [UUID] { friends.map(\.otherID) }
     var unreadCount: Int { notifications.filter(\.isUnread).count }
 
+    /// The showing feed hasn't answered yet — including the frame before its
+    /// read has started, and the Friends feed while the friends themselves are
+    /// still on their way (it is read by their ids, so it can't start sooner).
+    var isAwaitingFeed: Bool {
+        if scope == .friends, !friendshipsLoaded { return friendshipsFailure == nil }
+        return isLoadingActivity || (activityFailure == nil && !activityLoaded.contains(scope))
+    }
+
+    /// Why the showing feed has nothing to show, when it isn't that there is
+    /// nothing. Without the friends there is no Friends feed to read, so a
+    /// failed friends read is its failure too — rather than an invitation to
+    /// add friends to someone who already has them.
+    var feedFailure: CommunityLoadFailure? {
+        if scope == .friends, !friendshipsLoaded, let friendshipsFailure { return friendshipsFailure }
+        return activityFailure
+    }
+
     func standing(for memberID: UUID) -> FriendStanding {
         guard let row = friendships.first(where: { $0.otherID == memberID }) else { return .none }
         if row.isAccepted { return .friends }
@@ -125,56 +207,77 @@ final class CommunityViewModel {
 
     // MARK: - Loading
 
-    /// Cheap on appear — no-ops for a scope already in hand. `force` is pull to
-    /// refresh. `isMember` false skips the friendship read (the server would
-    /// only answer a guest with an empty list anyway).
+    /// Cheap on appear — reads only what is missing, failed, or older than
+    /// `freshFor`, so re-selecting the tab after a while brings it up to date
+    /// without a spinner. `force` is pull to refresh. `isMember` false skips the
+    /// friendship and notification reads (the server would only answer a guest
+    /// with empty lists anyway).
     func load(isMember: Bool, force: Bool = false) async {
         #if DEBUG
         if Self.isPreview { installPreviewFixture(); return }
         #endif
-        if loadedFor != userID { reset() }
-        loadedFor = userID
+        if loadedFor != userID {
+            // Nothing to clear before the first load — and clearing would throw
+            // away the scope task's read of this same person's feed, already
+            // in flight on the same appear.
+            if loadedFor != nil { reset() }
+            loadedFor = userID
+        }
         if isMember {
             async let friends: Void = loadFriendships(force: force)
             async let bell: Void = loadNotifications(force: force)
             _ = await (friends, bell)
         }
+        // After the friends: the Friends feed is read by their ids, and waits
+        // for them (see `loadActivity`).
         await loadActivity(force: force)
     }
 
+    /// `force` is for when something new is known to be waiting — the
+    /// Notifications screen opening, a tapped like push.
     func loadNotifications(force: Bool = false) async {
         #if DEBUG
         if Self.isPreview { return }
         #endif
         guard let userID else { return }
-        guard force || !notificationsLoaded || notificationsFailure != nil else { return }
+        guard force || notificationsFailure != nil || !isFresh(notificationsLoadedAt) else { return }
+        let generation = self.generation
         do {
-            notifications = try await SupabaseService.shared.fetchNotifications(userID: userID)
+            let rows = try await backend.fetchNotifications(userID)
+            guard generation == self.generation else { return }
+            notifications = rows
             notificationsFailure = nil
             notificationsLoaded = true
+            notificationsLoadedAt = backend.now()
         } catch where error.isCancellation {
             return
         } catch {
+            guard generation == self.generation else { return }
             Log.data.info("Notifications unavailable: \(error.localizedDescription)")
             notificationsFailure = CommunityLoadFailure(offline: error.isOffline)
         }
     }
 
-    /// Everything read, at once — called once the Notifications screen has
-    /// shown them. Optimistic; the server latches `read_at` anyway.
-    func markAllRead() async {
-        guard unreadCount > 0 else { return }
-        let now = Date.now
-        notifications = notifications.map {
-            LikeNotification(id: $0.id, actor: $0.actor, playID: $0.playID, practiceTitle: $0.practiceTitle,
-                             createdAt: $0.createdAt, readAt: $0.readAt ?? now)
+    /// Marks read the notifications the Notifications screen has shown. By id,
+    /// not "everything unread on the server": that also stamped a like which
+    /// arrived after the list was read, so it was marked read without ever
+    /// being seen. Optimistic; the server latches `read_at` anyway.
+    func markRead(_ ids: Set<UUID>) async {
+        let marking = Set(notifications.filter { $0.isUnread && ids.contains($0.id) }.map(\.id))
+        guard !marking.isEmpty else { return }
+        let now = backend.now()
+        notifications = notifications.map { note in
+            guard marking.contains(note.id) else { return note }
+            return LikeNotification(id: note.id, actor: note.actor, playID: note.playID,
+                                    practiceTitle: note.practiceTitle, createdAt: note.createdAt,
+                                    readAt: now)
         }
         #if DEBUG
         if Self.isPreview { return }
         #endif
         guard let userID else { return }
         do {
-            try await SupabaseService.shared.markNotificationsRead(userID: userID)
+            try await backend.markNotificationsRead(userID, Array(marking))
         } catch {
             Log.data.info("Mark-read failed: \(error.localizedDescription)")
         }
@@ -220,51 +323,90 @@ final class CommunityViewModel {
         if Self.isPreview {
             let ids = Set(friendIDs)
             friendsActivity = allActivity.filter { ids.contains($0.member.id) }
-            activityLoaded.insert(scope)
+            activityLoadedAt[scope] = .now
             return
         }
         #endif
-        guard force || !activityLoaded.contains(scope) || activityFailure != nil else { return }
-        isLoadingActivity = true
-        defer { isLoadingActivity = false }
+        // The Friends feed is read by who the friends are, so it waits for
+        // them. Read before they had arrived it was an empty list marked as
+        // loaded — "Practice alongside people you know" to someone with
+        // friends, straight after signing in from the Friends gate. `load()`
+        // reads it once they're in; until then the screen says it's loading,
+        // or why the friends couldn't be read.
+        if scope == .friends, !friendshipsLoaded { return }
+        guard !activityInFlight.contains(scope) else { return }
+        guard force || activityFailure != nil || !isCurrent(scope) else { return }
+        let generation = self.generation
+        let ids = friendIDs
+        activityInFlight.insert(scope)
+        defer { if generation == self.generation { activityInFlight.remove(scope) } }
         do {
-            let rows: [CommunityActivity]
+            let rows = try await backend.fetchActivity(scope == .all ? nil : ids)
+            guard generation == self.generation else { return }
             switch scope {
-            case .all:     rows = try await SupabaseService.shared.fetchCommunityActivity()
-            case .friends: rows = try await SupabaseService.shared.fetchCommunityActivity(memberIDs: friendIDs)
-            }
-            switch scope {
-            case .all:     allActivity = rows
-            case .friends: friendsActivity = rows
+            case .all:
+                allActivity = rows
+            case .friends:
+                friendsActivity = rows
+                friendsFeedReadFor = Set(ids)
             }
             activityFailure = nil
-            activityLoaded.insert(scope)
+            activityLoadedAt[scope] = backend.now()
         } catch where error.isCancellation {
             return
         } catch {
+            guard generation == self.generation else { return }
             Log.data.info("Community feed unavailable: \(error.localizedDescription)")
             activityFailure = CommunityLoadFailure(offline: error.isOffline)
         }
     }
 
     func loadFriendships(force: Bool = false) async {
+        #if DEBUG
+        // The fixture's friendships stand; a read would replace them with the
+        // preview session's own (none), as the Friends screen asks on appear.
+        if Self.isPreview { return }
+        #endif
         guard let userID else { return }
-        guard force || !friendshipsLoaded || friendshipsFailure != nil else { return }
+        guard force || friendshipsFailure != nil || !isFresh(friendshipsLoadedAt) else { return }
+        let generation = self.generation
         do {
-            friendships = try await SupabaseService.shared.fetchFriendships(userID: userID)
+            let rows = try await backend.fetchFriendships(userID)
+            guard generation == self.generation else { return }
+            friendships = rows
             friendshipsFailure = nil
             friendshipsLoaded = true
-            // The friends feed is keyed by who the friends are.
-            activityLoaded.remove(.friends)
+            friendshipsLoadedAt = backend.now()
         } catch where error.isCancellation {
             return
         } catch {
+            guard generation == self.generation else { return }
             Log.data.info("Friendships unavailable: \(error.localizedDescription)")
             friendshipsFailure = CommunityLoadFailure(offline: error.isOffline)
         }
     }
 
+    private func isFresh(_ loadedAt: Date?) -> Bool {
+        guard let loadedAt else { return false }
+        return backend.now().timeIntervalSince(loadedAt) < Self.freshFor
+    }
+
+    /// A feed is current while it's fresh — and, for the Friends feed, while
+    /// the friends are still the ones it was read for.
+    private func isCurrent(_ scope: CommunityScope) -> Bool {
+        guard isFresh(activityLoadedAt[scope]) else { return false }
+        return scope == .all || friendsFeedReadFor == Set(friendIDs)
+    }
+
+    /// Everything that belonged to whoever was here before — their feed,
+    /// friends and likes, and what they left on screen: the Friends filter, a
+    /// half-typed search, a failed action's banner. Leaving those behind showed
+    /// a guest the Friends filter with "Find friends" after a sign-out, and the
+    /// next member the last one's search. Runs when the person behind the
+    /// session changes.
     private func reset() {
+        generation += 1
+        scope = .all
         allActivity = []
         friendsActivity = []
         friendships = []
@@ -273,9 +415,19 @@ final class CommunityViewModel {
         notificationsFailure = nil
         activityFailure = nil
         friendshipsFailure = nil
-        activityLoaded = []
         friendshipsLoaded = false
+        activityLoadedAt = [:]
+        friendsFeedReadFor = nil
+        friendshipsLoadedAt = nil
+        notificationsLoadedAt = nil
+        activityInFlight = []
+        searchTask?.cancel()
+        searchQuery = ""
         searchResults = []
+        isSearching = false
+        searchFailure = nil
+        actionError = nil
+        busy = []
     }
 
     // MARK: - Friends
@@ -324,7 +476,7 @@ final class CommunityViewModel {
         let before = friendships
         optimistic()
         #if DEBUG
-        if Self.isPreview { Haptics.success(); activityLoaded.remove(.friends); return }
+        if Self.isPreview { Haptics.success(); activityLoadedAt[.friends] = nil; return }
         #endif
         do {
             try await action()
@@ -342,10 +494,20 @@ final class CommunityViewModel {
 
     // MARK: - Search
 
+    /// The same query again, after a failed search.
+    func retrySearch() {
+        scheduleSearch()
+    }
+
     private func scheduleSearch() {
         searchTask?.cancel()
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard query.count >= 2 else { searchResults = []; isSearching = false; return }
+        guard query.count >= 2 else {
+            searchResults = []
+            isSearching = false
+            searchFailure = nil
+            return
+        }
         isSearching = true
         searchTask = Task { [weak self] in
             // Debounced: one request per pause in typing, not per keystroke.
@@ -366,16 +528,28 @@ final class CommunityViewModel {
         }
         #endif
         do {
-            let results = try await SupabaseService.shared.searchMembers(query)
-            guard !Task.isCancelled, searchQuery.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+            let results = try await backend.searchMembers(query)
+            guard !Task.isCancelled, isCurrentSearch(query) else { return }
             searchResults = results
+            searchFailure = nil
         } catch where error.isCancellation {
             return
         } catch {
+            guard isCurrentSearch(query) else { return }
             Log.data.info("Member search failed: \(error.localizedDescription)")
+            // Said as a failure, not as "No one by that name yet" — that
+            // sentence is about the directory, and the directory never
+            // answered.
             searchResults = []
+            searchFailure = CommunityLoadFailure(offline: error.isOffline)
         }
         isSearching = false
+    }
+
+    /// Still what's in the field — a slower answer to an earlier query must not
+    /// land over a newer one.
+    private func isCurrentSearch(_ query: String) -> Bool {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines) == query
     }
 
     // MARK: - Preview fixture
@@ -432,7 +606,7 @@ final class CommunityViewModel {
         ]
         let ids = Set(friendIDs)
         friendsActivity = allActivity.filter { ids.contains($0.member.id) }
-        activityLoaded = [.all, .friends]
+        activityLoadedAt = [.all: .now, .friends: .now]
         friendshipsLoaded = true
         activityFailure = nil
         friendshipsFailure = nil

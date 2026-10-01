@@ -43,12 +43,33 @@ final class ProgramsViewModel {
     var programs: [Program] = []
     var isLoading = false
     var loadFailure: ProgramsLoadFailure?
+    /// A load has answered, with programs or a failure. Until then an empty
+    /// catalog is "not here yet" rather than "none yet" — the screen used to
+    /// show "New digital retreats are on their way" for the frame before its
+    /// load began. A cancelled load doesn't count.
+    private(set) var hasLoaded = false
+
+    /// The catalog read. Injectable so the loading states can be tested without
+    /// a network (`SoulfullTests/ProgramCatalogLoadTests`); the app always
+    /// uses the default.
+    private let fetchPrograms: @MainActor () async throws -> [Program]
+
+    init(fetchPrograms: @escaping @MainActor () async throws -> [Program] = {
+        try await SupabaseService.shared.fetchPrograms()
+    }) {
+        self.fetchPrograms = fetchPrograms
+    }
 
     /// No mock fallback, deliberately — see `RetreatsLoadFailure`. An invented
     /// catalogue of programs nobody can actually be enrolled in is filler, and
     /// filler shown as the real thing is a Guideline 2.1(a) rejection.
-    func load(force: Bool = false) async {
-        guard force || programs.isEmpty else { return }
+    ///
+    /// Reads every time the tab appears. The tab now lives for the whole
+    /// session, so a load-once guard kept its first catalog for days: a program
+    /// published since showed on Home's shelf (which reads the same 5-minute
+    /// cache) and its hand-off here found nothing to open. The cache keeps the
+    /// repeat cheap, and a catalog on screen is never swapped for a spinner.
+    func load() async {
         #if DEBUG
         // Joins the `-preview-*` family: renders the tab against the fixture so
         // the layout can be worked on before the table is seeded. Compiled out
@@ -56,6 +77,7 @@ final class ProgramsViewModel {
         // screen — a failed fetch never falls back to it.
         if CommandLine.arguments.contains("-preview-programs") {
             programs = Program.mock
+            hasLoaded = true
             return
         }
         #endif
@@ -63,13 +85,15 @@ final class ProgramsViewModel {
         defer { isLoading = false }
         do {
             loadFailure = nil
-            programs = try await SupabaseService.shared.fetchPrograms()
+            programs = try await fetchPrograms()
+            hasLoaded = true
         } catch where error.isCancellation {
         } catch {
             Log.data.error("Programs fetch failed: \(error.localizedDescription)")
             if programs.isEmpty {
                 loadFailure = error.isOffline ? .offline : .failed
             }
+            hasLoaded = true
         }
     }
 }
