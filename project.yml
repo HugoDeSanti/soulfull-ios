@@ -21,7 +21,7 @@ settings:
     # settings — and they drifted once already: R6 bumped the plist pair to
     # 1.0 (3) and left these reading 0.0.1 (2).
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "14"
+    CURRENT_PROJECT_VERSION: "15"
 
 packages:
   Supabase:
@@ -103,7 +103,7 @@ targets:
       properties:
         CFBundleDisplayName: Soulfull
         CFBundleIdentifier: com.soulfullgatherings.app
-        CFBundleVersion: "14"
+        CFBundleVersion: "15"
         # Must match the version record created in App Store Connect. A build whose
         # CFBundleShortVersionString is 0.0.1 will not attach to a "1.0" version.
         CFBundleShortVersionString: "1.0"
