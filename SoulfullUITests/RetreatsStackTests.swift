@@ -101,8 +101,12 @@ final class RetreatsStackTests: XCTestCase {
                       "Didn't return to the stack")
         shot(app, "04-refocused")
 
-        // The pinch reaches the same place as the toggle.
-        app.pinch(withScale: 0.4, velocity: -2)
+        // The pinch reaches the same place as the toggle. On a name in the
+        // stack, not on `app`: a pinch across the whole screen starts one
+        // finger on the docked tab bar, whose button takes it, and the stack
+        // only ever feels one finger.
+        let onScreenName = try XCTUnwrap(rows(app).first { $0.isHittable }, "No name on screen to pinch on")
+        onScreenName.pinch(withScale: 0.4, velocity: -2)
         XCTAssertTrue(app.buttons["Show as a list"].waitForExistence(timeout: 5),
                       "Pinching out didn't open the catalog")
         app.buttons["Show as a list"].tap()
