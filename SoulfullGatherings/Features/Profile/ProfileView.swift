@@ -26,6 +26,9 @@ struct ProfileView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var vm = ProfileViewModel()
+    /// Only ever holds a dashboard for a member the team has linked to a guide.
+    @State private var guide = GuideDashboardViewModel()
+    @State private var showGuideDashboard = false
     /// Read inside `body` so the observation registers.
     private let history = PracticeProgressStore.shared
 
@@ -59,6 +62,9 @@ struct ProfileView: View {
 
                 if isMember {
                     VStack(spacing: 36) {
+                        if let dashboard = guide.dashboard {
+                            guideSection(dashboard)
+                        }
                         practiceSection
                         digitalSection
                         inPersonSection
@@ -83,7 +89,9 @@ struct ProfileView: View {
         .scrollIndicators(.hidden)
         .refreshable {
             guard isMember else { return }
-            await vm.load(force: true, settings: settings)
+            async let mine: Void = vm.load(force: true, settings: settings)
+            async let guiding: Void = guide.load(for: identity)
+            _ = await (mine, guiding)
         }
         .background {
             ZStack {
@@ -98,8 +106,13 @@ struct ProfileView: View {
         .task(id: identity) {
             // A guest has nothing to load, but whatever the last member left
             // here still has to go — their sharing answer included.
-            guard isMember else { vm.reset(); return }
-            await vm.load(settings: settings)
+            guard isMember else { vm.reset(); guide.reset(); return }
+            async let mine: Void = vm.load(settings: settings)
+            async let guiding: Void = guide.load(for: identity)
+            _ = await (mine, guiding)
+        }
+        .sheet(isPresented: $showGuideDashboard) {
+            GuideDashboardView(vm: guide)
         }
         .sheet(isPresented: $showAccount) {
             AccountView(mode: accountMode, initialName: settings.userName)
@@ -267,6 +280,20 @@ struct ProfileView: View {
             Text("Guest · not signed in")
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
+        }
+    }
+
+    // MARK: - As a guide
+
+    /// Only for a member the team has linked to a guide (0026): their month
+    /// so far, opening onto the whole dashboard.
+    private func guideSection(_ dashboard: GuideDashboard) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionLabel(title: "As a guide")
+            GuideSummaryCard(dashboard: dashboard) {
+                showGuideDashboard = true
+            }
+            .padding(.horizontal, 20)
         }
     }
 

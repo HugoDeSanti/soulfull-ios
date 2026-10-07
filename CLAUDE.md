@@ -83,7 +83,7 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0025 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0026 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
@@ -119,6 +119,7 @@ SoulfullGatherings/
 - **`WrittenPracticeStore`** keeps the last library it read in Caches, so the pages open offline. `isAuthoritative` means the tables were read *this launch*, and only then does an absent practice count as gone.
 - **`PushRegistrar`** registers a token only for a signed-in member, never a guest, and forgets the device on sign-out. It asks for permission once, from a card on the Community tab and never at launch. A tapped like opens Community → Notifications; a tapped program reminder opens that digital retreat (`openProgramRequested`, the same hand-off as Home's day card). Debug builds use the APNs sandbox and Release builds production.
 - **`CommunityViewModel`** fetches the Friends feed server-side by friend ids. It does **not** filter the All feed, because a friend's last practice can be older than everyone's last hundred.
+- **`GuideDashboardViewModel`** (+ `GuideDashboardView`, the sheet, and `GuideSummaryCard`, the You-tab card) shows a guide their own numbers through `guide_dashboard()`. It exists only for a member the team has linked to a guide (`instructors.user_id`): for everyone else the function answers no row and the You tab shows nothing. `ProfileView` owns one and hands it to the sheet, so both show the same read. A reload keeps the figures on screen, and a read started for the previous person is discarded (`generation`). Month labels are formatted in **UTC** (`PayoutMonth`), because payout months are UTC months.
 - **`AccountViewModel`** clears the password on success and never replays it. It shows generic auth errors, because GoTrue's own messages reveal which accounts exist, but `AuthFailureCopy` first tells apart offline, rate-limited (429) and our-end failures, which reveal nothing. The sheet reopens on the code panel while a confirmation is pending (`auth.confirmationToResume`: this launch's address, or the stored guest's `newEmail` sent within 24h). An Apple cancel is `.cancelled`, not an error.
 - **`InstructorProfileViewModel.setFollowing`** is optimistic and reverted on failure. A version counter throws away a social read that started before a follow.
 
@@ -191,7 +192,7 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
 ### RLS and grants: gotchas that have bitten
 - **Anonymous guests use the `authenticated` role, not `anon`.** `signInAnonymously()` issues a real JWT with `is_anonymous: true`. Catalog tables must therefore grant SELECT to **both** roles (`for select to anon, authenticated using (true)`); a policy written `to anon` returns nothing to anyone. Refuse guests explicitly on member writes.
 - **Supabase grants ALL on a new view to `authenticated`, and an owner-rights view over one table can be updated through.** The first apply of 0015 let members rewrite anyone's avatar through `community_members`. Every `revoke` on an owner-rights view must name `authenticated`, then grant SELECT back.
-- A `security_invoker` view (`practice_progress`, `member_notifications`) respects RLS. An owner-rights view bypasses RLS, so **its grants are its only protection.** `practice_creator_earnings` is owner-rights on purpose (it adds up earnings across all members). **Never grant it to a client role.**
+- A `security_invoker` view (`practice_progress`, `member_notifications`) respects RLS. An owner-rights view bypasses RLS, so **its grants are its only protection.** `practice_creator_earnings` and `creator_pool_shares` are owner-rights on purpose (they add up plays across all members). **Never grant either to a client role.** A guide reads their own slice only through the `guide_dashboard()` function.
 - Money and entitlement state is written only server-side (the service role, in Edge Functions). Clients read their own rows under RLS.
 
 ### Tables
@@ -211,6 +212,7 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
   - `user_id` (a guide's own account) is hidden from clients by a **column grant**, so the app lists columns explicitly (`select *` fails with 42501).
   - A trigger keeps `lead` on sessions and programs equal to the guide's name.
   - Runbook: `docs/ADDING-AN-INSTRUCTOR.md`.
+- **`creator_pools`** (0026): one row per UTC month (`month` is its first day), the amount the team sets aside for guides, and `paid_at`. Written by the team in the SQL editor; **no client access** (RLS with zero policies, grants revoked). Runbook: `docs/CREATOR-PAYOUTS.md`.
 
 **Member data** (owner RLS; guests refused on writes):
 - **`profiles`**: one row per **member**, created by `handle_new_user` at sign-up, or when a guest's upgrade is confirmed (`is_anonymous` flips off). Guests have none and can't write one (0023).
@@ -254,7 +256,9 @@ Runbook: `docs/ADDING-A-RETREAT.md`.
   - A `date_range` field inside it is optional and normally left out. If present, it overrides the row's dates.
 
 ### Practice progress = creator payouts
-Every practice opened is recorded to `practice_plays`. That table is the member's resume and streak history, and it is also **the record creator payouts are calculated from** (the `practice_creator_earnings` view). Because both come from one ledger, they can never disagree.
+Every practice opened is recorded to `practice_plays`. That table is the member's resume and streak history, and it is also **the record creator payouts are calculated from** (the `creator_pool_shares` view, 0026). Because both come from one ledger, they can never disagree.
+- **The payout rule (owner's decision, 2026-10-07):** a guide earns on **time heard** and is paid a **share of a monthly pool**. The share is their sessions' seconds heard that month over every guide's; earnings are pool × share, rounded down to the cent. Sessions only (the written libraries show reach on the dashboard but take no part), never a guide's own plays, UTC months. While a month runs, guides see an estimate from the share so far; **a month whose pool isn't set shows the share and no amount**. The payout run and the guide dashboard read the same view. Runbook: `docs/CREATOR-PAYOUTS.md`.
+- **`practice_plays.instructor_id`** is the guide a play credits, **stamped by a server trigger** from the content row at insert and frozen after it. The client never sets it (its `creator` is a name it sends, so it can't be trusted with money). It has **no foreign key on purpose**: `on delete set null` is an UPDATE that the freeze would revert, and `restrict` would stop a guide being taken down. Rows from before 0026 were backfilled only where the session's guide matched the `creator` snapshot, with the integrity trigger off (it moves `updated_at`, which program days read).
 - **Rows:** each row has a client-generated `client_event_id`, so a retried write can't pay a creator twice. `content_title` / `creator` / `category` are copies taken at the time. **There is no delete policy**, because deleting a play would erase a creator's earnings.
 - **A DB trigger enforces integrity:**
   - The identity columns, `duration_seconds`, title and category are frozen.
@@ -374,6 +378,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - `ProgramUnlockRuleTests` and `ProgramDayResolutionTests`: day unlocks, and pending vs missing activities.
   - `MediaTimeMeterTests`: the payout measurement.
   - `LocalUserStoreTests`: per-member privacy.
+  - `GuideDashboardTests`: UTC months, a month's money standing (estimate / no pool / due / paid), and the mapping of `guide_dashboard()`'s JSON.
   - `AccountGateReplayTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
 
 ### UI journeys: the only ones that earn a UI test
@@ -387,6 +392,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 | `ProfileTests` | You-tab numbers and history against `-preview-you` |
 | `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines and the 3-person minimum |
 | `InstructorProfileTests` | The guide card on each page → profile → library hand-off; Follow; a guest's Follow → gate |
+| `GuideDashboardTests` | A linked guide's You-tab card → the dashboard (estimate, months, paid to date, practices) → close; a month with no pool shows no amount; a member who isn't a guide sees no card |
 
 - **Start from explicit state:** launch with `-uitest-reset`, usually plus `-uitest-onboarded` and `-tab <name>`, with fixtures from the DEBUG `-preview-*` args. No test may depend on another having run.
 - **Selectors:** select by accessibility identifier wherever the label is copy. Grep `accessibilityIdentifier(` before renaming one.
@@ -434,7 +440,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - **Post-purchase screens:** `-preview-experience`, `-preview-todos`, `-preview-packing`, `-preview-guides`. These load a real retreat through `PreviewRetreat`.
 - **Programs:** `-preview-programs`, `-preview-program`, `-preview-program-day`. `PreviewProgram` prefers a real program.
 - **Social and profile:** `-preview-community`, `-preview-presence`, `-preview-you` (+ `-preview-you-today`).
-- **Guides and auth:** `-preview-instructors` (+ `-preview-guest` to browse as a guest), `-preview-confirm-email`.
+- **Guides and auth:** `-preview-instructors` (+ `-preview-guest` to browse as a guest), `-preview-guide` (the guide dashboard; pair with `-preview-you`, + `-preview-guide-pending` for a month with no pool), `-preview-confirm-email`.
 
 ## Current state (2026-09-29)
 
@@ -447,8 +453,10 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - Digital Retreats: one live program, `finding-ground`.
 - Community: feed, friends, likes, notifications and push.
 - Presence counts, instructor profiles, and the You tab (stats and history).
+- The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
 **Open items:**
+- ⚠️ **`0026_guide_dashboard.sql` is written but NOT APPLIED** (the one exception to "every file in `supabase/migrations/` has been applied"). Until it is, `guide_dashboard()` answers 404, so nobody sees a dashboard, and no play is stamped with its guide. Apply it, backfill `schema_migrations`, run its verification block, then delete this line.
 - ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
 - **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
 - **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.

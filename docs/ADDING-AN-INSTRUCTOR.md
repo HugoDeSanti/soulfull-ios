@@ -95,11 +95,15 @@ update public.instructors
  where id = 'alma-guerra';
 ```
 
-This does two things. Their **Following** count becomes the number of guides
+This does three things. Their **Following** count becomes the number of guides
 their account follows (members follow guides, so that is what a guide can
-follow; unlinked, it reads 0). And on their own page the Follow button becomes
-"This is your profile". `user_id` never reaches any client: column grants keep
-it server-side, so a profile can't be used to find a guide's personal account.
+follow; unlinked, it reads 0). On their own page the Follow button becomes
+"This is your profile". And their You tab gains the **guide dashboard** (0026):
+who practised with them, what each month's pool paid them, and this month so
+far. Without the link a guide has no dashboard at all; their minutes still
+count toward their share. `user_id` never reaches any client: column grants
+keep it server-side, so a profile can't be used to find a guide's personal
+account. How payouts are worked out: `docs/CREATOR-PAYOUTS.md`.
 
 ---
 

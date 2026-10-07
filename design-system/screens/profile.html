@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* Features/Profile/ProfileView.swift. Scrolls: header (avatar), Your
+  /* Features/Profile/ProfileView.swift. Scrolls: header (avatar), As a guide
+     (linked guides only), Your
      practice (2x2 stat tiles), Digital retreats, In-person retreats,
      Community (share toggle), account actions. */
   .scr { padding-top: 50px; padding-bottom: 130px; }
@@ -57,6 +58,21 @@
   .row .where { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink-soft); }
   .row .chev { color: var(--muted); }
 
+  /* GuideSummaryCard (GuideDashboardView.swift) — "As a guide", ONLY for a
+     member the team has linked to a guide (instructors.user_id, 0026); no
+     one else ever sees this section. Honey-tinted glass (8% / 35% stroke, as
+     the live streak tile): eyebrow, "<Month> so far", and three figures —
+     people, minutes heard, and the estimate ("Pending" / POOL NOT SET until
+     the month's pool is set). Opens the dashboard sheet (guide-dashboard). */
+  .guide { margin: 0 20px; padding: 18px; border-radius: 22px;
+    background: color-mix(in srgb, var(--honey) 8%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
+  .guide .top { display: flex; justify-content: space-between; align-items: center; }
+  .guide .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
+  .guide h3 { font-size: 22px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 16px 0 0; }
+  .guide .figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .guide .figs b { display: block; font-size: 22px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); }
+  .guide .figs span { display: block; font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
   .actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: 44px 28px 0; }
   .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: #d95c54; cursor: pointer; }
   .legal { display:flex; align-items:center; justify-content:center; margin-top:4px; }
@@ -105,6 +121,20 @@
          a DAY counts once any practice is FINISHED that day; a CLASS is a
          finished session or movement sitting; MINUTES are time actually spent
          in those. A dash, never a zero, until the ledger has loaded. -->
+    <!-- AS A GUIDE: only for a member linked to a guide (see .guide above). -->
+    <div class="sec">
+      <div class="section-label"><span class="title">As a guide</span></div>
+      <div class="guide glass">
+        <div class="top"><p class="eb">Guide dashboard</p><svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        <h3>October so far</h3>
+        <div class="figs">
+          <div><b>86</b><span>People</span></div>
+          <div><b>1,203</b><span>Min heard</span></div>
+          <div><b>$310.05</b><span>Est. earned</span></div>
+        </div>
+      </div>
+    </div>
+
     <div class="sec">
       <div class="section-label"><span class="title">Your practice</span></div>
       <div class="stats">
