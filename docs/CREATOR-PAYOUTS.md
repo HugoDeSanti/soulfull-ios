@@ -7,7 +7,9 @@ Schema and reasoning: `supabase/migrations/0026_guide_dashboard.sql`.
 
 ## The rule
 
-- Each month the team enters one **pool**: the amount set aside for guides.
+- Each month's **pool** is **15% of the app's revenue after costs** (the
+  Soulfull and Nadia Labs agreement, 2026-10-07). The team works it out and
+  enters it.
 - A guide's **share** is the seconds of their sessions heard that month, over
   the seconds heard across every guide's sessions that month.
 - A guide's **earnings** for the month are the pool times their share,
@@ -34,12 +36,15 @@ What counts:
 
 ### 1. Set the pool
 
-Do it any time. Before the month ends, guides see an estimate from their share
-so far. Until a pool is set, they see their share and no amount.
+The pool is 15% of the month's revenue after costs, so it is final only once
+the month's revenue and costs are known. It can go in earlier as a running
+figure and be corrected later. Before the month ends, guides see an estimate
+from their share so far. Until a pool is set, they see their share and no
+amount. Say how the figure was reached in `note`.
 
 ```sql
 insert into public.creator_pools (month, amount_cents, currency, note)
-values (date '2026-10-01', 250000, 'usd', 'October: membership net of Apple, per the agreement')
+values (date '2026-10-01', 300000, 'usd', 'October: 15% of $20,000.00 revenue after costs')
 on conflict (month) do update
    set amount_cents = excluded.amount_cents,
        currency     = excluded.currency,
@@ -47,7 +52,7 @@ on conflict (month) do update
 ```
 
 `month` is always the **first day** of the month (the table refuses any other
-day). `amount_cents` is in the currency's minor unit: $2,500.00 is `250000`.
+day). `amount_cents` is in the currency's minor unit: $3,000.00 is `300000`.
 
 ### 2. After the month closes, run the payout
 
@@ -94,5 +99,6 @@ count of accounts, so the dashboard can't be used to find out who listened.
 - Client-reported seconds are **capped, not proven**. For automatic payouts at
   scale, move ledger writes behind an Edge Function that cross-checks Storage
   access logs (`supabase/functions/README.md`).
-- The size of the pool (and where it comes from) is an open point in the
-  Soulfull and Nadia Labs agreement. Nothing in the app assumes a figure.
+- The pool is agreed at 15% of revenue after costs, but which costs come off
+  first is still an open point in the agreement. The app holds only the
+  amount the team enters, never the percentage.
