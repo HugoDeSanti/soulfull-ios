@@ -99,6 +99,7 @@ count of accounts, so the dashboard can't be used to find out who listened.
 - Client-reported seconds are **capped, not proven**. For automatic payouts at
   scale, move ledger writes behind an Edge Function that cross-checks Storage
   access logs (`supabase/functions/README.md`).
-- The pool is agreed at 15% of revenue after costs, but which costs come off
-  first is still an open point in the agreement. The app holds only the
+- The pool is agreed at 15% of revenue after costs. Costs will include the
+  fees Apple takes and cloud hosting. The rest of the list is still an open
+  point in the agreement. The app holds only the
   amount the team enters, never the percentage.
