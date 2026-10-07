@@ -1,0 +1,59 @@
+<!-- @dsCard group="Screens · Tabs" name="Account — forgot password" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account — forgot password</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
+  .scr { padding: 104px 26px 40px; text-align: center; }
+  .mark { color: var(--honey); line-height: 1; }
+  .scr h1 { font-size: 24px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 16px 0 0; }
+  .scr p.lead { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 10px auto 0; max-width: 300px; }
+  .field { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 16px 18px; border-radius: 16px; text-align: left; }
+  .field svg { color: var(--muted); flex: none; }
+  .field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
+  .submit { margin-top: 16px; }
+  .note { font-size: 12px; line-height: 1.5; color: var(--ink-on-photo); margin: 16px auto 0; max-width: 280px; }
+  .alt { display: block; margin-top: 18px; font-size: 13px; color: var(--ink); text-decoration: underline; }
+</style>
+</head><body>
+<!-- AccountView, sign-in mode → "Forgot password?" (under the password field, trailing, 13px ink, underlined).
+     The address typed on the form carries over. Swift: AccountView.resetRequestPanel. -->
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+
+  <div class="screen screen--scroll">
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.65) blur(8px);transform:scale(1.1)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
+    <div class="top-scrim"></div>
+
+    <div class="scr" style="position:relative;z-index:3">
+      <!-- SF Symbol key.horizontal, 34pt light, honey -->
+      <div class="mark">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="17" cy="12" r="4"/><path d="M13 12H3l2 2 2-2 2 2 2-2"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
+      </div>
+      <h1 class="on-photo">Forgot your password?</h1>
+      <p class="lead on-photo">Enter the email you use with Soulfull and we'll send you a code to choose a new one.</p>
+
+      <div class="field glass">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        <input value="hugo@soulfullgatherings.com" />
+      </div>
+
+      <div class="submit"><button class="sg-btn sg-btn--filled">Send code</button></div>
+      <!-- An Apple sign-in has no password, and a Hide My Email address isn't one anybody would type here. -->
+      <p class="note on-photo">Joined with Apple? There's no password to reset. Go back and continue with Apple.</p>
+      <span class="alt">Back to sign in</span>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

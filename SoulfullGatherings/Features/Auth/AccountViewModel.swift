@@ -4,7 +4,8 @@
 //
 //  Drives the create-account / sign-in form: field state, validation, and the
 //  call into AuthManager plus profile sync (push local onboarding answers up on
-//  create; hydrate local settings from the profile on sign-in).
+//  create; hydrate local settings from the profile on sign-in). Also the
+//  forgot-password steps: a code by email, then a new password.
 //
 
 import AuthenticationServices
@@ -53,9 +54,15 @@ final class AccountViewModel {
     /// the last word on whether the code is right.
     var confirmationCode = "" {
         didSet {
-            let digits = String(confirmationCode.filter(\.isNumber).prefix(10))
+            let digits = Self.codeDigits(confirmationCode)
             if digits != confirmationCode { confirmationCode = digits }
         }
+    }
+
+    /// Pasted codes arrive with spaces and dashes. Digits only, up to ten,
+    /// the most `mailer_otp_length` allows.
+    private static func codeDigits(_ text: String) -> String {
+        String(text.filter(\.isNumber).prefix(10))
     }
 
     /// Transient note under the code field after a successful resend.
@@ -224,6 +231,166 @@ final class AccountViewModel {
         Haptics.success()
     }
 
+    // MARK: - Forgot password
+
+    /// Where someone who forgot their password is. `nil` is the form.
+    enum PasswordResetStep: Equatable {
+        /// Asking which address the code should go to.
+        case request
+        /// A code is on its way: enter it with a new password.
+        case newPassword
+    }
+
+    /// What the reset steps call. Closures, so the steps can be tested
+    /// without Supabase (`SoulfullTests/PasswordResetFlowTests`); the sheet
+    /// builds it from `AuthManager` with `resetBackend(auth:settings:)`.
+    struct PasswordResetBackend {
+        var sendCode: @MainActor (_ email: String) async throws -> Void
+        var verifyCode: @MainActor (_ code: String, _ email: String) async throws -> Void
+        var setPassword: @MainActor (_ password: String) async throws -> Void
+        /// Runs once the code has signed them in, to bring the profile down
+        /// as a sign-in does.
+        var signedIn: @MainActor () async -> Void
+    }
+
+    var passwordReset: PasswordResetStep?
+
+    var resetCode = "" {
+        didSet {
+            let digits = Self.codeDigits(resetCode)
+            if digits != resetCode { resetCode = digits }
+        }
+    }
+
+    var newPassword = ""
+
+    /// The code has signed them in and only the password is left. A code is
+    /// single-use, so a retry after a refused password mustn't send it again.
+    private(set) var resetCodeAccepted = false
+
+    var canSendResetCode: Bool {
+        !isWorking && trimmedEmail.contains("@") && trimmedEmail.contains(".")
+    }
+
+    /// The rule `canSubmit` enforces on create: the server's own minimum
+    /// (`password_min_length`) is lower.
+    var canSetNewPassword: Bool {
+        !isWorking && (resetCodeAccepted || resetCode.count >= 6) && newPassword.count >= 8
+    }
+
+    func resetBackend(auth: AuthManager, settings: AppSettings) -> PasswordResetBackend {
+        PasswordResetBackend(
+            sendCode: { try await auth.requestPasswordReset(email: $0) },
+            verifyCode: { try await auth.verifyPasswordResetCode($0, email: $1) },
+            setPassword: { try await auth.setNewPassword($0) },
+            signedIn: { [weak self] in await self?.hydrateProfile(auth: auth, settings: settings) }
+        )
+    }
+
+    /// "Forgot password?" on the sign-in form. The address carries over; the
+    /// password that didn't work doesn't.
+    func beginPasswordReset() {
+        password = ""
+        errorMessage = nil
+        resendMessage = nil
+        passwordReset = .request
+    }
+
+    /// "Back to sign in". The address carries back.
+    func leavePasswordReset() {
+        passwordReset = nil
+        mode = .signIn
+        resetCode = ""
+        newPassword = ""
+        resetCodeAccepted = false
+        errorMessage = nil
+        resendMessage = nil
+    }
+
+    /// Sends the code and moves on to it. A success says nothing about whether
+    /// the address has an account (see `AuthManager.requestPasswordReset`).
+    func sendResetCode(_ backend: PasswordResetBackend) async {
+        guard canSendResetCode else { return }
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false }
+
+        do {
+            try await backend.sendCode(trimmedEmail)
+            email = trimmedEmail
+            passwordReset = .newPassword
+            Haptics.tap()
+            // GoTrue sends one email per address a minute (`smtp_max_frequency`).
+            startCooldown(60)
+        } catch {
+            Haptics.bump()
+            errorMessage = AuthFailureCopy.message(for: error, during: .requestReset)
+            Log.auth.error("Password reset request failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// A new code replaces the old one on the server, so the field clears.
+    func resendResetCode(_ backend: PasswordResetBackend) async {
+        guard resendCooldown == 0, !isWorking, !resetCodeAccepted else { return }
+        errorMessage = nil
+        resendMessage = nil
+        do {
+            try await backend.sendCode(trimmedEmail)
+            resetCode = ""
+            resendMessage = "Sent — check your inbox again."
+            Haptics.tap()
+            startCooldown(60)
+        } catch {
+            Haptics.bump()
+            errorMessage = AuthFailureCopy.message(for: error, during: .resendCode)
+            Log.auth.error("Password reset resend failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Spends the code (once), then sets the password.
+    /// - `.signedIn`: done. Dismiss.
+    /// - `.failed`: `errorMessage` says which half didn't go through. After
+    ///   the code is accepted they're signed in, and only the password is left.
+    func setNewPassword(_ backend: PasswordResetBackend) async -> Outcome {
+        guard canSetNewPassword else { return .failed }
+        isWorking = true
+        errorMessage = nil
+        resendMessage = nil
+        defer { isWorking = false }
+
+        if !resetCodeAccepted {
+            do {
+                try await backend.verifyCode(resetCode, email)
+            } catch {
+                Haptics.bump()
+                errorMessage = AuthFailureCopy.message(for: error, during: .confirmCode)
+                Log.auth.error("Password reset code failed: \(error.localizedDescription)")
+                return .failed
+            }
+            resetCodeAccepted = true
+            resetCode = ""
+            // Signed in from here, whatever happens to the password: closing
+            // the sheet now must land like any other sign-in.
+            await backend.signedIn()
+        }
+
+        do {
+            try await backend.setPassword(newPassword)
+        } catch where AuthFailureCopy.isSamePassword(error) {
+            // The account already has this password. It works, and now they
+            // know it, which is all they came for.
+        } catch {
+            Haptics.bump()
+            errorMessage = AuthFailureCopy.message(for: error, during: .newPassword)
+            Log.auth.error("Setting the new password failed: \(error.localizedDescription)")
+            return .failed
+        }
+
+        newPassword = ""
+        Haptics.success()
+        return .signedIn
+    }
+
     private func startCooldown(_ seconds: Int) {
         cooldownTask?.cancel()
         resendCooldown = seconds
@@ -339,7 +506,7 @@ final class AccountViewModel {
 /// end — and everything else gets the same words per action.
 enum AuthFailureCopy {
 
-    enum Action { case createAccount, signIn, confirmCode, resendCode, apple }
+    enum Action { case createAccount, signIn, confirmCode, resendCode, apple, requestReset, newPassword }
 
     static let offline = "You're offline. Connect and try again."
     static let rateLimited = "Too many attempts — try again in a minute."
@@ -362,7 +529,25 @@ enum AuthFailureCopy {
             return "Couldn't send a new code just now. Try again in a moment."
         case .apple:
             return "Sign in with Apple didn't go through. Try again, or use your email instead."
+        case .requestReset:
+            // A malformed address; one without an account succeeds.
+            return "We couldn't send a code to that address. Check it and try again."
+        case .newPassword:
+            // Only someone who has just proved the address is theirs gets
+            // here, so naming the problem gives nothing away.
+            return errorCode(of: error) == .weakPassword
+                ? "Choose a stronger password. A longer one is the easiest fix."
+                : "We couldn't save that password. Try again."
         }
+    }
+
+    /// GoTrue refuses a "new" password that is already the account's.
+    static func isSamePassword(_ error: any Error) -> Bool {
+        errorCode(of: error) == .samePassword
+    }
+
+    private static func errorCode(of error: any Error) -> ErrorCode? {
+        (error as? AuthError)?.errorCode
     }
 
     /// Backing out of the Apple sheet is a normal choice, not a failure — it

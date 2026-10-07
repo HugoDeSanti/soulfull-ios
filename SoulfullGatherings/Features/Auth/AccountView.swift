@@ -9,6 +9,8 @@
 //  When email confirmation is pending, the sheet swaps to a code panel: the
 //  emailed link only completes on this device, so the emailed code is the path
 //  that works from a laptop, a work machine, anywhere.
+//  "Forgot password?" on the sign-in form works the same way: a code by email,
+//  then a new password.
 //
 
 import SwiftUI
@@ -22,7 +24,7 @@ struct AccountView: View {
     @State private var vm: AccountViewModel
     @FocusState private var focus: Field?
 
-    private enum Field { case name, email, password, code }
+    private enum Field { case name, email, password, code, newPassword }
 
     /// - Parameter initialName: seeds the name field — onboarding already asked.
     init(mode: AccountViewModel.Mode = .createAccount, initialName: String = "") {
@@ -52,6 +54,11 @@ struct AccountView: View {
                 VStack(spacing: 22) {
                     if vm.awaitingConfirmation {
                         confirmationPanel
+                    } else if let step = vm.passwordReset {
+                        switch step {
+                        case .request: resetRequestPanel
+                        case .newPassword: newPasswordPanel
+                        }
                     } else {
                         header
                         appleButton
@@ -65,6 +72,8 @@ struct AccountView: View {
                 .padding(.horizontal, 26)
                 .padding(.top, 84)
                 .padding(.bottom, 40)
+                .animation(.easeInOut(duration: 0.3), value: vm.passwordReset)
+                .animation(.easeInOut(duration: 0.3), value: vm.resetCodeAccepted)
             }
             .scrollDismissesKeyboard(.interactively)
 
@@ -95,7 +104,20 @@ struct AccountView: View {
             // ahead of the profile hydration that follows a sign-in, so the
             // gate replayed the tap before the saved answers had arrived, and
             // Welcome would route on a name that wasn't there yet.
-            if hasAccount, !vm.isWorking { dismiss() }
+            //
+            // Nor when a reset code signed them in: the new password is still
+            // to come, and the sheet closes once it's set.
+            if hasAccount, !vm.isWorking, !vm.resetCodeAccepted { dismiss() }
+        }
+        .onChange(of: vm.passwordReset) { _, step in
+            switch step {
+            case .request?: focus = vm.email.isEmpty ? .email : nil
+            case .newPassword?: focus = .code
+            case nil: focus = nil
+            }
+        }
+        .onChange(of: vm.resetCodeAccepted) { _, accepted in
+            if accepted { focus = .newPassword }
         }
         .onChange(of: vm.awaitingConfirmation) { _, awaiting in
             if awaiting {
@@ -119,30 +141,13 @@ struct AccountView: View {
             Image(systemName: "envelope.badge")
                 .font(.system(size: 38, weight: .light))
                 .foregroundStyle(Theme.honey)
-            VStack(spacing: 16) {
-                Text("Almost there — confirm your email")
-                    .font(Theme.headline(24))
-                    .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
-                    .multilineTextAlignment(.center)
-                Text("We sent a code to \(vm.confirmationEmail). Enter it below — it works wherever you read the email, phone or laptop.")
-                    .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkOnPhoto)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-                    .frame(maxWidth: 300)
-            }
-            // Copy only: the halo must not wrap the code field below it.
-            .onPhoto()
+            panelHeading("Almost there — confirm your email",
+                         "We sent a code to \(vm.confirmationEmail). Enter it below — it works wherever you read the email, phone or laptop.")
 
-            codeField
+            codeField(text: $vm.confirmationCode, label: "Confirmation code", identifier: "confirmation-code")
 
             if let msg = vm.errorMessage { errorBanner(msg) }
-            if let msg = vm.resendMessage {
-                Text(msg)
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkSoft)
-            }
+            if let msg = vm.resendMessage { resendNote(msg) }
 
             SGPrimaryButton(
                 title: vm.isWorking ? "One moment…" : "Confirm email",
@@ -152,7 +157,7 @@ struct AccountView: View {
                 Task { await tryConfirm() }
             }
 
-            resendButton
+            resendButton { await vm.resendCode(auth: auth) }
 
             // A confirmation that never arrives shouldn't strand the user on
             // this panel with no way back to the other sign-in options.
@@ -176,8 +181,8 @@ struct AccountView: View {
     /// One wide field rather than a row of boxes: `.oneTimeCode` lets iOS offer
     /// the code straight from Mail, a single field is what autofill targets, and
     /// it doesn't bake in a digit count the project can change.
-    private var codeField: some View {
-        TextField("", text: $vm.confirmationCode, prompt: Text("Code").foregroundStyle(Theme.muted))
+    private func codeField(text: Binding<String>, label: String, identifier: String) -> some View {
+        TextField("", text: text, prompt: Text("Code").foregroundStyle(Theme.muted))
             .focused($focus, equals: .code)
             .keyboardType(.numberPad)
             .textContentType(.oneTimeCode)
@@ -193,14 +198,20 @@ struct AccountView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(focus == .code ? Theme.glassBorderHigh : Theme.glassBorder, lineWidth: 1)
             )
-            .accessibilityLabel("Confirmation code")
-            .accessibilityIdentifier("confirmation-code")
+            .accessibilityLabel(label)
+            .accessibilityIdentifier(identifier)
     }
 
-    private var resendButton: some View {
+    private func resendNote(_ msg: String) -> some View {
+        Text(msg)
+            .font(Theme.body(12))
+            .foregroundStyle(Theme.inkSoft)
+    }
+
+    private func resendButton(_ send: @escaping () async -> Void) -> some View {
         Button {
             Haptics.tap()
-            Task { await vm.resendCode(auth: auth) }
+            Task { await send() }
         } label: {
             Text(vm.resendCooldown > 0 ? "Send a new code in \(vm.resendCooldown)s" : "Send a new code")
                 .font(Theme.body(13))
@@ -211,6 +222,141 @@ struct AccountView: View {
         }
         .buttonStyle(.plain)
         .disabled(vm.resendCooldown > 0 || vm.isWorking)
+    }
+
+    // MARK: - Forgot password
+
+    private var resetRequestPanel: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "key.horizontal")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(Theme.honey)
+                .accessibilityHidden(true)
+            panelHeading("Forgot your password?",
+                         "Enter the email you use with Soulfull and we'll send you a code to choose a new one.")
+
+            inputRow(icon: "envelope", placeholder: "Email", text: $vm.email, field: .email,
+                     contentType: .username, identifier: "reset-email")
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.send)
+                .onSubmit { Task { await vm.sendResetCode(resetBackend) } }
+
+            if let msg = vm.errorMessage { errorBanner(msg) }
+
+            SGPrimaryButton(
+                title: vm.isWorking ? "One moment…" : "Send code",
+                enabled: vm.canSendResetCode,
+                filled: true
+            ) {
+                Task { await vm.sendResetCode(resetBackend) }
+            }
+            .accessibilityIdentifier("reset-send")
+
+            // An Apple sign-in has no password, and a Hide My Email address
+            // isn't one anybody would think to type here.
+            Text("Joined with Apple? There's no password to reset. Go back and continue with Apple.")
+                .font(Theme.body(12))
+                .foregroundStyle(Theme.inkOnPhoto)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .frame(maxWidth: 280)
+                .onPhoto()
+
+            backToSignInButton
+        }
+        .padding(.top, 24)
+    }
+
+    /// The code and the new password together, so it's one step, not two.
+    /// Once the code is accepted they're signed in, and if the password is
+    /// refused only that field is left.
+    private var newPasswordPanel: some View {
+        VStack(spacing: 16) {
+            Image(systemName: vm.resetCodeAccepted ? "checkmark.seal" : "envelope.badge")
+                .font(.system(size: 38, weight: .light))
+                .foregroundStyle(Theme.honey)
+                .contentTransition(.symbolEffect(.replace))
+                .accessibilityHidden(true)
+            if vm.resetCodeAccepted {
+                panelHeading("You're signed in",
+                             "Now choose the password you'll use from here on.")
+            } else {
+                // Worded so it doesn't say whether the address has an account.
+                panelHeading("Check your email",
+                             "If there's an account for \(vm.email), we've sent it a code. Enter it with a new password. The code works wherever you read the email.")
+            }
+
+            if !vm.resetCodeAccepted {
+                codeField(text: $vm.resetCode, label: "Code from the email", identifier: "reset-code")
+            }
+
+            inputRow(icon: "lock", placeholder: "New password", text: $vm.newPassword, field: .newPassword,
+                     contentType: .newPassword, hint: "At least 8 characters", secure: true,
+                     identifier: "reset-new-password")
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .onSubmit { Task { await trySetNewPassword() } }
+            passwordRule
+
+            if let msg = vm.errorMessage { errorBanner(msg) }
+            if let msg = vm.resendMessage { resendNote(msg) }
+
+            SGPrimaryButton(
+                title: vm.isWorking ? "One moment…" : "Set new password",
+                enabled: vm.canSetNewPassword,
+                filled: true
+            ) {
+                Task { await trySetNewPassword() }
+            }
+            .accessibilityIdentifier("reset-submit")
+
+            if !vm.resetCodeAccepted {
+                resendButton { await vm.resendResetCode(resetBackend) }
+                backToSignInButton
+            }
+        }
+        .padding(.top, 24)
+    }
+
+    /// Copy only: the `onPhoto` halo must not wrap the fields below it.
+    private func panelHeading(_ title: String, _ detail: String) -> some View {
+        VStack(spacing: 16) {
+            Text(title)
+                .font(Theme.headline(24))
+                .foregroundStyle(Theme.ink)
+                .kerning(-0.2)
+                .multilineTextAlignment(.center)
+            Text(detail)
+                .font(Theme.body(14))
+                .foregroundStyle(Theme.inkOnPhoto)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .frame(maxWidth: 300)
+        }
+        .onPhoto()
+    }
+
+    private var backToSignInButton: some View {
+        Button {
+            Haptics.tap()
+            vm.leavePasswordReset()
+        } label: {
+            Text("Back to sign in")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.ink)
+                .underline()
+                .padding(.vertical, 10)
+                .widerHitArea(vertical: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("reset-back")
+    }
+
+    private var resetBackend: AccountViewModel.PasswordResetBackend {
+        vm.resetBackend(auth: auth, settings: settings)
     }
 
     // MARK: - Header
@@ -288,7 +434,7 @@ struct AccountView: View {
             // `.username` on the address, not `.emailAddress`: it's what Password
             // AutoFill pairs a saved (or newly suggested) password with.
             inputRow(icon: "envelope", placeholder: "Email", text: $vm.email, field: .email,
-                     contentType: .username)
+                     contentType: .username, identifier: "account-email")
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -298,31 +444,57 @@ struct AccountView: View {
             // well past the rule); `.password` fills a saved one on sign-in.
             inputRow(icon: "lock", placeholder: "Password", text: $vm.password, field: .password,
                      contentType: creating ? .newPassword : .password,
-                     hint: creating ? "At least 8 characters" : "", secure: true)
+                     hint: creating ? "At least 8 characters" : "", secure: true,
+                     identifier: "account-password")
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.go)
                 .onSubmit { Task { await trySubmit() } }
             if creating {
-                // The rule `canSubmit` enforces. Without it the button simply
-                // stayed dim at seven characters, with nothing saying why.
-                Text("At least 8 characters")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkOnPhoto)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 18)
-                    .padding(.top, -6)
-                    .onPhoto()
-                    // Spoken as the password field's hint instead.
-                    .accessibilityHidden(true)
+                passwordRule
+            } else {
+                forgotPasswordButton
             }
         }
+    }
+
+    /// The rule `canSubmit` enforces. Without it the button simply stayed dim
+    /// at seven characters, with nothing saying why.
+    private var passwordRule: some View {
+        Text("At least 8 characters")
+            .font(Theme.body(12))
+            .foregroundStyle(Theme.inkOnPhoto)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 18)
+            .padding(.top, -6)
+            .onPhoto()
+            // Spoken as the password field's hint instead.
+            .accessibilityHidden(true)
+    }
+
+    private var forgotPasswordButton: some View {
+        Button {
+            Haptics.tap()
+            vm.beginPasswordReset()
+        } label: {
+            Text("Forgot password?")
+                .font(Theme.body(13))
+                .foregroundStyle(Theme.ink)
+                .underline()
+                .widerHitArea(vertical: 14)
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 8)
+        .padding(.top, -2)
+        .accessibilityIdentifier("forgot-password")
     }
 
     @ViewBuilder
     private func inputRow(icon: String, placeholder: String, text: Binding<String>,
                           field: Field, contentType: UITextContentType,
-                          hint: String = "", secure: Bool = false) -> some View {
+                          hint: String = "", secure: Bool = false,
+                          identifier: String = "") -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
@@ -345,6 +517,7 @@ struct AccountView: View {
             // once it had text in it; the prompt is only read while empty.
             .accessibilityLabel(placeholder)
             .accessibilityHint(hint)
+            .accessibilityIdentifier(identifier)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
@@ -437,6 +610,14 @@ struct AccountView: View {
         focus = nil
         let outcome = await vm.confirmCode(auth: auth, settings: settings)
         if outcome == .signedIn || auth.hasAccount { dismiss() }
+    }
+
+    /// Not `|| auth.hasAccount` as above: an accepted code signs them in
+    /// before the password is set, and a refused password keeps the sheet up.
+    private func trySetNewPassword() async {
+        focus = nil
+        let outcome = await vm.setNewPassword(resetBackend)
+        if outcome == .signedIn { dismiss() }
     }
 }
 

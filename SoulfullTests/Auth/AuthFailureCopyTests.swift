@@ -25,7 +25,8 @@ private func goTrue(_ status: Int, _ code: ErrorCode) -> AuthError {
 struct AuthFailureCopyTests {
 
     /// Offline used to read as wrong credentials.
-    @Test(arguments: [AuthFailureCopy.Action.createAccount, .signIn, .confirmCode, .resendCode, .apple])
+    @Test(arguments: [AuthFailureCopy.Action.createAccount, .signIn, .confirmCode, .resendCode, .apple,
+                      .requestReset, .newPassword])
     func beingOfflineSaysSoWhateverWasTried(action: AuthFailureCopy.Action) {
         let message = AuthFailureCopy.message(for: URLError(.notConnectedToInternet), during: action)
 
@@ -67,6 +68,23 @@ struct AuthFailureCopyTests {
         let unconfirmed = AuthFailureCopy.message(for: goTrue(400, .emailNotConfirmed), during: .signIn)
 
         #expect(wrongPassword == unconfirmed)
+    }
+
+    /// Only someone who has just proved the address is theirs is choosing a
+    /// new password, so a weak one can be named as the problem.
+    @Test func aWeakNewPasswordSaysSoAndOtherRefusalsDont() {
+        let weak = AuthFailureCopy.message(for: AuthError.weakPassword(message: "", reasons: ["length"]),
+                                           during: .newPassword)
+        let other = AuthFailureCopy.message(for: goTrue(400, .validationFailed), during: .newPassword)
+
+        #expect(weak.contains("stronger"))
+        #expect(weak != other)
+    }
+
+    @Test func thePasswordTheyAlreadyHaveIsToldApart() {
+        #expect(AuthFailureCopy.isSamePassword(goTrue(422, .samePassword)))
+        #expect(!AuthFailureCopy.isSamePassword(goTrue(422, .weakPassword)))
+        #expect(!AuthFailureCopy.isSamePassword(URLError(.timedOut)))
     }
 
     /// The raw description was "The operation couldn't be completed.

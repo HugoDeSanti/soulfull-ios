@@ -1,6 +1,6 @@
 # Auth emails
 
-The two HTML files here are the Soulfull-branded versions of the Supabase auth
+The HTML files here are the Soulfull-branded versions of the Supabase auth
 emails the app can send. They are **not** part of the Xcode build and not applied
 by `supabase db push` — see *Applying them* below.
 
@@ -8,9 +8,11 @@ by `supabase db push` — see *Applying them* below.
 |---|---|---|
 | `confirm-email-change.html` | **Change Email Address** | The normal sign-up. `AuthManager.createAccount` upgrades the anonymous guest in place with `auth.update(email:password:)`, which GoTrue treats as an email *change* on an existing user. |
 | `confirm-signup.html` | **Confirm signup** | The fallback path — `signUp` when there was no anonymous session to upgrade (e.g. anonymous sign-ins are off, or launch-time auth failed). |
+| `reset-password.html` | **Reset Password** | "Forgot password?" on the sign-in sheet (`AuthManager.requestPasswordReset`). Subject: *Reset your password · Soulfull Gatherings*. |
 
-Both are needed because the app can produce either, and the user can't tell the
-difference; the copy and design are deliberately identical.
+The two confirmation emails are both needed because the app can produce either,
+and the user can't tell the difference; their copy and design are deliberately
+identical.
 
 ## The sender still says "Supabase Auth" until you set up SMTP
 
@@ -53,8 +55,11 @@ chmod +x /tmp/apply-auth-emails.sh
 SUPABASE_ACCESS_TOKEN=sbp_… /tmp/apply-auth-emails.sh --dry-run
 ```
 
-The script PATCHes **only** the four `mailer_*` fields on the project's auth
-config. It deliberately avoids `supabase config push`, which pushes the entire
+The script PATCHes **only** the four confirmation `mailer_*` fields on the
+project's auth config. It predates `reset-password.html`, which was applied on
+2026-10-07 by PATCHing just `mailer_subjects_recovery` and
+`mailer_templates_recovery_content` the same way; add those two if you revive it.
+It deliberately avoids `supabase config push`, which pushes the entire
 resolved auth config — every setting absent from a local `config.toml` would be
 reset to the CLI default, which would (among other things) switch anonymous
 sign-ins back off and take the app down.
@@ -76,6 +81,18 @@ So keep `{{ .Token }}` in any redesign of these emails. Dropping it puts the app
 back to "confirmation only works if you open the email on the phone you signed
 up on".
 
+## Why the reset email has a code and no link
+
+`reset-password.html` deliberately leaves out `{{ .ConfirmationURL }}`. A
+confirmation link opened on the wrong device still does its job, because the
+address is confirmed server-side and the app notices. A recovery link opened
+anywhere but this iPhone does nothing useful: the browser can't open
+`soulfull://`, and GoTrue has spent the token on the way, so the code in the
+same email stops working too. Mail scanners that prefetch links spend it the
+same way. The app finishes a reset only with the typed code (`verifyOTP` with
+`type: .recovery`), so there is no recovery deep link to handle and no extra
+redirect URL to allow-list. Don't add the link back.
+
 ## Template variables
 
 The code's length is the project's **`mailer_otp_length`** (6 on this project; the
@@ -86,6 +103,7 @@ strand users on a field that rejects every real code.
 `confirm-signup.html`: `{{ .Token }}`, `{{ .ConfirmationURL }}`, `{{ .Email }}`.
 `confirm-email-change.html`: `{{ .Token }}`, `{{ .ConfirmationURL }}`, `{{ .NewEmail }}`
 (`{{ .Email }}` is empty for a guest upgrade — the guest had no address).
+`reset-password.html`: `{{ .Token }}`, `{{ .Email }}`.
 
 ## Related dashboard settings
 

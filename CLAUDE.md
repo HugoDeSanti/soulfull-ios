@@ -54,6 +54,10 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
   2. Any device: the emailed numeric code → `confirmEmail(code:email:)` (`verifyOTP`). The server sets the code length (6 today); never hardcode it.
   3. Confirmed elsewhere: `refreshConfirmationState()` re-reads `GET /user`. It is polled by `beginConfirmationWatch`, which `AuthManager` owns so the watch survives the sheet closing (backs off from 5s to 60s), and it runs once at launch for a guest.
   The guest upgrade is an email **change**, so most people get the *Change Email Address* template, not *Confirm signup*. Both are branded in `supabase/templates/`.
+- **"Forgot password?"** (sign-in mode only) opens a two-step panel in the same sheet: an address → `requestPasswordReset` (`resetPasswordForEmail`), then the emailed code **plus** the new password → `verifyPasswordResetCode` (`verifyOTP(type: .recovery)`, a sign-in like `signIn`, so the profile is hydrated) → `setNewPassword` (`auth.update`).
+  - **The recovery email is code only, with no link** (`supabase/templates/reset-password.html`). A recovery link has no "confirmed elsewhere" path: opened on a laptop or prefetched by a mail scanner it spends the token, and the code in the same email dies with it. So there is no recovery deep link and no extra redirect URL.
+  - **The code is spent once** (`resetCodeAccepted`). A password refused after an accepted code is retried without the code, because they're already signed in; the sheet's auto-dismiss on `hasAccount` stands aside until the password is set. GoTrue's `same_password` counts as done.
+  - **Never say whether the address has an account.** GoTrue answers `/recover` with 200 either way, and the panel reads "If there's an account for…".
 
 **Apple token revocation (Guideline 5.1.1(v)). Don't unpick this.** Deleting an account must call Apple's `/auth/revoke`. That needs a refresh token, and the refresh token comes from a single-use authorization code that expires in about 5 minutes, so it has to be captured at sign-in:
 - **At sign-in:** `AppleSignInButton` puts `authorizationCode` into `AppleCredential` (don't drop it from the struct) → `AuthManager.storeAppleRefreshToken` → the `store-apple-token` Edge Function → `apple_credentials`.
@@ -379,13 +383,14 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - `MediaTimeMeterTests`: the payout measurement.
   - `LocalUserStoreTests`: per-member privacy.
   - `GuideDashboardTests`: UTC months, a month's money standing (estimate / no pool / due / paid), and the mapping of `guide_dashboard()`'s JSON.
-  - `AccountGateReplayTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
+  - `AccountGateReplayTests`, `PasswordResetFlowTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
 
 ### UI journeys: the only ones that earn a UI test
 | File | Journey |
 |---|---|
 | `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it; "I already have an account" offers sign-in and can be closed |
 | `AccountGateTests` | A guest opens a recipe → account sheet → closes it (button and swipe) |
+| `PasswordResetTests` | Sign-in → Forgot password (the address carries over) → a code is sent → a wrong code is turned away → back to sign-in. Uses an address with no account, so nothing is emailed |
 | `RetreatEnquiryTests` | Request a place → gate → form → Submit settles |
 | `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Catalog, detail, and the brochure (which fails soft); a tab keeps its place across a tab switch |
 | `ProgramTests` | Catalog → days → Home hand-off → a guest can't join |

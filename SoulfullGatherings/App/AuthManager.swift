@@ -489,6 +489,41 @@ final class AuthManager {
         apply(session.user)
     }
 
+    // MARK: - Forgot password
+
+    /// Emails a code for choosing a new password.
+    ///
+    /// GoTrue answers the same whether or not an account uses the address,
+    /// and sends nothing when none does, so the sheet moves on to the code
+    /// either way and can't be used to find out who has an account.
+    ///
+    /// The email carries the code alone, no link: a recovery link opened on a
+    /// laptop, or fetched by a mail scanner, would use up the code and lead
+    /// nowhere (supabase/templates/README.md). The SDK still files a PKCE
+    /// verifier for it, replacing any a pending confirmation link left. That
+    /// link then can't finish on this phone, but opening it still confirms
+    /// the address, which `refreshConfirmationState` picks up.
+    func requestPasswordReset(email: String) async throws {
+        try await supabase.auth.resetPasswordForEmail(email)
+    }
+
+    /// Signs in with the code from a reset email. The code proves the address
+    /// is theirs, so this is a sign-in like `signIn`: the member's session
+    /// replaces the guest's. The new password is set separately, because a
+    /// code is single-use and a refused password mustn't spend it.
+    func verifyPasswordResetCode(_ code: String, email: String) async throws {
+        await settleSessionCheck()
+        let digits = String(code.filter(\.isNumber))
+        let response = try await supabase.auth.verifyOTP(email: email, token: digits, type: .recovery)
+        apply(response.session?.user ?? response.user)
+    }
+
+    /// Sets the signed-in member's password.
+    func setNewPassword(_ password: String) async throws {
+        let user = try await supabase.auth.update(user: UserAttributes(password: password))
+        apply(user)
+    }
+
     /// Completes an email-confirmation / magic-link deep link. When the user
     /// taps the link in their email *on this device*, the app opens at
     /// `soulfull://auth-callback?code=…`; the SDK exchanges the PKCE code for a
