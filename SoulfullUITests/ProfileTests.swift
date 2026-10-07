@@ -58,7 +58,7 @@ final class ProfileTests: XCTestCase {
         }
     }
 
-    /// A guest can't have practised — every practice is behind the account
+    /// A guest can't have practiced — every practice is behind the account
     /// gate — so they're shown what an account keeps, not four zeros.
     func testGuestSeesAnInvitationRatherThanNumbers() {
         let app = XCUIApplication()

@@ -62,7 +62,7 @@ struct ProgramsView: View {
         }
         .task { await vm.load() }
         .task { await store.refresh() }
-        // Coming back to the tab after practising elsewhere should reflect it:
+        // Coming back to the tab after practicing elsewhere should reflect it:
         // the day may now be finished, and the next one may now be open.
         .task { await PracticeProgressStore.shared.refresh() }
         .task(id: active?.id) {

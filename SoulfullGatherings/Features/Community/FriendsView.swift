@@ -80,7 +80,7 @@ struct FriendsView: View {
                 .font(Theme.headline(34))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.3)
-            Text("Find the people you practise with. What they finish joins your Friends feed, and what you finish joins theirs.")
+            Text("Find the people you practice with. What they finish joins your Friends feed, and what you finish joins theirs.")
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)

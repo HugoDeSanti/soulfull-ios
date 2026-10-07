@@ -481,7 +481,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
   - A *class* is a finished session or Movement sitting (`countsAsClass`).
   - *Minutes* are time actually spent in those kinds, finished or not.
   - Home's "N days in a row" reads the same `streakDays`.
-  - The streak caption tells *kept today* (finished something) apart from *practised today* (only opened something).
+  - The streak caption tells *kept today* (finished something) apart from *practiced today* (only opened something).
   - In-person history is paid bookings for retreats that have ended, so it's empty for everyone while payments are off.
 - **No AI anywhere, and none planned.** A mocked concierge and a "Soul AI" welcome slide were removed. Don't bring back anything that advertises an AI: it misdescribes the app, and a real one would bring Guideline 1.2 obligations the app can't meet. "Assistant" appears only as a person's job title.
 - **No Google sign-in.** It was removed on 2026-09-03. If it ever returns, prefer the native GoogleSignIn SDK.

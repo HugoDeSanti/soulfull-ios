@@ -827,7 +827,7 @@ enum PracticeContentKind: String, Hashable, Codable, Sendable {
     }
 
     /// Whether a finished sitting counts as a **class** on the You tab, and
-    /// whether its time counts toward minutes practised. Guided practice does —
+    /// whether its time counts toward minutes practiced. Guided practice does —
     /// the three media tracks and the Movement library, where yoga lives.
     /// Writing against a prompt and reading a recipe are practice, and they keep
     /// a streak alive, but they are not a class. Exhaustive on purpose, like

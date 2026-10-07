@@ -2,7 +2,7 @@
 //  PracticeProgressStore.swift
 //  Soulfull Gatherings
 //
-//  The app's view of what this member has practised — read from the
+//  The app's view of what this member has practiced — read from the
 //  `practice_progress` view, written as rows on `practice_plays`.
 //
 //  Progress is held on the SERVER, not the device, for two reasons. The first is
@@ -290,7 +290,7 @@ struct PracticeStats: Equatable {
     /// FINISHED today. A streak carried by yesterday alone is still alive, but
     /// today is what keeps it.
     let keptToday: Bool
-    /// Whether anything was practised today at all, finished or not. Not the
+    /// Whether anything was practiced today at all, finished or not. Not the
     /// same as `keptToday`, and the difference is the one a member notices: a
     /// prompt opened and not written in, or a session stopped short, is real
     /// practice — telling them "practice today" after it reads as though it

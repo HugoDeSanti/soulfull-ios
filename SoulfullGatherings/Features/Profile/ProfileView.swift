@@ -2,10 +2,10 @@
 //  ProfileView.swift
 //  Soulfull Gatherings
 //
-//  The You tab: who you are, what you've practised, and where you've been.
+//  The You tab: who you are, what you've practiced, and where you've been.
 //
 //  A member sees four numbers — current streak, best streak, classes taken,
-//  minutes practised (`PracticeStats` defines each) — then the digital
+//  minutes practiced (`PracticeStats` defines each) — then the digital
 //  retreats they've joined and the in-person retreats they've been on. A guest
 //  has none of that to show (every practice is behind the account gate), so
 //  they're shown what an account would keep instead of a grid of zeros.

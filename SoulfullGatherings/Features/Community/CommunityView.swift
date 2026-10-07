@@ -147,7 +147,7 @@ struct CommunityView: View {
                     .font(Theme.headline(38))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
-                Text("What the circle is practising, as it happens.")
+                Text("What the circle is practicing, as it happens.")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
@@ -330,7 +330,7 @@ struct CommunityView: View {
             // Through the gate like the Friends button: the Friends screen is
             // personal, whichever way it's reached.
             emptyCard(title: "Practice alongside people you know",
-                      detail: "Add the people you practise with, and what they finish will gather here — and yours with them.",
+                      detail: "Add the people you practice with, and what they finish will gather here — and yours with them.",
                       action: "Find friends") {
                 if isMember { onOpenFriends() } else { requireAccount(onOpenFriends) }
             }

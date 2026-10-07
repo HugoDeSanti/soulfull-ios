@@ -56,7 +56,7 @@ with no connection.
 ## 3. Editing, and taking one down
 
 - **Edit freely.** A member's history keeps the title as it was when they
-  practised it.
+  practiced it.
 - **Never change or reuse an `id`.** The practice ledger, digital-retreat
   curricula and a member's saved journal reflections all point at it by id.
 - **Take a practice down with `published = false`, not a delete.** It leaves the

@@ -156,7 +156,7 @@ struct PracticeStatsTests {
         #expect(result.streakCaption == "You've completed a practice today")
     }
 
-    /// Practised today but finished nothing: the streak rests on yesterday,
+    /// Practiced today but finished nothing: the streak rests on yesterday,
     /// and "Practice today" straight after would read as though today's
     /// practice never happened.
     @Test func anUnfinishedPracticeTodayIsAskedToBeFinishedNotStarted() {

@@ -1677,7 +1677,7 @@ private struct CommunityActivityRow: Decodable {
     }
 
     /// Nil for a kind this build doesn't know — a line that can't say what was
-    /// practised is better left out than mislabelled.
+    /// practiced is better left out than mislabelled.
     var activity: CommunityActivity? {
         guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
         return CommunityActivity(

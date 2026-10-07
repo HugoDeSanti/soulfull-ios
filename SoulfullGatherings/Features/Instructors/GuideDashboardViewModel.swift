@@ -2,7 +2,7 @@
 //  GuideDashboardViewModel.swift
 //  Soulfull Gatherings
 //
-//  A guide's own numbers: who practised with them, what each past month's
+//  A guide's own numbers: who practiced with them, what each past month's
 //  pool paid them, and what this month is worth so far (0026). Shown only to
 //  a member whose account the team has linked to a guide. For everyone else
 //  `guide_dashboard()` answers no row and nothing appears.

@@ -42,7 +42,7 @@ enum CommunityLoadFailure: Equatable {
 
     var detail: String {
         switch self {
-        case .offline: "You'll need to be online to see what everyone's practising. Reconnect and try again."
+        case .offline: "You'll need to be online to see what everyone's practicing. Reconnect and try again."
         case .failed:  "Something went wrong at our end. Please try again in a moment."
         }
     }

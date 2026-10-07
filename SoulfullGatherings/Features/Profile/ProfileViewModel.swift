@@ -372,7 +372,7 @@ final class ProfileViewModel {
     /// Deterministic numbers, relative to today, so `ProfileTests` can assert
     /// exact values and a screenshot shows every state at once:
     ///
-    /// - a 4-day current streak (today and the three days before), practised
+    /// - a 4-day current streak (today and the three days before), practiced
     ///   today;
     /// - a 9-day best streak, a month back;
     /// - 13 classes (4 movement + 9 sessions) — a finished journal entry, a
