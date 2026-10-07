@@ -92,12 +92,51 @@ final class AuthManager {
         guard !isRetrying else { return }
         isRetrying = true
         defer { isRetrying = false }
-        await initialize()
+        await checkSession()
     }
 
     /// Restores an existing session or creates an anonymous one.
-    /// Called once from `AppState.initializeAuth()` at launch, and by `retry()`.
+    /// Called once from `AppState.initializeAuth()` at launch.
+    ///
+    /// The session stored on this device says who this is without the
+    /// network, so it is applied first. The launch screen stops waiting for
+    /// the server after `AppState.launchGrace`, and without this a member who
+    /// reached the app while their expired token was still refreshing on a
+    /// stalled connection would look like a guest: the account gate would ask
+    /// someone already signed in to sign in. The server check that follows confirms
+    /// the session, replaces it with a guest only if it's really gone, or
+    /// marks it `.failed` if it couldn't be reached.
     func initialize() async {
+        if let stored = supabase.auth.currentUser { apply(stored) }
+        await checkSession()
+    }
+
+    /// The session check that `initialize()` or `retry()` started, while it
+    /// runs. A second caller joins it rather than starting another.
+    private var sessionCheck: Task<Void, Never>?
+
+    private func checkSession() async {
+        if let sessionCheck { return await sessionCheck.value }
+        let check = Task { await self.restoreSession() }
+        sessionCheck = check
+        await check.value
+        if sessionCheck == check { sessionCheck = nil }
+    }
+
+    /// Lets a session check that's still running finish before something
+    /// replaces the session.
+    ///
+    /// The app no longer waits on the logo for the launch check, so someone
+    /// can reach the account sheet while it's still in flight on a stalled
+    /// connection. Left to land afterwards, the check would undo what they
+    /// just did: a late anonymous sign-in or token refresh overwrites the
+    /// session they signed in with in the Keychain, and a late failure sets
+    /// `.failed` over a healthy one.
+    private func settleSessionCheck() async {
+        await sessionCheck?.value
+    }
+
+    private func restoreSession() async {
         do {
             let session = try await supabase.auth.session
             apply(session.user)
@@ -176,6 +215,7 @@ final class AuthManager {
     /// code (`confirmEmail`), or by opening the link anywhere else and
     /// letting `refreshConfirmationState` notice.
     func createAccount(email: String, password: String, fullName: String) async throws {
+        await settleSessionCheck()
         let trimmed = fullName.trimmingCharacters(in: .whitespaces)
         let metadata: [String: AnyJSON]? = trimmed.isEmpty ? nil : ["full_name": .string(trimmed)]
         // Upgrade in place only when there's a live anonymous session to upgrade.
@@ -213,6 +253,7 @@ final class AuthManager {
     /// GoTrue rejects the wrong one harmlessly, so the likely type is tried
     /// first and the other is the fallback.
     func confirmEmail(code: String, email: String) async throws {
+        await settleSessionCheck()
         let digits = String(code.filter(\.isNumber))
         let candidates: [EmailOTPType] = pendingConfirmation == .signup
             ? [.signup, .emailChange]
@@ -379,6 +420,7 @@ final class AuthManager {
     /// by `AccountViewModel`. (Preserving the guest id would need `linkIdentity`,
     /// which requires manual linking to be enabled in the Supabase dashboard.)
     func signInWithApple(_ credential: AppleCredential) async throws {
+        await settleSessionCheck()
         let session = try await supabase.auth.signInWithIdToken(
             credentials: OpenIDConnectCredentials(provider: .apple,
                                                   idToken: credential.idToken,
@@ -442,6 +484,7 @@ final class AuthManager {
 
     /// Signs in to an existing permanent account.
     func signIn(email: String, password: String) async throws {
+        await settleSessionCheck()
         let session = try await supabase.auth.signIn(email: email, password: password)
         apply(session.user)
     }
@@ -456,6 +499,9 @@ final class AuthManager {
     @discardableResult
     func handleDeepLink(_ url: URL) async -> Bool {
         guard url.scheme == SupabaseService.authRedirectURL.scheme else { return false }
+        // A cold launch from the emailed link opens the URL while the launch
+        // check is still running.
+        await settleSessionCheck()
         do {
             let session = try await supabase.auth.session(from: url)
             apply(session.user)
@@ -484,6 +530,7 @@ final class AuthManager {
     /// Signs out of a permanent account and returns to a fresh anonymous guest
     /// session so the rest of the app keeps working.
     func signOut() async {
+        await settleSessionCheck()
         // While the session is still valid: this phone stops being theirs.
         await PushRegistrar.shared.forgetDevice()
         do {

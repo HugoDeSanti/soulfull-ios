@@ -37,7 +37,10 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 **Guides (instructors) appear only on the pages of what they made:** a "Your guide" `GuideCard` on every practice page and digital retreat, and a face chip in the session player. They **never** appear on the Practice landing (a shelf there was removed at the owner's request). Cards open the profile through the `openInstructor` environment action that `PracticeRoot` and `ProgramsRoot` install, and sheets inherit it. `from` is the back label. A guide who is already on top isn't pushed again.
 
 ### Auth
-`AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which restores or opens an **anonymous** Supabase session so catalog reads work immediately, then routes on `hasOnboarded` alone.
+`AppState.initializeAuth()` (from the app's `.task`) calls `AuthManager.initialize()`, which applies the session stored on the device (no network), then confirms it with the server or opens an **anonymous** session so catalog reads work, and routes on `hasOnboarded` alone.
+
+- **The launch logo never waits on the network for more than `AppState.launchGrace` (2s, `LaunchHold`).** The route doesn't depend on the check, so the check finishes behind the app. It used to sit out URLSession's 60s timeout on a stalled connection.
+- **Anything that replaces the session (sign-in, create, confirm, the deep link, sign-out) first awaits a check still in flight** (`settleSessionCheck`). Otherwise a late refresh or anonymous sign-in overwrites the new session in the Keychain, and a late failure sets `.failed` over a healthy one.
 
 - **Only a session that is really gone becomes a guest** (`SessionRestoreDecision`): no stored session, or GoTrue rejecting the refresh token. Offline, timeouts, 5xx and the like keep the stored session and set `.failed(ConnectionFailure)` (`.offline` / `.unreachable`); the banner's Retry, or coming back to the foreground, runs `retry()` (which keeps `state` at `.failed` and flags `isRetrying` while it tries). Falling back to a guest on any error once overwrote a member's Keychain session after a network blip at launch, and wiped their stores.
 
