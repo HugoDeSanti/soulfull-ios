@@ -11,8 +11,9 @@
 //  answer" line is derived state over eleven controls: exactly the kind of
 //  logic that reads correctly and behaves otherwise.
 //
-//  Both tests run against `-preview-enquiry`, which renders the form on a real
-//  retreat without driving the whole app to it.
+//  The form test runs against `-preview-enquiry`, which renders the form on a
+//  real retreat without driving the whole app to it. Which questions it asks,
+//  and what goes over the wire, is SoulfullTests/RetreatEnquiryFormTests.
 //
 
 import XCTest
@@ -114,63 +115,6 @@ final class RetreatEnquiryTests: XCTestCase {
         XCTAssertFalse(app.buttons["enquiry-submit"].exists,
                        "The application form opened without an account behind it")
         shot(app, "00-retreat-account-gate")
-    }
-
-    /// Every question the website asks, in the app, in the same words.
-    func testTheFormAsksTheWebsiteQuestions() {
-        let app = launch()
-
-        let title = app.staticTexts["Request a place"]
-        XCTAssertTrue(title.waitForExistence(timeout: 20), "The application form never appeared")
-        shot(app, "01-enquiry-top")
-
-        // A non-lazy `VStack` publishes every row whatever the scroll offset,
-        // so existence here is a real check on the form's content and needs no
-        // scrolling to make it one. Reaching the end of the form is proved once
-        // at the bottom of this test rather than ten times over.
-        let questions = [
-            "Name",
-            "Date of Birth",
-            "Where are you based?",
-            "Phone",
-            "Instagram",
-            "What retreat are you interested in attending?",
-            "A little about you and why this retreat called you in.",
-            "Where are you in your decision?",
-            "Email",
-            "Do you know a past member of Soulfull Gatherings? If so, who?"
-        ]
-        for question in questions {
-            XCTAssertTrue(app.staticTexts[question].exists, "The form no longer asks: \(question)")
-        }
-
-        reveal(app, app.staticTexts["What retreat are you interested in attending?"])
-        shot(app, "02-enquiry-middle")
-
-        // Email is shown, not asked: no editable field, and the address on
-        // screen is the account's. An editable one would be a control that
-        // changes nothing — the server stamps the address from the JWT.
-        XCTAssertFalse(app.textFields["enquiry-email"].exists,
-                       "The email field is editable; it must be the account's address")
-        let email = app.descendants(matching: .any)["enquiry-email"].firstMatch
-        XCTAssertTrue(email.exists, "The Email question no longer shows an address")
-        XCTAssertTrue(email.label.contains("hugo@soulfullgatherings.com"),
-                      "Email shows \(email.label) rather than the signed-in account's address")
-
-        // The investment question is long enough to be worth matching loosely.
-        let investment = app.staticTexts.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "What's the investment")
-        ).firstMatch
-        XCTAssertTrue(investment.exists, "The form no longer asks about investment")
-
-        // Its four bands are the answer list the retreat team groups by.
-        for band in ["€3500+", "€4,500+", "€5,500+", "€6,500+"] {
-            XCTAssertTrue(app.buttons[band].exists, "Investment band missing: \(band)")
-        }
-        let submit = app.buttons["enquiry-submit"]
-        reveal(app, submit)
-        XCTAssertTrue(submit.isHittable, "The form doesn't scroll through to Submit")
-        shot(app, "03-enquiry-bottom")
     }
 
     /// Submit stays inert until every required question is answered, and says

@@ -351,23 +351,9 @@ struct ProfileView: View {
         }
     }
 
-    /// The one line on the streak tile that says what to do next. All of it
-    /// reads off real history — nothing here is a nudge for its own sake.
-    ///
-    /// "Practiced today" and "kept today" are different: only a FINISHED
-    /// practice counts toward the streak, but someone who opened a prompt and
-    /// didn't write, or stopped a session short, has still practised. Telling
-    /// them "practice today" contradicts what they just did; what's true is
-    /// that a practice needs finishing — and the words name the practice and
-    /// the streak outright ("finish one" left people asking one what).
     private func streakCaption(_ stats: PracticeStats) -> String {
         guard history.ledgerStatus == .loaded else { return " " }
-        if stats.keptToday { return "You've completed a practice today" }
-        if stats.currentStreak > 0 {
-            return stats.practicedToday ? "Finish a practice today to keep your streak"
-                                        : "Practice today to keep your streak"
-        }
-        return "Finish a practice today to start your streak"
+        return stats.streakCaption
     }
 
     private func bestCaption(_ stats: PracticeStats) -> String {

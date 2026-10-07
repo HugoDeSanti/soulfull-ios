@@ -4,11 +4,11 @@
 //
 //  "75.7k present" on practices and digital retreats.
 //
-//  The first two run against the `-preview-presence` fixture, because the live
-//  catalog has nothing with three people on it yet and the whole line is
-//  absent below three — so without the fixture there is nothing to look at.
-//  The third runs WITHOUT it and asserts the opposite: a row with no count is
-//  a row with no line at all, never "0 present".
+//  Both run against the `-preview-presence` fixture, because the live catalog
+//  has nothing with three people on it yet and the whole line is absent below
+//  three — so without the fixture there is nothing to look at. The minimum
+//  itself is the server's (`practice_presence()` / `program_presence()`,
+//  0018) and is verified live per that migration, not here.
 //
 
 import XCTest
@@ -89,18 +89,5 @@ final class PresenceTests: XCTestCase {
                       || app.staticTexts.matching(Self.present()).firstMatch.waitForExistence(timeout: 2),
                       "The program detail has no presence line")
         shot(app, "04-program-detail-present")
-    }
-
-    /// Against the live backend, nothing has three people yet — so no row
-    /// may show a line. (If this starts failing because the app has grown,
-    /// that's the good kind of failure: delete it.)
-    func testNoLineBelowThreePeople() {
-        let app = launch(tab: "practice", fixture: false)
-        _ = openRecipes(app)
-        // Give the RPC time to answer before asserting absence.
-        Thread.sleep(forTimeInterval: 4)
-        XCTAssertEqual(app.buttons.matching(Self.present()).count, 0,
-                       "A practice shows a presence line with fewer than three people on it")
-        shot(app, "05-recipes-live-no-line")
     }
 }

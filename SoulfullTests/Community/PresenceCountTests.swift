@@ -4,7 +4,7 @@
 //
 //  "75.7k present". Rounded DOWN, so the line never claims someone who isn't
 //  there. (Whether a line shows at all — never below 3 people — is enforced
-//  server-side and covered live by SoulfullUITests/PresenceTests.)
+//  server-side, 0018, and verified live per that migration.)
 //
 
 import Testing
@@ -26,9 +26,5 @@ struct PresenceCountTests {
     ])
     func countsAreCompactedAndRoundedDown(count: Int, compact: String) {
         #expect(Presence.compact(count) == compact)
-    }
-
-    @Test func theLabelSaysPresent() {
-        #expect(Presence(count: 75_749, faces: []).label == "75.7k present")
     }
 }

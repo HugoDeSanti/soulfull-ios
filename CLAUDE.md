@@ -379,7 +379,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - Test daylight-saving edges with a named zone and date (São Paulo 2018-11-04 skips midnight; Madrid 2026-10-25 is 25 hours long).
 - **Style:** one behaviour per test, and the name states the scenario and result. Separate arrange / act / assert with blank lines, use `@Test(arguments:)` for tables, and `await` rather than sleep.
 - **Suites that guard the riskiest rules:**
-  - `PracticeStatsTests`: streaks, classes, minutes.
+  - `PracticeStatsTests`: streaks, classes, minutes, and the streak caption.
   - `ProgramUnlockRuleTests` and `ProgramDayResolutionTests`: day unlocks, and pending vs missing activities.
   - `MediaTimeMeterTests`: the payout measurement.
   - `LocalUserStoreTests`: per-member privacy.
@@ -390,13 +390,13 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 | File | Journey |
 |---|---|
 | `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it; "I already have an account" offers sign-in and can be closed |
-| `AccountGateTests` | A guest opens a recipe → account sheet → closes it (button and swipe) |
+| `AccountGateTests` | A guest opens a recipe → account sheet → the close button dismisses it |
 | `PasswordResetTests` | Sign-in → Forgot password (the address carries over) → a code is sent → a wrong code is turned away → back to sign-in. Uses an address with no account, so nothing is emailed |
 | `RetreatEnquiryTests` | Request a place → gate → form → Submit settles |
 | `RetreatsStackTests` · `GatheringsTabTests` · `RetreatBrochureTests` | Catalog, detail, and the brochure (which fails soft); a tab keeps its place across a tab switch |
 | `ProgramTests` | Catalog → days → Home hand-off → a guest can't join |
 | `ProfileTests` | You-tab numbers and history against `-preview-you` |
-| `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines and the 3-person minimum |
+| `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines (the 3-person minimum is SQL, verified live per 0018) |
 | `InstructorProfileTests` | The guide card on each page → profile → library hand-off; Follow; a guest's Follow → gate |
 | `GuideDashboardTests` | A linked guide's You-tab card → the dashboard (estimate, months, paid to date, practices) → close; a month with no pool shows no amount; a member who isn't a guide sees no card |
 

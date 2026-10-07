@@ -343,6 +343,23 @@ struct PracticeStats: Equatable {
         bestStreak = max(best, currentStreak)
     }
 
+    /// The one line on the streak tile that says what to do next. All of it
+    /// reads off real history — nothing here is a nudge for its own sake.
+    ///
+    /// Telling someone who opened a prompt and didn't write, or stopped a
+    /// session short, to "practice today" contradicts what they just did;
+    /// what's true is that a practice needs finishing — and the words name the
+    /// practice and the streak outright ("finish one" left people asking one
+    /// what).
+    var streakCaption: String {
+        if keptToday { return "You've completed a practice today" }
+        if currentStreak > 0 {
+            return practicedToday ? "Finish a practice today to keep your streak"
+                                  : "Practice today to keep your streak"
+        }
+        return "Finish a practice today to start your streak"
+    }
+
     /// Consecutive days ending on `day`, or nil if `day` itself wasn't one.
     private static func run(endingOn day: Date, in days: Set<Date>, calendar: Calendar) -> Int? {
         guard days.contains(day) else { return nil }

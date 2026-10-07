@@ -147,4 +147,33 @@ struct PracticeStatsTests {
         #expect(result.currentStreak == 3)
         #expect(result.bestStreak == 3)
     }
+
+    // MARK: - The streak caption
+
+    @Test func aDayAlreadyKeptSaysSo() {
+        let result = stats([sitting(daysAgo: 0), sitting(daysAgo: 1)])
+
+        #expect(result.streakCaption == "You've completed a practice today")
+    }
+
+    /// Practised today but finished nothing: the streak rests on yesterday,
+    /// and "Practice today" straight after would read as though today's
+    /// practice never happened.
+    @Test func anUnfinishedPracticeTodayIsAskedToBeFinishedNotStarted() {
+        let result = stats([sitting(.journal, daysAgo: 0, completed: false), sitting(daysAgo: 1)])
+
+        #expect(result.streakCaption == "Finish a practice today to keep your streak")
+    }
+
+    @Test func aStreakCarriedByYesterdayAsksForToday() {
+        let result = stats([sitting(daysAgo: 1), sitting(daysAgo: 2)])
+
+        #expect(result.streakCaption == "Practice today to keep your streak")
+    }
+
+    @Test func withNoStreakToKeepTheCaptionOffersToStartOne() {
+        let result = stats([sitting(daysAgo: 4)])
+
+        #expect(result.streakCaption == "Finish a practice today to start your streak")
+    }
 }

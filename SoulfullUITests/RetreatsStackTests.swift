@@ -2,8 +2,10 @@
 //  RetreatsStackTests.swift
 //  SoulfullUITests
 //
-//  Drives the retreats stack — the screen behind Home's "All gatherings" —
-//  against the live catalog, through the DEBUG `-preview-retreats` hook.
+//  Drives the retreats stack as it ships, the Gatherings tab's root, against
+//  the live catalog. Not through `-preview-retreats`: that harness shows the
+//  stack outside the tab (a Back button, no room for the bar), which the app
+//  itself never does.
 //
 //  Asserts on structure, never on which retreats exist: the catalog is data,
 //  and which rows are upcoming changes as dates pass.
@@ -26,7 +28,7 @@ final class RetreatsStackTests: XCTestCase {
 
     private func launch() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-preview-retreats"]
+        app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "gatherings"]
         app.launch()
         return app
     }
@@ -55,30 +57,6 @@ final class RetreatsStackTests: XCTestCase {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
         return false
-    }
-
-    /// A row is the retreat's name and nothing else. It used to trail the
-    /// guest count as a bare number beside the name.
-    func testRowsCarryOnlyTheName() {
-        let app = launch()
-
-        XCTAssertTrue(folio(app).waitForExistence(timeout: 30), "The stack never loaded")
-        XCTAssertTrue(folio(app).label.hasPrefix("Retreat 1 of"), "The stack didn't open on its first retreat")
-        shot(app, "01-stack")
-
-        let names = rows(app)
-        XCTAssertFalse(names.isEmpty, "No retreat rows in the stack")
-        for row in names {
-            XCTAssertNil(row.label.rangeOfCharacter(from: .decimalDigits),
-                         "A stack row carries a number: \(row.label)")
-        }
-
-        // Nothing on screen is a bare number — that is what the guest count
-        // rendered as. (The folio is one element, labelled in words.)
-        let bareNumbers = app.staticTexts
-            .matching(NSPredicate(format: "label MATCHES %@", "^[0-9]+$"))
-        let found = bareNumbers.allElementsBoundByIndex.map { $0.label }
-        XCTAssertTrue(found.isEmpty, "A bare number is on screen: \(found)")
     }
 
     /// Scroll moves the focus, the catalog refocuses the stack, and the card

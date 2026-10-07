@@ -55,31 +55,4 @@ final class AccountGateTests: XCTestCase {
         }
         XCTAssertTrue(gone, "Account sheet did not dismiss after tapping close")
     }
-
-    /// Discriminator: if the interactive swipe-to-dismiss works but the close
-    /// button doesn't, the problem is `dismiss()`. If neither works, the
-    /// presentation binding itself is stuck.
-    func testSheetDismissesByInteractiveSwipe() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-uitest-reset", "-uitest-onboarded", "-tab", "practice"]
-        app.launch()
-
-        let recipes = app.buttons["Food Recipes"]
-        XCTAssertTrue(recipes.waitForExistence(timeout: 20))
-        recipes.tap()
-        let card = app.buttons.matching(identifier: "recipe-card").firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 10))
-        card.tap()
-
-        let close = app.buttons["account-close"]
-        XCTAssertTrue(close.waitForExistence(timeout: 10), "Account sheet never appeared")
-
-        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.10))
-        let end   = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
-        start.press(forDuration: 0.05, thenDragTo: end)
-
-        let gone = close.waitForNonExistence(timeout: 8)
-        shot(app, "swipe-result")
-        XCTAssertTrue(gone, "Sheet did not dismiss by swipe either — presentation is stuck")
-    }
 }

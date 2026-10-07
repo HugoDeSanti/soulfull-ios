@@ -31,16 +31,10 @@ struct InstructorLibraryTests {
     @Test func aGuidesWrittenPracticesAreTheOnesThatNameThem() {
         let alma = libraryOf("alma-guerra")
 
-        #expect(alma.exercises.map(\.id) == [4, 1])
+        #expect(alma.exercises.map(\.id) == [4, 1], "Library order, not id order")
         #expect(alma.recipes.map(\.id) == [2])
         #expect(alma.journals.map(\.id) == [5])
         #expect(alma.count == 4)
-    }
-
-    @Test func theyKeepTheLibrarysOwnOrder() {
-        let alma = libraryOf("alma-guerra")
-
-        #expect(alma.exercises.map(\.id) == [4, 1], "Library order, not id order")
     }
 
     @Test func anotherGuidesPracticesAreLeftOut() {

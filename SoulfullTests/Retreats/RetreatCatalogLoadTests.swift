@@ -69,15 +69,6 @@ struct RetreatCatalogLoadTests {
         #expect(vm.loadFailure == nil)
     }
 
-    /// Navigating away mid-fetch cancels it; nobody is waiting on that answer.
-    @Test func aCancelledLoadIsNotAFailure() async {
-        let vm = viewModel(.failure(URLError(.cancelled)))
-
-        await vm.load()
-
-        #expect(vm.loadFailure == nil)
-    }
-
     // MARK: - Empty is an answer, not a starting state
 
     /// The screen draws before its load starts. An empty catalog then must not
@@ -102,12 +93,14 @@ struct RetreatCatalogLoadTests {
         #expect(vm.hasLoaded)
     }
 
+    /// Navigating away mid-fetch cancels it; nobody is waiting on that answer.
     @Test func aCancelledLoadHasNotAnswered() async {
         let vm = viewModel(.failure(URLError(.cancelled)))
 
         await vm.load()
 
         #expect(!vm.hasLoaded)
+        #expect(vm.loadFailure == nil)
     }
 
     // MARK: - Coming back to the tab

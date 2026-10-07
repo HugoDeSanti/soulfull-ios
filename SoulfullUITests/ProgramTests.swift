@@ -12,7 +12,7 @@
 //  code, or by any test that stops at the network layer. Only looking at the
 //  screen catches it.
 //
-//  The third test guards the gate: enrolling is the one thing on this tab that
+//  The last test guards the gate: enrolling is the one thing on this tab that
 //  needs an account, and the RLS policy behind it refuses anonymous guests, so
 //  a gate that failed open would produce a bare error rather than a sign-in
 //  sheet.
@@ -40,24 +40,17 @@ final class ProgramTests: XCTestCase {
         return app
     }
 
-    /// The catalog comes from Supabase, filtered to `published`. No fixture is
-    /// involved — `-preview-programs` is deliberately NOT passed.
-    func testProgramsTabListsAPublishedProgramFromTheDatabase() {
+    /// The fail-soft guard. A broken curriculum renders as a program with no
+    /// days and no error, so the assertion has to be on the days themselves.
+    /// The catalog comes from Supabase, filtered to `published`: no fixture is
+    /// involved (`-preview-programs` is deliberately NOT passed).
+    func testProgramDetailRendersDaysDecodedFromTheCurriculum() {
         let app = launchOnProgramsTab()
 
         let card = app.buttons.matching(identifier: "program-card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 25),
                       "No program card appeared — the catalog fetch, the `published` filter, or the seed is wrong")
         shot(app, "01-programs-catalog")
-    }
-
-    /// The fail-soft guard. A broken curriculum renders as a program with no
-    /// days and no error, so the assertion has to be on the days themselves.
-    func testProgramDetailRendersDaysDecodedFromTheCurriculum() {
-        let app = launchOnProgramsTab()
-
-        let card = app.buttons.matching(identifier: "program-card").firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 25), "Programs catalog never appeared")
         card.tap()
 
         // Any element type: a day a guest can't open isn't announced as a
