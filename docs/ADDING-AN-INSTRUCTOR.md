@@ -95,7 +95,14 @@ update public.instructors
  where id = 'alma-guerra';
 ```
 
-This does three things. Their **Following** count becomes the number of guides
+**Linking replaces the guide's name with the account's** (0027). From then on
+the name lives on the member's profile (`profiles.full_name`): renaming the
+member renames the guide and the `lead` on their sessions and digital
+retreats, and editing the guide's name in the dashboard is reverted. A guide's
+name is public in full, where Community shows members as "First L.". An
+account with no name yet leaves the guide's name until it gets one.
+
+Linking also does three things. Their **Following** count becomes the number of guides
 their account follows (members follow guides, so that is what a guide can
 follow; unlinked, it reads 0). On their own page the Follow button becomes
 "This is your profile". And their You tab gains the **guide dashboard** (0026):

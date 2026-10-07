@@ -215,6 +215,7 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
 - **`instructors`** (0019): rows written by the team, not member accounts.
   - `user_id` (a guide's own account) is hidden from clients by a **column grant**, so the app lists columns explicitly (`select *` fails with 42501).
   - A trigger keeps `lead` on sessions and programs equal to the guide's name.
+  - **A guide linked to an account is named by that account** (0027): `instructors.name` is then a trigger-kept copy of `profiles.full_name`, renaming the member renames the guide, and a direct edit is reverted. A person can't have one name as a guide and another as a member.
   - Runbook: `docs/ADDING-AN-INSTRUCTOR.md`.
 - **`creator_pools`** (0026): one row per UTC month (`month` is its first day), the amount the team sets aside for guides, and `paid_at`. Written by the team in the SQL editor; **no client access** (RLS with zero policies, grants revoked). Runbook: `docs/CREATOR-PAYOUTS.md`.
 
@@ -461,7 +462,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
 **Open items:**
-- **No guide sees a dashboard yet:** none of the (placeholder) guides is linked to an account, and no pool is set. Link a real guide (`docs/ADDING-AN-INSTRUCTOR.md` §4) and set a pool (`docs/CREATOR-PAYOUTS.md`).
+- **No real guide sees a dashboard yet**, and no pool is set. The placeholder guide `alma-guerra` is linked to the owner's test account (hpdesanti+test@gmail.com, named "Hugo Santi", 2026-10-07), so it is now called "Hugo Santi" everywhere, and **every practice and digital retreat is credited to it** (the other four placeholder guides have empty libraries). That account's own plays don't count toward the guide, and the guide page shows it "This is your profile". Unlink with `update instructors set user_id = null where id = 'alma-guerra'`. Link a real guide (`docs/ADDING-AN-INSTRUCTOR.md` §4) and set a pool (`docs/CREATOR-PAYOUTS.md`).
 - ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
 - **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
 - **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.
