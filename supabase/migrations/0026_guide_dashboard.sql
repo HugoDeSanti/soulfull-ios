@@ -48,9 +48,21 @@
 --   * Earnings are rounded DOWN to the cent, so the shares of a pool never
 --     add up to more than the pool.
 --
--- NOT APPLIED YET. Apply through the Management API (see CLAUDE.md →
--- Migrations), backfill supabase_migrations.schema_migrations the same day,
--- and run the verification at the bottom.
+-- APPLIED 2026-10-07 through the Management API, in one transaction with its
+-- supabase_migrations.schema_migrations row (0026), after a dry run inside an
+-- aborted transaction. The dry run, as two throwaway confirmed members (a guide
+-- linked to alma-guerra and a listener) on a session given that guide: a play
+-- inserted claiming another guide was stamped alma-guerra; a PATCH to
+-- instructor_id and seconds_played = 99999 left the guide and clamped to 900;
+-- the guide's own 300s play didn't count (their month: 900s, a 100% share, the
+-- whole $1,000 test pool); the listener and a guest claim got no row; both
+-- client tables answered 42501; deleting the listener nulled user_id and kept
+-- instructor_id. Verified live after applying: no client grants on either
+-- table, EXECUTE for `authenticated` only, both triggers enabled, no
+-- updated_at moved by the backfill (max unchanged), the backfill credited the
+-- 6 written-practice plays to their guides and no session play (no session
+-- had a guide), and over REST the anon key gets 42501 from the function and
+-- both tables (present, refused).
 
 -- ---------------------------------------------------------------------------
 -- 1. practice_plays.instructor_id

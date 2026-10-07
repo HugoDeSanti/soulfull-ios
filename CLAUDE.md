@@ -456,7 +456,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
 **Open items:**
-- ⚠️ **`0026_guide_dashboard.sql` is written but NOT APPLIED** (the one exception to "every file in `supabase/migrations/` has been applied"). Until it is, `guide_dashboard()` answers 404, so nobody sees a dashboard, and no play is stamped with its guide. Apply it, backfill `schema_migrations`, run its verification block, then delete this line.
+- **No guide sees a dashboard yet:** none of the (placeholder) guides is linked to an account, and no pool is set. Link a real guide (`docs/ADDING-AN-INSTRUCTOR.md` §4) and set a pool (`docs/CREATOR-PAYOUTS.md`).
 - ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
 - **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
 - **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.
