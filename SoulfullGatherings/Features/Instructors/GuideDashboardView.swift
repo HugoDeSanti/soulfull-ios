@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  A guide's numbers, for the guide alone: this month so far, the people who
-//  practised with them month by month, what each past month's pool paid
+//  practiced with them month by month, what each past month's pool paid
 //  them, and how each practice is doing. Opened from the card at the top of
 //  their You tab, which only a member linked to a guide ever sees.
 //
@@ -138,7 +138,6 @@ struct GuideDashboardView: View {
                 if !dashboard.programs.isEmpty {
                     programs(dashboard)
                 }
-                howItWorks
             }
             .padding(.top, 36)
         }
@@ -162,7 +161,7 @@ struct GuideDashboardView: View {
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.3)
                     .multilineTextAlignment(.center)
-                Text("Who practised with you, and what it earned.")
+                Text("Who practiced with you, and what it earned.")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
@@ -212,8 +211,8 @@ struct GuideDashboardView: View {
                         .font(Theme.headline(40, weight: .light))
                         .kerning(-1)
                         .foregroundStyle(Theme.ink)
-                    Text(dashboard.totals.people == 1 ? "person has practised with you"
-                                                      : "people have practised with you")
+                    Text(dashboard.totals.people == 1 ? "person has practiced with you"
+                                                      : "people have practiced with you")
                         .font(Theme.body(13))
                         .foregroundStyle(Theme.inkSoft)
                     Text("\(dashboard.totals.minutesHeard.formatted()) minutes of your sessions heard, all time")
@@ -319,28 +318,6 @@ struct GuideDashboardView: View {
                 }
             }
         }
-    }
-
-    // MARK: How it's worked out
-
-    private var howItWorks: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("HOW YOUR EARNINGS ARE WORKED OUT")
-                .font(Theme.eyebrow(10))
-                .tracking(2.4)
-                .foregroundStyle(Theme.honey)
-            Text("Each month the team sets a pool for guides. Your share of it is the minutes of your sessions people heard, over the minutes heard across every guide's sessions that month.")
-            Text("Only time actually heard counts. Skipping ahead or leaving a session paused adds nothing, and your own listening isn't included. Your journal prompts, movement and recipes show who they reached, but they aren't part of the pool.")
-            Text("Months run on UTC. This month's figure is an estimate until it closes, and a month shows an amount only once its pool is set.")
-        }
-        .font(Theme.body(13))
-        .foregroundStyle(Theme.inkSoft)
-        .lineSpacing(3)
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: Pieces
