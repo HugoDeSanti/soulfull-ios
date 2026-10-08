@@ -58,12 +58,12 @@ Paste the **Review notes** block below into App Store Connect → the 1.0 versio
 **App Store Connect (filled 2026-10-08 except where unticked):**
 - [x] Description, subtitle, keywords, promotional text, copyright, category (Health & Fitness / Lifestyle), marketing and support URLs, 7 screenshots at 6.9".
 - [x] Price: free. Availability: every territory except China mainland, which needs an ICP filing.
-- [x] Age rating questionnaire answered: user-generated content, health/wellness topics and social media are yes, everything else none. **Confirm the rating it shows in the web UI.**
+- [x] Age rating: **13+**. The questionnaire is answered (user-generated content, health/wellness topics and social media are yes, everything else none), and the override is set to 13+ to match the Terms' minimum age.
 - [ ] **EU Digital Services Act trader status** (Business → Compliance). The app isn't sold in the EU until it's declared.
 - [ ] **App Privacy answers** entered by hand, to match `SoulfullGatherings/PrivacyInfo.xcprivacy`. There's no API for this.
 - [ ] Content rights: "Does your app contain, show, or access third-party content?"
-- [ ] App Review contact (name, phone, email) and the demo credentials.
-- [ ] A build attached to the 1.0 version.
+- [x] App Review contact, the notes block below, and the demo credentials, all in App Review Information (2026-10-08).
+- [x] Build 1.0 (16) attached to the 1.0 version (2026-10-08).
 - [ ] The privacy policy and Terms updated on the website (Community, photos, push, the application form, Report/Block, community standards) **before** submitting.
 
 ## Creating the demo account
