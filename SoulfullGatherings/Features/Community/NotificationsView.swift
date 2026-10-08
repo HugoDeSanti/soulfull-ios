@@ -17,6 +17,8 @@ struct NotificationsView: View {
     /// read. Grows when a refresh (or a like push while the screen is open)
     /// brings in more.
     @State private var unreadAtOpen: Set<UUID> = []
+    @State private var reporting: ReportTarget?
+    @State private var blocking: CommunityMember?
 
     var body: some View {
         ScrollView {
@@ -45,6 +47,9 @@ struct NotificationsView: View {
         // A refresh, or a reload for a like push tapped while this screen is
         // already open, can bring in rows the task above never saw.
         .onChange(of: vm.notifications) { markShownRead() }
+        // Pushed from the bell, which only a member sees.
+        .memberSafety(vm: vm, reporting: $reporting, blocking: $blocking,
+                      isMember: true, requireAccount: { $0() })
     }
 
     /// Marks read what is unread on screen now, keeping its dot for this visit.
@@ -151,12 +156,17 @@ struct NotificationsView: View {
                     .frame(width: 8, height: 8)
                     .accessibilityHidden(true)
             }
+            if let actor = note.actor {
+                MemberSafetyMenu(member: actor,
+                                 onReport: { reporting = ReportTarget(member: actor, playID: note.playID) },
+                                 onBlock: { blocking = actor })
+            }
         }
         .padding(12)
-        .padding(.trailing, 6)
+        .padding(.trailing, note.actor == nil ? 6 : 0)
         .soulGlassCard(tint: unread ? Theme.honey.opacity(0.05) : nil,
                        stroke: unread ? Theme.honey.opacity(0.28) : Theme.glassBorder)
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(note.actor?.displayName ?? "Someone") liked your \(note.practiceTitle ?? "practice") practice, \(relative(note.createdAt))\(unread ? ", new" : "")")
         .accessibilityIdentifier("notification-row")
     }

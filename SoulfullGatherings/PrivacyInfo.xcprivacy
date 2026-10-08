@@ -5,9 +5,10 @@
 	<!--
 	  Privacy manifest for Soulfull Gatherings.
 
-	  Covers only what THIS app does. Supabase and Stripe ship their own
-	  manifests inside their frameworks, and Apple merges them into the
-	  privacy report — do not restate their collection here.
+	  Covers only what THIS app does. Supabase ships its own manifest inside
+	  its frameworks, and Apple merges it into the privacy report — do not
+	  restate its collection here. (Stripe left the binary with the client
+	  payment rail; see AppFeatures.paymentsEnabled.)
 
 	  Keep this in sync with the App Store Connect privacy questionnaire; a
 	  mismatch between the two is a review flag.
@@ -83,10 +84,89 @@
 			</array>
 		</dict>
 
-		<!-- Retreat reservations written to `bookings` by the Stripe webhook. -->
+		<!--
+		  No PurchaseHistory: nothing is bought in the app while
+		  AppFeatures.paymentsEnabled is false. Bring it back with payments.
+		-->
+
+		<!--
+		  The retreat application ("Request a place", Features/Retreats/Enquiry/)
+		  asks for a phone / WhatsApp number. Sent through send-retreat-enquiry
+		  to the team's inbox; not stored in the app's database.
+		-->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!--
+		  The same application's optional Instagram handle.
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContactInfo</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!--
+		  Free text a member writes to the team: the application's "A little
+		  about you" and referral answers, and the optional note on a member
+		  report (report-member, member_reports). Never shown to other members.
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!--
+		  The member's friends (`friendships`): Apple's Contacts type covers "a
+		  social graph" as well as an address book. The app never reads the
+		  phone's contacts.
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeContacts</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!--
+		  The APNs device token (device_tokens), registered only for a signed-in
+		  member who allows notifications, used only to deliver likes, and
+		  removed on sign-out and account deletion (PushRegistrar).
+		-->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
@@ -99,8 +179,8 @@
 
 		<!--
 		  Practice activity: which session, prompt, exercise or recipe was
-		  opened, how much of it was consumed, and when (`practice_plays`, see
-		  0008_practice_progress.sql).
+		  opened, how much of it was consumed, and when (`practice_plays`, first
+		  created in 0008 — `git show d20e3f6:supabase/migrations/`).
 
 		  Declared because it is genuinely collected and linked to the account —
 		  it powers "Continue where you left off" and is the record content
@@ -110,8 +190,10 @@
 		  FINISHED session, movement sequence or recipe (never a journal prompt)
 		  is also shown to other members in the Community feed as "<first name>
 		  <last initial>. practiced <title>", unless the member turns
-		  "Share my practice" off on the You tab. Friendships (`friendships`)
-		  fall under the same type.
+		  "Share my practice" off on the You tab. Likes, guide follows and
+		  blocks (`member_blocks`, 0028) fall under the same type; friendships
+		  are declared as Contacts. Analytics too: the guide dashboard shows a
+		  guide how many people their sessions reached (0026).
 
 		  Note what is NOT here: the text of a journal reflection. Only the fact
 		  that a prompt was opened is recorded — the writing itself stays on the
@@ -128,12 +210,17 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
 
 		<!--
 		  Onboarding answers: intentions, body state, practice frequency
-		  (`profiles.intentions` / `body_state` / `frequency`).
+		  (`profiles.intentions` / `body_state` / `frequency`). Also the
+		  retreat application's date of birth, city ("Where are you based?"),
+		  chosen retreat, decision stage and investment band, which go to the
+		  team by email. The city is typed, never read from the device, so it
+		  is declared here rather than as Coarse Location.
 
 		  Declared as Other rather than Health: these are self-described
 		  wellness preferences used to shape content, not medical or fitness

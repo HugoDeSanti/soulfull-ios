@@ -181,6 +181,14 @@ struct PracticePlayerView: View {
                             .foregroundStyle(Theme.inkSoft)
                     }
                     .padding(.top, 2)
+                    if let reminder = media.category?.safetyReminder {
+                        Text(reminder)
+                            .font(Theme.body(12))
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 6)
+                            .accessibilityIdentifier("player-safety")
+                    }
                 }
                 .padding(.horizontal, 28)
 
@@ -258,6 +266,12 @@ struct PracticePlayerView: View {
                                 .font(Theme.headline(20))
                                 .foregroundStyle(.white)
                                 .kerning(-0.3)
+                            if let reminder = media.category?.safetyReminder {
+                                Text(reminder)
+                                    .font(Theme.body(11))
+                                    .foregroundStyle(Color.white.opacity(0.7))
+                                    .padding(.top, 2)
+                            }
                         }
                         .padding(.horizontal, 22)
                         .padding(.bottom, 8)

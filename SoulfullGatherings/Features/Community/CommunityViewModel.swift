@@ -54,8 +54,10 @@ enum CommunityLoadFailure: Equatable {
 /// feed waiting for the friends, the reset between members, marking only what
 /// was shown — can be tested without a network
 /// (`SoulfullTests/Community/CommunityLoadTests`). The app always uses `.live`.
-/// Friend requests and likes are writes with their own optimistic handling and
-/// still go straight to `SupabaseService`.
+/// Accepting, removing and likes are writes with their own optimistic handling
+/// and still go straight to `SupabaseService`; sending a request, blocking and
+/// reporting come through here, because what they do on failure is a rule
+/// (`CommunitySafetyTests`).
 struct CommunityBackend {
     var currentUserID: @MainActor () -> UUID?
     /// Everyone's feed for nil; only these members' otherwise.
@@ -65,6 +67,10 @@ struct CommunityBackend {
     /// Stamps exactly these notifications read — never "everything unread".
     var markNotificationsRead: @MainActor (_ userID: UUID, _ ids: [UUID]) async throws -> Void
     var searchMembers: @MainActor (_ query: String) async throws -> [CommunityMember]
+    var sendFriendRequest: @MainActor (_ from: UUID, _ to: UUID) async throws -> Void
+    /// Blocks `memberID` on behalf of `userID` (0028).
+    var block: @MainActor (_ memberID: UUID, _ userID: UUID) async throws -> Void
+    var report: @MainActor (_ report: MemberReport) async throws -> Void
     var now: @MainActor () -> Date
 
     /// Computed rather than stored, so there is no shared global to make
@@ -77,6 +83,9 @@ struct CommunityBackend {
             fetchNotifications: { try await SupabaseService.shared.fetchNotifications(userID: $0) },
             markNotificationsRead: { try await SupabaseService.shared.markNotificationsRead(userID: $0, ids: $1) },
             searchMembers: { try await SupabaseService.shared.searchMembers($0) },
+            sendFriendRequest: { try await SupabaseService.shared.sendFriendRequest(from: $0, to: $1) },
+            block: { try await SupabaseService.shared.blockMember($0, userID: $1) },
+            report: { try await SupabaseService.shared.reportMember($0) },
             now: { Date.now }
         )
     }
@@ -141,6 +150,12 @@ final class CommunityViewModel {
     private(set) var actionError: String?
     /// Ids with an action in flight, so a button can't double-fire.
     private(set) var busy: Set<UUID> = []
+
+    /// Members blocked from this screen this session. The server already
+    /// leaves them out of every read once the block lands (0028); this keeps
+    /// them off screen meanwhile — including from a read that set off before
+    /// the block and answers after it.
+    private(set) var hiddenMembers: Set<UUID> = []
 
     private var loadedFor: UUID?
     private let backend: CommunityBackend
@@ -245,7 +260,7 @@ final class CommunityViewModel {
         do {
             let rows = try await backend.fetchNotifications(userID)
             guard generation == self.generation else { return }
-            notifications = rows
+            notifications = rows.filter { !isHidden($0.actor?.id) }
             notificationsFailure = nil
             notificationsLoaded = true
             notificationsLoadedAt = backend.now()
@@ -343,11 +358,12 @@ final class CommunityViewModel {
         do {
             let rows = try await backend.fetchActivity(scope == .all ? nil : ids)
             guard generation == self.generation else { return }
+            let shown = rows.filter { !isHidden($0.member.id) }
             switch scope {
             case .all:
-                allActivity = rows
+                allActivity = shown
             case .friends:
-                friendsActivity = rows
+                friendsActivity = shown
                 friendsFeedReadFor = Set(ids)
             }
             activityFailure = nil
@@ -373,7 +389,7 @@ final class CommunityViewModel {
         do {
             let rows = try await backend.fetchFriendships(userID)
             guard generation == self.generation else { return }
-            friendships = rows
+            friendships = rows.filter { !isHidden($0.otherID) }
             friendshipsFailure = nil
             friendshipsLoaded = true
             friendshipsLoadedAt = backend.now()
@@ -384,6 +400,11 @@ final class CommunityViewModel {
             Log.data.info("Friendships unavailable: \(error.localizedDescription)")
             friendshipsFailure = CommunityLoadFailure(offline: error.isOffline)
         }
+    }
+
+    private func isHidden(_ memberID: UUID?) -> Bool {
+        guard let memberID else { return false }
+        return hiddenMembers.contains(memberID)
     }
 
     private func isFresh(_ loadedAt: Date?) -> Bool {
@@ -428,14 +449,15 @@ final class CommunityViewModel {
         searchFailure = nil
         actionError = nil
         busy = []
+        hiddenMembers = []
     }
 
     // MARK: - Friends
 
     func sendRequest(to member: CommunityMember) async {
         guard let userID else { return }
-        await perform(on: member.id) {
-            try await SupabaseService.shared.sendFriendRequest(from: userID, to: member.id)
+        await perform(on: member.id, member: member) {
+            try await self.backend.sendFriendRequest(userID, member.id)
         } optimistic: {
             friendships.insert(Friendship(requesterID: userID, addresseeID: member.id, status: .pending,
                                           createdAt: .now, other: member, direction: .sent), at: 0)
@@ -467,7 +489,9 @@ final class CommunityViewModel {
 
     /// Applies the change locally first so the button answers at once, then
     /// asks the server; on failure the truth is re-read rather than guessed.
-    private func perform(on memberID: UUID, _ action: () async throws -> Void,
+    /// `member` names them in a refusal that's about them (the cooldown).
+    private func perform(on memberID: UUID, member: CommunityMember? = nil,
+                         _ action: () async throws -> Void,
                          optimistic: () -> Void) async {
         guard !busy.contains(memberID) else { return }
         busy.insert(memberID)
@@ -486,10 +510,76 @@ final class CommunityViewModel {
             Haptics.bump()
             Log.data.error("Friend action failed: \(error.localizedDescription)")
             friendships = before
-            actionError = error.isOffline
-                ? "You're offline. Reconnect and try again."
-                : "That didn't go through. Please try again."
+            actionError = Self.friendActionMessage(for: error, about: member)
         }
+    }
+
+    /// What a failed friend action says. A request inside the 30 days after
+    /// the last one to that person was declined (0028) is refused by the
+    /// server with `friend_request_cooldown`, and says so rather than "try
+    /// again" — trying again is exactly what won't work.
+    static func friendActionMessage(for error: any Error, about member: CommunityMember?) -> String {
+        if error.isOffline { return "You're offline. Reconnect and try again." }
+        if error.isFriendRequestCooldown {
+            let name = member?.displayName ?? "them"
+            return "You can send \(name) another request 30 days after your last one was declined."
+        }
+        return "That didn't go through. Please try again."
+    }
+
+    // MARK: - Safety
+
+    /// Blocks a member (0028): from now on neither sees the other anywhere in
+    /// Community, any friendship or request between them ends, and their likes
+    /// on each other's practices go. They aren't told. Off screen at once;
+    /// back on screen only if the server refuses. Returns whether it held.
+    @discardableResult
+    func block(_ member: CommunityMember) async -> Bool {
+        guard let userID, member.id != selfID, !busy.contains(member.id) else { return false }
+        busy.insert(member.id)
+        defer { busy.remove(member.id) }
+        actionError = nil
+        let before = (all: allActivity, friends: friendsActivity, friendships: friendships,
+                      notifications: notifications, search: searchResults)
+        hiddenMembers.insert(member.id)
+        allActivity.removeAll { $0.member.id == member.id }
+        friendsActivity.removeAll { $0.member.id == member.id }
+        friendships.removeAll { $0.otherID == member.id }
+        notifications.removeAll { $0.actor?.id == member.id }
+        searchResults.removeAll { $0.id == member.id }
+        #if DEBUG
+        if Self.isPreview { Haptics.success(); return true }
+        #endif
+        do {
+            try await backend.block(member.id, userID)
+            Haptics.success()
+            // Their likes on my lines went with the block; the counts follow.
+            activityLoadedAt = [:]
+            await loadActivity(force: true)
+            return true
+        } catch {
+            Haptics.bump()
+            Log.data.error("Block failed: \(error.localizedDescription)")
+            hiddenMembers.remove(member.id)
+            allActivity = before.all
+            friendsActivity = before.friends
+            friendships = before.friendships
+            notifications = before.notifications
+            searchResults = before.search
+            actionError = error.isOffline
+                ? "You're offline, so \(member.displayName) isn't blocked. Reconnect and try again."
+                : "We couldn't block \(member.displayName) just now. Please try again."
+            return false
+        }
+    }
+
+    /// Files a report with the team. Throws so the sheet can offer a retry and
+    /// keep what was written; the sheet owns its sending state.
+    func report(_ report: MemberReport) async throws {
+        #if DEBUG
+        if Self.isPreview { try await Task.sleep(for: .milliseconds(400)); return }
+        #endif
+        try await backend.report(report)
     }
 
     // MARK: - Search
@@ -530,7 +620,7 @@ final class CommunityViewModel {
         do {
             let results = try await backend.searchMembers(query)
             guard !Task.isCancelled, isCurrentSearch(query) else { return }
-            searchResults = results
+            searchResults = results.filter { !isHidden($0.id) }
             searchFailure = nil
         } catch where error.isCancellation {
             return

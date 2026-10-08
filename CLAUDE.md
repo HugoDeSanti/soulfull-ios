@@ -72,7 +72,7 @@ Browsing is free. The account is asked for at the moment someone reaches for som
 | Open to a guest | Gated on `auth.hasAccount` |
 |---|---|
 | Home, the retreat catalog and detail, every Practice list, browsing digital retreats | Playing a session; journal / movement / recipe detail; joining a program |
-| Community feed (All) | The Friends scope and screen; liking |
+| Community feed (All); **Report** a member (safety isn't gated) | The Friends scope and screen; liking; **Block** (a block must outlive the session, and a guest is disposable) |
 | Instructor profiles, "Your guide" cards | Follow (the replay *sets* the state and never toggles it: `InstructorProfileViewModel.setFollowing`) |
 | | The retreat application ("Request a place") |
 
@@ -87,12 +87,13 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0026 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0028 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
 │                                  #   delete-account — Stripe customer, Apple revoke, avatars/<id>/ (each best-effort), then the user
 │                                  #   store-apple-token; send-like-push (--no-verify-jwt + x-webhook-secret; failures answered 200)
+│                                  #   report-member — stores a member report (service role) + emails info@; a guest may report
 ├── templates/                     # Branded auth emails (see its README)
 └── placeholder-media/             # Generated test sessions: seed.sql / remove.sql + the generators (see its README)
 SoulfullTests/ · SoulfullUITests/  # See *Testing*
@@ -123,6 +124,7 @@ SoulfullGatherings/
 - **`WrittenPracticeStore`** keeps the last library it read in Caches, so the pages open offline. `isAuthoritative` means the tables were read *this launch*, and only then does an absent practice count as gone.
 - **`PushRegistrar`** registers a token only for a signed-in member, never a guest, and forgets the device on sign-out. It asks for permission once, from a card on the Community tab and never at launch. A tapped like opens Community → Notifications; a tapped program reminder opens that digital retreat (`openProgramRequested`, the same hand-off as Home's day card). Debug builds use the APNs sandbox and Release builds production.
 - **`CommunityViewModel`** fetches the Friends feed server-side by friend ids. It does **not** filter the All feed, because a friend's last practice can be older than everyone's last hundred.
+- **`MemberSafety`** (Guideline 1.2): a "⋯" `MemberSafetyMenu` beside every other member (feed, search, requests, friends, notifications) offers **Report** (`ReportMemberSheet` → `report-member`) and **Block** (confirmation, then `CommunityViewModel.block`, which takes them off every list at once and keeps them off — `hiddenMembers` — even from a read that answers after the block). One `.memberSafety(…)` host per screen owns the dialog and the sheet; a guest's Block from inside the Report sheet waits for the sheet to close, because the account sheet can't rise over it. You tab → **Blocked members** (`BlockedMembersView`, from `blocked_members()`). Runbook: `docs/MODERATION.md`.
 - **`GuideDashboardViewModel`** (+ `GuideDashboardView`, the sheet, and `GuideSummaryCard`, the You-tab card) shows a guide their own numbers through `guide_dashboard()`. It exists only for a member the team has linked to a guide (`instructors.user_id`): for everyone else the function answers no row and the You tab shows nothing. `ProfileView` owns one and hands it to the sheet, so both show the same read. A reload keeps the figures on screen, and a read started for the previous person is discarded (`generation`). Month labels are formatted in **UTC** (`PayoutMonth`), because payout months are UTC months.
 - **`AccountViewModel`** clears the password on success and never replays it. It shows generic auth errors, because GoTrue's own messages reveal which accounts exist, but `AuthFailureCopy` first tells apart offline, rate-limited (429) and our-end failures, which reveal nothing. The sheet reopens on the code panel while a confirmation is pending (`auth.confirmationToResume`: this launch's address, or the stored guest's `newEmail` sent within 24h). An Apple cancel is `.cancelled`, not an error.
 - **`InstructorProfileViewModel.setFollowing`** is optimistic and reverted on failure. A version counter throws away a social read that started before a follow.
@@ -140,6 +142,7 @@ The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values 
 | `Theme.inkOnPhoto` | Body copy directly on a photo |
 | `Theme.accent` / `accentSoft` | Olive brand accent |
 | `Theme.honey` | Amber for selected states |
+| `Theme.danger` | Muted brick for irreversible actions (Delete account) |
 | `Theme.line` / `glassBorder` / `glassBorderHigh` | Hairlines / glass strokes |
 | `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
 | `Theme.cardRadius` (22) / `pillRadius` | Shapes |
@@ -234,11 +237,16 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
 
 **Social:**
 - **`community_members`** (owner-rights view): id, avatar, and a `display_name` shortened **in SQL** ("Hugo De Santiago" → "Hugo D."), so the full name never leaves the row. Permanent accounts only. `search_members(q)` searches by name, **never by email**.
+  - **It leaves out anyone either side has blocked** (0028), per caller (`auth.uid()` in an owner-rights view reads the caller's JWT). The feed, presence and follower faces, `member_notifications` and the friendship/like insert policies all go through it, so that one filter covers them; `search_members` carries its own.
+  - An objectionable name (`is_objectionable_name()`, whole words, EN + ES, plus "soulfull"/"admin") shows as "A member".
 - **`community_activity`** (owner-rights view): finished plays only, **never journal prompts**, and only from members with `share_activity` on. It never exposes seconds played. Adds `like_count` / `liked_by_me`.
 - **`friendships`**: one row per pair of members, in either order. Only the addressee can update a row, and only to `accepted`. Either side can delete it, which covers decline, withdraw and unfriend.
+  - **A decline starts a 30-day cooldown** for that direction (0028): the addressee deleting a *pending* row is logged in `friend_request_declines`, and a new request inside 30 days raises `P0001 friend_request_cooldown`, which the app words as such (`Error.isFriendRequestCooldown`). Withdrawing starts none; the decliner can still ask the other way.
+- **`member_blocks`** (0028): owner RLS, members only (`caller_has_account()`). A block's trigger ends the friendship/request and removes likes (and their notifications) both ways. The blocked member can never read it.
+- **`member_reports`** (0028): **no client access**; written only by `report-member` with snapshots of what was reported. `status` open → actioned / dismissed by the team. **We promise review within 24 hours.**
 - **Likes:** `practice_play_likes` → `notifications` → the `member_notifications` view.
   - Only the like trigger writes `notifications`. An unlike removes the notification if it's still unread, and only `read_at` can change.
-  - Each new notification fires `send-like-push` through pg_net, with the URL and secret stored in Vault.
+  - Each new notification fires `send-like-push` through pg_net, with the URL and secret stored in Vault — except a **`silent`** one: the same person re-liking the same practice within 24 hours of the last push (`like_echoes`, 0028) still lands in the bell but doesn't buzz.
 - **`instructor_follows`** + the **`instructor_social(id)`** RPC: followers, following, `followed_by_me`, `is_me`, and up to 3 faces (friends first, `share_activity` members only, never the caller).
 - **`practice_presence()` / `program_presence()`** RPCs: see *Presence* under *Current state*.
 
@@ -317,7 +325,7 @@ Journal reflections and trip checklists stay on the phone. The privacy policy pr
   - `Haptics.tap()` for secondary actions, `.bump()` for primary CTAs, `.select()` for scroll and toggle changes, `.success()` for confirmations, `.prepare()` on gesture start.
   - `SoulPressableStyle` already fires `tap` on touch-down, so don't fire it twice.
 - **Navigation** is value-based (typed `Route` enums), never `NavigationLink(destination:)`.
-- **Onboarding** has 4 questions. The step machine has 5 cases because `finish` isn't a question. `canAdvance` is false whenever an answer is empty.
+- **Onboarding** has 4 questions. The step machine has 5 cases because `finish` isn't a question. `canAdvance` is false whenever an answer is empty. **A member who signed in from Welcome starts at intentions (`asksName: false`)**: an account with no name is a Sign in with Apple that shared none, and asking for it after Apple is a rejection pattern.
 - **Models** are value types, `Identifiable` + `Hashable` on `id`. Durations are stored in seconds (`durationSeconds`) with a `.durationLabel`.
 - **Settings live in `AppSettings`** (UserDefaults with `didSet`, keys prefixed `sg.`), not `@AppStorage`.
   - Read and write `intentions` as the `Set`, never `intentionsRaw`.
@@ -384,6 +392,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - `MediaTimeMeterTests`: the payout measurement.
   - `LocalUserStoreTests`: per-member privacy.
   - `GuideDashboardTests`: UTC months, a month's money standing (estimate / no pool / due / paid), and the mapping of `guide_dashboard()`'s JSON.
+  - `CommunitySafetyTests`: a block takes someone off every list and stays put against a late read, a refused block restores everything, the cooldown message, a report's shape; plus the Blocked members list.
   - `AccountGateReplayTests`, `PasswordResetFlowTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
 
 ### UI journeys: the only ones that earn a UI test
@@ -397,6 +406,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 | `ProgramTests` | Catalog → days → Home hand-off → a guest can't join |
 | `ProfileTests` | You-tab numbers and history against `-preview-you` |
 | `CommunityTests` · `PresenceTests` | Feed, Friends, likes, the bell; presence lines (the 3-person minimum is SQL, verified live per 0018) |
+| `MemberSafetyTests` | "⋯" → Report (needs a reason → sent → 24-hour promise → Block); Block asks, then their lines go; a guest can report but Block raises the gate; You → Blocked members → Unblock |
 | `InstructorProfileTests` | The guide card on each page → profile → library hand-off; Follow; a guest's Follow → gate |
 | `GuideDashboardTests` | A linked guide's You-tab card → the dashboard (estimate, months, paid to date, practices) → close; a month with no pool shows no amount; a member who isn't a guide sees no card |
 
@@ -421,8 +431,9 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Review is in `docs/APP-REVIEW-NOTES.md`. The build-level items (icon, launch screen, signing, privacy manifest, export compliance, push and Apple entitlements) are done. Rules to keep:
 - **Launch screen:** use the `UILaunchScreen` dict + the `LaunchBackground` colour. Don't bring back `UILaunchStoryboardName`.
 - **Devices and signing:** iPhone only (`TARGETED_DEVICE_FAMILY: "1"`). Archiving needs a real `DEVELOPMENT_TEAM` in `Secrets.xcconfig`.
-- **Age rating:** the app is rated 4+ **because nothing in it mentions alcohol, tobacco or drugs.** Check brochure copy for these before adding it (Guideline 2.3.6).
-- **Privacy answers:** onboarding answers are declared as `OtherDataTypes`, not Health. Revisit that if the questions become clinical.
+- **Age rating:** answered in ASC on 2026-10-08 under Apple's new questionnaire: user-generated content, health/wellness topics and social media **yes**, everything else none. Nothing in the app may mention alcohol, tobacco or drugs — check brochure copy before adding it (Guideline 2.3.6; the website's Chamonix page has a wine tasting).
+- **Privacy answers:** `PrivacyInfo.xcprivacy` and the ASC App Privacy answers must list the same types (rewritten 2026-10-08: + phone, Instagram, other user content, contacts = friends, device ID = APNs token; − purchase history while payments are off). Onboarding answers are declared as `OtherDataTypes`, not Health. Revisit that if the questions become clinical.
+- **Store listing** (description, keywords, screenshots, category Health & Fitness / Lifestyle, free, all territories but China mainland) was written through the ASC API on 2026-10-08; the source copy and screenshots aren't in the repo. Review notes: `docs/APP-REVIEW-NOTES.md`.
 - **App icon:** only the "SOUL" block of the logo. The generator script: `git show d20e3f6:scripts/make-app-icon.swift`.
 - **Demo account:** give the reviewer one, because no practice opens without an account.
 - **Apple revocation** is deployed. The one unproven step is the real authorization-code exchange, which needs an Apple sign-in on a **physical device**.
@@ -457,7 +468,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - Practice: three media tracks, plus journal / movement / recipes (now in the database).
 - Server-side practice history, which drives resume, streaks and payouts.
 - Digital Retreats: one live program, `finding-ground`.
-- Community: feed, friends, likes, notifications and push.
+- Community: feed, friends, likes, notifications and push. Report, Block and the friend-request cooldown (2026-10-08) are built; **0028 and `report-member` still need applying/deploying**.
 - Presence counts, instructor profiles, and the You tab (stats and history).
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
@@ -466,7 +477,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - ⚠️ **The five live guides are PLACEHOLDERS**: invented people with AI-generated, unlicensed faces. **Remove or replace them before a build goes to App Review** (Guideline 2.1(a)); the steps are in `docs/ADDING-AN-INSTRUCTOR.md`. Some `PracticeSession.mock` leads (Michelle Campos, Analu Chavez, Valentina Velasco) are **real people**, so never take a guide's name from the mocks.
 - **Push sends nothing** until key `5224W8727Y` has the APNs service ticked in the developer portal. Until then APNs answers `403 InvalidProviderToken`. No code change is needed afterwards.
 - **The App Store Connect privacy answers need updating by hand.** A profile photo is now collected, and name, activity and followed guides are shown to other members.
-- ⚠️ **`practice_sessions` holds three generated PLACEHOLDERS** (seeded 2026-09-30 so TestFlight testers can use the media tracks): an illustrated somatic video and two synthetic-voice audio sessions, credited to "Soulfull Studio" with no guide. **Remove or replace them before App Review** (Guideline 2.1(a)): run `supabase/placeholder-media/remove.sql` and delete the three objects in `practice-media`. A track left with no rows goes back to "SOON" by itself. Test plays stay in `practice_plays` under that creator, so leave it out of payouts.
+- ⚠️ **`practice_sessions` holds three generated PLACEHOLDERS** (seeded 2026-09-30 so TestFlight testers can use the media tracks): an illustrated somatic video and two synthetic-voice audio sessions, now credited (like everything) to `alma-guerra` / "Hugo Santi". Their blurbs say "A placeholder while the real sessions are recorded". **Remove or replace them before App Review** (Guideline 2.1(a)): run `supabase/placeholder-media/remove.sql` and delete the three objects in `practice-media`. A track left with no rows goes back to "SOON" by itself. Test plays stay in `practice_plays` under that creator, so leave it out of payouts.
 - **The post-purchase screens are unreachable** while payments are off, and only Mallorca has `PostBooking` content.
 - **Not built yet:** a bookings history screen, refunds, and a membership (which would need StoreKit in-app purchase).
 
@@ -475,7 +486,8 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
   - A practice counts distinct members who **started** it in the last 24h. A program counts enrolled, unfinished members who were **active in the last 14 days**.
   - **Nothing is shown below 3 people** (enforced server-side). Faces show friends first. Journal prompts get a count but no faces. Opted-out members are counted but never shown.
   - **Never seed or pad these numbers.**
-- **Community:** other members see exactly your id, "First L." name, photo, and the title, kind and time of your finished practices. They **never** see journal prompts, because reflections are private and a prompt's title gives away the subject. "Share my practice" (`profiles.share_activity`) removes you from the feed but leaves you findable. A profile without a `full_name` shows as "A member".
+- **Community:** other members see exactly your id, "First L." name, photo, and the title, kind and time of your finished practices. They **never** see journal prompts, because reflections are private and a prompt's title gives away the subject. "Share my practice" (`profiles.share_activity`, on by default — the account sheet says so) removes you from the feed but leaves you findable. A profile without a `full_name` shows as "A member".
+- **Safety:** Report and Block on every other member, a 30-day cooldown after a declined request, objectionable names hidden, and a 24-hour review promise (`docs/MODERATION.md`). The account sheet's agreement line points at the Terms' community standards.
 - **You-tab stats** are defined in `PracticeStats` and nowhere else:
   - A *practice day* is a local calendar day on which any practice was **finished**.
   - A *class* is a finished session or Movement sitting (`countsAsClass`).
@@ -483,6 +495,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
   - Home's "N days in a row" reads the same `streakDays`.
   - The streak caption tells *kept today* (finished something) apart from *practiced today* (only opened something).
   - In-person history is paid bookings for retreats that have ended, so it's empty for everyone while payments are off.
+- **Health safety:** the Breathwork and Somatic lists open with a "Before you begin" `SafetyNoteCard` (`PracticeCategory.safetyNote`: seated or lying down / never driving or in water / stop if light-headed / not medical advice / pregnancy, heart, lung, seizure → doctor), and the player repeats it in one line (`safetyReminder`). Meditation needs none. Keep any new body-affecting track covered (Guideline 1.4.1).
 - **No AI anywhere, and none planned.** A mocked concierge and a "Soul AI" welcome slide were removed. Don't bring back anything that advertises an AI: it misdescribes the app, and a real one would bring Guideline 1.2 obligations the app can't meet. "Assistant" appears only as a person's job title.
 - **No Google sign-in.** It was removed on 2026-09-03. If it ever returns, prefer the native GoogleSignIn SDK.
 - **Mood chips** on Home each point at a written section with real content, routed through `MainTabView.pendingPractice`.

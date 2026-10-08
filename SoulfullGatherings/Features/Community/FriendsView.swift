@@ -8,7 +8,9 @@
 //  Pushed from the Community tab behind the account gate; the server refuses
 //  a guest anyway. Search matches on the full name server-side and answers
 //  with the abbreviated one, so a surname finds someone without ever being
-//  shown. There is no search by email, on purpose.
+//  shown. There is no search by email, on purpose. Every row carries Report
+//  and Block (`MemberSafety`). A request sent within 30 days of the last one
+//  to the same person being declined is refused, and the banner says why.
 //
 
 import SwiftUI
@@ -16,6 +18,8 @@ import SwiftUI
 struct FriendsView: View {
     @Bindable var vm: CommunityViewModel
     @State private var removing: Friendship?
+    @State private var reporting: ReportTarget?
+    @State private var blocking: CommunityMember?
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -66,6 +70,9 @@ struct FriendsView: View {
         } message: {
             Text("You'll stop seeing each other's practices in your Friends feeds. They won't be told.")
         }
+        // The Friends screen is behind the gate already: everyone here is a member.
+        .memberSafety(vm: vm, reporting: $reporting, blocking: $blocking,
+                      isMember: true, requireAccount: { $0() })
     }
 
     // MARK: - Header + search
@@ -177,6 +184,7 @@ struct FriendsView: View {
                 ForEach(vm.searchResults) { member in
                     MemberRow(member: member) {
                         standingControl(for: member)
+                        safetyMenu(for: member)
                     }
                     .accessibilityIdentifier("search-result")
                 }
@@ -212,8 +220,10 @@ struct FriendsView: View {
             SectionLabel(title: title)
                 .padding(.horizontal, -20)
             ForEach(rows) { row in
-                MemberRow(member: row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)) {
+                let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
+                MemberRow(member: member) {
                     HStack(spacing: 8) { controls(row) }
+                    safetyMenu(for: member)
                 }
                 .listReveal()
             }
@@ -260,8 +270,10 @@ struct FriendsView: View {
                     .padding(.horizontal, 4)
             } else {
                 ForEach(vm.friends) { row in
-                    MemberRow(member: row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)) {
+                    let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
+                    MemberRow(member: member) {
                         pill("Remove") { removing = row }
+                        safetyMenu(for: member)
                     }
                     .accessibilityIdentifier("friend-row")
                     .listReveal()
@@ -271,6 +283,13 @@ struct FriendsView: View {
     }
 
     // MARK: - Small controls
+
+    private func safetyMenu(for member: CommunityMember) -> some View {
+        MemberSafetyMenu(member: member,
+                         onReport: { reporting = ReportTarget(member: member) },
+                         onBlock: { blocking = member })
+            .padding(.leading, -6)
+    }
 
     private func pill(_ title: String, filled: Bool = false, busy: Bool = false,
                       action: @escaping () -> Void) -> some View {

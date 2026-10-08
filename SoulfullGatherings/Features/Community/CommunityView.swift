@@ -8,7 +8,9 @@
 //
 //  Browsing is open: a guest reads the whole feed. The Friends filter and the
 //  Friends screen ask for an account through the same gate every practice
-//  uses, and the tap is replayed once it exists.
+//  uses, and the tap is replayed once it exists. Every other member's line
+//  carries Report and Block (`MemberSafety`): a guest can report, and blocking
+//  goes through the gate.
 //
 
 import SwiftUI
@@ -28,6 +30,8 @@ struct CommunityView: View {
     /// Read inside `body` so the observation registers.
     private let push = PushRegistrar.shared
     @State private var pushPromptDismissed = PushRegistrar.shared.promptDismissed
+    @State private var reporting: ReportTarget?
+    @State private var blocking: CommunityMember?
 
     private var isMember: Bool { auth.hasAccount || CommunityViewModel.isPreview }
 
@@ -72,6 +76,8 @@ struct CommunityView: View {
         .task(id: vm.scope) { await vm.loadActivity() }
         .task(id: identity) { await push.syncIfAuthorized(isMember: auth.hasAccount) }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: showsPushPrompt)
+        .memberSafety(vm: vm, reporting: $reporting, blocking: $blocking,
+                      isMember: isMember, requireAccount: requireAccount)
     }
 
     // MARK: - Push prompt
@@ -288,6 +294,10 @@ struct CommunityView: View {
                                 } else {
                                     requireAccount { Task { await vm.toggleLike(line) } }
                                 }
+                            } onReport: {
+                                reporting = ReportTarget(member: line.member, playID: line.id)
+                            } onBlock: {
+                                if isMember { blocking = line.member } else { requireAccount { blocking = line.member } }
                             }
                             .listReveal()
                         }
@@ -297,6 +307,7 @@ struct CommunityView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: vm.scope)
+            .animation(.easeInOut(duration: 0.3), value: vm.hiddenMembers)
         }
     }
 
@@ -452,12 +463,15 @@ private struct ScopeToggle: View {
 // MARK: - Activity row
 
 /// "Hugo D. practiced Confidence Boost", a face beside it, the track and the
-/// time beneath.
+/// time beneath. Someone else's line ends in their like button and "⋯"
+/// (Report, Block).
 private struct ActivityRow: View {
     let line: CommunityActivity
     let isSelf: Bool
     var busy = false
     var onLike: () -> Void = {}
+    var onReport: () -> Void = {}
+    var onBlock: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
@@ -494,10 +508,12 @@ private struct ActivityRow: View {
                 }
             } else {
                 LikeButton(count: line.likeCount, liked: line.likedByMe, busy: busy, action: onLike)
+                MemberSafetyMenu(member: line.member, onReport: onReport, onBlock: onBlock)
+                    .padding(.leading, -4)
             }
         }
         .padding(12)
-        .padding(.trailing, 6)
+        .padding(.trailing, isSelf ? 6 : 0)
         .soulGlassCard()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(spoken)

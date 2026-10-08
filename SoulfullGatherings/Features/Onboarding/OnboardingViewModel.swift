@@ -22,7 +22,20 @@ final class OnboardingViewModel {
         static let questionCount = 4
     }
 
-    var step: Step = .name
+    var step: Step
+
+    /// Where the questions start. A member who signed in from Welcome
+    /// (`AppState.stageAfterWelcomeSignIn`) and still reaches onboarding has an
+    /// account with no name on it — Sign in with Apple shares one only the
+    /// first time, and not at all if they chose not to. Asking for it then is
+    /// the "name after Sign in with Apple" pattern App Review rejects, so their
+    /// questions start at intentions and the name stays theirs to leave out.
+    let firstStep: Step
+
+    init(asksName: Bool = true) {
+        firstStep = asksName ? .name : .intention
+        step = firstStep
+    }
 
     // Working answers — committed to AppState on `complete()`.
     var name: String = ""
@@ -40,7 +53,7 @@ final class OnboardingViewModel {
         }
     }
 
-    var isFirstStep: Bool { step == .name }
+    var isFirstStep: Bool { step == firstStep }
     var isQuestionStep: Bool { step.index < Step.questionCount }
 
     func toggleIntention(_ id: String) {
@@ -78,7 +91,7 @@ final class OnboardingViewModel {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
             switch step {
             case .name:      break
-            case .intention: step = .name
+            case .intention: if firstStep == .name { step = .name }
             case .state:     step = .intention
             case .frequency: step = .state
             case .finish:    step = .frequency

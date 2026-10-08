@@ -54,6 +54,10 @@ enum Theme {
     /// Honey glow for selected onboarding cards.
     static let honey = Color(red: 0.898, green: 0.780, blue: 0.400)
 
+    /// Muted brick for irreversible actions (Delete account) — quiet enough
+    /// for the dark editorial ground, unmistakable next to cream.
+    static let danger = Color(red: 0.85, green: 0.36, blue: 0.33)
+
     // MARK: - Gradients
 
     /// Brand splash — amber→sage→coal, used on the Welcome splash.

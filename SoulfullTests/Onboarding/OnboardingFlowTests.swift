@@ -64,4 +64,20 @@ struct OnboardingFlowTests {
         vm.back()
         #expect(vm.step == .name)
     }
+
+    /// A member who signed in from Welcome and still has no name — Sign in
+    /// with Apple shares one only the first time — isn't asked for one after
+    /// signing in (App Review rejects asking for what Apple was asked for).
+    @Test func aMemberWithoutANameStartsAtIntentionsAndCantGoBackToAName() {
+        let vm = OnboardingViewModel(asksName: false)
+
+        vm.back()
+
+        #expect(vm.step == .intention)
+        #expect(vm.isFirstStep)
+        vm.toggleIntention("rest")
+        vm.next()
+        #expect(vm.step == .state)
+        #expect(!vm.isFirstStep)
+    }
 }

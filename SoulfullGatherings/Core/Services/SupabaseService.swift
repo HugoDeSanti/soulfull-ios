@@ -905,6 +905,61 @@ actor SupabaseService {
             .execute()
     }
 
+    // MARK: - Safety (0028)
+
+    /// The members this member has blocked, newest first, through
+    /// `blocked_members()` — they're out of `community_members` for the
+    /// blocker, so the You tab's list needs its own read. Uncached.
+    func fetchBlockedMembers() async throws -> [CommunityMember] {
+        let rows: [CommunityMemberRow] = try await client
+            .rpc("blocked_members")
+            .execute()
+            .value
+        return rows.map(\.member)
+    }
+
+    /// Blocks a member. The server ends any friendship or request between
+    /// them, removes their likes on each other's practices, and from then on
+    /// leaves each out of everything the other reads. A block that already
+    /// exists is a duplicate key, and the thing asked for is already true.
+    func blockMember(_ memberID: UUID, userID: UUID) async throws {
+        struct Insert: Encodable {
+            let blockerId: UUID
+            let blockedId: UUID
+            enum CodingKeys: String, CodingKey { case blockerId = "blocker_id", blockedId = "blocked_id" }
+        }
+        do {
+            try await client
+                .from("member_blocks")
+                .insert(Insert(blockerId: userID, blockedId: memberID))
+                .execute()
+        } catch let error as PostgrestError where error.code == "23505" {
+            return
+        }
+    }
+
+    /// Unblocks. What the block removed (a friendship, likes) stays removed.
+    func unblockMember(_ memberID: UUID, userID: UUID) async throws {
+        try await client
+            .from("member_blocks")
+            .delete()
+            .eq("blocker_id", value: userID)
+            .eq("blocked_id", value: memberID)
+            .execute()
+    }
+
+    /// Files a report with the team through the `report-member` Edge Function,
+    /// which stores it and emails the monitored inbox. Never retried here, for
+    /// the reason `sendRetreatEnquiry` isn't: the sheet offers the retry.
+    func reportMember(_ report: MemberReport) async throws {
+        struct ReportResult: Decodable { let reported: Bool }
+        let result: ReportResult = try await client.functions.invoke(
+            "report-member",
+            options: FunctionInvokeOptions(body: report)
+        )
+        guard result.reported else { throw AppError.unknown }
+    }
+
     // MARK: - Likes + notifications
 
     /// Likes one line of the feed. The server refuses a guest, a line that
@@ -1909,5 +1964,14 @@ private struct GuideDashboardPayload: Decodable {
             practices: practices.compactMap(\.model),
             programs: programs.map { GuideProgramStat(id: $0.id, title: $0.title,
                                                       joined: $0.joined, finished: $0.finished) })
+    }
+}
+
+extension Error {
+    /// The server refused a friend request because the last one to the same
+    /// person was declined less than 30 days ago (0028's
+    /// `enforce_friend_request_cooldown`, which raises exactly this message).
+    var isFriendRequestCooldown: Bool {
+        (self as? PostgrestError)?.message == "friend_request_cooldown"
     }
 }

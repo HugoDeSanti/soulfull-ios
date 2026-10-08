@@ -34,12 +34,12 @@ struct WelcomeView: View {
               eyebrow: "Digital & Physical Retreats",
               firstHalf: "Wellness retreats,",
               accentHalf: "online and around the world.",
-              body: "Luxurious in-person gatherings and live digital retreats — fitness, breathwork, meditation, somatic exercises, and recovery."),
+              body: "Luxurious in-person gatherings and self-paced digital retreats — breathwork, meditation, somatic exercises, movement, and nourishing food."),
         Slide(id: "community",
               eyebrow: "A Conscious Community",
               firstHalf: "A worldwide community",
               accentHalf: "that travels, heals, and connects.",
-              body: "A conscious space for honest conversation and shared practice."),
+              body: "A conscious space for shared practice — see what the circle is practicing, and practice alongside friends."),
     ]
     // A third slide sold "Soul AI — Meet Soul, your companion through the
     // journey". There is no AI in this app and none planned, and this ran on

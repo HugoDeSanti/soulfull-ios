@@ -67,6 +67,7 @@ struct AccountView: View {
                         if let msg = vm.errorMessage { errorBanner(msg) }
                         submitButton
                         modeToggle
+                        agreement
                     }
                 }
                 .padding(.horizontal, 26)
@@ -578,6 +579,28 @@ struct AccountView: View {
         }
         .buttonStyle(.plain)
     }
+
+    /// What continuing agrees to, and what other members will see — said here
+    /// because this is where an account (Apple or email) comes into being.
+    /// The Terms carry the community standards Guideline 1.2 asks members to
+    /// agree to; the visibility line is the disclosure `share_activity`
+    /// (on by default) needs.
+    private var agreement: some View {
+        Text(Self.agreementText)
+            .font(Theme.body(12))
+            .foregroundStyle(Theme.muted)
+            .tint(Theme.inkSoft)
+            .multilineTextAlignment(.center)
+            .lineSpacing(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 6)
+            .accessibilityIdentifier("account-agreement")
+    }
+
+    private static let agreementText: AttributedString = {
+        let markdown = "Other members see your first name, last initial and photo in Community. By continuing, you agree to our [Terms](\(LegalLinks.terms.absoluteString)), including our community standards, and acknowledge our [Privacy Policy](\(LegalLinks.privacyPolicy.absoluteString))."
+        return (try? AttributedString(markdown: markdown)) ?? AttributedString(markdown)
+    }()
 
     private var closeButton: some View {
         VStack {

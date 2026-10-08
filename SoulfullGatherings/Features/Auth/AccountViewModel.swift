@@ -24,7 +24,7 @@ final class AccountViewModel {
         /// copy has to justify the interruption and promise the tap isn't lost.
         var subtitle: String {
             self == .createAccount
-                ? "Practices, reflections and reservations are saved to your account — create one and we'll pick up exactly where you were."
+                ? "Your practice history, streaks and digital retreats are saved to your account — create one and we'll pick up exactly where you were."
                 : "Sign in and we'll pick up exactly where you were."
         }
         var cta: String { self == .createAccount ? "Create account" : "Sign in" }
@@ -520,7 +520,10 @@ enum AuthFailureCopy {
         if isTroubleAtOurEnd(error) { return unreachable }
         switch action {
         case .createAccount:
-            return "We couldn't create that account. Check the address and password, then try again."
+            // The second sentence is true of every address, so it reveals
+            // nothing — but it rescues someone typing an existing account's
+            // credentials into this form (App Review's demo account included).
+            return "We couldn't create that account. Check the address and password, then try again. Already have an account? Sign in below."
         case .signIn:
             return "That email and password didn't match. Try again."
         case .confirmCode:

@@ -700,6 +700,30 @@ enum PracticeCategory: String, Identifiable, Hashable, CaseIterable {
         case .meditation: return "practice-meditation"
         }
     }
+
+    /// "Before you begin": shown above the track's sessions. Breathwork can
+    /// make someone light-headed, and somatic work can bring up more than
+    /// expected, so both say so — and that none of it is medical advice —
+    /// before a session is chosen. Meditation needs none.
+    var safetyNote: String? {
+        switch self {
+        case .breathwork:
+            return "Breathe seated or lying down, never while driving or in water. If you feel light-headed or unwell, stop and breathe normally. This isn't medical advice: if you're pregnant or have a heart, lung or seizure condition, check with your doctor first."
+        case .somatic:
+            return "Move gently and stay within what feels comfortable. Pause whenever you need to, and stop if anything hurts or feels like too much. This isn't medical or psychological advice: if you have an injury or a health condition, check with your doctor first."
+        case .meditation:
+            return nil
+        }
+    }
+
+    /// The same care in one line, under the title while a session plays.
+    var safetyReminder: String? {
+        switch self {
+        case .breathwork: return "Stop if you feel light-headed, and breathe normally."
+        case .somatic:    return "Go gently, and stop if anything hurts."
+        case .meditation: return nil
+        }
+    }
 }
 
 /// Whether a session plays as audio-only or full video. Maps to the
@@ -1420,6 +1444,53 @@ struct LikeNotification: Identifiable, Hashable, Sendable {
     let readAt: Date?
 
     var isUnread: Bool { readAt == nil }
+}
+
+/// Why a member is being reported (0028, `report-member`). The raw values are
+/// `member_reports.reason`, and the titles are what the team's email says —
+/// the Edge Function holds the same strings, so change both together.
+enum ReportReason: String, CaseIterable, Identifiable, Hashable, Sendable, Encodable {
+    case photo, name, harassment, spam, other
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .photo:      "Inappropriate photo"
+        case .name:       "Offensive name"
+        case .harassment: "Harassment or unwanted contact"
+        case .spam:       "Spam or a fake account"
+        case .other:      "Something else"
+        }
+    }
+}
+
+/// One report, as the Report sheet sends it to `report-member`. Who is
+/// reporting comes from the session's JWT, never from here.
+struct MemberReport: Encodable, Hashable, Sendable {
+    let reportedID: UUID
+    /// The feed line it was reported from, if any.
+    let playID: UUID?
+    let reason: ReportReason
+    /// The reporter's note, trimmed; nil when they wrote nothing.
+    let details: String?
+
+    /// The longest note the sheet takes (the server caps at 1,000).
+    static let maxDetails = 500
+
+    /// Nil until a reason is chosen — the one thing a report can't do without.
+    init?(reportedID: UUID, playID: UUID?, reason: ReportReason?, details: String) {
+        guard let reason else { return nil }
+        self.reportedID = reportedID
+        self.playID = playID
+        self.reason = reason
+        let note = String(details.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxDetails))
+        self.details = note.isEmpty ? nil : note
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case reportedID = "reported_id", playID = "play_id", reason, details
+    }
 }
 
 // MARK: - Instructors

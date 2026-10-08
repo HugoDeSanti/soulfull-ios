@@ -221,3 +221,37 @@ struct ProgressRule: View {
         .accessibilityHidden(true)
     }
 }
+
+// MARK: - Safety note
+
+/// "Before you begin", above a track whose practices can affect the body
+/// (`PracticeCategory.safetyNote`): breathwork and somatic work. A quiet glass
+/// card, read once on the way in — not a modal to dismiss every time.
+struct SafetyNoteCard: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "heart.text.square")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Theme.honey)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("BEFORE YOU BEGIN")
+                    .font(Theme.eyebrow(10))
+                    .tracking(2)
+                    .foregroundStyle(Theme.inkSoft)
+                Text(text)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .soulGlassCard(radius: 18)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("safety-note")
+    }
+}

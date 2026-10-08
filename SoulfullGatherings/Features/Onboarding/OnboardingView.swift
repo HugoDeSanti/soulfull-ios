@@ -15,7 +15,13 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(AppState.self) private var app
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var vm = OnboardingViewModel()
+    @State private var vm: OnboardingViewModel
+
+    /// False for a member who signed in before onboarding — see
+    /// `OnboardingViewModel.firstStep`.
+    init(asksName: Bool = true) {
+        _vm = State(initialValue: OnboardingViewModel(asksName: asksName))
+    }
 
     var body: some View {
         ZStack {
@@ -97,6 +103,7 @@ private struct OnboardingShell<StepBody: View>: View {
         HStack(spacing: 10) {
             if !vm.isFirstStep {
                 CircleIconButton(systemName: "chevron.left", size: 36) { vm.back() }
+                    .accessibilityLabel("Back")
             } else {
                 Color.clear.frame(width: 36, height: 36)
             }

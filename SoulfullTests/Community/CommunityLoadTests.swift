@@ -27,6 +27,13 @@ struct CommunityLoadTests {
         var notifications: [LikeNotification] = []
         var activityError: (any Error)?
         var friendshipsError: (any Error)?
+        var searchResults: [CommunityMember] = []
+        /// What the next request, block or report throws, if anything.
+        var writeError: (any Error)?
+
+        private(set) var requestsSent: [UUID] = []
+        private(set) var blocked: [UUID] = []
+        private(set) var reports: [MemberReport] = []
 
         private(set) var activityReads: [[UUID]?] = []
         private(set) var friendshipReads = 0
@@ -55,7 +62,19 @@ struct CommunityLoadTests {
                     return self.notifications
                 },
                 markNotificationsRead: { _, ids in self.markedRead.append(ids) },
-                searchMembers: { _ in [] },
+                searchMembers: { _ in self.searchResults },
+                sendFriendRequest: { _, to in
+                    if let error = self.writeError { throw error }
+                    self.requestsSent.append(to)
+                },
+                block: { memberID, _ in
+                    if let error = self.writeError { throw error }
+                    self.blocked.append(memberID)
+                },
+                report: { report in
+                    if let error = self.writeError { throw error }
+                    self.reports.append(report)
+                },
                 now: { self.now }
             ))
             self.vm = vm

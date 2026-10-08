@@ -43,6 +43,10 @@ struct PracticeListView: View {
                 emptyState
             } else {
                 VStack(spacing: 10) {
+                    if let note = category.safetyNote {
+                        SafetyNoteCard(text: note)
+                            .padding(.bottom, 6)
+                    }
                     ForEach(vm.sessions) { session in
                         PressableCard(action: { requireAccount { nowPlaying = session } }) {
                             sessionRow(session)

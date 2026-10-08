@@ -43,6 +43,7 @@ struct ProfileView: View {
     @State private var showPhotoOptions = false
     @State private var showPhotoPicker = false
     @State private var photoItem: PhotosPickerItem?
+    @State private var showBlocked = false
 
     /// Has anything of their own to show. `-preview-you` renders the member
     /// layout against fixtures without an account.
@@ -114,6 +115,9 @@ struct ProfileView: View {
         .sheet(isPresented: $showGuideDashboard) {
             GuideDashboardView(vm: guide)
         }
+        .sheet(isPresented: $showBlocked) {
+            BlockedMembersView()
+        }
         .sheet(isPresented: $showAccount) {
             AccountView(mode: accountMode, initialName: settings.userName)
         }
@@ -153,7 +157,7 @@ struct ProfileView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This permanently deletes your account, reservations, and saved data. This can't be undone.")
+            Text("This permanently deletes your account, your profile and photo, your friends and likes, and the reflections saved on this phone. This can't be undone.")
         }
         .alert("Couldn't delete account", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
             Button("OK", role: .cancel) { deleteError = nil }
@@ -492,7 +496,8 @@ struct ProfileView: View {
 
     /// The one switch the feed needs: whether this member appears in it. Off
     /// hides their finished practices from everyone, friends included; they
-    /// stay findable and can still add and be added.
+    /// stay findable and can still add and be added. Below it, the members
+    /// they've blocked.
     private var communitySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionLabel(title: "Community")
@@ -526,6 +531,33 @@ struct ProfileView: View {
             .padding(16)
             .soulGlassCard()
             .padding(.horizontal, 20)
+
+            Button {
+                Haptics.tap()
+                showBlocked = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "hand.raised")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .frame(width: 22)
+                    Text("Blocked members")
+                        .font(Theme.body(15, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.muted)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 52)
+                .soulGlassCard()
+                .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            }
+            .buttonStyle(.soulPressableQuiet)
+            .padding(.horizontal, 20)
+            .accessibilityHint("People you've blocked, and Unblock")
+            .accessibilityIdentifier("open-blocked-members")
         }
     }
 
@@ -656,12 +688,15 @@ struct ProfileView: View {
                 } label: {
                     Text(isDeleting ? "Deleting…" : "Delete account")
                         .font(Theme.body(13))
-                        .foregroundStyle(Color(red: 0.85, green: 0.36, blue: 0.33))
+                        .foregroundStyle(Theme.danger)
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
+                        // The whole row, not just the letters (rendering gotcha 5).
+                        .contentShape(Rectangle())
                         .opacity(isSigningOut ? 0.45 : 1)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.soulPressableQuiet)
+                .accessibilityIdentifier("delete-account")
                 .disabled(isDeleting || isSigningOut)
             } else {
                 SGPrimaryButton(title: "Create account", filled: true) {

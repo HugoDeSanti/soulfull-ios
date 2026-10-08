@@ -27,7 +27,7 @@ struct RootView: View {
             case .onboarding:
                 // Native transition: onboarding's TextField is UIKit-backed and
                 // cannot sit under the dissolve's layerEffect (yellow placeholder).
-                OnboardingView()
+                OnboardingView(asksName: !app.auth.hasAccount)
                     .transition(reduceMotion ? .opacity : .editorialPageSoft)
             case .main:
                 // NavigationStack is UIKit-backed and can't be shader-rasterized
