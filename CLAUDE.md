@@ -468,7 +468,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - Practice: three media tracks, plus journal / movement / recipes (now in the database).
 - Server-side practice history, which drives resume, streaks and payouts.
 - Digital Retreats: one live program, `finding-ground`.
-- Community: feed, friends, likes, notifications and push. Report, Block and the friend-request cooldown (2026-10-08) are built; **0028 and `report-member` still need applying/deploying**.
+- Community: feed, friends, likes, notifications and push. Report, Block and the friend-request cooldown (2026-10-08; 0028 applied and `report-member` deployed the same day).
 - Presence counts, instructor profiles, and the You tab (stats and history).
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
@@ -480,6 +480,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 - ⚠️ **`practice_sessions` holds three generated PLACEHOLDERS** (seeded 2026-09-30 so TestFlight testers can use the media tracks): an illustrated somatic video and two synthetic-voice audio sessions, now credited (like everything) to `alma-guerra` / "Hugo Santi". Their blurbs say "A placeholder while the real sessions are recorded". **Remove or replace them before App Review** (Guideline 2.1(a)): run `supabase/placeholder-media/remove.sql` and delete the three objects in `practice-media`. A track left with no rows goes back to "SOON" by itself. Test plays stay in `practice_plays` under that creator, so leave it out of payouts.
 - **The post-purchase screens are unreachable** while payments are off, and only Mallorca has `PostBooking` content.
 - **Not built yet:** a bookings history screen, refunds, and a membership (which would need StoreKit in-app purchase).
+- **App Review demo accounts** (created 2026-10-08, confirmed, not linked to a guide): `appreview@soulfullgatherings.com` ("App Review") and its accepted friend `appreview.friend@soulfullgatherings.com` ("Demo Friend"), the demo enrolled in Finding Ground. The passwords are only in App Store Connect's review details. They have no practice history: none was invented.
 
 **Product rules:**
 - **Presence** ("75.7k present" + 3 faces):

@@ -31,9 +31,20 @@
 -- with the anon key (public URLs keep working — a public bucket serves them
 -- without a SELECT policy).
 --
--- NOT YET APPLIED. Apply through the Management API in one transaction with
--- its schema_migrations row, after a dry run (begin … rollback) with the
--- behaviour checks at the bottom.
+-- APPLIED to the live project 2026-10-08 through the Management API, in one
+-- transaction with its schema_migrations row (0028), after a dry run inside
+-- an aborted transaction that ran every check at the bottom as three test
+-- members and a guest. All held: a decline → P0001 friend_request_cooldown,
+-- a withdraw → no cooldown, the reverse request allowed; a block emptied the
+-- friendship, the like and its notification, hid each from the other's
+-- community_members / community_activity / search_members (an unblocked third
+-- member still saw the feed), refused the blocked member's like and request;
+-- the blocked member read no member_blocks row; a guest's block → 42501; a
+-- client insert into member_reports → 42501; a re-like → silent = true; the
+-- name filter passed "Scunthorpe" and "Shitara" and hid "Big Shit" /
+-- "Soulfull Team". After applying: grants as listed below, RLS on all four
+-- new tables, and `report-member` deployed and answering (401 without a JWT,
+-- "can't report yourself", and one real test report, since dismissed).
 
 -- ---------------------------------------------------------------------------
 -- 1. Blocks

@@ -34,17 +34,15 @@ Paste the **Review notes** block below into App Store Connect → the 1.0 versio
 ## Before you submit: check each of these
 
 **Backend for this build:**
-- [ ] **Migration `0028_member_safety.sql` is applied** (blocks, reports, cooldown, name filter) and recorded in `schema_migrations`. Without it, Block fails and the app says so.
-- [ ] **`report-member` is deployed** (JWT verification on), and `RESEND_API_KEY` is set (shared with `send-retreat-enquiry`). One test report reaches info@.
+- [x] **Migration `0028_member_safety.sql` is applied** (2026-10-08, after a dry run) and recorded in `schema_migrations`.
+- [x] **`report-member` is deployed** (JWT verification on), using the existing `RESEND_API_KEY`. A test report was filed on 2026-10-08 and then dismissed. Check that its email ("Member report — Something else — App R.") reached info@.
 - [ ] Someone watches info@ every day. **The 24-hour response is a promise in the app, the Terms and these notes.**
 
 **Accounts:**
-- [ ] **The demo account exists, is email-confirmed, and is NOT `hpdesanti+test@gmail.com`.** That account is linked to the placeholder guide `alma-guerra` and shows the guide dashboard.
-- [ ] **What the demo account holds:**
-  - Its profile has a name and onboarding answers, so a sign-in from Welcome lands on Home.
-  - Two or three finished practices on recent days, so the You tab has numbers.
-  - It is enrolled in *Finding Ground* with day 1 done on an earlier date, so day 2 is open.
-  - It has one accepted friend (a second test account) with a shared finished practice and a like on one of the demo's practices, so Friends and the bell have something in them.
+- [x] **The demo account exists** (2026-10-08): `appreview@soulfullgatherings.com`, "App Review", confirmed, not linked to any guide, with a name and onboarding answers (so a sign-in from Welcome lands on Home), enrolled in *Finding Ground*. Its accepted friend is `appreview.friend@soulfullgatherings.com` ("Demo Friend"). The passwords are in App Store Connect's review details and nowhere in the repo.
+- [ ] **Give them real history, by using the app (nothing was invented):**
+  - Signed in as the demo account, finish two or three practices, ideally on different days, so the You tab has numbers, and finish day 1 of Finding Ground.
+  - Signed in as Demo Friend, finish a practice and like one of the demo's, so Friends and the bell have something to show.
 - [ ] Sign in with the demo account once on a clean install, from Welcome **and** from the account gate.
 - [ ] **Supabase Auth settings:**
   - Apple provider ON, with `com.soulfullgatherings.app` in *Client IDs*.
@@ -90,9 +88,9 @@ DEMO ACCOUNT
   Password: <fill in>
 On the first launch, tap "I already have an account" on the welcome screen.
 Later, the account sheet opens on "Create your account": tap "Already have an
-account? Sign in" at its foot. The demo account has practice history, is
-part-way through the digital retreat "Finding Ground", and has a friend whose
-practice and like appear under Community -> Friends and the bell.
+account? Sign in" at its foot. The demo account is
+enrolled in the digital retreat "Finding Ground", and has a friend (Demo
+Friend) under Community -> Friends.
 
 WHAT ASKS FOR AN ACCOUNT, AND WHY
 Opening a practice, starting a digital retreat, Friends, likes, following a
