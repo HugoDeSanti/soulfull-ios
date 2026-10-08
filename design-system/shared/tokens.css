@@ -22,6 +22,7 @@
    Theme.muted            ->  --muted
    Theme.inkOnPhoto       ->  --ink-on-photo      (ink @ 0.92)
    Theme.honey            ->  --honey
+   Theme.danger           ->  --danger
    Theme.cardRadius       ->  --card-radius       (22)
    Theme.pillRadius       ->  --pill-radius       (999)
    Theme.splash           ->  --grad-splash
@@ -51,6 +52,7 @@
   --muted:    #7a7663;    /* rgb(0.478, 0.463, 0.388)  tertiary/metadata — on glass only */
   --ink-on-photo: rgba(245,243,232,0.92);  /* Theme.inkOnPhoto — body copy laid on a photo */
   --honey:    #e5c766;    /* rgb(0.898, 0.780, 0.400)  amber glow / selected */
+  --danger:   #d95c54;    /* rgb(0.85, 0.36, 0.33)     muted brick — irreversible actions (Delete account) */
 
   /* ---- Gradients ---- */
   /* Theme.splash — amber→sage→coal, topLeading→bottomTrailing */

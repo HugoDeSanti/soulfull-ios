@@ -10,14 +10,18 @@
   /* Features/Community/NotificationsView.swift. Pushed from the bell. One
      row per like on one of your finished practices; unread rows carry a
      honey dot and tint for THIS visit, then everything is marked read
-     (server-side `read_at` latches). Written only by the like trigger. */
+     (server-side `read_at` latches). Written only by the like trigger.
+     When the liker is known, the row ends in "⋯" (.member-menu in app.css),
+     after the unread dot: Report (with the liked practice attached) and
+     Block, confirmed as on the community card. */
   .scr { padding: 58px 20px 130px; }
   .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: underline; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 22px 0 0; }
   h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
   .sub { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 6px 0 0; }
   .rows { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
-  .row { display: flex; align-items: center; gap: 12px; padding: 12px 18px 12px 12px; border-radius: 22px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 22px; }
+  .row.gone { padding-right: 18px; }  /* liker unknown: no ⋯ */
   .row.unread { background: color-mix(in srgb, var(--honey) 5%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 28%, transparent); }
   .row .tx { flex: 1; min-width: 0; }
   .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
@@ -50,8 +54,8 @@
     </div>
 
     <div class="rows">
-      <div class="row glass unread"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> liked your <b>Morning Mobility</b> practice</p><span class="meta">42 min ago</span></div><span class="dot"></span></div>
-      <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> liked your <b>Core &amp; Ground</b> practice</p><span class="meta">Saturday</span></div></div>
+      <div class="row glass unread"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> liked your <b>Morning Mobility</b> practice</p><span class="meta">42 min ago</span></div><span class="dot"></span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+      <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> liked your <b>Core &amp; Ground</b> practice</p><span class="meta">Saturday</span></div><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
     </div>
   </div>
   <div class="home-indicator"></div>

@@ -18,6 +18,11 @@
   .meta .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin: 0; }
   .meta h2 { font-size: 28px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 8px 0 0; }
   .meta .with { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; }
+  /* PracticeCategory.safetyReminder, under the guide credit: breathwork "Stop
+     if you feel light-headed, and breathe normally." · somatic "Go gently, and
+     stop if anything hurts." · meditation none. Body 12, white 60%. The video
+     player carries the same line under its title (11, white 70%). */
+  .meta .safety { font-size: 12px; line-height: 1.4; color: rgba(255,255,255,0.6); margin: 6px 0 0; }
   .scrub { width: 100%; margin-top: 34px; }
   .scrub .track { height: 5px; border-radius: 999px; background: rgba(255,255,255,0.18); position: relative; }
   .scrub .track .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 32%; background: var(--ink); border-radius: 999px; }
@@ -48,6 +53,7 @@
         <!-- GuideCredit: a face chip when the session names its guide; tapping closes the
              player and opens their profile on the stack below. Plain "with …" otherwise. -->
         <a class="guide-chip glass" style="margin-top:8px"><span class="av">D</span>with Dr. Anya Iyer<svg width="7" height="10" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 1 5 5-5 5"/></svg></a>
+        <p class="safety">Stop if you feel light-headed, and breathe normally.</p>
       </div>
       <div class="scrub">
         <div class="track"><div class="fill"></div><div class="thumb"></div></div>

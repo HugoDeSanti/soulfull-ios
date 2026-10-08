@@ -339,6 +339,17 @@
 .num-step .d { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
 .practice-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
+/* SafetyNoteCard  (PracticeShared.swift) — "Before you begin", first in the
+   Breathwork and Somatic Exercises session lists (PracticeCategory.safetyNote;
+   Meditation has none). Glass, radius 18, 14 padding: honey heart.text.square
+   glyph (16), eyebrow 10 / tracking 2 / --ink-soft, text 13 --ink-soft. Read
+   once on the way in, never a modal. Sits 16 above the first row. */
+.safety-note { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 18px; margin-bottom: 6px; }
+.safety-note > svg { flex: none; color: var(--honey); margin-top: 1px; }
+.safety-note > div { flex: 1; min-width: 0; }
+.safety-note .sn-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+.safety-note .sn-tx { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 5px 0 0; }
+
 /* ── Practice progress ───────────────────────────────────────────────────────
    Mirrors ProgressRule (PracticeShared.swift) and the progress states added to
    PracticeListView / HomeView. Quiet by design: the rule reads as an underline
@@ -436,3 +447,15 @@
   font-size: 10px; font-weight: 500; border: 1px solid var(--glass-border-high);
   background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
 .guide-chip svg { color: var(--ink-soft); }
+
+/* ---- Member safety — Features/Community/MemberSafety.swift --------------
+   MemberSafetyMenu: "⋯" beside every OTHER member — a feed line (after the
+   like pill), a Friends row (after its pills), a like notification (trailing,
+   when the liker is known). Never beside yourself. A 14pt semibold ellipsis
+   in --ink-soft inside a 32×44 target (rendering gotcha 5). It opens a system
+   menu: "Report <Name>" (flag) · "Block <Name>" (hand.raised, destructive).
+   Report opens report-member; Block asks first (an iOS action sheet, copy on
+   the community card). A guest can report; blocking needs an account. */
+.member-menu { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 44px; color: var(--ink-soft); background: none; border: 0; padding: 0; cursor: pointer; }
+.member-menu svg { display: block; }

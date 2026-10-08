@@ -24,6 +24,13 @@
   .submit { margin-top: 18px; }
   .toggle { text-align: center; margin-top: 22px; font-size: 13px; color: var(--muted); }
   .toggle b { color: var(--ink); font-weight: 500; }
+  /* AccountView.agreement — under the mode toggle in both modes, since this is
+     where an account (Apple or email) comes into being. What other members
+     see, and what continuing agrees to: the Terms carry the community
+     standards (Guideline 1.2). Body 12 --muted, centered; the two links
+     --ink-soft (LegalLinks.terms / .privacyPolicy). */
+  .agreement { text-align: center; margin: 22px 0 0; padding: 0 6px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+  .agreement a { color: var(--ink-soft); text-decoration: none; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -43,7 +50,7 @@
       <div class="head">
         <img src="../assets/logo.png" alt="">
         <h1>Create account</h1>
-        <p>Practices, reflections and reservations are saved to your account — create one and we'll pick up exactly where you were.</p>
+        <p>Your practice history, streaks and digital retreats are saved to your account — create one and we'll pick up exactly where you were.</p>
       </div>
       <div class="social" style="margin-top:26px">
         <button class="social-btn">
@@ -71,6 +78,7 @@
       </div>
       <div class="submit"><button class="sg-btn sg-btn--filled">Create account</button></div>
       <p class="toggle">Already have an account? <b>Sign in</b></p>
+      <p class="agreement">Other members see your first name, last initial and photo in Community. By continuing, you agree to our <a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a>, including our community standards, and acknowledge our <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy Policy</a>.</p>
     </div>
   </div>
   <div class="home-indicator"></div>

@@ -1,0 +1,104 @@
+<!-- @dsCard group="Screens · Tabs" name="Community — report" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community — report</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  /* Features/Community/ReportMemberSheet.swift. A sheet from "⋯ → Report"
+     beside any other member (community, friends, notifications). Open to a
+     guest. A reason, an optional note, sent through `report-member` (stored
+     and emailed to the team); a report from a feed line or a like carries
+     that practice too. The sent state is report-member-sent.
+     Backdrop: welcome-bg, blur 28 / darken .86, no top scrim. The note field
+     is UIKit-backed, so nothing blurs or shades over it (rendering gotcha 1):
+     the close button sits in a pinned bar with a bg GRADIENT (92% → 60% →
+     clear), never a blur. No .on-photo here: the backdrop is dark enough to
+     be a surface. */
+  .scr { padding: 122px 24px 48px; }
+  .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent); }
+  .close { position: absolute; top: 66px; right: 22px; z-index: 21; width: 38px; height: 38px; }
+  .form { position: relative; z-index: 3; display: flex; flex-direction: column; gap: 26px; }
+  .head .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .head h1 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 10px 0 0; }
+  .head p { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 10px 0 0; }
+  /* Who is being reported: AvatarView 44 + name, glass radius 18. */
+  .member { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 18px; }
+  .member .name { font-size: 15px; font-weight: var(--w-medium); color: var(--ink); }
+  .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); }
+  .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  .q { display: flex; flex-direction: column; gap: 10px; }
+  .q h2 { font-size: 18px; font-weight: var(--w-regular); color: var(--ink); margin: 0; }
+  .qh { display: flex; align-items: baseline; justify-content: space-between; }
+  .qh .opt { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  /* Reason rows (ReportReason — the titles are what the team's email says,
+     and the Edge Function holds the same strings: change both together).
+     Glass radius 16, 14 × 16 padding, 17pt radio glyph. Selected: white 7%
+     tint, honey 55% ring, honey radio (largecircle.fill.circle), Medium. */
+  .reason { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; font-size: 14px; color: var(--ink); }
+  .reason .radio { position: relative; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; color: var(--ink-soft); flex: none; }
+  .reason.is-selected { background: rgba(255,255,255,0.13); border-color: color-mix(in srgb, var(--honey) 55%, transparent); font-weight: var(--w-medium); }
+  .reason.is-selected .radio { color: var(--honey); }
+  .reason.is-selected .radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: currentColor; }
+  /* TextEditor on glass, radius 16, 110pt min; stroke goes glassBorderHigh
+     on focus. Placeholder 15 --muted. Capped at MemberReport.maxDetails. */
+  .note { min-height: 126px; padding: 16px 17px; border-radius: 16px; font-size: 15px; color: var(--muted); }
+  .send { display: flex; flex-direction: column; gap: 12px; }
+  .fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; }
+  /* Send report is disabled (45%) until a reason is chosen; reads "Sending…"
+     while it posts, with the close button dimmed and swipe-to-dismiss off.
+     FAILURE: a banner above the button — honey-tinted glass (6% / 30%),
+     exclamationmark.circle, 13 --ink-soft — and everything written stays:
+     offline → "You're offline, so this hasn't been sent. Reconnect and try
+     again — what you wrote is still here." / our end → "This didn't send at
+     our end. Please try again, or email info@soulfullgatherings.com." */
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="bar"></div>
+  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.4) blur(28px);transform:scale(1.15)"></div>
+    <div class="vignette vignette--deep"></div>
+
+    <div class="form">
+      <div class="head">
+        <p class="eb">Report</p>
+        <h1>Report Theo R.</h1>
+        <p>Reports are private. Theo R. won't know who sent this.</p>
+      </div>
+
+      <div class="member glass"><div class="av t3">T</div><span class="name">Theo R.</span></div>
+
+      <div class="q">
+        <h2>What's wrong?</h2>
+        <div class="reason glass"><span class="radio"></span>Inappropriate photo</div>
+        <div class="reason glass"><span class="radio"></span>Offensive name</div>
+        <div class="reason glass is-selected"><span class="radio"></span>Harassment or unwanted contact</div>
+        <div class="reason glass"><span class="radio"></span>Spam or a fake account</div>
+        <div class="reason glass"><span class="radio"></span>Something else</div>
+      </div>
+
+      <div class="q">
+        <div class="qh"><h2>Anything we should know?</h2><span class="opt">Optional</span></div>
+        <div class="note glass">A few words help us act faster.</div>
+      </div>
+
+      <div class="send">
+        <button class="sg-btn sg-btn--filled">Send report</button>
+        <p class="fine">Our team reviews every report within 24 hours and removes anything that breaks our community standards. Anything urgent: info@soulfullgatherings.com.</p>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

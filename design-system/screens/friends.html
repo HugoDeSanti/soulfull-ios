@@ -10,7 +10,10 @@
   /* Features/Community/FriendsView.swift. Pushed from the Community tab
      behind the account gate. Search by NAME (matches the full name
      server-side, shows the abbreviated one; never by email), then the
-     requests waiting on you, the ones you sent, and your friends. */
+     requests waiting on you, the ones you sent, and your friends. Every row
+     (search results too) ends in "⋯" after its pills (.member-menu in
+     app.css): Report → report-member, Block → the confirmation described on
+     the community card. */
   .scr { padding: 58px 20px 130px; }
   .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: underline; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 22px 0 0; }
@@ -34,9 +37,10 @@
      rest (Decline / Withdraw / Remove); a static glass chip for a standing
      (Requested / Friends). Remove asks for confirmation. */
   .pill { height: 34px; padding: 0 14px; border-radius: 999px; border: 0; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); background: none; cursor: pointer; display: inline-flex; align-items: center; }
-  .pill.fill { background: var(--honey); color: #000; }
+  .pill.fill { background: var(--honey); color: #000; position: static; }  /* not app.css's .fill overlay helper */
   .chip-state { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: var(--w-medium); color: var(--ink-soft); }
   .ctl { display: flex; gap: 8px; }
+  .row .member-menu { margin-left: -6px; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -62,20 +66,20 @@
     <div class="sec">
       <div class="section-label"><span class="title">Requests</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t4">N</div><span class="name">Nia</span><div class="ctl"><button class="pill fill">Accept</button><button class="pill glass">Decline</button></div></div>
+        <div class="row glass"><div class="av t4">N</div><span class="name">Nia</span><div class="ctl"><button class="pill fill">Accept</button><button class="pill glass">Decline</button></div><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Sent</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t0">M</div><span class="name">Mateo V.</span><button class="pill glass">Withdraw</button></div>
+        <div class="row glass"><div class="av t0">M</div><span class="name">Mateo V.</span><button class="pill glass">Withdraw</button><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Friends</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><span class="name">Alma G.</span><button class="pill glass">Remove</button></div>
-        <div class="row glass"><div class="av t3">T</div><span class="name">Theo R.</span><button class="pill glass">Remove</button></div>
+        <div class="row glass"><div class="av t2">A</div><span class="name">Alma G.</span><button class="pill glass">Remove</button><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row glass"><div class="av t3">T</div><span class="name">Theo R.</span><button class="pill glass">Remove</button><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
   </div>

@@ -11,7 +11,17 @@
      friends) has finished lately: one glass row per finished practice, the
      member's face beside it, grouped Today / Yesterday / Earlier. The feed is
      open to a guest; the Friends filter and the Friends screen are behind the
-     account gate. Journal prompts never appear here. */
+     account gate. Journal prompts never appear here.
+     Every other member's line ends in the like pill, then "⋯" (.member-menu
+     in app.css): Report (open to a guest → report-member) and Block (behind
+     the gate). Your own line has no ⋯.
+     BLOCK CONFIRMATION — a system action sheet (confirmationDialog in
+     MemberSafety.swift; the mirror has no card for system dialogs). Title
+     "Block Theo R.?"; message "You won't see each other anywhere in Community
+     — practices, likes, requests or search — and any friendship between you
+     ends. They won't be told. You can unblock them from the You tab.";
+     buttons Block (destructive, red) / Cancel. The same sheet confirms a
+     block from friends and notifications. Unblocking: blocked-members. */
   .scr { padding-top: 60px; padding-bottom: 130px; }
   .hdr { display: flex; align-items: flex-start; gap: 16px; padding: 0 20px; }
   .hdr .tx { flex: 1; min-width: 0; }
@@ -63,8 +73,10 @@
   /* ActivityRow — "Name practiced Title": name and title in ink at Medium, the
      verb quieter; eyebrow beneath is the track (or library) and a relative
      time. Your own lines read "You". */
-  .row { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border-radius: 22px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 22px; }
+  .row.mine { padding-right: 18px; }
   .row .like, .row .like-self { margin-left: auto; }
+  .row .member-menu { margin-left: -4px; }
   .row .tx { flex: 1; min-width: 0; }
   .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
   .row p b { font-weight: var(--w-medium); color: var(--ink); }
@@ -125,22 +137,22 @@
     <div class="sec">
       <div class="section-label"><span class="title">Today</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like glass on"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span></div>
-        <div class="row glass"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
-        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like glass on"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row glass mine"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
+        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Yesterday</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span></div>
-        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span></div>
+        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Earlier</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span></div>
+        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
   </div>
