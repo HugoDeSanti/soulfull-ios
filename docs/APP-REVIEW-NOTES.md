@@ -64,7 +64,7 @@ Paste the **Review notes** block below into App Store Connect → the 1.0 versio
 - [ ] Content rights: "Does your app contain, show, or access third-party content?"
 - [x] App Review contact, the notes block below, and the demo credentials, all in App Review Information (2026-10-08).
 - [x] Build 1.0 (16) attached to the 1.0 version (2026-10-08).
-- [ ] The privacy policy and Terms updated on the website (Community, photos, push, the application form, Report/Block, community standards) **before** submitting.
+- [x] The privacy policy and Terms are updated on the website (published 2026-10-09). They cover Community, photos, push, the application form, Report/Block and the community standards. The previous versions are backed up in `build/legal-drafts/live-backup-*.html`, which is gitignored.
 
 ## Creating the demo account
 

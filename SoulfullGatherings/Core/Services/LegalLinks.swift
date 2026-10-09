@@ -5,7 +5,8 @@
 //  Every outward-facing legal / support destination in one place.
 //
 //  All three pages are live on the Squarespace site and were verified to
-//  return 200 on 2026-09-07. The published page is the only copy — the repo
+//  return 200 on 2026-09-07. The privacy policy and terms were rewritten on
+//  2026-10-09 for Community, Report/Block and the community standards. The published page is the only copy — the repo
 //  sources under `website/legal/` were removed on 2026-09-07; recover them
 //  from git history (`git show d20e3f6:website/legal/`) if one needs editing.
 //
