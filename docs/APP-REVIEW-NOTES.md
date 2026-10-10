@@ -60,7 +60,7 @@ Paste the **Review notes** block below into App Store Connect → the 1.0 versio
 - [x] Price: free. Availability: every territory except China mainland, which needs an ICP filing.
 - [x] Age rating: **13+**. The questionnaire is answered (user-generated content, health/wellness topics and social media are yes, everything else none), and the override is set to 13+ to match the Terms' minimum age.
 - [ ] **EU Digital Services Act trader status** (Business → Compliance). The app isn't sold in the EU until it's declared.
-- [ ] **App Privacy answers** entered by hand, to match `SoulfullGatherings/PrivacyInfo.xcprivacy`. There's no API for this.
+- [x] **App Privacy answers** published by hand (2026-10-09), to match `SoulfullGatherings/PrivacyInfo.xcprivacy`: every type linked to the user and not used for tracking; App Functionality, plus Analytics on Product Interaction. There's no API for this, so any change to the manifest means editing them again.
 - [ ] Content rights: "Does your app contain, show, or access third-party content?"
 - [x] App Review contact, the notes block below, and the demo credentials, all in App Review Information (2026-10-08).
 - [x] Build 1.0 (16) attached to the 1.0 version (2026-10-08).
