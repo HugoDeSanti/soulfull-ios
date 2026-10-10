@@ -53,7 +53,7 @@ struct FriendsView: View {
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .scrollDismissesKeyboard(.interactively)
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8) }
         .refreshable { await vm.loadFriendships(force: true) }

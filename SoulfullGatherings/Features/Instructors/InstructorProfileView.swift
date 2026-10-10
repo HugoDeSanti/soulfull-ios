@@ -78,7 +78,7 @@ struct InstructorProfileView: View {
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background {
             PhotoBackdrop(imageName: vm.instructor?.photoUrl ?? "home-bg", blur: 48, darken: 0.86)
         }

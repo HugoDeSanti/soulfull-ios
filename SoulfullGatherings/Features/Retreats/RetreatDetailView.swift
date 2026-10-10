@@ -75,13 +75,17 @@ struct RetreatDetailView: View {
             } action: { _, new in
                 scrollY = new
             }
+            // The story dissolves as it rises toward the top bar, so "← Back"
+            // and Share sit on the place's photograph rather than tangled in
+            // brochure type. Late, as the cover title nears the bar; reaching
+            // past the bar (8pt down, 44pt tall).
+            .statusBarFade(fadeIn: 80...260, reach: 64)
 
             // Top chrome (back / share)
             VStack {
                 topBar
                     .padding(.horizontal, Theme.gutter)
                     .padding(.top, 8)
-                    .background(alignment: .top) { topBarScrim }
                 Spacer()
             }
 
@@ -738,29 +742,6 @@ struct RetreatDetailView: View {
             }
             .buttonStyle(.soulPressable)
         }
-    }
-
-    /// Ground for the top bar once the story scrolls under it. The bar floats
-    /// over the scroller, so brochure type used to slide straight through the
-    /// plain "‹ Back" and read as one jumble with it. Invisible at rest, where
-    /// the cover photo should stay open, and fading in as the cover title rises
-    /// toward the bar — by the time anything reaches it, it sinks into the
-    /// canvas colour first. Runs from the top edge of the screen through the
-    /// bar, then fades out below it.
-    private var topBarScrim: some View {
-        LinearGradient(
-            stops: [
-                .init(color: Theme.bg.opacity(0.94), location: 0),
-                .init(color: Theme.bg.opacity(0.82), location: 0.7),
-                .init(color: Theme.bg.opacity(0), location: 1),
-            ],
-            startPoint: .top, endPoint: .bottom
-        )
-        .padding(.bottom, -44)
-        .ignoresSafeArea(edges: .top)
-        .opacity(min(1, max(0, Double(scrollY) - 80) / 180))
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 
     private var shareMessage: String {

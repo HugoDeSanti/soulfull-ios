@@ -56,16 +56,21 @@ struct PresenceLine: View {
 
     private let subject: Subject
     private let faceSize: CGFloat
+    /// Space above the badge, there only while it is: padding the empty line
+    /// from outside left a gap under the copy when nobody was present.
+    private let topPadding: CGFloat
     private let store = PresenceStore.shared
 
-    init(kind: PracticeContentKind, contentID: Int, faceSize: CGFloat = 20) {
+    init(kind: PracticeContentKind, contentID: Int, faceSize: CGFloat = 20, topPadding: CGFloat = 0) {
         self.subject = .practice(kind, contentID)
         self.faceSize = faceSize
+        self.topPadding = topPadding
     }
 
-    init(programID: String, faceSize: CGFloat = 20) {
+    init(programID: String, faceSize: CGFloat = 20, topPadding: CGFloat = 0) {
         self.subject = .program(programID)
         self.faceSize = faceSize
+        self.topPadding = topPadding
     }
 
     private var presence: Presence? {
@@ -82,6 +87,7 @@ struct PresenceLine: View {
         VStack(alignment: .leading, spacing: 0) {
             if let presence {
                 PresenceBadge(presence: presence, faceSize: faceSize)
+                    .padding(.top, topPadding)
                     .transition(.opacity)
             }
         }

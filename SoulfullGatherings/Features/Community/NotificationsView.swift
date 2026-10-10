@@ -32,7 +32,7 @@ struct NotificationsView: View {
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8) }
         .refreshable { await vm.loadNotifications(force: true) }
         .task {

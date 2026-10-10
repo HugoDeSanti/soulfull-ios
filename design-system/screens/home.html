@@ -10,17 +10,21 @@
   /* HomeView — on its photo (PhotoBackdrop "home-bg", blur 3, darken .74),
      which stays visible. Type on the photo carries .on-photo; sublines in
      --ink-on-photo. Sections 64px apart (Theme.sectionGap); everything at the
-     24px gutter. */
+     24px gutter. The day / Continue / ritual cards belong to the moods'
+     section: 12px under the words' 44px targets, then 12px apart, not a
+     section's gap each (they floated alone). */
   .scr { padding-top: 86px; padding-bottom: 130px; }
   .scr > .sec + .sec { margin-top: 64px; }
   .hdr { text-align: center; }
   .hdr img { width: 72px; }
   .greet { padding: 40px var(--gutter) 0; }
-  .greet .eb { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  /* Ink, not ink-soft: it sits on the brightest, haziest part of home-bg. */
+  .greet .eb { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 0; }
   .greet h1 { font-size: 42px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 0; }
   .greet .streak { margin-top: 16px; }
   .greet p { font-size: 14px; color: var(--ink-on-photo); margin: 16px 0 0; }
   .moods { margin-top: -10px; }
+  .scr > .sec + .sec.today { margin-top: 12px; }
 
   /* "Day N is open" — square glass: square 64 thumb, ember eyebrow, a light arrow. */
   .day-open { margin: 0 var(--gutter); display: flex; gap: 14px; align-items: flex-start; padding: 20px; }
@@ -98,7 +102,7 @@
          notifications — and for everyone who has them but opened the app
          before 8am. Present only while an enrolled program has an OPEN,
          unfinished day; nothing is invented. -->
-    <div class="sec day-open glass">
+    <div class="sec today day-open glass">
       <div class="thumb" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
       <div class="left">
         <p class="eb">Day 3 is open</p>
@@ -112,7 +116,7 @@
          something already begun beats being handed something new. Absent
          entirely when PracticeProgressStore.resumable is nil — no history,
          no card, nothing invented. -->
-    <div class="sec continue glass">
+    <div class="sec today continue glass">
       <div class="left">
         <p class="eb eyebrow" style="font-size:10px">Continue</p>
         <h3>Coherent Breathing</h3>
@@ -124,7 +128,7 @@
       <span class="play"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     </div>
 
-    <div class="sec ritual" style="--atmos-reach:115%;--atmos-intensity:1">
+    <div class="sec today ritual" style="--atmos-reach:115%;--atmos-intensity:1">
       <div class="atmosphere atmosphere--ember"></div>
       <!-- Eyebrow, headline and lead all follow the selected mood
            (MoodChip.ritual / .ritualLead / .suggests). With no mood selected

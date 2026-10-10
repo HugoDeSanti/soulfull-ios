@@ -61,7 +61,7 @@ struct CommunityView: View {
             .padding(.top, 10)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .refreshable { await vm.load(isMember: isMember, force: true) }
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.78) }
         .task(id: identity) { await vm.load(isMember: isMember) }

@@ -55,9 +55,9 @@ struct ProgramDayView: View {
         // do, rather than stopping short of it on a strip of bare canvas. The
         // overlays below still keep to the safe area.
         .ignoresSafeArea(edges: .top)
-        // Late, so the hero's own scrim carries the photo; reaching just past
-        // the pinned Back link, so the page doesn't show through it.
-        .statusBarScrim(fadeIn: 80...180, reach: 46)
+        // Late, so the hero isn't cut while it fills the top; reaching past
+        // the pinned Back link, so the page dissolves before it reaches it.
+        .statusBarFade(fadeIn: 80...180, reach: 46)
         .background { Theme.bg.ignoresSafeArea() }
         .overlay(alignment: .topLeading) {
             PracticeBackBar(label: program.title)

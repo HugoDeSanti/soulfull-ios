@@ -187,7 +187,7 @@ struct JournalDetailView: View {
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background {
             PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }

@@ -55,7 +55,7 @@ struct ProgramsView: View {
             .padding(.top, 10)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background { PhotoBackdrop(imageName: active?.imageUrl ?? "onb-bg", blur: 26, darken: 0.8) }
         .task { await vm.load() }
         .task { await store.refresh() }

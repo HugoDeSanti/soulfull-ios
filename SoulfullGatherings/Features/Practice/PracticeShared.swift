@@ -69,7 +69,7 @@ struct PracticeListScaffold<Content: View>: View {
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background {
             PhotoBackdrop(imageName: backdrop, blur: 22, darken: 0.78)
         }

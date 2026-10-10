@@ -91,7 +91,7 @@ change it in both places or the mirror drifts:
 | Where | CSS | Swift |
 |---|---|---|
 | Header band darkening | `.top-scrim` (after `.vignette`) | `PhotoBackdrop(topScrim:)`, default `0.45` over `340pt` |
-| Status bar band (scrolled state only) | `.statusbar--scrim` on `.statusbar` (no at-rest screen carries it) | `View.statusBarScrim(fadeIn:reach:)` in `Components.swift`, on each tab-shell `ScrollView`: invisible at rest, fades in over the first 36pt of scroll; only as deep as the status bar (+ `reach` under a pinned Back bar): `Theme.bg` 0.92 → 0.84 behind the clock, eased to 0 over its last 22pt |
+| Status bar fade (scrolled state only) | none: screens are drawn at rest, and nothing is drawn behind `.statusbar` (see the note in `app.css`) | `View.statusBarFade(fadeIn:reach:)` in `Components.swift`, on each scrolling screen's `ScrollView`: no effect at rest; over the first 36pt of scroll the content turns transparent behind the clock, eased back in over the status bar's last 22pt (+ `reach` under a pinned Back bar). A mask, never a band: nothing is drawn over the photo |
 | Text halo | `.on-photo` | `View.onPhoto()` |
 | Eyebrow colour | `--ink-soft` | `Theme.inkSoft` |
 | Subline colour / size | `--ink-on-photo` at 14px | `Theme.inkOnPhoto`, `Theme.body(14)` |

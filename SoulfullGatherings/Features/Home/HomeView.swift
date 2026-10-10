@@ -2,10 +2,11 @@
 //  HomeView.swift
 //  Soulfull Gatherings
 //
-//  The main landing screen, on the moss atmosphere. Sections fade up from
+//  The main landing screen, on its photograph. Sections fade up from
 //  half-light as they scroll in, a mood is a word underlined when chosen,
-//  and the ritual card holds a slow ember wash — the one warm thing on the
-//  page. The two shelves at the foot — digital retreats, then upcoming
+//  and the cards beneath the moods (an open day, Continue, the ritual) stack
+//  close as one section. The ritual card holds a slow ember wash — the one
+//  warm thing on the page. The two shelves at the foot — digital retreats, then upcoming
 //  gatherings — are square photographs with their names set beneath, and
 //  hand off to their own tabs.
 //
@@ -37,20 +38,7 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: Theme.sectionGap) {
                 header
-                section { moodRow }
-                // Picking up something already begun beats being handed
-                // something new, so it sits above the ritual. Absent entirely
-                // when there's nothing under way — no invented state.
-                // The in-app half of the day-unlock nudge, for everyone who
-                // declined notifications — and for everyone who has them and
-                // opened the app before 8am anyway.
-                if let open = openProgramDay {
-                    section { programDayCard(open.0, day: open.1) }
-                }
-                if let resume = history.resumable {
-                    section { continueCard(resume) }
-                }
-                section { todaysRitual }
+                today
                 // Hidden until the `programs` table is seeded — see HomeViewModel.
                 if !vm.programs.isEmpty {
                     section { digitalRetreats }
@@ -58,9 +46,11 @@ struct HomeView: View {
                 // Last on the page: the gatherings have a tab of their own now,
                 // so this is a glimpse rather than the way in.
                 section { upcomingGatherings }
-                Color.clear.frame(height: 120)
             }
             .padding(.top, 32)
+            // Clear of the docked bar by a section's gap, as the sections are
+            // of each other.
+            .padding(.bottom, 120)
             // The day card and the Continue card arrive after the page has
             // drawn, above the ritual. Animated, the ritual eases down rather
             // than jumping out from under a reaching thumb.
@@ -68,7 +58,7 @@ struct HomeView: View {
             .animation(reduceMotion ? nil : Theme.Motion.settle, value: history.resumable?.id)
         }
         .scrollIndicators(.hidden)
-        .statusBarScrim()
+        .statusBarFade()
         .background {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
         }
@@ -146,8 +136,34 @@ struct HomeView: View {
         }
     }
 
+    /// The question and what the day holds, as one section: the cards are
+    /// stacked close under the moods rather than spaced as sections of their
+    /// own, which left each one floating alone (owner, 2026-10-10).
+    private var today: some View {
+        VStack(spacing: 12) {
+            // The words' 44pt targets leave 13pt beneath them, so the cards
+            // start ~28pt under the words and stack 12pt apart.
+            section { moodRow }
+            // Picking up something already begun beats being handed
+            // something new, so it sits above the ritual. Absent entirely
+            // when there's nothing under way — no invented state.
+            // The in-app half of the day-unlock nudge, for everyone who
+            // declined notifications — and for everyone who has them and
+            // opened the app before 8am anyway.
+            if let open = openProgramDay {
+                section { programDayCard(open.0, day: open.1) }
+            }
+            if let resume = history.resumable {
+                section { continueCard(resume) }
+            }
+            section { todaysRitual }
+        }
+    }
+
     private var moodRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Label to words reads as label to photo on the shelves (20pt); the
+        // words' own 13pt of target makes up the rest.
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "How do you feel?")
                 .onPhoto()
             ScrollView(.horizontal, showsIndicators: false) {
@@ -465,7 +481,7 @@ struct HomeView: View {
             .frame(width: 260, height: 200)
             .clipped()
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
                 // Set beneath the photo, on the page's own photograph.
                 Group {
                     Text(p.title)
@@ -476,10 +492,12 @@ struct HomeView: View {
                     Text("with \(p.lead)")
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.inkSoft)
+                        .padding(.top, 4)
                 }
                 .onPhoto()
-                PresenceLine(programID: p.id, faceSize: 18)
-                    .padding(.top, 6)
+                // Takes no room until someone is present, so the shelf ends
+                // where its copy does, a section's gap above the next.
+                PresenceLine(programID: p.id, faceSize: 18, topPadding: 10)
             }
             .padding(.top, 14)
             .frame(maxWidth: .infinity, alignment: .leading)

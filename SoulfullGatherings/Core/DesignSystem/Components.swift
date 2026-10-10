@@ -223,83 +223,84 @@ extension View {
     }
 }
 
-// MARK: - Status bar scrim
+// MARK: - Status bar fade
 
 extension View {
-    /// A soft rise of the canvas colour behind the clock, there only once this
-    /// scroll view's content has moved up under it.
+    /// Scrolled content dissolves as it rises under the clock, so the clock
+    /// sits on the page's own photograph rather than on the type passing
+    /// under it.
     ///
-    /// At rest the page runs clean to the top edge. Scrolled, cream headlines
-    /// and glass chips would collide with the clock, so the band fades in over
-    /// `fadeIn` points of scroll and sinks them into the canvas as they reach
-    /// it — the same move as the retreat detail's and the recipe's scrims.
-    ///
-    /// It is only as deep as the status bar, and fades out inside it, so it
-    /// covers the clock and nothing of the page. It used to be on all the
-    /// time, over every screen (a near-solid slab cut across the photos), and
-    /// then 40pt deeper than the status bar, which still read as a dark bar
-    /// across the top of every scrolled screen.
+    /// At rest nothing changes and the page runs clean to the top edge.
+    /// Scrolled, cream headlines and glass chips would collide with the clock,
+    /// so over `fadeIn` points of scroll the content's top edge turns
+    /// transparent: gone behind the clock, eased back in over the status
+    /// bar's last 22pt. Nothing is laid over the page. It used to be a band
+    /// of the black canvas drawn over the content (first on all the time, then
+    /// only scrolled and only as deep as the status bar), and the owner read
+    /// it each time as a black bar across the photo (2026-10-09, -10).
     ///
     /// Apply it to the `ScrollView` itself, since it reads that view's scroll
-    /// geometry, and before a pinned overlay such as a `PracticeBackBar`, so
-    /// the bar draws above it. `reach` takes the band that far below the
-    /// status bar, to sit behind a pinned bar too. A hero screen starts
-    /// `fadeIn` late, so the band doesn't darken a photo nothing has reached
-    /// yet.
-    func statusBarScrim(fadeIn: ClosedRange<CGFloat> = 0...36, reach: CGFloat = 0) -> some View {
-        modifier(StatusBarScrim(fadeIn: fadeIn, reach: reach))
+    /// geometry and masks what it draws, and before the `PhotoBackdrop`
+    /// background and any pinned overlay such as a `PracticeBackBar`, which
+    /// must not be masked with it. `reach` carries the fade that far below the
+    /// status bar, so content also clears a pinned Back bar. A hero screen
+    /// starts `fadeIn` late, so the hero photo isn't cut while it still fills
+    /// the top.
+    func statusBarFade(fadeIn: ClosedRange<CGFloat> = 0...36, reach: CGFloat = 0) -> some View {
+        modifier(StatusBarFade(fadeIn: fadeIn, reach: reach))
     }
 }
 
-private struct StatusBarScrim: ViewModifier {
+private struct StatusBarFade: ViewModifier {
     let fadeIn: ClosedRange<CGFloat>
     let reach: CGFloat
-    @State private var opacity: Double = 0
+    @State private var strength: Double = 0
 
-    /// The band's eased bottom edge, inside its height, so the band ends
-    /// where the status bar does rather than below it.
-    private static let fade: CGFloat = 22
+    /// The eased bottom of the faded zone, inside its height, so content is
+    /// fully back where the status bar (or the pinned bar) ends.
+    private static let ease: CGFloat = 22
 
     func body(content: Content) -> some View {
         content
             .onScrollGeometryChange(for: Double.self) { geo in
                 let y = geo.contentOffset.y + geo.contentInsets.top
                 let t = (y - fadeIn.lowerBound) / (fadeIn.upperBound - fadeIn.lowerBound)
-                // In twentieths, so a page scrolling well past the band
+                // In twentieths, so a page scrolling well past the fade
                 // doesn't re-render this on every frame.
                 return (min(1, max(0, t)) * 20).rounded() / 20
             } action: { _, new in
-                opacity = new
+                strength = new
             }
-            .overlay(alignment: .top) {
-                // From the top of the safe area, with the band reaching up
-                // through the status bar to the screen's edge, whatever its
-                // height on this device.
-                Color.clear
-                    .frame(height: reach)
-                    .frame(maxWidth: .infinity)
-                    .background { band.ignoresSafeArea(edges: .top) }
-                    .opacity(opacity)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+            .mask {
+                // The mask has to cover all the scroll view draws, which runs
+                // past its frame to the screen's edges: whatever isn't under
+                // the mask disappears. The faded zone is the status bar,
+                // however tall on this device, plus `reach`; everything below
+                // it shows in full, down under the home indicator and the
+                // docked bar.
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        zone.frame(height: geo.safeAreaInsets.top + reach)
+                        Color.black
+                    }
+                    .ignoresSafeArea()
+                }
             }
     }
 
-    /// Dense behind the clock, enough to sink cream type, then eased out over
-    /// `fade`, so there's no edge to find. (A frosted material was tried: over
-    /// the already-blurred backdrops it read as a flat grey slab.)
-    private var band: some View {
+    /// Opaque (shown) at rest; scrolled, clear behind the clock and eased
+    /// back to opaque over `ease`.
+    private var zone: some View {
         VStack(spacing: 0) {
-            LinearGradient(colors: [Theme.bg.opacity(0.92), Theme.bg.opacity(0.84)],
-                           startPoint: .top, endPoint: .bottom)
+            Color.black.opacity(1 - strength)
             LinearGradient(stops: [
-                .init(color: Theme.bg.opacity(0.84), location: 0),
-                .init(color: Theme.bg.opacity(0.6), location: 0.3),
-                .init(color: Theme.bg.opacity(0.28), location: 0.6),
-                .init(color: Theme.bg.opacity(0.08), location: 0.84),
-                .init(color: Theme.bg.opacity(0), location: 1),
+                .init(color: .black.opacity(1 - strength), location: 0),
+                .init(color: .black.opacity(1 - strength * 0.7), location: 0.3),
+                .init(color: .black.opacity(1 - strength * 0.33), location: 0.6),
+                .init(color: .black.opacity(1 - strength * 0.1), location: 0.84),
+                .init(color: .black, location: 1),
             ], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.fade)
+                .frame(height: Self.ease)
         }
     }
 }
