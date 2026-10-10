@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .row3 { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 22px; }
+  .row3 { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 26px; }
   .cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
   .swiftnote { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   code { color: var(--ink-soft); }
@@ -15,29 +15,32 @@
 </head><body>
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Components</p>
-  <h1 class="canvas-headline">Meta pills · chips · live dot</h1>
+  <h1 class="canvas-headline">Meta line · state chip · live dot</h1>
 
-  <p class="cap">Retreat-detail meta pills</p>
+  <p class="cap">Retreat-detail meta — one line of type, no pills</p>
   <div class="row3">
-    <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Sep 12–18, 2026</span>
-    <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>12 guests</span>
-    <span class="meta-pill">$4,800</span>
+    <span class="meta-line">July 21–26<span class="sep">·</span>14 guests<span class="sep">·</span>$4,400</span>
   </div>
 
-  <p class="cap">Intention chips (You tab)</p>
+  <p class="cap">Intentions (You tab) — words separated by a middle dot</p>
   <div class="row3">
-    <span class="chip">Rest &amp; repair</span>
-    <span class="chip">Connection</span>
-    <span class="chip">Adventure</span>
+    <span style="font-size:13px;color:var(--ink-soft)">Rest &amp; repair · Connection · Adventure</span>
+  </div>
+
+  <p class="cap">A state chip that survives (a digital retreat card) — square veil</p>
+  <div class="row3">
+    <span class="chip"><span style="color:var(--ember)">Day 3 of 7</span></span>
   </div>
 
   <p class="cap">Live indicator — PulseModifier</p>
   <div class="row3">
     <span class="pulse-dot"></span>
-    <span class="eyebrow" style="letter-spacing:2px;color:#fff">Now</span>
+    <span class="eyebrow" style="letter-spacing:2px;color:var(--ink)">Now</span>
   </div>
   <p class="swiftnote">
-    Glass capsule, <code>Theme.body(11, medium)</code>. The pulsing white dot is <code>PulseModifier</code> (1s loop, autoreverses) — reserved for live state only.
+    The glass capsules are gone: dates, guests and price read as one line of type separated by middle dots, as Open sets its metadata.
+    <code>PulseModifier</code> is light only — the dot brightens and dims (opacity .35 ↔ 1) at half a breath, reserved for live state;
+    static under Reduce Motion.
   </p>
 </div></div>
 </body></html>

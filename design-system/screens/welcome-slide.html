@@ -7,19 +7,23 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .topbar { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 8px 24px 0; }
+  /* WelcomeView.slideStack — the masthead up top, the copy low on the page
+     above hairline segments, with the photograph and space between. */
+  .screen { display: flex; flex-direction: column; }
+  .topbar { position: relative; z-index: 5; display: flex; align-items: flex-start; justify-content: space-between; padding: 24px var(--gutter) 0; }
   .topbar img { width: 56px; opacity: .88; }
-  .folio { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: var(--w-medium); letter-spacing: 1.5px; color: rgba(255,255,255,.8); }
-  .copy { position: relative; z-index: 5; padding: 40px 26px 0; }
-  .copy .eb { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.78); margin-bottom: 16px; }
-  .copy h2 { font-size: 26px; font-weight: var(--w-medium); letter-spacing: -0.4px; line-height: 1.16; margin: 0 0 18px; color: var(--ink); }
-  .copy h2 .dim { color: rgba(255,255,255,0.62); }
-  .copy p { font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.8); margin: 0; max-width: 300px; }
-  .bottom { position: absolute; left: 0; right: 0; bottom: 38px; padding: 0 26px; z-index: 5; }
-  .segs { display: flex; gap: 6px; margin-bottom: 26px; }
-  .segs span { height: 2px; flex: 1; border-radius: 2px; background: rgba(255,255,255,0.22); }
-  .segs span.on { background: rgba(255,255,255,0.92); }
-  .actions { display: flex; flex-direction: column; gap: 4px; }
+  .folio { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: var(--w-medium); letter-spacing: 1.5px; color: var(--ink); padding-top: 6px; }
+  .folio span { opacity: .5; }
+  .copy { position: relative; z-index: 5; padding: 0 var(--gutter); margin-top: auto; }
+  .copy .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 20px; }
+  .copy h2 { font-size: 30px; font-weight: var(--w-light); letter-spacing: -0.6px; line-height: 1.16; margin: 0 0 20px; color: var(--ink); }
+  .copy h2 .dim { color: rgba(242,241,237,0.62); }
+  .copy p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 0; }
+  .bottom { position: relative; padding: 36px var(--gutter) 32px; z-index: 5; }
+  .segs { display: flex; gap: 6px; margin-bottom: 28px; }
+  .segs span { height: 1px; flex: 1; background: rgba(242,241,237,0.22); }
+  .segs span.on { background: rgba(242,241,237,0.92); }
+  .actions { display: flex; flex-direction: column; gap: 4px; align-items: center; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -28,27 +32,29 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
   <div class="screen safe-top">
-    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.15) brightness(.85) blur(4px);transform:scale(1.12) translateX(-3%)"></div>
-    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.45),rgba(0,0,0,.7))"></div>
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.16) translateX(-3%)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30),rgba(0,0,0,.62))"></div>
     <div class="top-scrim"></div>
 
-    <div class="topbar"><img src="../assets/logo.png" alt=""><span class="folio">02 / 03</span></div>
+    <div class="topbar"><img src="../assets/logo.png" alt=""><span class="folio">02 <span>/ 02</span></span></div>
 
     <div class="copy on-photo">
-      <div class="eb">The Soulfull Way</div>
-      <h2>A worldwide community<br>that travels,<br><span class="dim">heals, and connects.</span></h2>
-      <!-- Slide 1 ("Wellness retreats, online and around the world.") reads:
-           "Luxurious in-person gatherings and self-paced digital retreats —
-           breathwork, meditation, somatic exercises, movement, and nourishing
-           food." -->
+      <div class="eb">A Conscious Community</div>
+      <h2>A worldwide community <span class="dim">that travels, heals, and connects.</span></h2>
+      <!-- Slide 1 ("Digital & Physical Retreats" · "Wellness retreats, online
+           and around the world.") reads: "Luxurious in-person gatherings and
+           self-paced digital retreats — breathwork, meditation, somatic
+           exercises, movement, and nourishing food." Its button reads Next and
+           has no sign-in link. Pages hand over with a focus pull (blur + fade),
+           nothing slides; the photograph pans slowly between them. -->
       <p>A conscious space for shared practice — see what the circle is practicing, and practice alongside friends.</p>
     </div>
 
     <div class="bottom">
-      <div class="segs"><span></span><span class="on"></span><span></span></div>
+      <div class="segs"><span class="on"></span><span class="on"></span></div>
       <div class="actions">
-        <button class="sg-btn sg-btn--filled">Next</button>
-        <button class="quiet-btn" style="padding:12px">I already have an account</button>
+        <button class="sg-btn">Begin</button>
+        <button class="quiet-btn" style="padding:14px 12px">I already have an account</button>
       </div>
     </div>
   </div>

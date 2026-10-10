@@ -7,8 +7,7 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .preview { position: relative; height: 220px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: center; }
-  .preview .bgimg { position: absolute; inset: 0; background: url('../assets/home-bg.jpg') center/cover; filter: brightness(.55) blur(2px); }
+  .preview { position: relative; height: 220px; overflow: hidden; border: 0.5px solid var(--line); display: flex; align-items: flex-end; justify-content: center; }
   .preview .bottom-nav { padding-bottom: 22px; }
   .caps { display: flex; gap: 26px; margin-top: 22px; }
   .caps .lab { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
@@ -20,7 +19,7 @@
   <p class="canvas-title">Components</p>
   <h1 class="canvas-headline">BottomNav — flat, docked tab bar</h1>
   <div class="preview">
-    <div class="bgimg"></div>
+    <div class="atmosphere atmosphere--moss"></div>
     <nav class="bottom-nav">
       <button class="nav-item is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3 3 10v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V10z"/></svg><span class="nav-label">Home</span></button>
       <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span class="nav-label">Gatherings</span></button>
@@ -36,8 +35,8 @@
     Six items — Home · Gatherings · Digital Retreats · Practice · Community · You — each as wide as its label plus an equal share of the
     spare width (<code>NavBarLayout</code>), so the gaps between labels are even and the slots still tile the whole bar. Equal slots stopped
     fitting at six: "Digital Retreats" is ~77pt against a ~64pt sixth. A light-weight glyph over a 10pt Geist Medium label; <code>Theme.ink</code> when selected, <code>Theme.muted</code> otherwise.
-    <strong>Nothing animates</strong>: no lens, no bounce, no press squish; hiding on detail pushes is an instant fade-free cut.
-    The You item is the member's <code>AvatarView</code> (22pt, cream ring when selected); a guest sees the plain person glyph.
+    <strong>Nothing animates</strong>: no lens, no bounce, no press dim; hiding on detail pushes is an instant fade-free cut.
+    The You item is the member's <code>AvatarView</code> (22pt, a 1pt ink ring when selected — a face, so it stays round); a guest sees the plain person glyph.
     Builds from <code>MainTab.allCases</code>.
   </p>
 </div></div>

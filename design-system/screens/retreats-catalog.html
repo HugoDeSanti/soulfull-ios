@@ -8,25 +8,28 @@
 <link rel="stylesheet" href="../shared/app.css">
 <!--
   RetreatsStackView (catalog mode), inside the Gatherings tab. The .topbar is
-  the SAME chrome as retreats-stack — just the mode toggle as a tab root, which
-  now shows the list glyph and sits exactly where the grid glyph was. The catalog has no header button of
-  its own. Covers: country eyebrow (10px — it was 8.5px), name, then the dates.
+  the SAME chrome as retreats-stack — just the mode toggle (a bare GlyphButton)
+  as a tab root, which now shows the list glyph and sits exactly where the grid
+  glyph was. The catalog has no header button of its own. Covers are square:
+  country eyebrow, name (22 Regular), then the dates; the focused retreat is
+  marked by an ink hairline, nothing more (no shadow, no glow). The backdrop
+  photo blurs (16) and dims behind the sheet.
 -->
 <style>
   .scr { padding-top: 54px; padding-bottom: 116px; }
-  .topbar { display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px 24px 0; position: relative; z-index: 3; }
-  .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
-  .intro { padding: 18px 24px 18px; position: relative; z-index: 2; }
+  .topbar { display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px calc(var(--gutter) - 12px) 0 var(--gutter); position: relative; z-index: 3; }
+  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; color: var(--ink); }
+  .intro { padding: 18px var(--gutter) 18px; position: relative; z-index: 2; }
   .intro .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  .intro p { font-size: 14px; line-height: 1.45; color: var(--ink-on-photo); margin: 8px 0 0; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 8px 20px 0; position: relative; z-index: 2; }
-  .cover { position: relative; height: 224px; border-radius: 18px; overflow: hidden; border: 1px solid var(--glass-border); background-size: cover; background-position: center; box-shadow: 0 14px 28px -10px rgba(0,0,0,0.55); }
-  .cover.active { border-color: rgba(229,199,102,0.7); }
+  .intro p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px 0 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px var(--gutter) 0; position: relative; z-index: 2; }
+  .cover { position: relative; height: 224px; overflow: hidden; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
+  .cover.active { border-color: rgba(242,241,237,0.7); }
   .cover .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05), transparent 40%, rgba(0,0,0,.7)); }
-  .cover .folio { position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; color: rgba(255,255,255,0.85); }
+  .cover .folio { position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; color: rgba(242,241,237,0.85); }
   .cover .meta { position: absolute; left: 12px; bottom: 12px; right: 12px; }
-  .cover .meta .m { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: rgba(255,255,255,0.82); }
-  .cover .meta .n { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: #fff; margin-top: 3px; }
+  .cover .meta .m { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--ink-soft); }
+  .cover .meta .n { font-size: 22px; font-weight: 400; letter-spacing: -0.5px; color: var(--ink); margin-top: 3px; }
   .cover .meta .d { font-size: 11px; color: var(--ink-on-photo); margin-top: 3px; white-space: nowrap; }
 </style>
 </head><body>
@@ -37,11 +40,11 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg');filter:blur(16px) brightness(.55)"></div>
+    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg');filter:saturate(.9) blur(16px) brightness(.68);transform:scale(1.08)"></div>
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.4),rgba(0,0,0,.6),rgba(0,0,0,.85))"></div>
 
     <div class="topbar">
-      <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h11M4 14h16M4 18h11"/></svg></span>
+      <span class="glyph-btn" aria-label="Stack view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 10h11M4 14h16M4 18h11"/></svg></span>
     </div>
     <div class="intro on-photo">
       <p class="eb">All gatherings</p>

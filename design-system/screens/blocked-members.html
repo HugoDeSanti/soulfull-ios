@@ -10,33 +10,35 @@
   /* Features/Community/BlockedMembersView.swift. A sheet from the You tab's
      Community section ("Blocked members" row, profile.html): who you've
      blocked, and Unblock beside each (no confirmation; the row leaves).
-     Backdrop: welcome-bg, blur 28 / darken .86, no top scrim; close button in
+     Ground: the dusk atmosphere; close button in
      a pinned bar with a bg gradient (92% → 60% → clear), as report-member.
-     EMPTY: one glass card (18 padding, body 14 --ink-soft) — "You haven't
+     EMPTY: open text under a hairline (body 14 --ink-soft) — "You haven't
      blocked anyone. You can block a member from the ⋯ beside their name in
      Community."
-     FAILED LOAD: glass card, headline 20 "You're offline" / "Couldn't load
+     FAILED LOAD: open, headline 20 light "You're offline" / "Couldn't load
      this list", body 14 "Reconnect to see who you've blocked." / "Something
-     went wrong at our end. Please try again in a moment.", outline "Try
-     again". A failed Unblock shows a honey-tinted banner (6% / 30%) under the
-     header. */
-  .scr { padding: 118px 20px 60px; }
+     went wrong at our end. Please try again in a moment.", a square hairline
+     "Try again". A failed Unblock shows a square veil with an ember hairline
+     under the header. */
+  .scr { padding: 118px var(--gutter) 60px; }
   .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
     background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent); }
-  .close { position: absolute; top: 66px; right: 22px; z-index: 21; width: 38px; height: 38px; }
+  .close { position: absolute; top: 62px; right: calc(var(--gutter) - 14px); z-index: 21; }
   .body { position: relative; z-index: 3; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  h1 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 8px 0 0; }
+  h1 { font-size: 30px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 8px 0 0; }
   .sub { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 8px 0 0; }
-  .rows { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
-  /* Same anatomy as the Friends screen's MemberRow: face, name, one pill. */
-  .row { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 18px; }
+  .rows { display: flex; flex-direction: column; margin-top: 36px; }
+  /* Same anatomy as the Friends screen's MemberRow: face, name, one button;
+     open rows divided by hairlines. */
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+  .row + .row { border-top: 0.5px solid var(--line); }
   .row .name { flex: 1; min-width: 0; font-size: 15px; font-weight: var(--w-medium); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); }
-  .av.t0 { background-image: linear-gradient(135deg, #4f5c29, #333d17); }
-  .av.t4 { background-image: linear-gradient(135deg, #806b4f, #544530); }
-  /* Unblock — quiet glass capsule, 34pt, stroke glassBorderHigh; 50% while it works. */
-  .pill { height: 34px; padding: 0 14px; border-radius: 999px; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; border-color: var(--glass-border-high); }
+  .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: var(--hairline) solid var(--glass-border); }
+  .av.t0 { background-image: linear-gradient(135deg, #454d1c, #262b0d); }
+  .av.t4 { background-image: linear-gradient(135deg, #544533, #30261a); }
+  /* Unblock — a square ink hairline, 34pt in a 44pt target; 50% while it works. */
+  .pill { height: 34px; padding: 0 14px; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; background: none; border: var(--hairline) solid rgba(242,241,237,.7); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -46,11 +48,10 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="bar"></div>
-  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+  <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.4) blur(28px);transform:scale(1.15)"></div>
-    <div class="vignette vignette--deep"></div>
+    <div class="atmosphere atmosphere--dusk"></div>
 
     <div class="body">
       <p class="eb">Community</p>
@@ -58,8 +59,8 @@
       <p class="sub">You and the people you block don't see each other anywhere in Community. Unblocking doesn't bring back a friendship or likes the block ended.</p>
 
       <div class="rows">
-        <div class="row glass"><div class="av t4">R</div><span class="name">Rafa M.</span><button class="pill glass">Unblock</button></div>
-        <div class="row glass"><div class="av t0">J</div><span class="name">Jules B.</span><button class="pill glass">Unblock</button></div>
+        <div class="row"><div class="av t4">R</div><span class="name">Rafa M.</span><button class="pill">Unblock</button></div>
+        <div class="row"><div class="av t0">J</div><span class="name">Jules B.</span><button class="pill">Unblock</button></div>
       </div>
     </div>
   </div>

@@ -7,30 +7,38 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .scr { padding-bottom: 60px; }
-  .hero { height: 330px; position: relative; background-size: cover; background-position: center; }
-  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.22) 45%, var(--bg) 100%); }
-  .hero .backbar { position: absolute; top: 46px; left: 20px; }
-  .hero .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-  .hero .body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+  /* ProgramDetailView — a 420 hero running up under the clock, then the page on
+     black at the gutter: overview, the action, the guide between hairlines,
+     and the days as a ruled list with folio numerals (no circles, no boxes). */
+  .scr { padding-bottom: 120px; }
+  .hero { height: 420px; position: relative; background-size: cover; background-position: center; }
+  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.22) 45%, rgba(0,0,0,.95) 100%); }
+  .hero .backbar { position: absolute; top: 56px; left: var(--gutter); }
+  .back { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
+  .hero .body { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 24px; }
   .hero .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  .hero h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 6px 0 0; }
-  .hero .with { font-size: 14px; color: var(--ink-on-photo); margin: 6px 0 0; }
-  .body-pad { padding: 22px 20px 0; }
-  .over { font-size: 15px; line-height: 1.62; color: var(--ink-soft); margin: 0 0 22px; }
-  .days { margin-top: 22px; }
-  .day { display: flex; gap: 14px; padding: 16px; border-radius: 22px; margin-top: 10px; border: 1px solid var(--glass-border); }
-  .day.is-open { border-color: color-mix(in srgb, var(--honey) 40%, transparent); }
-  .day.is-locked { opacity: .72; }
-  .day .mark { width: 38px; height: 38px; border-radius: 999px; flex: none; display: grid; place-items: center; font-size: 14px; font-weight: var(--w-semibold); background: rgba(245,243,232,.08); border: 1px solid var(--glass-border); color: var(--ink-soft); }
-  .day .mark.done { background: color-mix(in srgb, var(--accent-soft) 22%, transparent); border-color: color-mix(in srgb, var(--accent-soft) 50%, transparent); color: var(--accent-soft); }
-  .day .mark.open { color: var(--honey); }
-  .day h4 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .hero h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 0; }
+  .hero .with { font-size: 14px; color: var(--ink-on-photo); margin: 8px 0 0; }
+  .hero .progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ember); }
+  .body-pad { padding: 32px var(--gutter) 0; }
+  .body-pad > * + * { margin-top: 40px; }
+  .over { font-size: 15px; line-height: 1.65; color: var(--ink-soft); margin: 0; }
+  .days .section-label { --sl-pad: 0; margin-bottom: 8px; }
+  .day { display: flex; align-items: baseline; gap: 16px; padding: 20px 0; border-top: 0.5px solid var(--line); }
+  .day.is-locked { opacity: .6; }
+  /* The day as a folio numeral — ink when it's the day to open, moss once
+     done, muted otherwise. */
+  .day .mark { width: 24px; flex: none; font-size: 12px; font-weight: 500; letter-spacing: 1.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .day .mark.done { color: var(--accent-soft); }
+  .day .mark.open { color: var(--ink); }
+  .day .tx { flex: 1; }
+  .day h4 { font-size: 18px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .day.is-locked h4 { color: var(--ink-soft); }
-  .day p { font-size: 13px; line-height: 1.45; color: var(--muted); margin: 4px 0 0; }
-  .day .status { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-  .day .status.open { color: var(--honey); }
-  .leave { display: block; text-align: center; margin-top: 22px; font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  .day p { font-size: 13px; line-height: 1.45; color: var(--muted); margin: 5px 0 0; }
+  .day .status { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 7px; display: flex; align-items: center; gap: 6px; }
+  .day .status.open { color: var(--ember); }
+  .day .go { color: var(--ink); align-self: center; }
+  .leave { display: block; text-align: center; font-size: 13px; color: var(--muted); padding: 12px 0; text-decoration: underline; text-underline-offset: 3px; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -42,12 +50,14 @@
   <div class="screen screen--scroll scr">
     <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')">
       <div class="ov"></div>
-      <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Digital Retreats</a></div>
+      <div class="backbar"><a class="back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Digital Retreats</a></div>
       <div class="body on-photo">
         <p class="eb">7 days · Self-paced</p>
         <h1>Finding Ground</h1>
         <p class="with">with Alma Guerra</p>
         <div class="presence"><span class="faces"><i>A</i><i>T</i><i>N</i></span>1.2k present</div>
+        <!-- Enrolled only. -->
+        <div class="progress">2 of 7 days <span class="prog-rule" style="width:90px"><i style="width:29%"></i></span></div>
       </div>
     </div>
 
@@ -56,44 +66,47 @@
 
       <!-- Guest-visible all the way down to this list. The gate is on JOINING
            (AccountGate), which is where browsing stops and it becomes theirs.
-           Once enrolled this button becomes "Open day 3", or a glass panel
-           reading "Day 4 opens tomorrow · Rest is part of it." -->
+           Before joining this reads "→ Start this digital retreat" (filled);
+           enrolled and open, "→ Open day 3" (filled); waiting on the calendar,
+           a square veil with an ember moon: "Day 4 opens tomorrow · Rest is
+           part of it. We'll let you know."; finished, "↺ Begin again" (ghost). -->
       <button class="sg-btn sg-btn--filled">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        Start this digital retreat
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg>
+        Open day 3
       </button>
 
-      <!-- GuideCard: the digital retreat's guide, between the CTA and the days. -->
-      <div class="guide-card glass" style="margin-top:24px"><span class="ring"><span class="av">A</span></span><div class="tx"><p class="gc-eb">Your guide</p><p class="gc-nm">Alma Guerra</p><p class="gc-ti">Breathwork · Somatic therapy</p></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
+      <!-- GuideCard: the digital retreat's guide, open between two hairlines. -->
+      <div class="guide-card"><span class="av">A</span><div class="tx"><p class="gc-eb">Your guide</p><p class="gc-nm">Alma Guerra</p><p class="gc-ti">Breathwork · Somatic therapy</p></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
 
       <div class="days">
         <div class="section-label"><span class="title">The days</span></div>
 
-        <div class="day glass">
-          <span class="mark done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></span>
-          <div><h4>Arriving</h4><p>Land before you ask anything of the body.</p>
+        <div class="day">
+          <span class="mark done">01</span>
+          <div class="tx"><h4>Arriving</h4><p>Land before you ask anything of the body.</p>
             <div class="status">Completed Sep 15</div></div>
         </div>
 
-        <div class="day glass">
-          <span class="mark done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></span>
-          <div><h4>Steadiness</h4><p>Find the floor. Everything else is built on it.</p>
+        <div class="day">
+          <span class="mark done">02</span>
+          <div class="tx"><h4>Steadiness</h4><p>Find the floor. Everything else is built on it.</p>
             <div class="status">Completed Sep 16</div></div>
         </div>
 
-        <div class="day glass is-open">
-          <span class="mark open">3</span>
-          <div><h4>Letting go</h4><p>Set down one thing you have been carrying out of habit.</p>
+        <div class="day">
+          <span class="mark open">03</span>
+          <div class="tx"><h4>Letting go</h4><p>Set down one thing you have been carrying out of habit.</p>
             <div class="status open">2 practices · open now</div></div>
+          <svg class="go" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg>
         </div>
 
         <!-- Locked by the CALENDAR half of the rule: day 3 isn't finished, so
              day 4 has no unlock date yet. Once it is, this reads "Opens
              tomorrow" with the moon glyph instead of the lock. -->
-        <div class="day glass is-locked">
-          <span class="mark">4</span>
-          <div><h4>Strength</h4><p>Steadiness you can stand on when it is asked for.</p>
-            <div class="status"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4"/></svg>Finish day 3 first</div></div>
+        <div class="day is-locked">
+          <span class="mark">04</span>
+          <div class="tx"><h4>Strength</h4><p>Steadiness you can stand on when it is asked for.</p>
+            <div class="status"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V7a4 4 0 118 0v4"/></svg>Finish day 3 first</div></div>
         </div>
       </div>
 

@@ -7,23 +7,33 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
+  /* RecipeDetailView — a full-bleed 320 hero, then the page on black: the
+     header with time · servings as a line of type (no pills), the guide
+     between hairlines, and two open sections (a hairline, a caps label, the
+     content — no box). Ingredient checks are square 18px hairline boxes with
+     an ember check that fades in. */
   .hero { position: relative; height: 320px; }
-  .hero .img { position: absolute; inset: 0; background: url('../assets/practice-recipes.jpg') center/cover; }
+  .hero .img { position: absolute; inset: 0; background: url('../assets/practice-recipes.jpg') center/cover; filter: saturate(.9); }
   .hero .v { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.45), transparent 40%, rgba(0,0,0,.35)); }
-  .backbar { position: absolute; top: 44px; left: 0; right: 0; z-index: 20; padding: 8px 24px; }
-  .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
-  .body { padding: 20px 20px 120px; }
+  .backbar { position: absolute; top: 44px; left: 0; right: 0; z-index: 20; padding: 8px var(--gutter); }
+  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; color: var(--ink); text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  .body { padding: 28px var(--gutter) 120px; }
+  .body > * + * { margin-top: 36px; }
   .lead { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0; }
-  h1 { font-size: 32px; font-weight: var(--w-regular); letter-spacing: -0.3px; line-height: 1.15; color: var(--ink); margin: 10px 0 14px; }
-  .pills { display: flex; gap: 10px; }
-  .blurb { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 14px 0 0; }
-  .card { margin-top: 22px; padding: 16px; border-radius: 18px; }
-  .card .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
-  .ing { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
-  .ing .box { width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--honey); display: grid; place-items: center; color: #000; background: var(--honey); flex: none; }
-  .ing .box.off { background: transparent; border-color: rgba(201,197,176,0.5); }
+  h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.7px; line-height: 1.15; color: var(--ink); margin: 10px 0 0; }
+  .metaline { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-soft); margin-top: 14px; }
+  .metaline span { display: inline-flex; align-items: center; gap: 6px; }
+  .blurb { font-size: 14px; line-height: 1.6; color: var(--ink-soft); margin: 12px 0 0; }
+  .card { border-top: 0.5px solid var(--line); padding-top: 16px; }
+  .card .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 16px; }
+  .ing { display: flex; align-items: flex-start; gap: 14px; padding: 8px 0; }
+  .ing .box { width: 18px; height: 18px; border: var(--hairline) solid rgba(161,159,153,0.5); display: grid; place-items: center; color: var(--ember); flex: none; margin-top: 2px; }
+  .ing .box.on { border-color: var(--ember); }
   .ing .lab { font-size: 15px; color: var(--ink); }
-  .ing.done .lab { color: var(--muted); text-decoration: line-through; }
+  .ing.done .lab { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(107,105,100,.6); }
+  .card .steps { gap: 0; }
+  .card .num-step { padding: 14px 0; }
+  .card .num-step + .num-step { border-top: 0.5px solid var(--line); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -32,39 +42,42 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Recipes</a></div>
+  <div class="backbar"><a class="back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Recipes</a></div>
 
   <div class="screen screen--scroll">
     <div class="hero"><div class="img"></div><div class="v"></div></div>
     <div class="body">
-      <p class="lead">Nourishing · Plant-based</p>
-      <h1>Golden Turmeric Dahl</h1>
-      <div class="pills">
-        <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>35 min</span>
-        <span class="meta-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>4 servings</span>
+      <div>
+        <p class="lead">Nourishing · Plant-based</p>
+        <h1>Golden Turmeric Dahl</h1>
+        <div class="metaline">
+          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>35 min</span>
+          <span>·</span>
+          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.4"/><circle cx="16.5" cy="9" r="2.8"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2M15 13.8c2.8 0 4.8 1.9 4.8 5.2"/></svg>4 servings</span>
+        </div>
+        <div class="presence" style="margin-top:10px"><span class="faces"><i>A</i><i>T</i><i>N</i></span>312 present</div>
+        <p class="blurb">A warming, anti-inflammatory bowl for cold evenings — gentle on digestion and deeply grounding.</p>
       </div>
-      <div class="presence"><span class="faces"><i>A</i><i>T</i><i>N</i></span>312 present</div>
-      <p class="blurb">A warming, anti-inflammatory bowl for cold evenings — gentle on digestion and deeply grounding.</p>
 
       <!-- GuideCard: after the header, before the ingredients. -->
-      <div class="guide-card glass" style="margin-top:18px"><span class="ring"><span class="av">N</span></span><div class="tx"><p class="gc-eb">Your guide</p><p class="gc-nm">Noa Castell</p><p class="gc-ti">Breathwork · Nourishment</p></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
+      <div class="guide-card"><span class="av">N</span><div class="tx"><p class="gc-eb">Your guide</p><p class="gc-nm">Noa Castell</p><p class="gc-ti">Breathwork · Nourishment</p></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
 
-      <div class="card glass">
+      <div class="card">
         <p class="eb">Ingredients</p>
-        <div class="ing done"><span class="box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-11"/></svg></span><span class="lab">1 cup red lentils, rinsed</span></div>
-        <div class="ing"><span class="box off"></span><span class="lab">1 tbsp fresh turmeric, grated</span></div>
-        <div class="ing"><span class="box off"></span><span class="lab">1 can coconut milk</span></div>
-        <div class="ing"><span class="box off"></span><span class="lab">2 cloves garlic, minced</span></div>
-        <div class="ing"><span class="box off"></span><span class="lab">Handful of spinach</span></div>
+        <div class="ing done"><span class="box on"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5 9-11"/></svg></span><span class="lab">1 cup red lentils, rinsed</span></div>
+        <div class="ing"><span class="box"></span><span class="lab">1 tbsp fresh turmeric, grated</span></div>
+        <div class="ing"><span class="box"></span><span class="lab">1 can coconut milk</span></div>
+        <div class="ing"><span class="box"></span><span class="lab">2 cloves garlic, minced</span></div>
+        <div class="ing"><span class="box"></span><span class="lab">Handful of spinach</span></div>
       </div>
 
-      <div class="card glass">
+      <div class="card">
         <p class="eb">Method</p>
         <div class="steps">
-          <div class="num-step"><span class="n">1</span><div class="t">Soften garlic and ginger in a little oil until fragrant.</div></div>
-          <div class="num-step"><span class="n">2</span><div class="t">Add lentils, turmeric, and stock; simmer 20 minutes.</div></div>
-          <div class="num-step"><span class="n">3</span><div class="t">Stir through coconut milk and wilt in the spinach.</div></div>
-          <div class="num-step"><span class="n">4</span><div class="t">Finish with lime and serve warm.</div></div>
+          <div class="num-step"><span class="n">01</span><div class="t">Soften garlic and ginger in a little oil until fragrant.</div></div>
+          <div class="num-step"><span class="n">02</span><div class="t">Add lentils, turmeric, and stock; simmer 20 minutes.</div></div>
+          <div class="num-step"><span class="n">03</span><div class="t">Stir through coconut milk and wilt in the spinach.</div></div>
+          <div class="num-step"><span class="n">04</span><div class="t">Finish with lime and serve warm.</div></div>
         </div>
       </div>
     </div>

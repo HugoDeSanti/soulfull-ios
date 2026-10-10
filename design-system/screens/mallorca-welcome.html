@@ -26,57 +26,55 @@
   .mb .ambient::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(26,19,12,0.4) 0%, var(--espresso) 62%); }
 
   /* welcome hero */
-  .hero { position:relative; padding:96px 28px 30px; overflow:hidden; min-height:430px; display:flex; flex-direction:column; justify-content:flex-end; }
+  .hero { position:relative; padding:96px var(--gutter) 22px; overflow:hidden; height:380px; display:flex; flex-direction:column; justify-content:flex-end; }
+  .hero .back { position:absolute; top:52px; left:calc(var(--gutter) - 14px); z-index:3; color:var(--cream); }
   .hero .img { position:absolute; inset:0; background:url('../assets/mb-welcome.jpg') center 28%/cover; filter:saturate(.92) brightness(.82); transform:scale(1.04); }
   .hero .img::after { content:""; position:absolute; inset:0; background:
     linear-gradient(180deg, rgba(20,14,8,0.55) 0%, rgba(26,18,10,0.12) 32%, rgba(24,17,10,0.55) 70%, var(--espresso) 100%),
     radial-gradient(120% 80% at 50% 120%, rgba(58,36,18,0.5), transparent 60%); }
   .hero .c { position:relative; z-index:2; }
   .hero .eyebrow { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:var(--terracotta); margin:0; opacity:.95; }
-  .hero h1 { font-family:var(--serif); font-weight:300; font-size:36px; line-height:1.02; color:#fbf4e7; margin:12px 0 0; letter-spacing:-1px; text-shadow:0 2px 26px rgba(15,10,5,0.55); }
-  .hero h1 em { font-style:normal; font-weight:400; display:block; margin-top:1px; }
-  .hero .meta { display:flex; gap:8px; margin-top:22px; flex-wrap:wrap; }
-  .hero .pill { display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border-radius:999px;
-    background:rgba(243,234,217,0.08); border:1px solid rgba(243,234,217,0.2); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    color:#f3ead9; font-size:11px; letter-spacing:0.4px; }
-  .hero .pill b { font-weight:600; color:#fff; }
-  .hero .pill svg { width:13px; height:13px; }
+  .hero h1 { font-family:var(--serif); font-weight:300; font-size:34px; line-height:1.05; color:var(--cream); margin:14px 0 0; letter-spacing:-0.8px; text-shadow:0 1px 4px rgba(0,0,0,.6), 0 0 12px rgba(0,0,0,.35); }
+  .hero h1 em { font-style:normal; font-weight:300; }
+  /* The particulars in one line — they were three glass pills. */
+  .hero .meta { margin-top:16px; font-size:11px; letter-spacing:0.6px; color:var(--cream); }
 
-  .body { position:relative; z-index:2; padding:8px 24px 130px; }
-  .greet { font-family:var(--serif); font-size:23px; line-height:1.3; color:var(--cream); margin:14px 0 5px; font-weight:300; letter-spacing:-0.4px; }
-  .greet em { font-style:normal; font-weight:400; color:#fff; }
-  .greet-sub { font-size:13px; line-height:1.6; color:var(--cream-soft); margin:0 0 28px; max-width:300px; }
+  .body { position:relative; z-index:2; padding:28px var(--gutter) 64px; }
+  .greet { font-family:var(--serif); font-size:24px; line-height:1.3; color:var(--cream); margin:0 0 8px; font-weight:300; letter-spacing:-0.3px; }
+  .greet em { font-style:normal; font-weight:300; }
+  .greet-sub { font-size:14px; line-height:1.6; color:var(--cream-soft); margin:0 0 44px; }
 
-  .eyebrow-b { font-size:10px; letter-spacing:3.5px; text-transform:uppercase; color:var(--terracotta); margin:0 0 14px; }
+  .eyebrow-b { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); margin:0 0 16px; }
 
   /* featured to-do card */
   .feature { display:block; text-decoration:none; color:inherit; position:relative; overflow:hidden;
-    border-radius:16px; padding:22px; margin-bottom:14px; border:1px solid var(--glass-line); }
+    padding:20px; margin-bottom:14px; border:var(--hairline) solid var(--glass-line); }
   .feature .ph { position:absolute; inset:0; background:url('../assets/mb-todos.jpg') center 42%/cover; filter:brightness(.7) saturate(.95); }
   .feature .ph::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,14,8,0.42) 0%, rgba(20,14,8,0.6) 48%, rgba(16,11,6,0.9) 100%); }
   .feature .k { position:relative; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); }
-  .feature h3 { position:relative; font-family:var(--serif); font-weight:300; font-size:26px; line-height:1.06; letter-spacing:-0.6px; color:#fbf4e7; margin:9px 0 6px; }
-  .feature p { position:relative; font-size:12.5px; line-height:1.55; color:rgba(243,234,217,0.82); margin:0 0 16px; max-width:235px; }
-  .feature .pbar { position:relative; height:5px; border-radius:999px; background:rgba(243,234,217,0.18); overflow:hidden; }
-  .feature .pbar i { display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg, var(--terracotta), #e0a070); transition:width .5s; }
+  .feature h3 { position:relative; font-family:var(--serif); font-weight:300; font-size:24px; line-height:1.1; letter-spacing:-0.4px; color:var(--cream); margin:11px 0 0; }
+  .feature p { position:relative; font-size:13px; line-height:1.55; color:rgba(243,234,217,0.85); margin:11px 0 16px; max-width:260px; }
+  /* A 2px solid terracotta run on a cream track, eased. */
+  .feature .pbar { position:relative; height:2px; background:rgba(243,234,217,0.2); overflow:hidden; }
+  .feature .pbar i { display:block; height:100%; width:0; background:var(--terracotta); transition:width var(--ease-settle); }
   .feature .pmeta { position:relative; display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
   .feature .pmeta span { font-size:11px; color:rgba(243,234,217,0.82); }
-  .feature .go { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--cream); display:inline-flex; align-items:center; gap:5px; }
+  .feature .go { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--terracotta); display:inline-flex; align-items:center; gap:6px; }
   .feature .go svg { width:12px; height:12px; }
 
   /* experience grid */
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .tile { display:flex; flex-direction:column; justify-content:flex-end; text-decoration:none; color:inherit;
-    background:var(--glass); border:1px solid var(--glass-line); border-radius:16px; padding:17px; min-height:130px; position:relative; overflow:hidden;
-    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:transform .15s, border-color .2s, background .2s; }
-  .tile:hover { border-color:var(--glass-line); background:rgba(243,234,217,0.07); }
-  .tile:active { transform:scale(.985); }
-  .tile .ic { width:36px; height:36px; border-radius:999px; display:grid; place-items:center; background:rgba(141,138,76,0.22); color:#c4c47f; margin-bottom:auto; border:1px solid rgba(196,196,127,0.2); }
-  .tile .ic svg { width:17px; height:17px; }
-  .tile h4 { font-family:var(--serif); font-weight:500; font-size:18px; line-height:1.1; letter-spacing:-0.3px; color:var(--cream); margin:15px 0 3px; }
+    background:var(--glass); border:var(--hairline) solid var(--glass-line); padding:20px; min-height:128px; position:relative; overflow:hidden;
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:opacity var(--ease-release); }
+  .tile:active { opacity:.55; transition:opacity var(--ease-press); }
+  /* A bare terracotta glyph — no disc. */
+  .tile .ic { display:block; color:var(--terracotta); margin-bottom:auto; }
+  .tile .ic svg { width:17px; height:17px; display:block; }
+  .tile h4 { font-family:var(--serif); font-weight:400; font-size:18px; line-height:1.1; letter-spacing:-0.3px; color:var(--cream); margin:15px 0 3px; }
   .tile .d { font-size:11px; color:var(--muted); letter-spacing:0.3px; }
-  .tile.wide { grid-column:1 / -1; min-height:auto; flex-direction:row; align-items:center; justify-content:flex-start; text-align:left; gap:14px; padding:16px 18px; }
-  .tile.wide .ic { margin:0; background:rgba(196,124,76,0.2); color:#e0a878; border-color:rgba(224,168,120,0.22); }
+  .tile.wide { grid-column:1 / -1; min-height:auto; flex-direction:row; align-items:center; justify-content:flex-start; text-align:left; gap:14px; padding:20px; }
+  .tile.wide .ic { margin:0; width:24px; }
   .tile.wide .tx h4 { margin:0 0 2px; }
   .tile.wide .arr { margin-left:auto; color:var(--muted); }
   .tile.wide .arr svg { width:16px; height:16px; display:block; }
@@ -92,14 +90,11 @@
     <div class="ambient"></div>
     <div class="hero">
       <div class="img"></div>
+      <span class="back glyph-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg></span>
       <div class="c">
         <p class="eyebrow">You're going to Mallorca</p>
         <h1>Welcome to the<em>Mallorca Experience</em></h1>
-        <div class="meta">
-          <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>July 21–26 · 2026</span>
-          <span class="pill"><b>36</b> days to go</span>
-          <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg>Deposit paid</span>
-        </div>
+        <div class="meta">July 21–26 &nbsp;·&nbsp; 36 days to go &nbsp;·&nbsp; Deposit paid</div>
       </div>
     </div>
 
@@ -114,35 +109,35 @@
         <h3>Your pre-retreat to-do's</h3>
         <p>A short checklist to complete before July — calls, forms, flights and more.</p>
         <div class="pbar"><i id="todoFill"></i></div>
-        <div class="pmeta"><span id="todoMeta">0 of 7 complete</span><span class="go">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+        <div class="pmeta"><span id="todoMeta">0 of 7 complete</span><span class="go">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></span></div>
       </a>
 
-      <p class="eyebrow-b" style="margin-top:30px">Your Experience</p>
+      <p class="eyebrow-b" style="margin-top:44px">Your Experience</p>
       <div class="grid">
         <a class="tile" href="retreat-detail.html">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
           <h4>Daily rhythm</h4>
           <div class="d">Move · Explore · Recover</div>
         </a>
         <a class="tile" href="mallorca-guides.html">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span>
           <h4>Your guides</h4>
           <div class="d">Book a 1:1 session</div>
         </a>
         <a class="tile" href="community.html">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.1-3.8A8.4 8.4 0 1 1 21 11.5z"/></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L4 21l1.1-3.8A8.4 8.4 0 1 1 21 11.5z"/></svg></span>
           <h4>Group chat</h4>
           <div class="d">Meet your group</div>
         </a>
         <a class="tile" href="retreat-todos.html">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h7M9 16h7M9 8h3"/></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h7M9 16h7M9 8h3"/></svg></span>
           <h4>Packing list</h4>
           <div class="d">What to bring</div>
         </a>
         <a class="tile wide" href="mailto:info@soulfullgatherings.com">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/></svg></span>
           <div class="tx"><h4>Questions before you arrive?</h4><div class="d">Email info@soulfullgatherings.com</div></div>
-          <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+          <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M9 6l6 6-6 6"/></svg></span>
         </a>
       </div>
     </div>

@@ -7,18 +7,19 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
-  .scr { padding: 80px 26px 40px; }
+  .close { position: absolute; top: 50px; right: calc(var(--gutter) - 13px); z-index: 20; }
+  /* AccountView — on the moss atmosphere (no photo, so no text halo). Square
+     fields on veils with a hairline that turns ink while focused. */
+  .scr { padding: 84px var(--gutter) 40px; }
   .head { text-align: center; }
   .head img { width: 64px; opacity: .9; }
-  .head h1 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 14px 0 0; }
-  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px auto 0; max-width: 290px; }
-  .head { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }  /* .on-photo */
+  .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 12px 0 0; }
+  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 12px auto 0; max-width: 300px; }
   .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
-  .field-hint { margin: -6px 0 0 18px; font-size: 12px; color: var(--ink-on-photo); }
-  .field { display: flex; align-items: center; gap: 10px; padding: 16px 14px; border-radius: 16px; }
-  .field.focus { border-color: var(--glass-border-high); }
-  .field svg { color: var(--ink-soft); flex: none; }
+  .field-hint { margin: -6px 0 0 18px; font-size: 12px; color: var(--ink-soft); }
+  .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; }
+  .field.focus { border-color: rgba(242,241,237,.6); }
+  .field svg { color: var(--muted); flex: none; }
   .field input { flex: 1; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
   .field input::placeholder { color: var(--muted); }
   .submit { margin-top: 18px; }
@@ -39,14 +40,13 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+  <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll">
-    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.65) blur(8px);transform:scale(1.1)"></div>
-    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
-    <div class="top-scrim"></div>
+    <!-- Atmosphere(tone: .moss) — it used to be home-bg blurred into the sheet. -->
+    <div class="atmosphere atmosphere--moss"></div>
 
-    <div class="scr" style="position:relative;z-index:3">
+    <div class="scr">
       <div class="head">
         <img src="../assets/logo.png" alt="">
         <h1>Create account</h1>
@@ -61,20 +61,20 @@
       <div class="or-rule" style="margin-top:22px"><span>or</span></div>
       <div class="fields">
         <div class="field glass">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
           <input value="Hugo" />
         </div>
         <div class="field glass focus">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="5" width="18" height="14" /><path d="M3 7l9 6 9-6"/></svg>
           <input value="hugo@soulfullgatherings.com" />
         </div>
         <div class="field glass">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="5" y="11" width="14" height="9" /><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
           <input type="password" value="········" />
         </div>
         <!-- AccountView: the rule canSubmit enforces, create mode only. In sign-in mode its place
              is taken by a trailing "Forgot password?" link (13px ink, underlined) → account-reset. -->
-        <p class="field-hint on-photo">At least 8 characters</p>
+        <p class="field-hint">At least 8 characters</p>
       </div>
       <div class="submit"><button class="sg-btn sg-btn--filled">Create account</button></div>
       <p class="toggle">Already have an account? <b>Sign in</b></p>

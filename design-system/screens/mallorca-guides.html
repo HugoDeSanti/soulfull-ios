@@ -20,60 +20,59 @@
   .mb-device .statusbar .batt { border-color:rgba(243,234,217,0.55); }
   .mb-device .home-indicator { background:rgba(243,234,217,0.5); }
 
-  .topbar { position:absolute; top:44px; left:0; right:0; z-index:40; display:flex; padding:8px 20px; }
-  .top-btn { display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px; border-radius:999px;
-    background:rgba(243,234,217,0.1); border:1px solid rgba(243,234,217,0.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-    color:#f3ead9; font-size:12px; letter-spacing:0.4px; text-decoration:none; }
-  .top-btn svg { width:12px; height:12px; }
+  /* Back: a bare ← GlyphButton (RetreatGuidesView.topBar). */
+  .topbar { position:absolute; top:44px; left:0; right:0; z-index:40; display:flex; padding:8px calc(var(--gutter) - 14px); }
+  .top-btn { color:var(--cream); text-decoration:none; }
 
-  .hero { position:relative; padding:96px 26px 30px; overflow:hidden; min-height:300px; display:flex; flex-direction:column; justify-content:flex-end; }
+  .hero { position:relative; padding:96px var(--gutter) 18px; overflow:hidden; height:300px; display:flex; flex-direction:column; justify-content:flex-end; }
   .hero .img { position:absolute; inset:0; background:url('../assets/mb-massage.jpg') center 52%/cover; filter:saturate(.96) brightness(.78); }
   .hero .img::after { content:""; position:absolute; inset:0; background:
-    linear-gradient(180deg, rgba(20,14,8,0.5) 0%, rgba(24,17,10,0.2) 38%, rgba(22,15,9,0.62) 75%, var(--espresso) 100%); }
+    linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 38%, rgba(22,15,9,0.62) 75%, var(--espresso) 100%); }
   .hero .c { position:relative; z-index:2; }
-  .hero .eyebrow { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:var(--terracotta); margin:0; opacity:.95; }
-  .hero h1 { font-family:var(--serif); font-weight:300; font-size:36px; line-height:1.02; letter-spacing:-1px; color:#fbf4e7; margin:10px 0 0; text-shadow:0 2px 22px rgba(15,10,5,0.5); }
-  .hero h1 em { font-style:normal; font-weight:400; }
-  .hero p { font-size:12.5px; line-height:1.55; color:rgba(243,234,217,0.9); margin:13px 0 0; max-width:285px; }
+  .hero .eyebrow { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); margin:0; }
+  .hero h1 { font-family:var(--serif); font-weight:300; font-size:32px; line-height:1.05; letter-spacing:-0.6px; color:var(--cream); margin:10px 0 0; text-shadow:0 1px 4px rgba(0,0,0,.6), 0 0 12px rgba(0,0,0,.35); }
+  .hero h1 em { font-style:normal; font-weight:300; }
+  .hero p { font-size:13px; line-height:1.55; color:rgba(243,234,217,0.9); margin:10px 0 0; max-width:300px; }
 
-  .body { padding:16px 22px 130px; }
+  .body { padding:28px var(--gutter) 64px; }
 
-  .guide { background:var(--glass); border:1px solid var(--glass-line); border-radius:16px; padding:18px; margin-bottom:14px;
+  /* A guide: a square warm veil (padding 20), 16 apart. The initials sit in a
+     veiled circle — a portrait stand-in, so round. */
+  .guide { background:var(--glass); border:var(--hairline) solid var(--glass-line); padding:20px; margin-bottom:16px;
     backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
   .guide .top { display:flex; align-items:center; gap:14px; }
-  .guide .av { width:50px; height:50px; border-radius:999px; flex:none; display:grid; place-items:center;
-    font-family:var(--serif); font-size:16px; font-weight:600; letter-spacing:0.5px; color:#1a130c; background:var(--olive); }
-  .guide .av.t { background:var(--terracotta); color:#1a130c; } .guide .av.s { background:#b39a6a; } .guide .av.g { background:var(--gold); }
+  .guide .av { width:46px; height:46px; border-radius:50%; flex:none; display:grid; place-items:center;
+    font-family:var(--serif); font-size:13px; font-weight:500; letter-spacing:0.5px; color:var(--cream);
+    background:var(--glass); border:var(--hairline) solid var(--glass-line); }
   .guide .info { flex:1; min-width:0; }
-  .guide .nm { font-family:var(--font); font-size:13px; font-weight:400; line-height:1.25; letter-spacing:0.8px; text-transform:uppercase; color:var(--cream); }
-  .guide .role { font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+  .guide .nm { font-family:var(--font); font-size:13px; font-weight:500; line-height:1.25; letter-spacing:0.6px; color:var(--cream); }
+  .guide .role { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
 
-  .offer { display:flex; align-items:center; gap:10px; margin-top:15px; padding-top:15px; border-top:1px solid var(--glass-line-soft); }
+  .offer { display:flex; align-items:center; gap:10px; margin-top:16px; padding-top:16px; border-top:0.5px solid var(--glass-line); }
   .offer .ot { flex:1; }
-  .offer .os { font-family:var(--serif); font-size:15px; font-weight:500; letter-spacing:-0.2px; color:var(--cream); }
-  .offer .od { font-size:11px; letter-spacing:0.5px; color:var(--muted); margin-top:2px; }
-  .book-btn { flex:none; height:38px; padding:0 18px; border-radius:999px; border:1px solid rgba(243,234,217,0.3); background:transparent;
-    color:var(--cream); font-family:var(--font); font-weight:500; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:background .2s, color .2s, border-color .2s; }
-  .book-btn:hover { border-color:var(--terracotta); color:var(--terracotta); }
-  .book-btn:active { transform:scale(.97); }
+  .offer .os { font-family:var(--serif); font-size:14px; font-weight:400; color:var(--cream); }
+  .offer .od { font-size:11px; color:var(--muted); margin-top:2px; }
+  /* Book — a square cream hairline; booked = a terracotta block. */
+  .book-btn { flex:none; padding:9px 16px; border:var(--hairline) solid rgba(243,234,217,0.7); background:transparent;
+    color:var(--cream); font-family:var(--font); font-weight:400; font-size:11px; letter-spacing:1.2px; text-transform:uppercase; cursor:pointer; transition:opacity var(--ease-release); }
+  .book-btn:active { opacity:.55; }
 
-  .slots { display:none; flex-wrap:wrap; gap:8px; margin-top:15px; }
+  .slots { display:none; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .slots.open { display:flex; }
-  .slots .lbl { width:100%; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--terracotta); margin-bottom:2px; }
-  .slot { font-size:12.5px; padding:9px 13px; border-radius:9px; border:1px solid var(--glass-line); background:rgba(243,234,217,0.04); color:var(--cream); cursor:pointer; transition:background .2s, border-color .2s; }
-  .slot:active { transform:scale(.97); }
-  .slot:hover { border-color:var(--terracotta); background:rgba(196,124,76,0.12); }
+  .slots .lbl { width:100%; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--terracotta); margin-bottom:1px; }
+  .slot { font-size:12px; padding:10px 12px; border:var(--hairline) solid var(--glass-line); background:var(--glass); color:var(--cream); cursor:pointer; transition:opacity var(--ease-release); }
+  .slot:active { opacity:.55; }
 
-  .confirmed { display:none; align-items:center; gap:10px; margin-top:15px; padding:13px 15px; border-radius:12px; background:rgba(141,138,76,0.16); border:1px solid rgba(141,138,76,0.28); }
+  .confirmed { display:none; align-items:center; gap:10px; margin-top:14px; }
   .confirmed.show { display:flex; }
-  .confirmed .ck { width:26px; height:26px; border-radius:999px; flex:none; display:grid; place-items:center; background:var(--olive); }
-  .confirmed .ck svg { width:14px; height:14px; color:#1a130c; }
-  .confirmed .ct { flex:1; font-size:13px; color:var(--cream); }
-  .confirmed .ct b { font-weight:600; color:#fff; }
-  .confirmed .cancel { background:none; border:0; font-family:var(--font); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+  .confirmed .ck { width:20px; height:20px; flex:none; display:grid; place-items:center; background:var(--olive); }
+  .confirmed .ck svg { width:10px; height:10px; color:var(--cream); }
+  .confirmed .ct { flex:1; font-size:13px; color:var(--cream-soft); }
+  .confirmed .ct b { font-weight:500; color:var(--cream); }
+  .confirmed .cancel { background:none; border:0; font-family:var(--font); font-size:11px; color:var(--muted); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 
-  .guide.booked .book-btn { background:var(--olive); border-color:var(--olive); color:#1a130c; }
-  .note { font-size:11px; color:var(--muted); text-align:center; margin-top:18px; line-height:1.5; }
+  .guide.booked .book-btn { background:var(--terracotta); border-color:transparent; color:var(--espresso); }
+  .note { font-size:11px; color:var(--muted); text-align:center; margin-top:6px; line-height:1.5; }
 </style>
 </head><body>
 <div class="stage"><div class="device mb-device">
@@ -83,7 +82,7 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="topbar">
-    <a class="top-btn" href="mallorca-welcome.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>Experience</a>
+    <a class="top-btn glyph-btn" href="mallorca-welcome.html" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg></a>
   </div>
 
   <div class="screen screen--scroll mb">

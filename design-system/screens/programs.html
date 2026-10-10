@@ -7,36 +7,40 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .scr { padding-top: 50px; padding-bottom: 130px; }
-  .hdr { padding: 12px 20px 0; }
+  /* ProgramsView — on the ember atmosphere (the blurred photo of the program
+     in flight is gone). Sections 64px apart; everything at the gutter. */
+  .scr { padding-top: 64px; padding-bottom: 130px; }
+  .scr > .sec + .sec, .scr > .hdr + .sec { margin-top: 64px; }
+  .hdr { padding: 0 var(--gutter); }
   .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  .hdr h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 8px; }
-  .hdr p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 0; }
-  .sec { margin-top: 26px; }
+  .hdr h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 6px 0 6px; }
+  .hdr p { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 
-  /* Continue card — the program in flight leads the screen. */
-  .cont { margin: 0 20px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border-high); }
-  .cont .hero { height: 200px; position: relative; background-size: cover; background-position: center; }
+  /* Continue card — the program in flight leads the screen. A square veil
+     (glassBorderHigh): a 260 photo with an ember CONTINUE, then the day. */
+  .cont { margin: 0 var(--gutter); overflow: hidden; border-color: var(--glass-border-high); }
+  .cont .hero { height: 260px; position: relative; background-size: cover; background-position: center; }
   .cont .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.2) 55%, rgba(0,0,0,.78) 100%); }
-  .cont .hero .body { position: absolute; left: 18px; right: 18px; bottom: 16px; }
-  .cont .hero .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
-  .cont .hero h2 { font-size: 27px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .cont .hero .body { position: absolute; left: 20px; right: 20px; bottom: 20px; }
+  .cont .hero .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--ember); margin: 0; }
+  .cont .hero h2 { font-size: 27px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 8px 0 0; }
   .cont .hero .dayline { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .cont .hero .dayline .n { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
-  .cont .foot { padding: 18px; }
-  .cont .foot h3 { font-size: 19px; letter-spacing: -0.2px; color: var(--ink); margin: 0; }
-  .cont .foot p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 8px 0 0; }
-  .cont .foot .cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; font-weight: var(--w-medium); color: var(--honey); }
+  .cont .foot { padding: 20px; }
+  .cont .foot h3 { font-size: 19px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .cont .foot p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }
+  .cont .foot .cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; font-weight: var(--w-medium); color: var(--ember); }
 
-  /* Catalog card */
-  .pcat { margin: 0 20px 14px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); }
-  .pcat .hero { height: 150px; position: relative; background-size: cover; background-position: center; }
+  /* Catalog card — a square veil, 24px apart: a 180 photo, a square state chip,
+     then the title (Light 21), blurb, meta and presence. */
+  .pcat { margin: 0 var(--gutter) 24px; overflow: hidden; }
+  .pcat .hero { height: 180px; position: relative; background-size: cover; background-position: center; }
   .pcat .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), transparent 50%); }
-  .pcat .chip { position: absolute; top: 12px; right: 12px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; }
-  .pcat .chip.honey { color: var(--honey); }
+  .pcat .chip { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: var(--w-regular); letter-spacing: 1.6px; text-transform: uppercase; padding: 6px 10px; }
+  .pcat .chip.ember { color: var(--ember); }
   .pcat .chip.done { color: var(--accent-soft); }
-  .pcat .body { padding: 16px; }
-  .pcat .body h3 { font-size: 21px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .pcat .body { padding: 20px; }
+  .pcat .body h3 { font-size: 21px; font-weight: var(--w-light); letter-spacing: -0.3px; color: var(--ink); margin: 0; }
   .pcat .body p { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 6px 0 0; }
   .pcat .body .meta { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 8px 0 0; }
 </style>
@@ -48,13 +52,11 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <!-- Backdrop follows the program in flight; "onb-bg" when nothing is
-         started. PhotoBackdrop(blur: 26, darken: 0.8). -->
-    <div class="photo" style="background-image:url('../assets/retreat-dolomites.jpg');filter:saturate(1.1) brightness(.72) blur(26px);transform:scale(1.2)"></div>
-    <div class="vignette vignette--deep"></div>
-    <div class="top-scrim"></div>
+    <!-- Atmosphere(tone: .ember): black with a copper wash falling from the
+         top. It used to be the program in flight's photo, blurred to a tint. -->
+    <div class="atmosphere atmosphere--ember"></div>
 
-    <div class="hdr on-photo">
+    <div class="hdr">
       <p class="eb">Self-paced</p>
       <h1>Digital Retreats</h1>
       <p>Guided journeys you walk one day at a time. Take them at whatever speed your life allows.</p>
@@ -82,18 +84,18 @@
              LOCKED BY PROGRESS: "Finish the previous day first". They are
              genuinely different messages and must not collapse into one. -->
         <span class="cta">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 5l5 5-5 5v-3H7v-4h4z"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg>
           Begin day 3
         </span>
       </div>
     </div>
 
     <div class="sec">
-      <div class="section-label"><span class="title">More digital retreats</span></div>
+      <div class="section-label" style="margin-bottom:24px"><span class="title">More digital retreats</span></div>
       <div class="pcat glass">
         <div class="hero" style="background-image:url('../assets/retreat-bali.jpg')">
           <div class="ov"></div>
-          <span class="chip glass honey">Day 2 of 5</span>
+          <span class="chip glass ember">Day 2 of 5</span>
         </div>
         <div class="body">
           <h3>Breath & Stillness</h3>

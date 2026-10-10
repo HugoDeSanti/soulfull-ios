@@ -7,81 +7,85 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* Features/Profile/ProfileView.swift. Scrolls: header (avatar), As a guide
-     (linked guides only), Your
-     practice (2x2 stat tiles), Digital retreats, In-person retreats,
-     Community (share toggle, Blocked members), account actions. */
-  .scr { padding-top: 50px; padding-bottom: 130px; }
-  .hdr { display: flex; flex-direction: column; align-items: center; padding: 28px 28px 0; }
-  .hdr img { width: 88px; }
-  .avatar { position: relative; width: 92px; height: 92px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 39px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: 1px solid var(--glass-border-high); }
-  .avatar.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
-  .avatar .cam { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
-  /* Community section — one glass row with a honey toggle: "Share my practice". */
-  .share { display: flex; align-items: center; gap: 14px; margin: 0 20px; padding: 16px; border-radius: 22px; }
-  .share .tx { flex: 1; min-width: 0; }
-  .share h3 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
-  .share p { font-size: 12px; line-height: 1.4; color: var(--ink-soft); margin: 4px 0 0; }
-  .toggle { width: 51px; height: 31px; border-radius: 999px; background: var(--honey); position: relative; flex: none; }
-  .toggle::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
-  /* Below it, 14 down: a 52pt glass row — hand.raised (14, --ink-soft, 22 wide),
-     "Blocked members" (15 Medium), chevron (--muted). Opens blocked-members. */
-  .blocked { display: flex; align-items: center; gap: 12px; height: 52px; margin: 14px 20px 0; padding: 0 16px; border-radius: 22px; }
-  .blocked .ic { width: 22px; display: flex; justify-content: center; color: var(--ink-soft); flex: none; }
-  .blocked .lbl { flex: 1; font-size: 15px; font-weight: var(--w-medium); color: var(--ink); }
-  .blocked .chev { color: var(--muted); flex: none; }
+  /* Features/Profile/ProfileView.swift. On the moss atmosphere. Scrolls:
+     header (avatar), As a guide (linked guides only), Your practice (open
+     numerals, 2×2), Digital retreats, In-person retreats, Community (share
+     switch, Blocked members), account actions. Sections 64px apart. */
+  .scr { padding-top: 82px; padding-bottom: 130px; }
+  .hdr { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 var(--gutter); }
+  .hdr img { width: 80px; }
+  /* A face — round. The camera badge is a small square of ink at its shoulder. */
+  .avatar { position: relative; width: 92px; height: 92px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 39px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: var(--hairline) solid var(--glass-border); }
+  .avatar.t3 { background-image: linear-gradient(135deg, #334054, #1a2130); }
+  .avatar .cam { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; background: var(--ink); color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
   .eb { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 18px 0 0; }
-  h1 { font-size: 36px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 8px 0 0; }
-  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-on-photo); margin: 16px 0 0; }
-  .status svg { color: var(--ink); }
-  .intentions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 18px 0 0; }
-  .sec { margin-top: 36px; }
-  .sec:first-of-type { margin-top: 38px; }
+  h1 { font-size: 36px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 16px 0 0; }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); margin: 16px 0 0; }
+  /* Intentions — one quiet line, words and dots, no chips. */
+  .intentions { font-size: 12px; letter-spacing: .3px; color: var(--ink-soft); margin: 22px 0 0; }
+  .secs { margin-top: 56px; }
+  .secs > .sec + .sec { margin-top: 64px; }
+  .rows, .stats, .comm, .guide { margin-left: var(--gutter); margin-right: var(--gutter); }
 
-  /* StatTile — glass, 118pt min, figure 40 Light, eyebrow, one caption line.
-     The current-streak tile is honey-tinted while a streak is alive; its flame
-     breathes once today is kept. */
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 20px; }
-  .tile { border-radius: 22px; padding: 16px; min-height: 118px; display: flex; flex-direction: column; }
-  .tile.accent { background: color-mix(in srgb, var(--honey) 8%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
-  .tile .ic { height: 18px; color: var(--ink-soft); }
-  .tile.accent .ic { color: var(--honey); }
-  .tile .n { font-size: 40px; font-weight: var(--w-light); letter-spacing: -1px; color: var(--ink); line-height: 1; margin-top: auto; padding-top: 12px; }
-  .tile .lbl { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--ink-soft); margin-top: 8px; }
-  .tile .cap { font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 6px; min-height: 2.7em; }
-  .tile.accent .cap { color: var(--honey); }
+  /* StatTile — open numerals on black, as a printed table: no tiles. Figure
+     44 Light, then a small glyph + caps label, then a two-line caption. A rule
+     between the two rows. The flame is ember while a streak is alive (and
+     breathes once today is kept); the others muted. */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+  .stats .rule { grid-column: 1 / -1; height: 0.5px; background: var(--line); margin: 24px 0; }
+  .stat .n { font-size: 44px; font-weight: var(--w-light); letter-spacing: -1px; color: var(--ink); line-height: 1; }
+  .stat .lbl { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--ink-soft); margin-top: 10px; }
+  .stat .lbl svg { color: var(--muted); flex: none; }
+  .stat.accent .lbl svg { color: var(--ember); }
+  .stat .cap { font-size: 12px; line-height: 1.4; color: var(--muted); margin-top: 8px; min-height: 2.8em; }
+  .stat.accent .cap { color: var(--ink-soft); }
 
-  /* HistoryRow — 60pt thumbnail + two lines on glass; chevron only when the
-     row opens something (programs do; past retreats don't). */
-  .rows { display: flex; flex-direction: column; gap: 10px; margin: 0 20px; }
-  .row { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border-radius: 22px; }
-  .row .th { width: 60px; height: 60px; border-radius: 14px; background-size: cover; background-position: center; flex: none; }
+  /* HistoryRow — open rows, a hairline between them: a square 60 thumbnail +
+     two lines; a chevron only when the row opens something (programs do; past
+     retreats don't). */
+  .rows { display: flex; flex-direction: column; margin-top: -10px; }
+  .row { display: flex; align-items: center; gap: 16px; padding: 16px 0; }
+  .row + .row { border-top: 0.5px solid var(--line); }
+  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; flex: none; }
   .row .tx { flex: 1; min-width: 0; }
-  .row h3 { font-size: 18px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .row h3 { font-size: 18px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .row .line { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-  .row .day { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--honey); }
+  .row .day { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ember); }
   .row .done { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: var(--w-medium); color: var(--accent-soft); }
   .row .where { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink-soft); }
   .row .chev { color: var(--muted); }
 
   /* GuideSummaryCard (GuideDashboardView.swift) — "As a guide", ONLY for a
-     member the team has linked to a guide (instructors.user_id, 0026); no
-     one else ever sees this section. Honey-tinted glass (8% / 35% stroke, as
-     the live streak tile): eyebrow, "<Month> so far", and three figures —
-     people, minutes heard, and the estimate ("Pending" / POOL NOT SET until
-     the month's pool is set). Opens the dashboard sheet (guide-dashboard). */
-  .guide { margin: 0 20px; padding: 18px; border-radius: 22px;
-    background: color-mix(in srgb, var(--honey) 8%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
+     member the team has linked to a guide (instructors.user_id, 0026); no one
+     else ever sees this section. A plain square veil: eyebrow, "<Month> so
+     far", and three figures — people, minutes heard, and the estimate
+     ("Pending" / POOL NOT SET until the month's pool is set). Opens the
+     dashboard sheet (guide-dashboard). */
+  .guide { padding: 20px; margin-top: -6px; }
   .guide .top { display: flex; justify-content: space-between; align-items: center; }
-  .guide .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
-  .guide h3 { font-size: 22px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 16px 0 0; }
+  .guide .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .guide h3 { font-size: 22px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); margin: 16px 0 0; }
   .guide .figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
   .guide .figs b { display: block; font-size: 22px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); }
   .guide .figs span { display: block; font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
-  .actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: 44px 28px 0; }
-  .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: var(--danger); cursor: pointer; }
-  .legal { display:flex; align-items:center; justify-content:center; margin-top:4px; }
+  /* Community — two rows of one list: the share switch (moss, as Open's
+     switches are green), then Blocked members under a hairline. */
+  .comm { margin-top: -10px; }
+  .share { display: flex; align-items: center; gap: 14px; padding: 18px 0; }
+  .share .tx { flex: 1; min-width: 0; }
+  .share h3 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .share p { font-size: 12px; line-height: 1.45; color: var(--ink-soft); margin: 6px 0 0; }
+  .toggle { width: 51px; height: 31px; border-radius: 999px; background: var(--accent-soft); position: relative; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
+  .blocked { display: flex; align-items: center; gap: 12px; height: 56px; border-top: 0.5px solid var(--line); }
+  .blocked .ic { width: 22px; display: flex; justify-content: center; color: var(--ink-soft); flex: none; }
+  .blocked .lbl { flex: 1; font-size: 15px; color: var(--ink); }
+  .blocked .chev { color: var(--muted); flex: none; }
+
+  .actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: 64px var(--gutter) 0; }
+  .delete { background: none; border: 0; font-family: var(--font); font-size: 13px; color: var(--danger); cursor: pointer; padding: 10px; }
+  .legal { display:flex; align-items:center; justify-content:center; margin-top:6px; }
   .legal a { font-size:12px; color:var(--ink-soft); padding:8px 0; text-decoration:none; }
   .legal .sep { font-size:12px; color:var(--muted); padding:0 7px; }
 </style>
@@ -93,45 +97,37 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.1) brightness(.7) blur(4px);transform:scale(1.06)"></div>
-    <div class="vignette vignette--deep"></div>
-    <div class="top-scrim"></div>
-    <div class="aurora" style="opacity:.35;mix-blend-mode:plus-lighter"></div>
+    <div class="atmosphere atmosphere--moss"></div>
 
-    <div class="hdr on-photo">
+    <div class="hdr">
       <!-- A member's face where the logo sits for a guest (AvatarView, 92pt):
            tap → Choose a photo / Remove photo. Uploaded to the public
-           `avatars` bucket, 512px square JPEG, shown in the Community feed. -->
-      <div class="avatar t3">H<span class="cam"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4 7.5 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L15 4z"/><circle cx="12" cy="13" r="3.5" fill="#f5f3e8"/></svg></span></div>
+           `avatars` bucket, 512px square JPEG, shown in the Community feed.
+           A guest sees the logo instead, breathing in light. -->
+      <div class="avatar t3">H<span class="cam"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 4 7.5 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L15 4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></div>
       <p class="eb">Hugo</p>
       <h1>Welcome back.</h1>
       <div class="status">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 22l-2.4-1.7-2.9.2-1-2.8L3.3 16l.9-2.8L3.3 10.4l2.4-1.7 1-2.8 2.9.2z"/><path d="M9 12l2 2 4-4" stroke="#15170d" stroke-width="2" fill="none"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 2l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 22l-2.4-1.7-2.9.2-1-2.8L3.3 16l.9-2.8L3.3 10.4l2.4-1.7 1-2.8 2.9.2z"/><path d="M9 12l2 2 4-4"/></svg>
         hugo@soulfullgatherings.com
       </div>
-      <div class="intentions">
-        <span class="chip">Rest &amp; repair</span>
-        <span class="chip">Connection</span>
-        <span class="chip">Adventure</span>
-      </div>
+      <p class="intentions">Rest &amp; repair &nbsp;·&nbsp; Connection &nbsp;·&nbsp; Adventure</p>
     </div>
 
-    <!-- GUEST: the three sections below are replaced by one glass card —
-         eyebrow "YOUR PRACTICE" (honey), headline "Keep it with you", body
-         "With an account, your streaks, classes and minutes gather here —
-         alongside every retreat you join, digital or in person." — followed by
-         Create account / Sign in. Every practice is behind the account gate,
-         so a guest has no history; four zeros would read as a verdict. -->
+    <!-- GUEST: the sections below are replaced by one open block under a
+         hairline — eyebrow "YOUR PRACTICE" (ember), headline "Keep it with
+         you" (26 light), body "With an account, your streaks, classes and
+         minutes gather here — alongside every retreat you join, digital or in
+         person." — then Create account (filled) / Sign in. Every practice is
+         behind the account gate, so a guest has no history; four zeros would
+         read as a verdict. -->
 
-    <!-- Numbers come from the member's practice_plays ledger (PracticeStats):
-         a DAY counts once any practice is FINISHED that day; a CLASS is a
-         finished session or movement sitting; MINUTES are time actually spent
-         in those. A dash, never a zero, until the ledger has loaded. -->
+    <div class="secs">
     <!-- AS A GUIDE: only for a member linked to a guide (see .guide above). -->
     <div class="sec">
       <div class="section-label"><span class="title">As a guide</span></div>
       <div class="guide glass">
-        <div class="top"><p class="eb">Guide dashboard</p><svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
+        <div class="top"><p class="eb">Guide dashboard</p><svg class="chev" width="7" height="12" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 1.5l5 5-5 5"/></svg></div>
         <h3>October so far</h3>
         <div class="figs">
           <div><b>86</b><span>People</span></div>
@@ -141,39 +137,38 @@
       </div>
     </div>
 
+    <!-- Numbers come from the member's practice_plays ledger (PracticeStats):
+         a DAY counts once any practice is FINISHED that day; a CLASS is a
+         finished session or movement sitting; MINUTES are time actually spent
+         in those. A dash, never a zero, until the ledger has loaded. -->
     <div class="sec">
       <div class="section-label"><span class="title">Your practice</span></div>
       <div class="stats">
-        <div class="tile glass accent">
-          <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>
+        <div class="stat accent">
           <span class="n">4</span>
-          <span class="lbl">Day streak</span>
+          <span class="lbl"><svg width="9" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>Day streak</span>
           <!-- "You've completed a practice today" (finished one today) /
                "Finish a practice today to keep your streak" (practiced today,
-               nothing finished — only finished practice counts, but never tell
-               them to "practice today" after they have) / "Practice today to
-               keep your streak" (nothing yet) / "Finish a practice today to
-               start your streak" (no streak). Two lines reserved on every
-               tile. -->
+               nothing finished) / "Practice today to keep your streak"
+               (nothing yet) / "Finish a practice today to start your streak"
+               (no streak). Two lines reserved on every figure. -->
           <span class="cap">You've completed a practice today</span>
         </div>
-        <div class="tile glass">
-          <svg class="ic" width="14" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c-5-2-8-6-8-11M6 14c-2 0-3-1-3.5-2.5M5 10C3.5 9.5 3 8 3 6.5M8 17.5c-1.5.5-3 0-4-1"/></svg>
+        <div class="stat">
           <span class="n">9</span>
-          <span class="lbl">Best streak</span>
+          <span class="lbl"><svg width="9" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-5-2-8-6-8-11M6 14c-2 0-3-1-3.5-2.5M5 10C3.5 9.5 3 8 3 6.5M8 17.5c-1.5.5-3 0-4-1"/></svg>Best streak</span>
           <!-- "You're on it now" when the best IS the current run -->
           <span class="cap">Days in a row</span>
         </div>
-        <div class="tile glass">
-          <svg class="ic" width="16" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.4"/><path d="M4 12.5c2.6.2 4.9-.6 6.5-2h3c1.6 1.4 3.9 2.2 6.5 2v1.8c-2.4.1-4.4-.4-6-1.5V15l4 3.5-1.2 1.4L12 17l-4.8 2.9L6 18.5l4-3.5v-2.2c-1.6 1.1-3.6 1.6-6 1.5z"/></svg>
+        <div class="rule"></div>
+        <div class="stat">
           <span class="n">13</span>
-          <span class="lbl">Classes taken</span>
+          <span class="lbl"><svg width="10" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.4"/><path d="M4 12.5c2.6.2 4.9-.6 6.5-2h3c1.6 1.4 3.9 2.2 6.5 2v1.8c-2.4.1-4.4-.4-6-1.5V15l4 3.5-1.2 1.4L12 17l-4.8 2.9L6 18.5l4-3.5v-2.2c-1.6 1.1-3.6 1.6-6 1.5z"/></svg>Classes taken</span>
           <span class="cap">Sessions &amp; movement</span>
         </div>
-        <div class="tile glass">
-          <svg class="ic" width="12" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/></svg>
+        <div class="stat">
           <span class="n">250</span>
-          <span class="lbl">Minutes practiced</span>
+          <span class="lbl"><svg width="8" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/></svg>Minutes practiced</span>
           <span class="cap">4 hr, 10 min</span>
         </div>
       </div>
@@ -181,29 +176,29 @@
 
     <!-- Programs joined: in progress first (most recently joined), then
          completed (most recently finished). Rows open the program in the
-         Digital Retreats tab. EMPTY: glass card "Nothing joined yet" / "Digital
-         retreats are free, and walked one day at a time." / honey "Browse
+         Digital Retreats tab. EMPTY: open text "Nothing joined yet" / "Digital
+         retreats are free, and walked one day at a time." / ember "Browse
          digital retreats →". -->
     <div class="sec">
       <div class="section-label"><span class="title">Digital retreats</span></div>
       <div class="rows">
-        <div class="row glass">
+        <div class="row">
           <div class="th" style="background-image:url('../assets/retreat-dolomites.jpg')"></div>
           <div class="tx">
             <h3>Finding Ground</h3>
             <div class="line"><span class="day">Day 3 of 7</span><span class="prog-rule" style="width:56px"><i style="width:29%"></i></span></div>
           </div>
-          <svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg>
+          <svg class="chev" width="7" height="12" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 1.5l5 5-5 5"/></svg>
         </div>
-        <div class="row glass">
+        <div class="row">
           <div class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
           <div class="tx">
             <h3>Morning Light</h3>
             <div class="line"><span class="done">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 22l-2.4-1.7-2.9.2-1-2.8L3.3 16l.9-2.8L3.3 10.4l2.4-1.7 1-2.8 2.9.2z"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2l2.4 1.7 2.9-.2 1 2.8 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.8-2.9-.2L12 22l-2.4-1.7-2.9.2-1-2.8L3.3 16l.9-2.8L3.3 10.4l2.4-1.7 1-2.8 2.9.2z"/><path d="M9 12l2 2 4-4"/></svg>
               Completed · Aug 2026</span></div>
           </div>
-          <svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg>
+          <svg class="chev" width="7" height="12" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 1.5l5 5-5 5"/></svg>
         </div>
       </div>
     </div>
@@ -211,19 +206,19 @@
     <!-- Paid bookings whose retreat has ENDED. Not links — a past retreat's
          detail screen is a booking page. EMPTY (everyone, while payments are
          off in v1): "Your first gathering is ahead" / "Once you've joined us
-         in person, your retreats are kept here." / honey "Explore retreats →",
-         which opens the retreats stack on Home. -->
+         in person, your retreats are kept here." / ember "Explore retreats →",
+         which opens the Gatherings tab. -->
     <div class="sec">
       <div class="section-label"><span class="title">In-person retreats</span></div>
       <div class="rows">
-        <div class="row glass">
+        <div class="row">
           <div class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></div>
           <div class="tx">
             <h3>Kyoto</h3>
             <div class="line"><span class="where">Japan · May 9–15, 2026</span></div>
           </div>
         </div>
-        <div class="row glass">
+        <div class="row">
           <div class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></div>
           <div class="tx">
             <h3>Sedona</h3>
@@ -235,18 +230,21 @@
 
     <div class="sec">
       <div class="section-label"><span class="title">Community</span></div>
-      <div class="share glass">
-        <div class="tx">
-          <h3>Share my practice</h3>
-          <p>Your finished practices appear in the Community feed as “Hugo D. practiced …”, and your face among the followers of guides you follow. Journal prompts never appear.</p>
+      <div class="comm">
+        <div class="share">
+          <div class="tx">
+            <h3>Share my practice</h3>
+            <p>Your finished practices appear in the Community feed as “Hugo D. practiced …”, and your face among the followers of guides you follow. Journal prompts never appear.</p>
+          </div>
+          <div class="toggle"></div>
         </div>
-        <div class="toggle"></div>
+        <div class="blocked">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>
+          <span class="lbl">Blocked members</span>
+          <svg class="chev" width="7" height="12" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 1.5l5 5-5 5"/></svg>
+        </div>
       </div>
-      <div class="blocked glass">
-        <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>
-        <span class="lbl">Blocked members</span>
-        <svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.5 1.5l5 5-5 5"/></svg>
-      </div>
+    </div>
     </div>
 
     <div class="actions">

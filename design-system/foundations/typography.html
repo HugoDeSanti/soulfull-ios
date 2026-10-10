@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   .specimen { display: flex; flex-direction: column; gap: 22px; }
-  .line { border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+  .line { border-bottom: 0.5px solid var(--line); padding-bottom: 18px; }
   .line .tag { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
   .weights { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 18px; }
   .weights div { font-size: 30px; color: var(--ink); }
@@ -18,31 +18,36 @@
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Foundations</p>
   <h1 class="canvas-headline">Typography — Geist (all-Geist, no serif split)</h1>
+  <p style="font-size:13px;color:var(--ink-soft);margin:-14px 0 28px;max-width:640px;line-height:1.6">Display sizes are Light with tight kerning; nothing heavier than Medium. Section headings are small tracked caps under a hairline: the size lives in the content, not the heading.</p>
 
   <div class="specimen">
     <div class="line">
-      <div class="tag">Theme.headline(38) · medium · kerning −0.3</div>
-      <div style="font-size:38px;font-weight:500;letter-spacing:-0.3px;color:var(--ink)">Take your time.</div>
+      <div class="tag">Theme.headline(42, .light) · kerning −0.8 — Home's name</div>
+      <div style="font-size:42px;font-weight:300;letter-spacing:-0.8px;color:var(--ink)">Mara.</div>
     </div>
     <div class="line">
-      <div class="tag">Theme.headline(34) · kerning −0.4 — onboarding question</div>
-      <div style="font-size:34px;font-weight:400;letter-spacing:-0.4px;color:var(--ink)">what's calling you here?</div>
+      <div class="tag">Theme.headline(34, .light) · kerning −0.7 — onboarding question, page titles</div>
+      <div style="font-size:34px;font-weight:300;letter-spacing:-0.7px;color:var(--ink)">what's calling you here?</div>
     </div>
     <div class="line">
-      <div class="tag">Theme.headline(22) · SectionLabel · kerning −0.2</div>
-      <div style="font-size:22px;font-weight:400;letter-spacing:-0.2px;color:var(--ink)">Circles meeting now</div>
+      <div class="tag">Theme.headline(20, .light) · kerning −0.3 — card and row titles</div>
+      <div style="font-size:20px;font-weight:300;letter-spacing:-0.3px;color:var(--ink)">Finding Ground</div>
     </div>
     <div class="line">
-      <div class="tag">Theme.body(15) · medium — buttons / list titles</div>
-      <div style="font-size:15px;font-weight:500;color:var(--ink-soft)">Sessions for every state of your nervous system.</div>
+      <div class="tag">Theme.body(15) · medium — buttons</div>
+      <div style="font-size:15px;font-weight:500;color:var(--ink)">Request a place</div>
     </div>
     <div class="line">
-      <div class="tag">Theme.body(13) — secondary copy</div>
-      <div style="font-size:13px;color:var(--ink-soft)">Take your time. We're here with you.</div>
+      <div class="tag">Theme.body(14 / 13) — secondary copy, in inkSoft</div>
+      <div style="font-size:14px;color:var(--ink-soft)">Take your time. We're here with you.</div>
     </div>
     <div class="line">
-      <div class="tag">Theme.eyebrow(11) · tracking +2 · uppercase</div>
-      <div class="eyebrow" style="font-size:11px">Today's Ritual</div>
+      <div class="tag">Theme.eyebrow(11) · tracking +2 · uppercase — SectionLabel (ink) and eyebrows (inkSoft)</div>
+      <div class="eyebrow" style="font-size:11px;color:var(--ink)">How do you feel?</div>
+    </div>
+    <div class="line">
+      <div class="tag">Folio · body(12) medium · tracking 1.5 · muted — day and step numbers</div>
+      <div style="font-size:12px;font-weight:500;letter-spacing:1.5px;color:var(--muted)">01 &nbsp; 02 &nbsp; 03</div>
     </div>
 
     <div>

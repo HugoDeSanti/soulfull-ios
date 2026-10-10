@@ -8,38 +8,40 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .sw { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); }
-  .sw .chipcolor { height: 96px; }
+  .sw { overflow: hidden; border: 0.5px solid var(--line); }
+  .sw .chipcolor { height: 96px; position: relative; }
   .sw .meta { padding: 12px 14px; background: var(--bg-deep); }
   .sw .name { font-size: 14px; font-weight: var(--w-medium); color: var(--ink); }
   .sw .swift { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .sw .hex { font-size: 11px; color: var(--ink-soft); margin-top: 1px; font-variant-numeric: tabular-nums; letter-spacing: .3px; }
-  .group-h { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 26px 0 12px; }
+  .group-h { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 34px 0 14px; padding-top: 14px; border-top: 0.5px solid var(--line); }
+  .note { font-size: 13px; color: var(--ink-soft); line-height: 1.6; max-width: 640px; margin: 0; }
 </style>
 </head><body>
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Foundations</p>
   <h1 class="canvas-headline">Color — Theme.swift</h1>
+  <p class="note">Black and near-white, as the Open app is laid. The colour comes from photography and from the atmosphere washes, never from the chrome. Ember is the one warm mark, used sparingly; most active states are simply ink.</p>
 
   <div class="group-h">Canvas</div>
   <div class="swatches">
-    <div class="sw"><div class="chipcolor" style="background:var(--bg)"></div><div class="meta"><div class="name">bg</div><div class="swift">Theme.bg · --bg</div><div class="hex">#0B0C07</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--bg-deep)"></div><div class="meta"><div class="name">bgDeep</div><div class="swift">Theme.bgDeep · --bg-deep</div><div class="hex">#10120A</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--surface)"></div><div class="meta"><div class="name">surface</div><div class="swift">Theme.surface · --surface</div><div class="hex">#15170D</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--bg)"></div><div class="meta"><div class="name">bg</div><div class="swift">Theme.bg · --bg</div><div class="hex">#000000 (true black)</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--bg-deep)"></div><div class="meta"><div class="name">bgDeep</div><div class="swift">Theme.bgDeep · --bg-deep · the docked bar</div><div class="hex">#090908</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--surface)"></div><div class="meta"><div class="name">surface</div><div class="swift">Theme.surface · --surface</div><div class="hex">#10100E</div></div></div>
   </div>
 
   <div class="group-h">Text</div>
   <div class="swatches">
-    <div class="sw"><div class="chipcolor" style="background:var(--ink)"></div><div class="meta"><div class="name">ink</div><div class="swift">Theme.ink · --ink</div><div class="hex">#F5F3E8</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--ink-soft)"></div><div class="meta"><div class="name">inkSoft</div><div class="swift">Theme.inkSoft · --ink-soft</div><div class="hex">#C9C5B0</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--muted)"></div><div class="meta"><div class="name">muted</div><div class="swift">Theme.muted · --muted</div><div class="hex">#7A7663</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--ink)"></div><div class="meta"><div class="name">ink</div><div class="swift">Theme.ink · --ink</div><div class="hex">#F2F1ED</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--ink-soft)"></div><div class="meta"><div class="name">inkSoft</div><div class="swift">Theme.inkSoft · --ink-soft</div><div class="hex">#A19F99</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--muted)"></div><div class="meta"><div class="name">muted</div><div class="swift">Theme.muted · --muted · never on a photo</div><div class="hex">#6B6964</div></div></div>
   </div>
 
-  <div class="group-h">Brand accents</div>
+  <div class="group-h">Accents</div>
   <div class="swatches">
-    <div class="sw"><div class="chipcolor" style="background:var(--accent)"></div><div class="meta"><div class="name">accent</div><div class="swift">Theme.accent · --accent</div><div class="hex">#3E4315</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--accent-soft)"></div><div class="meta"><div class="name">accentSoft</div><div class="swift">Theme.accentSoft · --accent-soft</div><div class="hex">#77803B</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--honey)"></div><div class="meta"><div class="name">honey</div><div class="swift">Theme.honey · --honey</div><div class="hex">#E5C766</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--ember)"></div><div class="meta"><div class="name">ember</div><div class="swift">Theme.ember · --ember · selected, new, yours today</div><div class="hex">#D08C5E</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--accent)"></div><div class="meta"><div class="name">accent</div><div class="swift">Theme.accent · --accent · moss deep (the logo)</div><div class="hex">#3E4315</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--accent-soft)"></div><div class="meta"><div class="name">accentSoft</div><div class="swift">Theme.accentSoft · --accent-soft · moss light, toggles, "complete"</div><div class="hex">#7D8738</div></div></div>
   </div>
 
   <div class="group-h">Irreversible actions</div>
@@ -47,11 +49,19 @@
     <div class="sw"><div class="chipcolor" style="background:var(--danger)"></div><div class="meta"><div class="name">danger</div><div class="swift">Theme.danger · --danger</div><div class="hex">#D95C54</div></div></div>
   </div>
 
-  <div class="group-h">Hairlines & glass strokes (white @ alpha)</div>
+  <div class="group-h">Atmospheres — Atmosphere.swift (page ground: reach 50%, intensity .55)</div>
+  <div class="swatches" style="grid-template-columns: repeat(4, 1fr)">
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--moss"></div></div><div class="meta"><div class="name">moss</div><div class="swift">Home · You · Account</div><div class="hex">#3D4416 → #262B0D → #11130A</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--ember"></div></div><div class="meta"><div class="name">ember</div><div class="swift">Digital Retreats · guides · enquiry</div><div class="hex">#663316 → #3D1D0B → #1A0B04</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--dusk"></div></div><div class="meta"><div class="name">dusk</div><div class="swift">Community · friends · safety</div><div class="hex">#5D312C → #361A19 → #160A0A</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--slate"></div></div><div class="meta"><div class="name">slate</div><div class="swift">Practice and its pages</div><div class="hex">#242E3F → #151B26 → #090B10</div></div></div>
+  </div>
+
+  <div class="group-h">Hairlines & surface strokes (white @ alpha, 0.75pt)</div>
   <div class="swatches">
-    <div class="sw"><div class="chipcolor" style="background:var(--bg);position:relative"><div class="fill" style="border-radius:0;background:var(--line)"></div></div><div class="meta"><div class="name">line</div><div class="swift">Theme.line · --line</div><div class="hex">white · 0.10</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--bg);position:relative"><div class="fill" style="background:var(--glass-border)"></div></div><div class="meta"><div class="name">glassBorder</div><div class="swift">Theme.glassBorder</div><div class="hex">white · 0.14</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--bg);position:relative"><div class="fill" style="background:var(--glass-border-high)"></div></div><div class="meta"><div class="name">glassBorderHigh</div><div class="swift">Theme.glassBorderHigh</div><div class="hex">white · 0.18</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--bg)"><div class="fill" style="background:var(--line)"></div></div><div class="meta"><div class="name">line</div><div class="swift">Theme.line · --line · rules between rows</div><div class="hex">white · 0.10</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--bg)"><div class="fill" style="background:var(--glass-border)"></div></div><div class="meta"><div class="name">glassBorder</div><div class="swift">Theme.glassBorder · surface stroke</div><div class="hex">white · 0.12</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--bg)"><div class="fill" style="background:var(--glass-border-high)"></div></div><div class="meta"><div class="name">glassBorderHigh</div><div class="swift">Theme.glassBorderHigh · ghost buttons, active</div><div class="hex">white · 0.22</div></div></div>
   </div>
 </div></div>
 </body></html>

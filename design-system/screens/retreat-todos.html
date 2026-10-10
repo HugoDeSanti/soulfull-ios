@@ -26,84 +26,70 @@
     background:url('../assets/mb-boats.jpg') center 40%/cover; filter:blur(60px) saturate(1.1) brightness(.5); opacity:.3; transform:scale(1.25); }
   .mb .ambient::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(26,19,12,0.45) 0%, var(--espresso) 60%); }
 
-  /* confirmation hero */
+  /* confirmation hero — a bare thin check (no glass disc), a cream eyebrow,
+     a Light 30 title, and the receipt as one line of type. */
   .confirm { position:relative; height:320px; overflow:hidden; z-index:1; }
   .confirm .img { position:absolute; inset:0; background:url('../assets/mb-boats.jpg') center 40%/cover; filter:saturate(.92) brightness(.85); }
   .confirm .v { position:absolute; inset:0;
-    background:linear-gradient(180deg, rgba(20,14,8,0.55) 0%, rgba(24,17,10,0.2) 38%, rgba(26,19,12,0) 68%, var(--espresso) 100%); }
+    background:linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 38%, rgba(26,19,12,0) 68%, var(--espresso) 100%); }
   .confirm .c { position:absolute; left:0; right:0; bottom:18px; z-index:2;
-    display:flex; flex-direction:column; align-items:center; gap:14px; padding:0 26px; text-align:center; }
-  .tick { width:58px; height:58px; border-radius:999px; display:grid; place-items:center;
-    background:rgba(243,234,217,0.08); border:1px solid rgba(243,234,217,0.2);
-    backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); }
-  .tick svg { width:24px; height:24px; color:#fbf4e7; }
-  .confirm .pre { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); }
-  .confirm h1 { font-family:var(--serif); font-weight:var(--w-semibold); font-size:30px; line-height:1.06;
-    letter-spacing:-0.5px; color:#fbf4e7; margin:0; max-width:280px; text-shadow:0 2px 22px rgba(15,10,5,0.5); }
-  .receipt { display:inline-flex; gap:8px; align-items:center; margin-top:2px;
-    padding:8px 14px; border-radius:999px; color:var(--cream); font-size:11px;
-    background:rgba(243,234,217,0.08); border:1px solid rgba(243,234,217,0.2);
-    backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); }
-  .receipt b { font-weight:var(--w-medium); color:#fbf4e7; }
-  .receipt .dot { width:3px; height:3px; border-radius:999px; background:rgba(243,234,217,0.6); }
+    display:flex; flex-direction:column; align-items:center; gap:14px; padding:0 var(--gutter); text-align:center; }
+  .tick svg { width:26px; height:26px; color:var(--cream); display:block; }
+  .confirm .pre { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:rgba(243,234,217,.85); }
+  .confirm h1 { font-family:var(--serif); font-weight:var(--w-light); font-size:30px; line-height:1.08;
+    letter-spacing:-0.6px; color:var(--cream); margin:0; max-width:300px; text-shadow:0 1px 4px rgba(0,0,0,.6), 0 0 12px rgba(0,0,0,.35); }
+  .receipt { font-size:11px; letter-spacing:.4px; color:var(--cream); }
 
-  .body { position:relative; z-index:1; padding:24px 24px 150px; }
+  .body { position:relative; z-index:1; padding:28px var(--gutter) 150px; }
   .lead-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
   .lead-head .eyebrow-b { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); margin:0; }
-  .lead-head .count { font-size:13px; color:var(--muted); }
-  .intro-line { font-size:13px; line-height:1.55; color:var(--cream-soft); margin:0 0 16px; }
+  .lead-head .count { font-size:13px; color:var(--cream-soft); }
+  .intro-line { font-size:13px; line-height:1.6; color:var(--cream-soft); margin:0 0 16px; }
 
-  .prog { height:5px; border-radius:999px; background:rgba(243,234,217,0.1); overflow:hidden; margin-bottom:22px; }
-  .prog i { display:block; height:100%; width:0; border-radius:999px;
-    background:linear-gradient(90deg, var(--olive), var(--terracotta));
-    transition:width .45s cubic-bezier(.3,.7,.3,1); }
+  /* A hairline track with a solid terracotta run — no rounded ends. */
+  .prog { height:2px; background:var(--coffee); overflow:hidden; margin-bottom:14px; }
+  .prog i { display:block; height:100%; width:0; background:var(--terracotta); transition:width var(--ease-reveal); }
 
-  .todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
-  .todo { display:flex; gap:14px; align-items:flex-start; padding:16px;
-    border-radius:14px;
-    background:var(--glass);
-    border:1px solid var(--glass-line);
-    backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4);
-    cursor:pointer; transition:transform .15s, border-color .25s, background .25s; }
-  .todo:active { transform:scale(.99); }
-  .box { width:26px; height:26px; border-radius:999px; flex:none; margin-top:1px;
-    border:1.5px solid var(--muted); display:grid; place-items:center;
-    transition:background .25s, border-color .25s; }
-  .box svg { width:14px; height:14px; color:var(--espresso); opacity:0; transform:scale(.5); transition:opacity .2s, transform .2s; }
+  /* Rows ruled by hairlines, not boxed. A square 18px box, filled olive when
+     ticked; the tag a small square block (terracotta for "must"). */
+  .todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; }
+  .todo { display:flex; gap:14px; align-items:flex-start; padding:18px 0;
+    border-top:0.5px solid var(--glass-line);
+    cursor:pointer; transition:opacity var(--ease-release); }
+  .todo:active { opacity:.55; transition:opacity var(--ease-press); }
+  .box { width:18px; height:18px; flex:none; margin-top:2px;
+    border:var(--hairline) solid var(--muted); display:grid; place-items:center;
+    transition:background var(--ease-settle), border-color var(--ease-settle); }
+  .box svg { width:10px; height:10px; color:var(--cream); opacity:0; transition:opacity var(--ease-settle); }
   .todo .tx { flex:1; }
   .todo .ti { font-size:15px; color:var(--cream); line-height:1.3; }
-  .todo .ds { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.4; }
-  .todo .tag { display:inline-block; margin-top:9px; font-size:9px; letter-spacing:1px; text-transform:uppercase;
-    color:var(--espresso); background:var(--terracotta); border:1px solid var(--terracotta);
-    border-radius:999px; padding:4px 9px; }
+  .todo .ds { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.45; }
+  .todo .tag { display:inline-block; margin-top:5px; font-size:9px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--espresso); background:var(--terracotta); border:var(--hairline) solid var(--glass-line); padding:4px 9px; }
 
   .todo.done .box { background:var(--olive); border-color:var(--olive); }
-  .todo.done .box svg { opacity:1; transform:scale(1); }
+  .todo.done .box svg { opacity:1; }
   .todo.done .ti { color:var(--muted); text-decoration:line-through; text-decoration-color:var(--muted); }
   .todo.done .ds { opacity:.6; }
   .todo.done .tag { opacity:.55; }
 
-  .alldone { text-align:center; margin-top:10px; padding:22px; border-radius:16px; display:none;
-    border:1px dashed var(--glass-line); }
+  .alldone { text-align:center; margin-top:20px; padding:24px; display:none;
+    border:var(--hairline) solid var(--glass-line); }
   .alldone.show { display:block; }
   .alldone .sig { font-family:var(--serif); font-weight:var(--w-light); font-style:italic;
     font-size:26px; letter-spacing:-0.3px; color:var(--gold); }
   .alldone p { font-size:13px; line-height:1.5; color:var(--cream-soft); margin:6px auto 0; max-width:260px; }
 
-  .botbar { position:absolute; left:0; right:0; bottom:0; z-index:30; padding:16px 22px 28px;
+  .botbar { position:absolute; left:0; right:0; bottom:0; z-index:30; padding:16px var(--gutter) 28px;
     background:linear-gradient(180deg, rgba(26,19,12,0) 0%, var(--espresso) 30%); }
-  .home-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:53px;
-    border:0; border-radius:999px; background:var(--terracotta); color:var(--espresso);
+  .home-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px;
+    border:0; background:var(--terracotta); color:var(--espresso);
     font-family:var(--serif); font-weight:var(--w-medium); font-size:16px; letter-spacing:0.4px;
-    cursor:pointer; text-decoration:none; transition:transform .18s cubic-bezier(.2,.7,.3,1); }
-  .home-btn:active { transform:scale(.985); }
+    cursor:pointer; text-decoration:none; transition:opacity var(--ease-release); }
+  .home-btn:active { opacity:.55; }
 
-  .topbar { position:absolute; top:44px; left:0; right:0; z-index:40; display:flex; padding:8px 20px; }
-  .top-btn { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px;
-    border-radius:999px; color:var(--cream); text-decoration:none;
-    background:rgba(243,234,217,0.08); border:1px solid rgba(243,234,217,0.2);
-    backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); }
-  .top-btn svg { width:14px; height:14px; }
+  .topbar { position:absolute; top:44px; left:0; right:0; z-index:40; display:flex; padding:8px calc(var(--gutter) - 14px); }
+  .top-btn { color:var(--cream); text-decoration:none; }
 </style>
 </head><body>
 <div class="stage"><div class="device mb-device">
@@ -113,7 +99,7 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="topbar">
-    <a class="top-btn" href="mallorca-welcome.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <a class="top-btn glyph-btn" href="mallorca-welcome.html" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg></a>
   </div>
 
   <div class="screen screen--scroll mb">
@@ -122,10 +108,10 @@
       <div class="img"></div>
       <div class="v"></div>
       <div class="c">
-        <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.9"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
         <div class="pre">Your place is secured</div>
         <h1>A few things before you go</h1>
-        <div class="receipt"><b>&euro;800</b> deposit paid<span class="dot"></span>No. SF&#8209;26&#8209;0412</div>
+        <div class="receipt">&euro;800 deposit paid &nbsp;·&nbsp; No. SF&#8209;26&#8209;0412</div>
       </div>
     </div>
 
@@ -139,31 +125,31 @@
 
       <ul class="todos" id="todos">
         <li class="todo" data-id="call">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Book your enrollment call</div><div class="ds">A 15-minute welcome call with your retreat guide to confirm the fit.</div><span class="tag">Do this first</span></div>
         </li>
         <li class="todo" data-id="health">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Complete your health &amp; dietary form</div><div class="ds">Allergies, injuries, and anything we should plan around.</div><span class="tag">Required</span></div>
         </li>
         <li class="todo" data-id="flights">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Book your flights to Palma (PMI)</div><div class="ds">Arrive before 3pm on July 21; depart anytime July 26.</div></div>
         </li>
         <li class="todo" data-id="transfer">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Share your arrival details</div><div class="ds">Flight number &amp; landing time so we can arrange your airport transfer.</div></div>
         </li>
         <li class="todo" data-id="installments">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Set your installment dates</div><div class="ds">Two payments of &euro;2,439 — choose the dates that suit you.</div></div>
         </li>
         <li class="todo" data-id="chat">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Join the member group chat</div><div class="ds">Meet your group and the guides before you arrive.</div></div>
         </li>
         <li class="todo" data-id="pack">
-          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5l5 5L20 6.5"/></svg></span>
           <div class="tx"><div class="ti">Review the packing list</div><div class="ds">From riding gear to evening dinners — everything you'll want with you.</div></div>
         </li>
       </ul>

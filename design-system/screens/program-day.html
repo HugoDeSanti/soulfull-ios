@@ -7,32 +7,34 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .scr { padding-bottom: 60px; }
-  .hero { height: 300px; position: relative; background-size: cover; background-position: center; }
-  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.2) 45%, var(--bg) 100%); }
-  .hero .backbar { position: absolute; top: 46px; left: 20px; }
-  .hero .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-  .hero .body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
-  .hero .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--honey); margin: 0; }
-  .hero h1 { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
-  .hero .int { font-size: 15px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px 0 0; }
-  .pad { padding: 20px 20px 0; }
+  /* ProgramDayView — a 340 hero under the clock, then on black at the gutter:
+     the progress line, the activities as a ruled list (square thumbnails, no
+     boxes), and — once the day closes — the next day, open under a hairline. */
+  .scr { padding-bottom: 120px; }
+  .hero { height: 340px; position: relative; background-size: cover; background-position: center; }
+  .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.2) 45%, rgba(0,0,0,.95) 100%); }
+  .hero .backbar { position: absolute; top: 56px; left: var(--gutter); }
+  .back { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
+  .hero .body { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 24px; }
+  .hero .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ember); margin: 0; }
+  .hero h1 { font-size: 34px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 8px 0 0; }
+  .hero .int { font-size: 15px; line-height: 1.55; color: var(--ink-on-photo); margin: 8px 0 0; }
+  .pad { padding: 32px var(--gutter) 0; }
   .prog { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: var(--w-medium); color: var(--ink); }
-  .acts { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
-  .act { display: flex; gap: 14px; padding: 14px; border-radius: 22px; border: 1px solid var(--glass-border); }
-  .act.done { border-color: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
-  .act .thumb { width: 68px; height: 68px; border-radius: 14px; flex: none; position: relative; overflow: hidden; background-size: cover; background-position: center; border: 1px solid var(--glass-border); }
+  .acts { margin-top: 32px; display: flex; flex-direction: column; }
+  .act { display: flex; align-items: flex-start; gap: 16px; padding: 20px 0; border-top: 0.5px solid var(--line); }
+  .act .thumb { width: 68px; height: 68px; flex: none; position: relative; overflow: hidden; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); }
   .act.done .thumb { border-color: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
-  .act .thumb .gl { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
-  .act.done .thumb .gl { background: rgba(0,0,0,.45); color: var(--accent-soft); }
-  .act h4 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
-  .act .meta { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 4px 0 0; }
+  .act .thumb .gl { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink); filter: drop-shadow(0 0 4px rgba(0,0,0,.5)); }
+  .act.done .thumb .gl { background: rgba(0,0,0,.5); color: var(--accent-soft); }
+  .act h4 { font-size: 18px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+  .act .meta { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 5px 0 0; }
   .act.done .meta { color: var(--accent-soft); }
-  .act .note { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 6px 0 0; }
-  .next { margin-top: 22px; padding: 18px; border-radius: 22px; border: 1px solid var(--glass-border); }
+  .act .note { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 7px 0 0; }
+  .next { margin-top: 32px; padding-top: 20px; border-top: 0.5px solid var(--line); }
   .next .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; display: flex; align-items: center; gap: 6px; }
-  .next h4 { font-size: 19px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 8px 0 0; }
-  .next p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 6px 0 0; }
+  .next h4 { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 10px 0 0; }
+  .next p { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 10px 0 0; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -44,7 +46,7 @@
   <div class="screen screen--scroll scr">
     <div class="hero" style="background-image:url('../assets/retreat-kyoto.jpg')">
       <div class="ov"></div>
-      <div class="backbar"><a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Finding Ground</a></div>
+      <div class="backbar"><a class="back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Finding Ground</a></div>
       <div class="body on-photo">
         <p class="eb">Day 3 of 7</p>
         <h1>Letting go</h1>
@@ -64,9 +66,9 @@
            their session was found in the library or inside a program. Nothing
            on this screen records anything itself. -->
       <div class="acts">
-        <div class="act glass done">
+        <div class="act done">
           <div class="thumb" style="background-image:url('../assets/practice-journals.jpg')">
-            <div class="gl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l5 5 9-11"/></svg></div>
+            <div class="gl"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 12.5l5 5 9-11"/></svg></div>
           </div>
           <div style="flex:1">
             <h4>Name one thing you've outgrown.</h4>
@@ -74,9 +76,9 @@
           </div>
         </div>
 
-        <div class="act glass">
+        <div class="act">
           <div class="thumb" style="background-image:url('../assets/practice-exercises.jpg')">
-            <div class="gl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></div>
+            <div class="gl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></div>
           </div>
           <div style="flex:1">
             <h4>Posture Reset</h4>
@@ -86,10 +88,12 @@
         </div>
       </div>
 
-      <!-- Shown once the day closes. The next day is ALREADY open at local
+      <!-- Shown once the day closes (when the progress line above reads a
+           moss "✓ Day complete"; the moment it closes, a square veil reading
+           "Day 3 complete" fades in over the page and out again). The next day is ALREADY open at local
            midnight; the notification announcing it fires at 08:00, which is a
            separate decision — see ProgramNotifications. -->
-      <div class="next glass">
+      <div class="next">
         <p class="eb">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
           Next

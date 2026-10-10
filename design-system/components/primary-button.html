@@ -19,13 +19,13 @@
   <div class="demo">
     <div class="cell"><div class="cap">Ghost (default)</div><button class="sg-btn">Next</button></div>
     <div class="cell"><div class="cap">Filled</div><button class="sg-btn sg-btn--filled">I'm ready</button></div>
-    <div class="cell"><div class="cap">With icon</div><button class="sg-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Begin now</button></div>
+    <div class="cell"><div class="cap">With icon</div><button class="sg-btn sg-btn--filled"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg>Start this digital retreat</button></div>
     <div class="cell"><div class="cap">Disabled</div><button class="sg-btn is-disabled">Continue</button></div>
   </div>
   <p class="swiftnote">
-    Ghost = cream <code>Theme.ink</code> stroke + ink text on clear. Filled = white fill + black text.<br>
-    Capsule (<code>--pill-radius</code>), 18px vertical padding, <code>Theme.body(15, medium)</code>, 0.4 tracking.
-    Disabled drops to 0.45 opacity. Press squishes to 0.975 (<code>SoulPressableStyle</code>) and fires <code>Haptics.bump()</code>.
+    Square. Ghost = a 0.75pt <code>Theme.ink</code> @ .7 hairline + ink text on clear. Filled = <code>Theme.ink</code> fill + black text.<br>
+    18px vertical padding, <code>Theme.body(15, medium)</code>, 0.4 tracking. Disabled drops to 0.4 opacity. A press dims to .55 and comes
+    back slowly (<code>SoulPressableStyle</code>) — no squish — and the action fires <code>Haptics.bump()</code> (a soft knock).
   </p>
 </div></div>
 </body></html>

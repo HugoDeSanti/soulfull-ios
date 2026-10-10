@@ -25,37 +25,59 @@ ships from `SoulfullGatherings/` and never imports anything here.
 
 | Design System file        | Swift source                          | What lives there |
 |---------------------------|---------------------------------------|------------------|
-| `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`       | Colors, gradients, radii, type — one CSS var per `Theme.*` constant |
-| `shared/app.css`          | `Core/DesignSystem/Components.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift` | Buttons, glass, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu |
+| `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`, `Atmosphere.swift` | Colors, gradients, the atmosphere tones, hairline / space / motion, type — one CSS var per `Theme.*` constant |
+| `shared/app.css`          | `Core/DesignSystem/Components.swift` (SGPrimaryButton, GlassCard, SectionLabel, GlyphButton, PhotoBackdrop), `SoulGlass.swift`, `Pressable.swift`, `Atmosphere.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift` | Buttons, veils, the atmosphere, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu |
 | `shared/frame.css`        | (presentation only)                   | iPhone shell + iOS status bar — not part of the app |
 | `foundations/*.html`      | `Theme.swift`                         | Swatch / type / gradient reference sheets |
 | `components/*.html`       | `Components.swift` et al.             | One card per reusable view |
 | `screens/*.html`          | `Features/**`                         | One card per screen |
 
+### The direction: still
+
+Since 2026-10-10 the app is laid like the Open app: **black and near-white**,
+colour only in photography and in the slow atmosphere washes; **every corner
+square** (only a face, a dot and the player's breath ring are round);
+**hairlines and space instead of boxes** wherever a box only grouped text;
+**still motion** — a press dims, things fade in and settle at breath pace,
+nothing springs, squishes, bounces or zooms. Keep new cards inside that.
+
 ### Token map (the important one)
 
-Every variable in `tokens.css` is the sRGB conversion of a `Theme.swift` color
-(stored there as RGB 0–1). Change a value in Claude Design → change the matching
-constant in `Theme.swift`:
+Every variable in `tokens.css` is the sRGB conversion of a `Theme.swift` value
+(colours stored there as RGB 0–1). Change a value in Claude Design → change the
+matching constant in `Theme.swift`:
 
 | CSS var | Theme.swift | Value |
 |---|---|---|
-| `--bg` | `Theme.bg` | `#0B0C07` |
-| `--bg-deep` | `Theme.bgDeep` | `#10120A` |
-| `--surface` | `Theme.surface` | `#15170D` |
-| `--ink` | `Theme.ink` | `#F5F3E8` |
-| `--ink-soft` | `Theme.inkSoft` | `#C9C5B0` |
-| `--muted` | `Theme.muted` | `#7A7663` (on glass only — see below) |
-| `--ink-on-photo` | `Theme.inkOnPhoto` | `rgba(245,243,232,0.92)` (ink @ 0.92) |
-| `--accent` | `Theme.accent` | `#3E4315` |
-| `--accent-soft` | `Theme.accentSoft` | `#77803B` |
-| `--honey` | `Theme.honey` | `#E5C766` |
+| `--bg` | `Theme.bg` | `#000000` (true black) |
+| `--bg-deep` | `Theme.bgDeep` | `#090908` (the docked bar) |
+| `--surface` | `Theme.surface` | `#10100E` |
+| `--ink` | `Theme.ink` | `#F2F1ED` |
+| `--ink-soft` | `Theme.inkSoft` | `#A19F99` |
+| `--muted` | `Theme.muted` | `#6B6964` (never on a photo — see below) |
+| `--ink-on-photo` | `Theme.inkOnPhoto` | `rgba(242,241,237,0.92)` (ink @ 0.92) |
+| `--accent` | `Theme.accent` | `#3E4315` (moss deep, the logo) |
+| `--accent-soft` | `Theme.accentSoft` | `#7D8738` (moss light: switches, "complete") |
+| `--ember` | `Theme.ember` | `#D08C5E` (the one warm mark; replaced honey) |
 | `--danger` | `Theme.danger` | `#D95C54` (irreversible actions: Delete account) |
-| `--card-radius` | `Theme.cardRadius` | `22px` |
-| `--pill-radius` | `Theme.pillRadius` | `999px` |
+| `--line` / `--glass-border` / `--glass-border-high` | `Theme.line` / `.glassBorder` / `.glassBorderHigh` | white @ 0.10 / 0.12 / 0.22 |
+| `--hairline` | `Theme.hairline` | `0.75` — every surface and ghost-button stroke |
+| `--gutter` | `Theme.gutter` | `24` — the page margin |
+| `--section-gap` | `Theme.sectionGap` | `64` — between a page's sections |
+| `--ease-press` … `--ease-stage`, `--breath` | `Theme.Motion.*` | press .12s / release .5s / settle .6s / reveal 1.1s / stage 1.2s; breath 6s |
+| `--atmos-<tone>-top/-mid/-low`, `--atmos-reach`, `--atmos-intensity` | `Atmosphere(tone:reach:intensity:)` | moss · ember · dusk · slate; page ground reach 0.5, intensity 0.55 |
+
+There are no radius tokens: `Theme.cardRadius` and `Theme.pillRadius` are gone.
 
 > Theme.swift stores colors as RGB 0–1. To go from a new hex back to Swift:
-> `R/255, G/255, B/255`. e.g. `#E5C766` → `Color(red: 0.898, green: 0.780, blue: 0.400)`.
+> `R/255, G/255, B/255`. e.g. `#D08C5E` → `Color(red: 0.816, green: 0.549, blue: 0.369)`.
+
+**Grounds.** A screen whose photograph is its content (Welcome, onboarding,
+the retreat stack and detail, the post-purchase heroes) keeps it, blur ≤ 6.
+Every other screen sits on `.atmosphere.atmosphere--<tone>` (Home, You,
+Account → moss; Digital Retreats, guides, enquiry → ember; Community and its
+sheets → dusk; Practice and its pages → slate). A content photo is never
+blurred into a page's tint.
 
 ### Type over photography
 
@@ -71,16 +93,17 @@ change it in both places or the mirror drifts:
 | Eyebrow colour | `--ink-soft` | `Theme.inkSoft` |
 | Subline colour / size | `--ink-on-photo` at 14px | `Theme.inkOnPhoto`, `Theme.body(14)` |
 
-`--muted` / `Theme.muted` is for type on **glass or a solid surface** — over a
+`--muted` / `Theme.muted` is for type on **black, a veil or a card** — over a
 photo it sinks into the scrim. Type inside a card or on `--bg` needs none of
 this; the surface is its own ground.
 
 ## What's faithful vs. approximated
 
 - **Faithful:** colors, type scale, spacing, copy, layout, component anatomy, Geist.
-- **Approximated (CSS can't do Metal):** the aurora shader is a layered CSS
-  gradient drift; Liquid Glass is `backdrop-filter` blur; breathing/pulse are CSS
-  keyframes. They read correctly but aren't pixel-identical to the SwiftUI shaders.
+- **Approximated (CSS can't do Metal):** the player's aurora shader is a layered
+  CSS gradient drift; the veil's frost is a `backdrop-filter` blur; the
+  atmosphere's breath and the breathing/pulse loops are CSS keyframes. They read
+  correctly but aren't pixel-identical to SwiftUI.
 - **Fonts:** Geist loads from Google Fonts. The app ships the Geist TTFs in
   `Resources/Fonts/`.
 - **Images:** downscaled copies of the real asset-catalog photos live in `assets/`.
@@ -125,7 +148,7 @@ guest opens an actual practice, then replays the tap they were making.
 
 | Change | Mirror effect |
 |---|---|
-| **Sign in with Apple first** | `account` leads with a single `.social-btn` pill, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px white capsule, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled. |
+| **Sign in with Apple first** | `account` leads with a single `.social-btn`, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled; white behind it fills Apple's rounded corners in, so it reads square. |
 | **Confirmation is a code, not just a link** | A second card, `account-confirm`, is the state after "Create account" when Supabase email confirmation is on. It leads with a **code field** (one wide field, not a row of boxes — iOS one-time-code autofill targets a single field, and the digit count is the project's `mailer_otp_length`, currently 6) because the emailed *link* can only complete on the iPhone that signed up. Below it: Confirm email · Send a new code (60s cooldown = `smtp_max_frequency`) · Use a different sign-in. |
 | **Forgot password is a code too** | In sign-in mode a "Forgot password?" link (13px ink, underlined, trailing under the password field) opens two more states of the same sheet: `account-reset` (the address, carried over from the form → Send code, plus a line pointing Apple members back to Apple) and `account-reset-code` (the code field from `account-confirm` **and** a new-password field in one step → Set new password · Send a new code · Back to sign in). The copy never says whether the address has an account. The email has a code and no link (`supabase/templates/README.md`). |
 | **What continuing agrees to** | Under the mode toggle, in both modes, a centered 12px `--muted` line: what other members see (first name, last initial, photo) and that continuing agrees to the Terms (which carry the community standards Guideline 1.2 asks for) and acknowledges the Privacy Policy. The two links are `--ink-soft`, not underlined. |
@@ -185,7 +208,7 @@ Reaching it requires an account — `retreat-detail`'s CTA raises `account`
 first for a guest and opens the form once they are in. That is a gate on an
 *action*, not on browsing, so the 5.1.1(i) argument above is unchanged. It is
 there because the **Email question is shown, not asked**: the card renders it
-on the same glass surface as every other answer, at `--ink-soft` with a lock,
+on the same square surface as every other answer, at `--ink-soft` with a lock,
 because it is an answer already given rather than a field that has stopped
 working. Don't restyle it into an editable field — the server takes the address
 from the caller's token regardless of anything the app sends.
@@ -201,8 +224,8 @@ Two other things on the card are **not** free text to restyle:
 
 Submit posts to the `send-retreat-enquiry` Edge Function, which emails the
 answers to the team — so the button does have a **"Sending…"** state, and a
-failure shows a glass banner under it (same anatomy as `account`'s error
-banner) with every answer left in place. The confirmation afterwards is the
+failure shows a square veil with an ember hairline under it (same anatomy as
+`account`'s error banner) with every answer left in place. The confirmation afterwards is the
 website's own thank-you message.
 
 ### Mallorca post-purchase set (warm-espresso)
@@ -210,7 +233,9 @@ website's own thank-you message.
 `Screens · Retreats` includes the reserved-retreat flow: `mallorca-welcome`
 (hub), `retreat-todos`, `packing` and `mallorca-guides`. These use the UX team's
 **warm-espresso** dark direction —
-terracotta / olive / gold on an espresso canvas, all-Geist — defined inline as a
+terracotta / olive / gold on an espresso canvas, all-Geist, square and still like
+the rest of the app (bare ← glyphs, hairline-ruled rows, square checkboxes, 2px
+progress runs) — defined inline as a
 per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
 Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
 When porting back to Swift, map the `.mb` tokens to `RetreatPalette`, and don't

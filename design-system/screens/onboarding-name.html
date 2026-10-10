@@ -8,11 +8,12 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   .center-q { text-align: center; padding-top: 60px; }
-  .center-q h2 { font-size: 30px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); max-width: 320px; margin: 0 auto 46px; line-height: 1.15; }
-  .field { max-width: 280px; margin: 0 auto; }
+  .center-q h2 { font-size: 30px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); max-width: 320px; margin: 0 auto 26px; line-height: 1.15; }
+  .field { max-width: 260px; margin: 0 auto; }
   .field input { width: 100%; text-align: center; font-family: var(--font); font-style: italic; font-size: 22px;
-    color: var(--ink); background: transparent; border: 0; outline: none; padding-bottom: 12px; }
-  .field .ul { height: 1.5px; background: rgba(229,199,102,0.75); box-shadow: 0 0 8px rgba(229,199,102,0.5); }
+    color: var(--ink); background: transparent; border: 0; outline: none; padding-bottom: 6px; }
+  /* Focused: a 1px ink line at .85 (.35 at rest), eased. No glow. */
+  .field .ul { height: 1px; background: rgba(242,241,237,0.85); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -21,19 +22,19 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
   <div class="screen safe-top">
-    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
-    <div class="vignette vignette--deep"></div>
+    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.06)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30),rgba(0,0,0,.62))"></div>
     <div class="top-scrim"></div>
 
-    <div class="onb-top">
-      <div class="circle-btn" style="opacity:.0;pointer-events:none"></div>
+    <div class="onb-top on-photo">
+      <span style="width:44px;height:44px;flex:none"></span>
       <div class="onb-progress"><div class="onb-track"><div class="onb-fill" style="width:25%"></div></div></div>
       <span class="onb-counter">1/4</span>
       <button class="onb-skip">skip</button>
     </div>
 
     <div class="onb-body center-q">
-      <h2>What should we call you?</h2>
+      <h2 class="on-photo">What should we call you?</h2>
       <div class="field">
         <input value="Hugo" />
         <div class="ul"></div>

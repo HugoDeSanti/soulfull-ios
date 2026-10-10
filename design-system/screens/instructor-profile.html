@@ -10,64 +10,64 @@
   /* Features/Instructors/InstructorProfileView.swift. Pushed from the "Your
      guide" card on anything the guide made — a digital retreat, a practice's
      page, a session's player chip — and the back bar names that page
-     ("‹ Finding Ground", "‹ Morning Mobility Flow"). Guides never appear on
+     ("← Finding Ground", "← Morning Mobility Flow"). Guides never appear on
      the Practice landing. Open to a guest end to end; Follow, playing a
      session and opening a practice go through AccountGate.
-     Backdrop: the guide's own photo, blur 48 / darken .86 — only its colour
-     survives, so each guide's page has its own temperature (home-bg when
-     there is no photo, as here). */
-  .scr { padding: 58px 20px 130px; }
-  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: underline; }
-  .head { display: flex; flex-direction: column; align-items: center; margin-top: 26px; text-align: center; }
-  /* 112pt AvatarView (photo, or the initial on its id-picked tone), a 1px
-     honey ring 6pt out, and a honey radial halo behind that breathes on a 6s
-     loop (off under Reduce Motion). */
-  .portrait { position: relative; padding: 6px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--honey) 35%, transparent); }
-  .portrait::before { content: ""; position: absolute; left: 50%; top: 50%; width: 236px; height: 236px; transform: translate(-50%, -50%); border-radius: 50%;
-    background: radial-gradient(circle, color-mix(in srgb, var(--honey) 34%, transparent) 22%, transparent 50%); animation: breathe 6s ease-in-out infinite alternate; z-index: -1; }
-  @keyframes breathe { from { transform: translate(-50%, -50%) scale(.9); opacity: .65; } to { transform: translate(-50%, -50%) scale(1.04); opacity: 1; } }
-  .portrait .av { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; font-size: 47px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); background-image: linear-gradient(135deg, #4f5c29, #333d17); }
-  .title-eb { font-size: 11px; letter-spacing: 2.6px; text-transform: uppercase; color: var(--ink-soft); margin: 16px 0 0; }
-  h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 8px 0 0; }
-  /* Followers | Following — headline 28 numbers (compact, rounded down:
-     "75.7k"), eyebrow-10 labels, a 1px hairline between. "–" until loaded. */
-  .stats { display: flex; align-items: center; max-width: 280px; margin: 26px auto 0; }
+     Ground: the ember atmosphere — the page's warmth. The guide's photo used
+     to be blurred into it; now only the portrait shows it. */
+  .scr { padding: 62px var(--gutter) 130px; }
+  .back { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
+  .head { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 36px; text-align: center; }
+  /* 112pt AvatarView (photo, or the initial on its id-picked tone) — a face,
+     the one round thing on the page — with nothing glowing behind it. */
+  .portrait .av { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; font-size: 47px; font-weight: var(--w-medium); color: var(--ink); border: var(--hairline) solid var(--glass-border); background-image: linear-gradient(135deg, #454d1c, #262b0d); }
+  .title-eb { font-size: 11px; letter-spacing: 2.6px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 10px 0 0; }
+  /* Followers | Following — headline 28 light numbers (compact, rounded
+     down: "75.7k"), eyebrow-10 labels, a 0.5px hairline between. "–" until
+     loaded. */
+  .stats { display: flex; align-items: center; max-width: 280px; margin: 36px auto 0; }
   .stat { flex: 1; text-align: center; }
-  .stat b { display: block; font-size: 28px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); }
+  .stat b { display: block; font-size: 28px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); }
   .stat span { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin-top: 5px; }
-  .rule { width: 1px; height: 36px; background: var(--glass-border-high); }
+  .rule { width: 0.5px; height: 36px; background: var(--line); }
   /* "Followed by": up to three 24pt faces overlapping 8pt — yours first once
      you follow — and at most two names; the rest counted. Friends first, then
-     photos. Absent when nobody who shares their practice follows. */
-  .followed { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; font-size: 13px; color: var(--ink-soft); }
+     photos. Absent when nobody who shares their practice follows. Faces fade
+     in; nothing scales. */
+  .followed { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; font-size: 13px; color: var(--ink-soft); }
   .followed .faces { display: flex; }
-  .followed .faces i { width: 24px; height: 24px; border-radius: 50%; margin-left: -8px; border: 1px solid var(--glass-border-high); font-style: normal; font-size: 10px; display: grid; place-items: center; color: var(--ink); }
+  .followed .faces i { width: 24px; height: 24px; border-radius: 50%; margin-left: -8px; border: var(--hairline) solid var(--glass-border); font-style: normal; font-size: 10px; display: grid; place-items: center; color: var(--ink); }
   .followed .faces i:first-child { margin-left: 0; }
-  .followed .faces i:nth-child(1) { background: linear-gradient(135deg, #854f4d, #573030); z-index: 3; }
-  .followed .faces i:nth-child(2) { background: linear-gradient(135deg, #4a5c6e, #2b3a4a); z-index: 2; }
-  .followed .faces i:nth-child(3) { background: linear-gradient(135deg, #806b4f, #544530); z-index: 1; }
-  /* Follow: 196×50 honey-filled pill, black type, "+". Once following it
-     becomes quiet glass, ink type, "✓ Following". On your own page (a guide
-     signed in to their linked account) it is a static "This is your profile"
-     chip instead. */
-  .follow { display: flex; align-items: center; justify-content: center; gap: 8px; width: 196px; height: 50px; margin: 20px auto 0; border-radius: 999px; background: var(--honey); color: #000; font-size: 15px; font-weight: var(--w-medium); letter-spacing: .3px; }
-  .sec-eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 36px 0 10px; }
-  .bio { font-size: 15px; line-height: 1.6; color: var(--ink-on-photo); margin: 0 0 12px; }
-  h2 { font-size: 26px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
-  .sub-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 18px 0 10px; }
-  /* A digital retreat: full-width 176pt photo card → opens on the Digital
-     Retreats tab. */
-  .prog { position: relative; height: 176px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); background-size: cover; background-position: center; }
+  .followed .faces i:nth-child(1) { background: linear-gradient(135deg, #6b3d38, #40211f); z-index: 3; }
+  .followed .faces i:nth-child(2) { background: linear-gradient(135deg, #334054, #1a2130); z-index: 2; }
+  .followed .faces i:nth-child(3) { background: linear-gradient(135deg, #544533, #30261a); z-index: 1; }
+  /* Follow: a 196×50 square ink block, black type, "+". Once following it
+     becomes a square veil with a hairline, ink type, "✓ Following" — eased,
+     no bounce. On your own page (a guide signed in to their linked account) it
+     is a static "This is your profile" veil instead. */
+  .follow { display: flex; align-items: center; justify-content: center; gap: 8px; width: 196px; height: 50px; margin: 28px auto 0; background: var(--ink); color: #000; font-size: 15px; font-weight: var(--w-medium); letter-spacing: .3px; }
+  /* Sections open under a hairline with a tracked caps label. */
+  .sec-eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; padding-top: 14px; border-top: 0.5px solid var(--line); }
+  .about { margin-top: 56px; }
+  .bio { font-size: 15px; line-height: 1.65; color: var(--ink-soft); margin: 0 0 12px; }
+  .lib { margin-top: 64px; }
+  h2 { font-size: 26px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
+  .sub-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 32px 0 12px; }
+  /* A digital retreat: a full-width 176pt square photo card on a veil → opens
+     on the Digital Retreats tab. */
+  .prog { position: relative; height: 176px; overflow: hidden; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
   .prog .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.35) 55%, rgba(0,0,0,.78)); }
-  .prog .body { position: absolute; left: 16px; right: 16px; bottom: 16px; }
-  .prog .meta { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.85); }
-  .prog h3 { font-size: 24px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: #fff; margin: 6px 0 0; }
-  .prog p { font-size: 12px; line-height: 1.4; color: rgba(255,255,255,.8); margin: 6px 0 0; }
-  /* A session: the Practice list's row — 60pt thumb with the media glyph,
-     title, TRACK · LENGTH; a resume hairline or a completion seal as there. */
-  .rows { display: flex; flex-direction: column; gap: 10px; }
-  .row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 18px; }
-  .row .th { width: 60px; height: 60px; border-radius: 13px; background-size: cover; background-position: center; border: 1px solid var(--glass-border); flex: none; }
+  .prog .body { position: absolute; left: 20px; right: 20px; bottom: 20px; }
+  .prog .meta { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-on-photo); }
+  .prog h3 { font-size: 24px; font-weight: var(--w-light); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
+  .prog p { font-size: 12px; line-height: 1.4; color: var(--ink-on-photo); margin: 6px 0 0; }
+  /* A session or written practice: the Practice list's row — open, a
+     hairline above each and one closing the run; a square 60pt thumb with the
+     media glyph, title, TRACK · LENGTH; a resume rule or a seal as there. */
+  .rows { display: flex; flex-direction: column; border-bottom: 0.5px solid var(--line); }
+  .row { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-top: 0.5px solid var(--line); }
+  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); flex: none; }
   .row .tx { flex: 1; min-width: 0; }
   .row h4 { font-size: 16px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .row .m { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 5px; }
@@ -81,62 +81,62 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(1.15) brightness(.5) blur(40px);transform:scale(1.15)"></div>
-    <div class="vignette vignette--deep"></div>
-    <div class="top-scrim"></div>
+    <div class="atmosphere atmosphere--ember"></div>
 
-    <a class="back"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1 2 6l5 5"/></svg>Finding Ground</a>
+    <a class="back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Finding Ground</a>
 
     <div class="head">
       <div class="portrait"><div class="av">A</div></div>
-      <div class="on-photo">
+      <div>
         <p class="title-eb">Breathwork · Somatic therapy</p>
         <h1>Alma Guerra</h1>
       </div>
     </div>
 
-    <div class="stats on-photo">
+    <div class="stats">
       <div class="stat"><b>212</b><span>Followers</span></div>
       <div class="rule"></div>
       <div class="stat"><b>12</b><span>Following</span></div>
     </div>
 
-    <div class="followed on-photo"><span class="faces"><i>T</i><i>N</i><i>M</i></span>Followed by Theo R., Nia K. and 210 others</div>
+    <div class="followed"><span class="faces"><i>T</i><i>N</i><i>M</i></span>Followed by Theo R., Nia K. and 210 others</div>
 
-    <div class="follow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>Follow</div>
+    <div class="follow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Follow</div>
 
-    <p class="sec-eb on-photo">About</p>
-    <!-- Folds to five lines with a "More" link past ~260 characters. No bio,
-         no About section at all. -->
-    <p class="bio on-photo">Slow, trauma-aware breathwork that meets the body where it actually is. Less about pushing through, more about noticing what is already here.</p>
-    <p class="bio on-photo">The guide behind Finding Ground. Every session is recorded in one take, in the room where it is taught.</p>
+    <div class="about">
+      <p class="sec-eb">About</p>
+      <!-- Folds to five lines with a "More" link past ~260 characters. No bio,
+           no About section at all. -->
+      <p class="bio">Slow, trauma-aware breathwork that meets the body where it actually is. Less about pushing through, more about noticing what is already here.</p>
+      <p class="bio">The guide behind Finding Ground. Every session is recorded in one take, in the room where it is taught.</p>
+    </div>
 
-    <div class="on-photo">
-      <p class="sec-eb" style="margin-bottom:0">Library</p>
+    <div class="lib">
+      <p class="sec-eb">Library</p>
       <h2>Practices with Alma</h2>
-    </div>
-    <!-- An empty library is a glass card: ✦ "Nothing published yet" ·
-         "Alma's first practices are on their way." -->
-    <p class="sub-eb on-photo">Digital retreats</p>
-    <div class="prog" style="background-image:url('../assets/retreat-dolomites.jpg')">
-      <div class="ov"></div>
-      <div class="body"><span class="meta">7 days · Self-paced</span><h3>Finding Ground</h3><p>Seven days of returning to the body — breath, movement, reflection and food, one day at a time.</p></div>
-    </div>
-    <p class="sub-eb on-photo">Sessions</p>
-    <div class="rows">
-      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></span><div class="tx"><h4>Breath of Fire</h4><div class="m">Breathwork · 9 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
-      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Settling the Nervous System</h4><div class="m">Somatic Exercises · 13 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
-    </div>
-    <!-- Then the written practices that name them (their rows' instructor_id), each in
-         the session row's shape with its library's glyph: Movement, Recipes,
-         Journal prompts — in that order, each absent when empty. -->
-    <p class="sub-eb on-photo">Movement</p>
-    <div class="rows">
-      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Grounding Yoga</h4><div class="m">Yoga · 15 min</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
-    </div>
-    <p class="sub-eb on-photo">Journal prompts</p>
-    <div class="rows">
-      <div class="row glass"><span class="th" style="background-image:url('../assets/retreat-dolomites.jpg')"></span><div class="tx"><h4>What is your body asking for today?</h4><div class="m">Embodiment</div></div><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 5 5-5 5"/></svg></div>
+      <!-- An empty library is open text: an ember ✦, "Nothing published yet" ·
+           "Alma's first practices are on their way." -->
+      <p class="sub-eb">Digital retreats</p>
+      <div class="prog" style="background-image:url('../assets/retreat-dolomites.jpg')">
+        <div class="ov"></div>
+        <div class="body"><span class="meta">7 days · Self-paced</span><h3>Finding Ground</h3><p>Seven days of returning to the body — breath, movement, reflection and food, one day at a time.</p></div>
+      </div>
+      <p class="sub-eb">Sessions</p>
+      <div class="rows">
+        <div class="row"><span class="th" style="background-image:url('../assets/retreat-kyoto.jpg')"></span><div class="tx"><h4>Breath of Fire</h4><div class="m">Breathwork · 9 min</div></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
+        <div class="row"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Settling the Nervous System</h4><div class="m">Somatic Exercises · 13 min</div></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
+      </div>
+      <!-- Then the written practices that name them (their rows' instructor_id), each in
+           the session row's shape with its library's glyph: Movement, Recipes,
+           Journal prompts — in that order, each absent when empty. -->
+      <p class="sub-eb">Movement</p>
+      <div class="rows">
+        <div class="row"><span class="th" style="background-image:url('../assets/retreat-sedona.jpg')"></span><div class="tx"><h4>Grounding Yoga</h4><div class="m">Yoga · 15 min</div></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
+      </div>
+      <p class="sub-eb">Journal prompts</p>
+      <div class="rows">
+        <div class="row"><span class="th" style="background-image:url('../assets/retreat-dolomites.jpg')"></span><div class="tx"><h4>What is your body asking for today?</h4><div class="m">Embodiment</div></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
+      </div>
     </div>
   </div>
   <div class="home-indicator"></div>

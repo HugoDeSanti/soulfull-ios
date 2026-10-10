@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .block { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px; margin-bottom: 18px; }
-  .cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .block { border-top: 0.5px solid var(--line); padding: 26px 0; }
+  .cap { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
   .swiftnote { margin-top: 8px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   code { color: var(--ink-soft); }
 </style>
@@ -21,26 +21,27 @@
     <div class="cap">Text.sgEyebrow() — tracking variants</div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <span class="eyebrow" style="letter-spacing:2px">Good Morning · tracking 2</span>
-      <span class="eyebrow" style="letter-spacing:3px;color:var(--muted)">Wellness Library · tracking 3</span>
-      <span class="eyebrow" style="letter-spacing:2.5px;color:rgba(255,255,255,.75)">Mallorca · 2026 · tracking 2.5</span>
+      <span class="eyebrow" style="letter-spacing:3px">Wellness Library · tracking 3</span>
+      <span class="eyebrow" style="letter-spacing:2px;color:var(--ember)">Continue · ember, a small mark</span>
     </div>
   </div>
 
   <div class="block">
-    <div class="cap">SectionLabel — headline(22) + optional action</div>
-    <div class="section-label" style="padding:0">
-      <span class="title">Continue your journey</span>
-      <span class="action">View</span>
+    <div class="cap">SectionLabel — a hairline, then a tracked caps label (+ optional action)</div>
+    <div class="section-label" style="--sl-pad:0">
+      <span class="title">How do you feel?</span>
     </div>
-    <div class="divider" style="margin:18px 0"></div>
-    <div class="section-label" style="padding:0">
-      <span class="title">Circles meeting now</span>
+    <div style="height:30px"></div>
+    <div class="section-label" style="--sl-pad:0">
+      <span class="title">Digital Retreats</span>
       <span class="action">All</span>
     </div>
   </div>
   <p class="swiftnote">
-    Eyebrow = <code>Theme.eyebrow(11)</code>, uppercase, positive tracking, <code>Theme.inkSoft</code>/<code>muted</code>.
-    <code>SectionLabel</code> pairs a <code>headline(22)</code> title (kerning −0.2) with a tracked uppercase action that fires <code>Haptics.tap()</code>.
+    Eyebrow = <code>Theme.eyebrow(11)</code>, uppercase, positive tracking, <code>Theme.inkSoft</code> (ember only as a small mark).
+    <code>SectionLabel</code> opens a section as a printed page does: a 0.5pt <code>Theme.line</code> rule across the measure, then 14pt below it
+    the title in tracked caps in <code>Theme.ink</code>; the action ("ALL") in <code>Theme.inkSoft</code>, a 44pt target, fires <code>Haptics.tap()</code>.
+    The size lives in the content below, not in the heading. VoiceOver reads the title as written, not spelled out in caps.
   </p>
 </div></div>
 </body></html>

@@ -7,65 +7,76 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .topbar { position: absolute; top: 44px; left: 0; right: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding: 8px 24px; }
-  .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+  /* RetreatDetailView — the hero photograph is the cover; the story below it
+     is open type on near-black (in the app the hero stays behind it and dims
+     to ~0.72 black as the story scrolls up). Every section opens with a
+     hairline + caps label, 64px apart, at the gutter. No boxes: the elements,
+     the testimonial and the inclusions sit under hairlines. */
+  .topbar { position: absolute; top: 44px; left: 0; right: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding: 8px calc(var(--gutter) - 12px) 8px var(--gutter); }
+  .back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; color: var(--ink); text-shadow: 0 1px 4px rgba(0,0,0,.7); }
 
   .hero { position: relative; height: 640px; }
-  .hero .img { position: absolute; inset: 0; background: url('../assets/retreat-mallorca.jpg') center/cover; }
-  .hero .v { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,.10) 30%, rgba(0,0,0,.12) 60%, rgba(0,0,0,.66) 100%); }
-  .cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 28px; text-align: center; }
-  .cover .kind { font-size: 15px; color: rgba(255,255,255,0.9); }
-  .cover h1 { font-size: 64px; font-weight: 600; letter-spacing: -2.4px; color: #fff; margin: 6px 0 20px; }
-  .cover .reserve { background: #fff; color: #000; font-size: 15px; font-weight: 500; padding: 14px 36px; border-radius: 999px; box-shadow: 0 12px 22px -8px rgba(0,0,0,0.4); }
-  .furniture { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 24px; }
-  .furniture .pills { display: flex; gap: 10px; }
-  .furniture .cl { font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.88); text-align: center; max-width: 320px; }
-  .chev { color: rgba(255,255,255,0.7); animation: breathe 2.2s ease-in-out infinite alternate; }
+  .hero .img { position: absolute; inset: 0; background: url('../assets/retreat-mallorca.jpg') center/cover; filter: saturate(.9); }
+  .hero .v { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.24) 30%, rgba(0,0,0,.22) 62%, rgba(0,0,0,.64) 100%); }
+  .cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 var(--gutter); text-align: center; }
+  .cover .kind { font-size: 15px; color: var(--ink-on-photo); }
+  .cover h1 { font-size: 64px; font-weight: var(--w-light); letter-spacing: -2.2px; color: var(--ink); margin: 0; line-height: 1; }
+  /* A square ink block — no shadow, no capsule. */
+  .reserve { display: inline-block; background: var(--ink); color: #000; font-size: 15px; font-weight: 500; padding: 16px 40px; margin-top: 4px; }
+  .furniture { position: absolute; left: 0; right: 0; bottom: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 var(--gutter); }
+  /* The particulars in one line, as a printed programme runs them — they
+     were three glass pills. */
+  .furniture .particulars { font-size: 12px; letter-spacing: .6px; color: var(--ink); }
+  .furniture .cl { font-size: 12px; line-height: 1.5; color: var(--ink-on-photo); text-align: center; max-width: 320px; margin: 0; }
+  .chev { color: rgba(242,241,237,0.7); margin-top: 10px; animation: chev-breathe var(--breath) ease-in-out infinite alternate; }
+  @keyframes chev-breathe { 0% { opacity: .35; } 100% { opacity: .85; } }
 
-  .story { position: relative; background: var(--bg); padding: 34px 26px 0; }
-  .eb { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
-  .sec { margin-bottom: 40px; }
-  .lead { font-size: 27px; font-weight: 300; line-height: 1.32; letter-spacing: -0.2px; color: var(--ink); margin: 0 0 16px; }
-  .para { font-size: 15px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 12px; }
-  .bullets { list-style: none; padding: 0; margin: 0; }
-  .bullets li { font-size: 15px; line-height: 1.5; color: var(--ink-soft); padding-left: 16px; position: relative; margin-bottom: 8px; }
-  .bullets li::before { content: ""; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 999px; background: var(--honey); }
-  .welcome { display: flex; gap: 14px; margin-top: 20px; }
-  .welcome .rule { width: 2px; border-radius: 2px; background: rgba(229,199,102,0.7); flex: none; }
-  .welcome p { font-size: 21px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.3; color: var(--ink); margin: 0; }
+  .story { position: relative; background: var(--bg); padding: 48px var(--gutter) 0; }
+  .story > .sec + .sec { margin-top: 64px; }
+  /* sectionEyebrow — a hairline across the measure, then 10px caps in ink. */
+  .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 0 0 16px; padding-top: 14px; border-top: 0.5px solid var(--line); }
+  .lead { font-size: 27px; font-weight: 300; line-height: 1.38; letter-spacing: -0.4px; color: var(--ink); margin: 0 0 16px; }
+  .para { font-size: 15px; line-height: 1.65; color: var(--ink-soft); margin: 0 0 12px; }
+  .sub { font-size: 14px; color: var(--ink-soft); margin: -10px 0 16px; line-height: 1.5; }
+  /* Welcome line as a pull-quote, ruled by one ember hairline. */
+  .welcome { display: flex; gap: 16px; margin-top: 18px; }
+  .welcome .rule { width: 1px; background: color-mix(in srgb, var(--ember) 80%, transparent); flex: none; }
+  .welcome p { font-size: 21px; font-weight: 300; letter-spacing: -0.3px; line-height: 1.3; color: var(--ink); margin: 0; }
 
-  .elements { display: flex; flex-direction: column; gap: 14px; }
-  .el { padding: 18px; border-radius: 20px; }
+  /* The day's four elements — open on the page under a hairline, an ember
+     glyph, the title (25 light), a muted folio, then a 3px bullet list. */
+  .el { padding: 26px 0; border-top: 0.5px solid var(--line); }
   .el .h { display: flex; align-items: center; justify-content: space-between; }
   .el .h .l { display: flex; align-items: center; gap: 12px; }
-  .el .ic { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; color: var(--honey); flex: none; }
-  .el .ti { font-size: 25px; font-weight: 600; letter-spacing: -0.4px; color: var(--ink); }
+  .el .ic { width: 22px; display: grid; place-items: center; color: var(--ember); flex: none; }
+  .el .ti { font-size: 25px; font-weight: 300; letter-spacing: -0.4px; color: var(--ink); }
   .el .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--muted); }
-  .el .sum { font-size: 15px; line-height: 1.5; color: var(--ink-soft); margin: 12px 0 0; }
-  .el .hl { list-style: none; padding: 0; margin: 12px 0 0; }
-  .el .hl li { font-size: 14px; color: var(--ink); padding: 4px 0 4px 16px; position: relative; }
-  .el .hl li::before { content: ""; position: absolute; left: 0; top: 11px; width: 4px; height: 4px; border-radius: 999px; background: var(--honey); }
+  .el .sum { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 14px 0 0; }
+  .el .hl { list-style: none; padding: 0; margin: 14px 0 0; }
+  .el .hl li { font-size: 14px; color: var(--ink); padding: 0 0 9px 14px; position: relative; }
+  .el .hl li::before { content: ""; position: absolute; left: 0; top: 7px; width: 3px; height: 3px; border-radius: 50%; background: rgba(161,159,153,.6); }
 
-  .quote-card { padding: 22px 20px; border-radius: 22px; }
-  .quote-card .qm { font-size: 64px; font-weight: 600; line-height: .6; color: rgba(229,199,102,0.5); }
-  .quote-card .q { font-size: 20px; font-weight: 300; letter-spacing: -0.2px; line-height: 1.4; color: var(--ink); margin: 6px 0 16px; }
-  .quote-card .au { font-size: 14px; font-weight: 500; color: var(--ink); }
-  .quote-card .at { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .quote .qm { font-size: 56px; font-weight: 100; line-height: .6; height: 26px; color: color-mix(in srgb, var(--ember) 70%, transparent); }
+  .quote .q { font-size: 20px; font-weight: 300; letter-spacing: -0.2px; line-height: 1.45; color: var(--ink); margin: 16px 0 16px; }
+  .quote .au { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .quote .at { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
 
+  /* Guides — initials in a veiled circle (a portrait stand-in, so round),
+     rows divided by hairlines. */
   .guide { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
-  .guide .av { width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; font-weight: 500; color: var(--ink); flex: none; }
+  .guide + .guide { border-top: 0.5px solid var(--line); }
+  .guide .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 500; color: var(--ink); flex: none; }
   .guide .n { font-size: 15px; font-weight: 500; color: var(--ink); }
-  .guide .r { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .guide .r { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 
-  .inclusions { padding: 18px; border-radius: 20px; margin-top: 12px; }
-  .inclusions .eb2 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin: 0 0 12px; }
+  .inclusions { padding-top: 22px; margin-top: 18px; border-top: 0.5px solid var(--line); }
+  .inclusions .eb2 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; }
   .inclusions ul { list-style: none; padding: 0; margin: 0; }
-  .inclusions li { font-size: 14px; line-height: 1.5; color: var(--ink); padding-left: 24px; position: relative; margin-bottom: 8px; }
-  .inclusions li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--honey); }
+  .inclusions li { font-size: 14px; line-height: 1.5; color: var(--ink); padding-left: 24px; position: relative; margin-bottom: 11px; }
+  .inclusions li::before { content: "✓"; position: absolute; left: 0; top: 0; font-size: 11px; font-weight: 300; color: var(--ink-soft); }
 
-  .closing { text-align: center; padding: 12px 0 140px; }
-  .closing h2 { font-size: 22px; letter-spacing: -0.3px; color: var(--ink); margin: 0 0 22px; }
-  .closing .reserve { display: inline-block; background: #fff; color: #000; font-size: 15px; font-weight: 500; padding: 16px 40px; border-radius: 999px; }
+  .closing { text-align: center; padding: 6px 0 140px; }
+  .closing h2 { font-size: 22px; font-weight: 300; letter-spacing: -0.3px; color: var(--ink); margin: 0 0 16px; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -75,8 +86,8 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="topbar">
-    <a class="back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
-    <span class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
+    <a class="back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Back</a>
+    <span class="glyph-btn" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M5 13v7h14v-7"/></svg></span>
   </div>
 
   <div class="screen screen--scroll">
@@ -88,16 +99,15 @@
         <span class="reserve">Request a place</span>
       </div>
       <div class="furniture on-photo">
-        <div class="pills">
-          <span class="meta-pill">Sep 12–18, 2026</span>
-          <span class="meta-pill">12 guests</span>
-          <span class="meta-pill">$4,800</span>
-        </div>
+        <div class="particulars">Sep 12–18 &nbsp;·&nbsp; 12 guests &nbsp;·&nbsp; $4,800</div>
         <p class="cl">A week of slow mornings, sea air, and somatic practice in a restored finca above the Tramuntana coast.</p>
-        <svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6 6 6-6"/></svg>
+        <svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 10l7 4 7-4"/></svg>
       </div>
     </div>
 
+    <!-- Once the cover's CTA scrolls away, a pinned bar fades in at the foot:
+         a square veil (glassBorderHigh) with the name, dates and a square ink
+         "Request a place". It fades, never slides. -->
     <div class="story">
       <div class="sec">
         <p class="eb">The Experience</p>
@@ -107,11 +117,9 @@
 
       <div class="sec">
         <p class="eb">Who This Is For</p>
-        <ul class="bullets">
-          <li>Anyone carrying more than they've had space to put down.</li>
-          <li>People drawn to depth over spectacle — small, real, unhurried.</li>
-          <li>Those who want to be met as they are, not fixed.</li>
-        </ul>
+        <p class="para">Anyone carrying more than they've had space to put down.</p>
+        <p class="para">People drawn to depth over spectacle — small, real, unhurried.</p>
+        <p class="para">Those who want to be met as they are, not fixed.</p>
         <div class="welcome">
           <div class="rule"></div>
           <p>If you've been waiting for permission to rest, consider this it.</p>
@@ -120,54 +128,49 @@
 
       <div class="sec">
         <p class="eb">The Rhythm of Each Day</p>
-        <p class="para" style="margin-bottom:18px">Four movements, repeated gently, so the nervous system can learn the shape of safety.</p>
-        <div class="elements">
-          <div class="el glass">
-            <div class="h"><div class="l"><span class="ic glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><span class="ti">Morning</span></div><span class="folio">01</span></div>
-            <p class="sum">Wake slowly. Tea on the terrace, then a guided breath as the light comes over the ridge.</p>
-            <ul class="hl"><li>Coastal sunrise breath</li><li>Silent first hour</li></ul>
-          </div>
-          <div class="el glass">
-            <div class="h"><div class="l"><span class="ic glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h16M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg></span><span class="ti">Movement</span></div><span class="folio">02</span></div>
-            <p class="sum">Somatic flow and slow strength with the doors open to the garden.</p>
-            <ul class="hl"><li>90-min somatic session</li><li>Optional sea swim</li></ul>
-          </div>
-          <div class="el glass">
-            <div class="h"><div class="l"><span class="ic glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M12 5v14"/></svg></span><span class="ti">Nourishment</span></div><span class="folio">03</span></div>
-            <p class="sum">Long, shared meals from the estate kitchen — local, seasonal, generous.</p>
-            <ul class="hl"><li>Farm-to-table lunches</li><li>Slow communal dinners</li></ul>
-          </div>
-          <div class="el glass">
-            <div class="h"><div class="l"><span class="ic glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 9 9c-4 1-9-2-9-9z"/></svg></span><span class="ti">Evening</span></div><span class="folio">04</span></div>
-            <p class="sum">Circle by candlelight — a place to be honest, then rest deeply.</p>
-            <ul class="hl"><li>Candlelit sharing circle</li><li>Yoga nidra before sleep</li></ul>
-          </div>
+        <p class="sub">Every day is built from four elements.</p>
+        <div class="el">
+          <div class="h"><div class="l"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><span class="ti">Morning</span></div><span class="folio">01</span></div>
+          <p class="sum">Wake slowly. Tea on the terrace, then a guided breath as the light comes over the ridge.</p>
+          <ul class="hl"><li>Coastal sunrise breath</li><li>Silent first hour</li></ul>
+        </div>
+        <div class="el">
+          <div class="h"><div class="l"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 12h16M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg></span><span class="ti">Movement</span></div><span class="folio">02</span></div>
+          <p class="sum">Somatic flow and slow strength with the doors open to the garden.</p>
+          <ul class="hl"><li>90-min somatic session</li><li>Optional sea swim</li></ul>
+        </div>
+        <div class="el">
+          <div class="h"><div class="l"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 12h14M12 5v14"/></svg></span><span class="ti">Nourishment</span></div><span class="folio">03</span></div>
+          <p class="sum">Long, shared meals from the estate kitchen — local, seasonal, generous.</p>
+          <ul class="hl"><li>Farm-to-table lunches</li><li>Slow communal dinners</li></ul>
+        </div>
+        <div class="el">
+          <div class="h"><div class="l"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3a9 9 0 1 0 9 9c-4 1-9-2-9-9z"/></svg></span><span class="ti">Evening</span></div><span class="folio">04</span></div>
+          <p class="sum">Circle by candlelight — a place to be honest, then rest deeply.</p>
+          <ul class="hl"><li>Candlelit sharing circle</li><li>Yoga nidra before sleep</li></ul>
         </div>
       </div>
 
-      <div class="sec">
-        <div class="quote-card glass">
-          <div class="qm">&ldquo;</div>
-          <p class="q">I arrived exhausted and left feeling like myself again. I didn't know how much I'd been holding.</p>
-          <div class="au">Elena R.</div>
-          <div class="at">Mallorca · 2025</div>
-        </div>
+      <div class="sec quote">
+        <p class="eb">A Member's Word</p>
+        <div class="qm">&ldquo;</div>
+        <p class="q">I arrived exhausted and left feeling like myself again. I didn't know how much I'd been holding.</p>
+        <div class="au">Elena R.</div>
+        <div class="at">Mallorca · 2025</div>
       </div>
 
       <div class="sec">
         <p class="eb">Your Guides</p>
-        <p class="para" style="margin-bottom:6px">A small team holds the week — practiced, warm, and unobtrusive.</p>
+        <p class="sub" style="margin-top:-10px">A small team leads the week — you're in attentive hands from the first morning to the last.</p>
         <div class="guide"><span class="av glass">AI</span><div><div class="n">Dr. Anya Iyer</div><div class="r">Somatic Lead</div></div></div>
-        <div class="divider"></div>
         <div class="guide"><span class="av glass">MO</span><div><div class="n">Maya Okonkwo</div><div class="r">Circle Facilitator</div></div></div>
-        <div class="divider"></div>
         <div class="guide"><span class="av glass">JF</span><div><div class="n">Joan Ferrer</div><div class="r">Estate Chef</div></div></div>
       </div>
 
       <div class="sec">
         <p class="eb">Your Stay</p>
         <p class="para">A restored 16th-century finca above the coast — twelve private rooms, terraced gardens, a saltwater pool, and the Mediterranean a short walk down the hill.</p>
-        <div class="inclusions glass">
+        <div class="inclusions">
           <p class="eb2">What's Included</p>
           <ul>
             <li>Six nights, private en-suite room</li>
@@ -179,7 +182,7 @@
         </div>
       </div>
 
-      <div class="closing">
+      <div class="sec closing">
         <h2>12 places. One table.</h2>
         <span class="reserve">Request a place</span>
       </div>

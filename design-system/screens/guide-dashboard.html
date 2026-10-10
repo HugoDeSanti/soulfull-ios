@@ -11,76 +11,78 @@
      opened from the "As a guide" card that only a member linked to a guide
      sees (profile.html). Everything comes from guide_dashboard() (0026),
      which reads the same view as the payout run.
-     Backdrop: the guide's own photo, blur 48 / darken .86, as on their
-     profile. The close button sits in a pinned bar with a bg fade (92% → 60%
-     → clear), so rows pass beneath it rather than through it. */
-  .scr { padding: 120px 20px 60px; }
+     Ground: the ember atmosphere, as on their profile. The close button (a
+     bare ×) sits in a pinned bar with a bg fade (92% → 60% → clear), so rows
+     pass beneath it rather than through it. Sections open under a hairline
+     with a caps label in ink, 56px apart; their rows are open, divided by
+     hairlines — only "this month" is a veil. */
+  .scr { padding: 120px var(--gutter) 60px; }
   .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
     background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent); }
-  .close { position: absolute; top: 66px; right: 22px; z-index: 21; width: 38px; height: 38px; }
-  .head { display: flex; flex-direction: column; align-items: center; text-align: center; }
-  .face { padding: 5px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--honey) 35%, transparent); }
-  .face i { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 32px; font-weight: var(--w-medium); color: var(--ink); border: 1px solid var(--glass-border-high); background: linear-gradient(135deg, #854f4d, #573030); }
-  .head .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 16px 0 0; }
-  .head h1 { font-size: 32px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 10px 0 0; }
-  .head p { font-size: 14px; color: var(--ink-on-photo); margin: 10px 0 0; }
+  .close { position: absolute; top: 62px; right: calc(var(--gutter) - 13px); z-index: 21; }
+  .head { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+  /* A 76pt face — round, with no ring. */
+  .face { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 32px; font-weight: var(--w-medium); color: var(--ink); border: var(--hairline) solid var(--glass-border); background: linear-gradient(135deg, #6b3d38, #40211f); }
+  .head .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.7px; color: var(--ink); margin: 10px 0 0; }
+  .head p { font-size: 14px; color: var(--ink-soft); margin: 10px 0 0; }
 
-  /* This month: honey-tinted glass (6% / 30% stroke). The hero is the
-     estimate — or, while the month's pool isn't set, the share ("12.4%")
-     with no amount at all. Status chip: icon + word, never colour alone. */
-  .month { margin-top: 28px; border-radius: 22px; padding: 20px;
-    background: color-mix(in srgb, var(--honey) 6%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 30%, transparent); }
+  /* This month: a square veil, padding 24. The hero is the estimate — or,
+     while the month's pool isn't set, the share ("12.4%") with no amount at
+     all. Status chip: icon + word, never colour alone. Ember only for the
+     small "Estimate" / "To be paid" marks. */
+  .month { margin-top: 36px; padding: 24px; }
   .month .top { display: flex; justify-content: space-between; align-items: baseline; }
-  .eb-honey { font-size: 10px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--honey); }
+  .eb-m { font-size: 10px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--ink-soft); }
   .chip-st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--w-medium); }
-  .chip-st.est, .chip-st.due { color: var(--honey); }
+  .chip-st.est, .chip-st.due { color: var(--ember); }
   .chip-st.paid { color: var(--accent-soft); }
   .chip-st.pending { color: var(--muted); }
   .hero { font-size: 52px; font-weight: var(--w-light); letter-spacing: -1.4px; color: var(--ink); line-height: 1; margin-top: 14px; }
-  .month .cap { font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin: 10px 0 0; }
-  .hair { height: 1px; background: var(--line); margin: 18px 0; }
+  .month .cap { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 8px 0 0; }
+  .hair { height: 0.5px; background: var(--line); margin: 20px 0; }
   .figs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .fig b { display: block; font-size: 22px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); }
   .fig span { display: block; font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
-  .sec { margin-top: 36px; }
-  .sec h2 { font-size: 22px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0 4px 14px; }
-  .card { border-radius: 22px; padding: 18px; }
+  .secs { margin-top: 64px; }
+  .secs > .sec + .sec { margin-top: 56px; }
+  .sec-t { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 0 0 20px; padding-top: 14px; border-top: 0.5px solid var(--line); }
   .big { font-size: 40px; font-weight: var(--w-light); letter-spacing: -1px; color: var(--ink); line-height: 1; }
-  .card .l1 { font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
-  .card .l2 { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .l1 { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  .l2 { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
   /* People by month: six columns, oldest left. Only the selected month (this
-     one to start with) is honey; the rest inkSoft at 30%. 22pt bars, 4pt
-     rounded data-end, square at the hairline baseline. Tap a column to read
-     it in the line above. Bars grow from the baseline on appear. */
-  .read { display: flex; align-items: baseline; gap: 8px; }
+     one to start with) is ink; the rest inkSoft at 25%. 18pt square bars on
+     a hairline baseline. Tap a column to read it in the line above. Bars grow
+     from the baseline on appear (Theme.Motion.reveal). */
+  .read { display: flex; align-items: baseline; gap: 8px; margin-top: 24px; }
   .read b { font-size: 26px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); }
   .read span { font-size: 13px; color: var(--ink-soft); }
-  .plot { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; height: 120px; align-items: end; border-bottom: 1px solid var(--line); margin-top: 16px; }
-  .plot i { justify-self: center; width: 22px; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--ink-soft) 30%, transparent); }
-  .plot i.on { background: var(--honey); }
+  .plot { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; height: 120px; align-items: end; border-bottom: 0.5px solid var(--line); margin-top: 16px; }
+  .plot i { justify-self: center; width: 18px; background: color-mix(in srgb, var(--ink-soft) 25%, transparent); }
+  .plot i.on { background: var(--ink); }
   .ticks { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
   .ticks span { text-align: center; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
   .ticks span.on { color: var(--ink); }
 
-  .paid-line { display: flex; align-items: center; gap: 8px; margin: 0 4px 14px; font-size: 13px; color: var(--ink-soft); text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  .paid-line { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13px; color: var(--ink-soft); }
   .paid-line b { margin-left: auto; font-size: 15px; font-weight: var(--w-medium); color: var(--ink); }
-  .rows { display: flex; flex-direction: column; gap: 10px; }
-  .mrow { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 22px; }
-  .mrow .tx { flex: 1; min-width: 0; }
+  .rows { display: flex; flex-direction: column; }
+  .mrow, .prow { display: flex; align-items: center; gap: 12px; padding: 18px 0; }
+  .rows > * + * { border-top: 0.5px solid var(--line); }
+  .mrow .tx, .prow .tx { flex: 1; min-width: 0; }
   .mrow h3, .prow h3 { font-size: 17px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .mrow p, .prow p { font-size: 12px; color: var(--ink-soft); margin: 5px 0 0; }
   .mrow .amt { text-align: right; }
   .mrow .amt b { display: block; font-size: 16px; font-weight: var(--w-medium); color: var(--ink); font-variant-numeric: tabular-nums; margin-bottom: 7px; }
 
-  /* A practice anyone opened, most people first: 40pt glyph disc, title,
-     KIND · minutes heard (sessions) or N finished (written), "+N this month"
-     in honey, and the all-time people count on the right. */
-  .prow { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 22px; }
-  .prow .g { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-soft); background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--glass-border); flex: none; }
-  .prow .tx { flex: 1; min-width: 0; }
-  .prow .new { font-size: 11px; font-weight: var(--w-medium); color: var(--honey); margin-top: 4px; }
+  /* A practice anyone opened, most people first: a bare light glyph (no
+     disc), title, KIND · minutes heard (sessions) or N finished (written),
+     "+N this month" in ember, and the all-time people count on the right. */
+  .prow { gap: 16px; }
+  .prow .g { width: 28px; display: grid; place-items: center; color: var(--ink-soft); flex: none; }
+  .prow .new { font-size: 11px; font-weight: var(--w-medium); color: var(--ember); margin-top: 4px; }
   .prow .n { text-align: right; }
   .prow .n b { display: block; font-size: 22px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); }
   .prow .n span { font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
@@ -93,15 +95,14 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="bar"></div>
-  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+  <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/retreat-sedona.jpg');filter:saturate(1.15) brightness(.4) blur(48px);transform:scale(1.2)"></div>
-    <div class="vignette vignette--deep"></div>
+    <div class="atmosphere atmosphere--ember"></div>
 
     <div class="head">
-      <div class="face"><i>A</i></div>
-      <div class="on-photo">
+      <div class="face">A</div>
+      <div>
         <p class="eb">Guide dashboard</p>
         <h1>Alma Guerra</h1>
         <p>Who practiced with you, and what it earned.</p>
@@ -110,8 +111,8 @@
 
     <div class="month glass">
       <div class="top">
-        <span class="eb-honey">October so far</span>
-        <span class="chip-st est"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 6-6"/></svg>Estimate</span>
+        <span class="eb-m">October so far</span>
+        <span class="chip-st est"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v18h18M7 15l4-4 3 3 6-6"/></svg>Estimate</span>
       </div>
       <div class="hero">$310.05</div>
       <!-- Pool not set: hero "12.4%", chip ⧗ "Pool not set" (muted), caption
@@ -126,13 +127,14 @@
       </div>
     </div>
 
+<div class="secs">
     <div class="sec">
-      <h2 class="on-photo">People</h2>
-      <div class="card glass">
+      <p class="sec-t">People</p>
+      <div>
         <div class="big">212</div>
         <div class="l1">people have practiced with you</div>
         <div class="l2">4,918 minutes of your sessions heard, all time</div>
-        <div class="hair"></div>
+        <div class="hair" style="margin:24px 0 0"></div>
         <div class="read"><b>86</b><span>people in October</span></div>
         <div class="plot">
           <i style="height:0"></i><i style="height:14%"></i><i style="height:38%"></i><i style="height:59%"></i><i style="height:86%"></i><i class="on" style="height:100%"></i>
@@ -142,44 +144,45 @@
     </div>
 
     <div class="sec">
-      <h2 class="on-photo">Past months</h2>
+      <p class="sec-t">Past months</p>
       <div class="paid-line"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent-soft)"><path d="M12 2l2.4 2.1 3.2-.3.9 3.1 2.8 1.6-1 3 1 3-2.8 1.6-.9 3.1-3.2-.3L12 22l-2.4-2.1-3.2.3-.9-3.1L2.7 15.5l1-3-1-3 2.8-1.6.9-3.1 3.2.3z"/></svg>Paid to date<b>$380.14</b></div>
-      <!-- First month still running: a glass note — "Your first month is still
+      <!-- First month still running: an open note — "Your first month is still
            running" · "October closes on 1 November. Its pool, your share and
            what you earned will be kept here." -->
       <div class="rows">
-        <div class="mrow glass"><div class="tx"><h3>September 2026</h3><p>1,050 min heard · 11.4% share · 74 people</p></div>
+        <div class="mrow"><div class="tx"><h3>September 2026</h3><p>1,050 min heard · 11.4% share · 74 people</p></div>
           <div class="amt"><b>$284.09</b><span class="chip-st paid">✓ Paid Oct 3</span></div></div>
-        <div class="mrow glass"><div class="tx"><h3>August 2026</h3><p>1,120 min heard · 9.9% share · 51 people</p></div>
+        <div class="mrow"><div class="tx"><h3>August 2026</h3><p>1,120 min heard · 9.9% share · 51 people</p></div>
           <div class="amt"><b>$198.40</b><span class="chip-st due">◷ To be paid</span></div></div>
-        <div class="mrow glass"><div class="tx"><h3>July 2026</h3><p>960 min heard · 13.0% share · 33 people</p></div>
+        <div class="mrow"><div class="tx"><h3>July 2026</h3><p>960 min heard · 13.0% share · 33 people</p></div>
           <div class="amt"><b>–</b><span class="chip-st pending">⧗ Pool not set</span></div></div>
-        <div class="mrow glass"><div class="tx"><h3>June 2026</h3><p>585 min heard · 9.6% share · 12 people</p></div>
+        <div class="mrow"><div class="tx"><h3>June 2026</h3><p>585 min heard · 9.6% share · 12 people</p></div>
           <div class="amt"><b>$96.05</b><span class="chip-st paid">✓ Paid Jul 3</span></div></div>
       </div>
     </div>
 
     <div class="sec">
-      <h2 class="on-photo">Your practices</h2>
-      <!-- None opened yet: a glass note — "Nobody has opened one yet". -->
+      <p class="sec-t">Your practices</p>
+      <!-- None opened yet: an open note — "Nobody has opened one yet". -->
       <div class="rows">
-        <div class="prow glass"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></span>
+        <div class="prow"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></span>
           <div class="tx"><h3>Breath of Fire</h3><p>Session · 2,760 min heard</p><div class="new">+38 this month</div></div>
           <div class="n"><b>141</b><span>People</span></div></div>
-        <div class="prow glass"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13" cy="4" r="2"/><path d="M9 21l2-7 3 3v4M7 12l3-4 4 1 3 3"/></svg></span>
+        <div class="prow"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="13" cy="4" r="2"/><path d="M9 21l2-7 3 3v4M7 12l3-4 4 1 3 3"/></svg></span>
           <div class="tx"><h3>Morning Mobility</h3><p>Movement · 25 finished</p><div class="new">+9 this month</div></div>
           <div class="n"><b>40</b><span>People</span></div></div>
       </div>
     </div>
 
     <div class="sec">
-      <h2 class="on-photo">Digital retreats</h2>
+      <p class="sec-t">Digital retreats</p>
       <div class="rows">
-        <div class="prow glass"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15M5 19l8-8"/></svg></span>
+        <div class="prow"><span class="g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15M5 19l8-8"/></svg></span>
           <div class="tx"><h3>Finding Ground</h3><p>34 on it now · 12 finished</p></div></div>
       </div>
     </div>
 
+    </div>
   </div>
   <div class="home-indicator"></div>
 </div></div>

@@ -1,69 +1,109 @@
 /* ============================================================================
    Soulfull Gatherings — Design Tokens
-   1:1 mirror of SoulfullGatherings/Core/DesignSystem/Theme.swift
+   1:1 mirror of SoulfullGatherings/Core/DesignSystem/Theme.swift (+ Atmosphere.swift)
 
    Every variable here maps to a single Swift constant. When the UX team edits a
    value, change the matching `Theme.*` token in Theme.swift. The Swift source of
    truth stores colors as RGB 0–1; the hex values below are the exact sRGB
    conversions (round to nearest 8-bit channel).
 
+   The direction ("still", 2026-10-10): black and near-white as the Open app is
+   laid, colour only in photography and the atmosphere washes; no rounded
+   corners; motion fades and settles, never bounces; space is part of the page.
+
    Theme.swift            ->  CSS variable
    --------------------------------------------------------------------------
-   Theme.bg               ->  --bg
+   Theme.bg               ->  --bg                (true black)
    Theme.bgDeep           ->  --bg-deep
    Theme.surface          ->  --surface
    Theme.line             ->  --line              (white @ 0.10)
-   Theme.glassBorder      ->  --glass-border      (white @ 0.14)
-   Theme.glassBorderHigh  ->  --glass-border-high (white @ 0.18)
+   Theme.glassBorder      ->  --glass-border      (white @ 0.12)
+   Theme.glassBorderHigh  ->  --glass-border-high (white @ 0.22)
    Theme.accent           ->  --accent
    Theme.accentSoft       ->  --accent-soft
    Theme.ink              ->  --ink
    Theme.inkSoft          ->  --ink-soft
    Theme.muted            ->  --muted
    Theme.inkOnPhoto       ->  --ink-on-photo      (ink @ 0.92)
-   Theme.honey            ->  --honey
+   Theme.ember            ->  --ember             (was Theme.honey / --honey)
    Theme.danger           ->  --danger
-   Theme.cardRadius       ->  --card-radius       (22)
-   Theme.pillRadius       ->  --pill-radius       (999)
+   Theme.hairline         ->  --hairline          (0.75)
+   Theme.gutter           ->  --gutter            (24)
+   Theme.sectionGap       ->  --section-gap       (64)
+   Theme.Motion.*         ->  --ease-* / --breath
    Theme.splash           ->  --grad-splash
    Theme.photoVignette    ->  --grad-photo-vignette
+   Atmosphere(tone:)      ->  --atmos-<tone>-top/-mid/-low, --atmos-reach,
+                              --atmos-intensity (laid by .atmosphere in app.css)
+   (Theme.cardRadius and Theme.pillRadius are gone: every corner is square.)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;500;600;700&display=swap');
 
 :root {
   /* ---- Canvas ---- */
-  --bg:        #0b0c07;   /* rgb(0.043, 0.047, 0.027) */
-  --bg-deep:   #10120a;   /* rgb(0.063, 0.069, 0.039) */
-  --surface:   #15170d;   /* rgb(0.082, 0.090, 0.051) */
+  --bg:        #000000;   /* Color.black */
+  --bg-deep:   #090908;   /* rgb(0.035, 0.035, 0.031)  the docked bar */
+  --surface:   #10100e;   /* rgb(0.063, 0.063, 0.055) */
 
-  /* ---- Hairlines & glass strokes (white at alpha) ---- */
+  /* ---- Hairlines & surface strokes (white at alpha) ---- */
   --line:              rgba(255,255,255,0.10);
-  --glass-border:      rgba(255,255,255,0.14);
-  --glass-border-high: rgba(255,255,255,0.18);
+  --glass-border:      rgba(255,255,255,0.12);
+  --glass-border-high: rgba(255,255,255,0.22);
 
   /* ---- Brand accents ---- */
-  --accent:      #3e4315; /* rgb(0.244, 0.263, 0.082)  olive-green logo */
-  --accent-soft: #77803b; /* rgb(0.467, 0.502, 0.231)  lifted sage */
+  --accent:      #3e4315; /* rgb(0.244, 0.263, 0.082)  the logo's olive: moss deep */
+  --accent-soft: #7d8738; /* rgb(0.490, 0.529, 0.220)  moss light */
 
   /* ---- Text ---- */
-  --ink:      #f5f3e8;    /* rgb(0.961, 0.953, 0.910)  warm cream */
-  --ink-soft: #c9c5b0;    /* rgb(0.788, 0.773, 0.690)  muted cream */
-  --muted:    #7a7663;    /* rgb(0.478, 0.463, 0.388)  tertiary/metadata — on glass only */
-  --ink-on-photo: rgba(245,243,232,0.92);  /* Theme.inkOnPhoto — body copy laid on a photo */
-  --honey:    #e5c766;    /* rgb(0.898, 0.780, 0.400)  amber glow / selected */
+  --ink:      #f2f1ed;    /* rgb(0.949, 0.945, 0.929)  near-white, faintly warm */
+  --ink-soft: #a19f99;    /* rgb(0.631, 0.624, 0.600)  warm grey */
+  --muted:    #6b6964;    /* rgb(0.420, 0.412, 0.392)  tertiary/metadata — on black, glass or a card */
+  --ink-on-photo: rgba(242,241,237,0.92);  /* Theme.inkOnPhoto — body copy laid on a photo */
+  --ember:    #d08c5e;    /* rgb(0.816, 0.549, 0.369)  copper — the one warm mark, used sparingly */
   --danger:   #d95c54;    /* rgb(0.85, 0.36, 0.33)     muted brick — irreversible actions (Delete account) */
 
   /* ---- Gradients ---- */
-  /* Theme.splash — amber→sage→coal, topLeading→bottomTrailing */
-  --grad-splash: linear-gradient(135deg, #4d531c 0%, #3e4315 50%, #2c3010 100%);
+  /* Theme.splash — moss falling to black, top→bottom */
+  --grad-splash: linear-gradient(180deg, #444b16 0%, #1f220c 50%, #000000 100%);
   /* Theme.photoVignette — black 0.22 → 0.46 → 0.66, top→bottom */
   --grad-photo-vignette: linear-gradient(180deg,
       rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.46) 55%, rgba(0,0,0,0.66) 100%);
 
-  /* ---- Shape ---- */
-  --card-radius: 22px;    /* Theme.cardRadius */
-  --pill-radius: 999px;   /* Theme.pillRadius */
+  /* ---- Atmosphere (Atmosphere.swift) — black with one wash falling from the
+     top: tone → mid → low → black, at 0 / 0.38 / 0.72 / 1 of `reach`. The
+     tones are at full strength here; `.atmosphere` (app.css) lays them at
+     `--atmos-intensity` over black and breathes them (× 0.78 ↔ 1 over two
+     breaths). A page ground is the default (reach 0.5, intensity 0.55); a
+     card that carries a full wash (Home's ritual) sets
+     `--atmos-reach: 115%; --atmos-intensity: 1` on itself. */
+  --atmos-reach: 50%;
+  --atmos-intensity: 0.55;
+  --atmos-moss-top:  #3d4416;  /* rgb(0.239, 0.267, 0.086) */
+  --atmos-moss-mid:  #262b0d;  /* rgb(0.149, 0.169, 0.051) */
+  --atmos-moss-low:  #11130a;  /* rgb(0.067, 0.075, 0.039) */
+  --atmos-ember-top: #663316;  /* rgb(0.400, 0.200, 0.086) */
+  --atmos-ember-mid: #3d1d0b;  /* rgb(0.239, 0.114, 0.043) */
+  --atmos-ember-low: #1a0b04;  /* rgb(0.102, 0.043, 0.016) */
+  --atmos-dusk-top:  #5d312c;  /* rgb(0.365, 0.192, 0.173) */
+  --atmos-dusk-mid:  #361a19;  /* rgb(0.212, 0.102, 0.098) */
+  --atmos-dusk-low:  #160a0a;  /* rgb(0.086, 0.039, 0.039) */
+  --atmos-slate-top: #242e3f;  /* rgb(0.141, 0.180, 0.247) */
+  --atmos-slate-mid: #151b26;  /* rgb(0.082, 0.106, 0.149) */
+  --atmos-slate-low: #090b10;  /* rgb(0.035, 0.043, 0.063) */
+
+  /* ---- Shape & space ---- */
+  --hairline: 0.75px;     /* Theme.hairline — every surface / ghost-button stroke */
+  --gutter: 24px;         /* Theme.gutter — the page's side margin */
+  --section-gap: 64px;    /* Theme.sectionGap — between a page's sections */
+
+  /* ---- Motion (Theme.Motion) — eases only; nothing springs ---- */
+  --ease-press:   .12s ease-out;     /* press: the surface dims to 0.55 */
+  --ease-release: .5s ease-in-out;
+  --ease-settle:  .6s ease-in-out;   /* a state changing */
+  --ease-reveal:  1.1s ease-out;     /* content arriving */
+  --ease-stage:   1.2s ease-in-out;  /* stage handoff (crossfade) */
+  --breath: 6s;                      /* the period of every idle loop */
 
   /* ---- Type ---- */
   /* The app is ALL Geist — no serif / SF Pro split. Headlines use negative

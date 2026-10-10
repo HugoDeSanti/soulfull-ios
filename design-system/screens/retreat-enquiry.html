@@ -12,30 +12,32 @@
      soulfullgatherings.com; they live in Swift as RetreatEnquiry.Question.
      Reaching it requires an account: the Email answer IS the account's
      address, so it is shown locked rather than asked for. */
-  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
-  .scr { padding: 86px 24px 48px; position: relative; z-index: 3; }
+  /* On the ember atmosphere: no photo behind the copy, so no text halo.
+     Every control sits on one square surface (fieldSurface): a frost, a
+     hairline that turns ink while active. Questions 40px apart. */
+  .close { position: absolute; top: 50px; right: calc(var(--gutter) - 14px); z-index: 20; }
+  .scr { padding: 86px var(--gutter) 56px; position: relative; z-index: 3; }
 
-  .head h1 { font-size: 32px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 12px 0 0; }
-  .head p  { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 10px 0 0; }
+  .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 12px 0 0; }
+  .head p  { font-size: 14px; line-height: 1.6; color: var(--ink-soft); margin: 12px 0 0; }
 
-  .q { margin-top: 30px; }
+  .q { margin-top: 40px; }
   /* Question title — Theme.body(15, weight: .medium) on Theme.ink */
   .q > .q-title { font-size: 15px; font-weight: 500; color: var(--ink); }
   .q > .q-title .opt { font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); margin-left: 8px; }
-  /* Helper line — Theme.body(12) on Theme.inkOnPhoto */
-  .q > .q-help { font-size: 12px; line-height: 1.45; color: var(--ink-on-photo); margin-top: 5px; }
-  /* .on-photo goes on the copy only. The controls below are UIKit-backed in
-     the app, where a text shadow over one is rendering gotcha #1. */
-  .q > .q-title, .q > .q-help { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }
+  /* Helper line — Theme.body(12) on Theme.inkSoft */
+  .q > .q-help { font-size: 12px; line-height: 1.5; color: var(--ink-soft); margin-top: 5px; }
   .q .control { margin-top: 12px; }
 
   /* One field surface for every control (RetreatEnquiryView.fieldSurface) */
   .fld {
     display: flex; align-items: center; gap: 10px;
-    padding: 16px 18px; border-radius: 16px;
+    padding: 16px 18px;
+    background: rgba(255,255,255,0.03); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: var(--hairline) solid var(--glass-border);
     font-size: 16px; color: var(--ink);
   }
-  .fld.focus { border-color: var(--glass-border-high); }
+  .fld.focus { border-color: rgba(242,241,237,0.6); }
   .fld .ph { color: var(--muted); }
   .fld .cal { margin-left: auto; color: var(--ink-soft); }
   /* Email — shown, not asked. Same surface as every other answer, at reduced
@@ -47,22 +49,24 @@
   .pair .fld { flex: 1; }
   .area { min-height: 136px; align-items: flex-start; }
 
-  /* Radio row — the choice questions */
+  /* Choice row — a square mark instead of a radio circle; chosen = an ink
+     hairline around the row, a filled ink square in the mark, Medium text. */
   .choice {
     display: flex; align-items: flex-start; gap: 12px;
-    padding: 14px 16px; border-radius: 16px;
+    padding: 16px 18px;
     font-size: 14px; line-height: 1.4; color: var(--ink);
-    background: rgba(255,255,255,0.06);
+    background: rgba(242,241,237,0.02); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: var(--hairline) solid var(--glass-border);
   }
   .choice + .choice { margin-top: 10px; }
-  .choice .dot { flex: none; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--ink-soft); margin-top: 1px; }
-  .choice.on { background: rgba(255,255,255,0.13); border-color: rgba(229,199,102,0.55); font-weight: 500; }
-  .choice.on .dot { border-color: var(--honey); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 9px var(--honey); }
+  .choice .dot { flex: none; width: 16px; height: 16px; border: var(--hairline) solid rgba(161,159,153,.6); margin-top: 1px; display: grid; place-items: center; }
+  .choice.on { background: rgba(242,241,237,0.06); border-color: rgba(242,241,237,0.7); font-weight: 500; }
+  .choice.on .dot { border-color: var(--ink); }
+  .choice.on .dot::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
 
-  .submit { margin-top: 32px; }
-  .gaps { font-size: 12px; line-height: 1.5; color: var(--ink-on-photo); text-align: center; margin-top: 12px; }
-  .note { font-size: 11px; line-height: 1.5; color: var(--ink-soft); text-align: center; margin-top: 12px; }
-  .gaps, .note { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }
+  .submit { margin-top: 44px; }
+  .gaps { font-size: 12px; line-height: 1.5; color: var(--ink-soft); text-align: center; margin-top: 12px; }
+  .note { font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; margin-top: 12px; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -71,26 +75,25 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+  <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll">
-    <!-- The retreat's own photograph, carried through from the detail screen -->
-    <div class="photo photo--blur22" style="background-image:url('../assets/retreat-mallorca.jpg')"></div>
-    <div class="vignette vignette--deep"></div>
-    <div class="top-scrim"></div>
+    <!-- Atmosphere(tone: .ember). It used to be the retreat's photo blurred
+         into a tint. -->
+    <div class="atmosphere atmosphere--ember"></div>
 
     <div class="scr">
       <div class="head">
-        <div class="eyebrow on-photo">Join a retreat</div>
-        <h1 class="on-photo">Request a place</h1>
+        <div class="eyebrow">Join a retreat</div>
+        <h1>Request a place</h1>
         <p>Our groups are kept intentionally small. This form lets us know you a little before we connect on an enrollment call.</p>
       </div>
 
       <div class="q">
         <div class="q-title">Name</div>
         <div class="control pair">
-          <span class="fld glass">Hugo</span>
-          <span class="fld glass"><span class="ph">Last name</span></span>
+          <span class="fld">Hugo</span>
+          <span class="fld"><span class="ph">Last name</span></span>
         </div>
       </div>
 
@@ -98,26 +101,26 @@
         <div class="q-title">Date of Birth</div>
         <div class="q-help">Guests must be above legal age to join.</div>
         <div class="control">
-          <span class="fld glass"><span class="ph">Select your date of birth</span>
-            <svg class="cal" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <span class="fld"><span class="ph">Select your date of birth</span>
+            <svg class="cal" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
           </span>
         </div>
       </div>
 
       <div class="q">
         <div class="q-title">Where are you based?</div>
-        <div class="control"><span class="fld glass"><span class="ph">City, country</span></span></div>
+        <div class="control"><span class="fld"><span class="ph">City, country</span></span></div>
       </div>
 
       <div class="q">
         <div class="q-title">Phone</div>
         <div class="q-help">Please make sure you can receive WhatsApp messages.</div>
-        <div class="control"><span class="fld glass"><span class="ph">+34 600 000 000</span></span></div>
+        <div class="control"><span class="fld"><span class="ph">+34 600 000 000</span></span></div>
       </div>
 
       <div class="q">
         <div class="q-title">Instagram <span class="opt">optional</span></div>
-        <div class="control"><span class="fld glass"><span class="ph">@yourhandle</span></span></div>
+        <div class="control"><span class="fld"><span class="ph">@yourhandle</span></span></div>
       </div>
 
       <div class="q">
@@ -125,25 +128,25 @@
         <!-- Options come from the live `retreats` catalog, preselected to the
              retreat the guest opened this from — not a hardcoded list. -->
         <div class="control">
-          <div class="choice glass on"><span class="dot"></span>Mallorca, Spain (July 21–26, 2027)</div>
-          <div class="choice glass"><span class="dot"></span>Lapland, Finland (January 10–15, 2027)</div>
-          <div class="choice glass"><span class="dot"></span>Chamonix, France (February 2–7, 2027)</div>
-          <div class="choice glass"><span class="dot"></span>Dolomites, Italy (September 8–13, 2027)</div>
+          <div class="choice on"><span class="dot"></span>Mallorca, Spain (July 21–26, 2027)</div>
+          <div class="choice"><span class="dot"></span>Lapland, Finland (January 10–15, 2027)</div>
+          <div class="choice"><span class="dot"></span>Chamonix, France (February 2–7, 2027)</div>
+          <div class="choice"><span class="dot"></span>Dolomites, Italy (September 8–13, 2027)</div>
         </div>
       </div>
 
       <div class="q">
         <div class="q-title">A little about you and why this retreat called you in.</div>
         <div class="q-help">Help us get to know you, your lifestyle, personality and professional side. We'd love to know why this retreat called you in.</div>
-        <div class="control"><span class="fld glass area"><span class="ph">A few lines is plenty.</span></span></div>
+        <div class="control"><span class="fld area"><span class="ph">A few lines is plenty.</span></span></div>
       </div>
 
       <div class="q">
         <div class="q-title">Where are you in your decision?</div>
         <div class="control">
-          <div class="choice glass"><span class="dot"></span>Definitely want to know more</div>
-          <div class="choice glass"><span class="dot"></span>Really excited about all of it, but want to know more</div>
-          <div class="choice glass on"><span class="dot"></span>I'm completely ready to join</div>
+          <div class="choice"><span class="dot"></span>Definitely want to know more</div>
+          <div class="choice"><span class="dot"></span>Really excited about all of it, but want to know more</div>
+          <div class="choice on"><span class="dot"></span>I'm completely ready to join</div>
         </div>
       </div>
 
@@ -151,7 +154,7 @@
         <div class="q-title">Email</div>
         <div class="q-help">The address on your Soulfull account. We'll reply here.</div>
         <div class="control">
-          <span class="fld glass locked">
+          <span class="fld locked">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9h-2zM9 7a3 3 0 0 1 6 0v2H9V7z"/></svg>
             hugo@soulfullgatherings.com
           </span>
@@ -161,16 +164,16 @@
       <div class="q">
         <div class="q-title">What's the investment you usually allocate when selecting an all-inclusive experience abroad, considering being around people just like you?</div>
         <div class="control">
-          <div class="choice glass"><span class="dot"></span>€3500+</div>
-          <div class="choice glass on"><span class="dot"></span>€4,500+</div>
-          <div class="choice glass"><span class="dot"></span>€5,500+</div>
-          <div class="choice glass"><span class="dot"></span>€6,500+</div>
+          <div class="choice"><span class="dot"></span>€3500+</div>
+          <div class="choice on"><span class="dot"></span>€4,500+</div>
+          <div class="choice"><span class="dot"></span>€5,500+</div>
+          <div class="choice"><span class="dot"></span>€6,500+</div>
         </div>
       </div>
 
       <div class="q">
         <div class="q-title">Do you know a past member of Soulfull Gatherings? If so, who? <span class="opt">optional</span></div>
-        <div class="control"><span class="fld glass"><span class="ph">Their name</span></span></div>
+        <div class="control"><span class="fld"><span class="ph">Their name</span></span></div>
       </div>
 
       <button class="sg-btn sg-btn--filled submit">Submit</button>

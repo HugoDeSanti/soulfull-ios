@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .pv { position: relative; height: 230px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); }
-  .pv .lab { position: absolute; left: 12px; bottom: 12px; z-index: 3; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
+  .pv { position: relative; height: 230px; overflow: hidden; border: 0.5px solid var(--line); }
+  .pv .lab { position: absolute; left: 12px; bottom: 12px; z-index: 3; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); }
   .img { position: absolute; inset: 0; background: url('../assets/onb-bg.jpg') center/cover; }
   .swiftnote { margin-top: 22px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   code { color: var(--ink-soft); }
@@ -17,15 +17,17 @@
 </head><body>
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Components</p>
-  <h1 class="canvas-headline">PhotoBackdrop — blur &amp; darken</h1>
+  <h1 class="canvas-headline">PhotoBackdrop · Atmosphere</h1>
   <div class="grid3">
-    <div class="pv"><div class="img" style="filter:saturate(1.15) brightness(.95)"></div><div class="vignette vignette--soft"></div><span class="lab">blur 0 · darken 0.5</span></div>
-    <div class="pv"><div class="img" style="filter:saturate(1.15) brightness(.95) blur(6px);transform:scale(1.08)"></div><div class="vignette vignette--soft"></div><span class="lab">blur 6 · darken 0.62</span></div>
-    <div class="pv"><div class="img" style="filter:saturate(1.15) brightness(.9) blur(22px);transform:scale(1.18)"></div><div class="vignette vignette--deep"></div><span class="lab">blur 22 · darken 0.78</span></div>
+    <div class="pv"><div class="img" style="filter:saturate(.9) brightness(.95)"></div><div class="vignette vignette--soft"></div><span class="lab">photo · blur 0</span></div>
+    <div class="pv"><div class="img" style="filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.08)"></div><div class="vignette vignette--soft"></div><span class="lab">photo · blur 6 · darken 0.62</span></div>
+    <div class="pv"><div class="atmosphere atmosphere--moss"></div><span class="lab">Atmosphere · moss</span></div>
   </div>
   <p class="swiftnote">
-    Solid <code>Theme.bg</code> floor → blurred/saturated image (contained in a <code>Color.clear</code> overlay so <code>scaledToFill</code> can't
-    inflate layout) → top→bottom vignette. <code>blur</code> and <code>darken</code> vary per screen. No film grain over photography.
+    <code>PhotoBackdrop</code> is only for screens where the photograph is the content — Welcome, onboarding, the retreat stack and detail:
+    a <code>Theme.bg</code> floor → the image (saturation .9, blur ≤ 6, contained in a <code>Color.clear</code> overlay so <code>scaledToFill</code>
+    can't inflate layout) → a top→bottom vignette → the top scrim. Every other screen sits on <code>Atmosphere</code>: black, with one tone
+    falling from the top (moss · ember · dusk · slate), breathing slowly. A content photo is never blurred into a page's tint any more.
   </p>
 </div></div>
 </body></html>

@@ -7,12 +7,15 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .halo { position: absolute; top: 50%; left: 50%; width: 520px; height: 520px; transform: translate(-50%,-58%);
-    background: radial-gradient(circle, rgba(255,255,255,0.20), transparent 62%); filter: blur(24px);
-    animation: halo-breathe 5.5s ease-in-out infinite alternate; }
-  .logo { position: absolute; top: 50%; left: 50%; width: 220px; transform: translate(-50%,-58%); }
-  .tap { position: absolute; left: 0; right: 0; bottom: 50px; text-align: center; font-size: 11px; letter-spacing: 3.4px;
-    text-transform: uppercase; color: rgba(255,255,255,0.92); animation: breathe 2.8s ease-in-out infinite alternate; }
+  /* WelcomeView.splash — the wordmark alone, with the photograph and space
+     around it. It breathes in light (opacity .8–1, scale .985–1.015); the
+     halo that used to glow behind it is gone. */
+  .logo { position: absolute; top: 50%; left: 50%; width: 180px; transform: translate(-50%,-50%); }
+  .logo.breathing { animation: logo-breathe var(--breath) ease-in-out infinite alternate; }
+  @keyframes logo-breathe { 0% { opacity: .8; transform: translate(-50%,-50%) scale(.985); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1.015); } }
+  .tap { position: absolute; left: 0; right: 0; bottom: 46px; text-align: center; font-size: 11px; letter-spacing: 3.4px;
+    text-transform: uppercase; color: var(--ink-soft); animation: tap-breathe var(--breath) ease-in-out infinite alternate; }
+  @keyframes tap-breathe { 0% { opacity: .4; } 100% { opacity: .9; } }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -21,12 +24,11 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
   <div class="screen">
-    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.15) brightness(.9) blur(6px);transform:scale(1.1)"></div>
-    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.5),rgba(0,0,0,.72))"></div>
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.06)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30),rgba(0,0,0,.62))"></div>
     <div class="top-scrim"></div>
-    <div class="halo"></div>
     <img class="logo breathing" src="../assets/logo.png" alt="Soulfull">
-    <div class="tap">Tap to continue</div>
+    <div class="tap on-photo">Tap to continue</div>
   </div>
   <div class="home-indicator"></div>
 </div></div>

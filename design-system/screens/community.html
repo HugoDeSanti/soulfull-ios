@@ -8,11 +8,12 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   /* Features/Community/CommunityView.swift. What everyone (or just your
-     friends) has finished lately: one glass row per finished practice, the
-     member's face beside it, grouped Today / Yesterday / Earlier. The feed is
+     friends) has finished lately: one open row per finished practice on the
+     dusk atmosphere, a hairline between rows, the member's face beside it,
+     grouped Today / Yesterday / Earlier. The feed is
      open to a guest; the Friends filter and the Friends screen are behind the
      account gate. Journal prompts never appear here.
-     Every other member's line ends in the like pill, then "⋯" (.member-menu
+     Every other member's line ends in the heart, then "⋯" (.member-menu
      in app.css): Report (open to a guest → report-member) and Block (behind
      the gate). Your own line has no ⋯.
      BLOCK CONFIRMATION — a system action sheet (confirmationDialog in
@@ -22,70 +23,79 @@
      ends. They won't be told. You can unblock them from the You tab.";
      buttons Block (destructive, red) / Cancel. The same sheet confirms a
      block from friends and notifications. Unblocking: blocked-members. */
-  .scr { padding-top: 60px; padding-bottom: 130px; }
-  .hdr { display: flex; align-items: flex-start; gap: 16px; padding: 0 20px; }
+  .scr { padding-top: 64px; padding-bottom: 130px; }
+  .scr > * + * { margin-top: 36px; }
+  .hdr { display: flex; align-items: flex-start; gap: 16px; padding: 0 var(--gutter); }
   .hdr .tx { flex: 1; min-width: 0; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
-  .sub { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 6px 0 0; }
+  h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 6px 0 0; }
+  .sub { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 6px 0 0; }
 
-  /* AvatarView — photo, or the initial on one of five brand tones picked by
-     the member's id. 46pt in the feed and the header, 92pt on the You tab. */
-  .av { width: 46px; height: 46px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: 1px solid var(--glass-border-high); background-size: cover; background-position: center; }
-  .av.t0 { background-image: linear-gradient(135deg, #4f5c29, #333d17); }
-  .av.t1 { background-image: linear-gradient(135deg, #8c702e, #614a1a); }
-  .av.t2 { background-image: linear-gradient(135deg, #854f4d, #573030); }
-  .av.t3 { background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
-  .av.t4 { background-image: linear-gradient(135deg, #806b4f, #544530); }
+  /* AvatarView — photo, or the initial on one of five tones picked by the
+     member's id (moss, ember, dusk, slate, umber). 46pt in the feed and the
+     header, 92pt on the You tab. A face — so it stays round. */
+  .av { width: 46px; height: 46px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
+  .av.t0 { background-image: linear-gradient(135deg, #454d1c, #262b0d); }
+  .av.t1 { background-image: linear-gradient(135deg, #73401f, #45210d); }
+  .av.t2 { background-image: linear-gradient(135deg, #6b3d38, #40211f); }
+  .av.t3 { background-image: linear-gradient(135deg, #334054, #1a2130); }
+  .av.t4 { background-image: linear-gradient(135deg, #544533, #30261a); }
   .hdr .av { margin-top: 4px; }
-  .hdr .right { display: flex; gap: 10px; align-items: flex-start; }
-  /* Bell — glass circle, honey badge = unread likes. Opens notifications.html. */
-  .bell { position: relative; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink); margin-top: 4px; }
-  .bell .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--honey); color: #000; font-size: 11px; font-weight: var(--w-semibold); display: flex; align-items: center; justify-content: center; }
-  /* LikeButton — heart + count on a glass capsule; honey fill + tint when
-     yours; bounces on tap, the count rolls. Your own line shows the count
-     only (no button — you can't like your own practice). */
-  .like { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: var(--w-medium); color: var(--ink-soft); flex: none; }
-  .like.on { color: var(--honey); background: color-mix(in srgb, var(--honey) 10%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 35%, transparent); }
-  .like-self { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: var(--w-medium); color: var(--honey); flex: none; }
+  .hdr .right { display: flex; gap: 6px; align-items: flex-start; }
+  /* Bell — a bare light glyph (no circle), the unread count in a small square
+     ember block at its shoulder. Opens notifications.html. */
+  .bell { position: relative; width: 44px; height: 46px; display: flex; align-items: center; justify-content: center; color: var(--ink); margin-top: 4px; }
+  .bell .badge { position: absolute; top: 6px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); color: #000; font-size: 10px; font-weight: var(--w-medium); display: flex; align-items: center; justify-content: center; }
+  /* LikeButton — a bare heart and its count in a 44pt target: ember when
+     yours, inkSoft otherwise; changes crossfade. Your own line shows the
+     count only (no button — you can't like your own practice). */
+  .like { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 44px; height: 44px; font-size: 12px; font-weight: var(--w-medium); color: var(--ink-soft); flex: none; }
+  .like.on { color: var(--ember); }
+  .like-self { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: var(--w-medium); color: var(--ember); flex: none; }
 
-  /* Scope toggle — All | Friends on one glass capsule, a cream lens behind
-     the chosen one (BottomNav's physics at chip scale). */
-  .controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 24px 20px 0; }
-  .scope { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; }
-  .scope button { height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: none; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); letter-spacing: .3px; color: rgba(245,243,232,.85); cursor: pointer; }
-  .scope button.is-active { background: var(--ink); color: #000; box-shadow: 0 3px 8px rgba(0,0,0,.25); }
-  .friends-btn { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px 0 14px; border-radius: 999px; font-size: 13px; font-weight: var(--w-medium); color: var(--ink); }
-  .friends-btn .badge { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--honey); color: #000; font-size: 11px; font-weight: var(--w-semibold); display: inline-flex; align-items: center; justify-content: center; }
+  /* Scope toggle — All · Friends as text tabs, as Open sets its tabs: ink with
+     a 1px ink underline under the chosen one (the line eases across), inkSoft
+     otherwise. No capsule, no lens. */
+  .controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 var(--gutter); }
+  .scope { display: inline-flex; gap: 24px; }
+  .scope button { height: 44px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: .3px; color: var(--ink-soft); cursor: pointer; position: relative; }
+  .scope button.is-active { color: var(--ink); }
+  .scope button.is-active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 10px; height: 1px; background: var(--ink); }
+  /* Friends — a bare glyph and the word; requests waiting = a square ember count. */
+  .friends-btn { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: .3px; color: var(--ink); }
+  .friends-btn .badge { min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); color: #000; font-size: 10px; font-weight: var(--w-medium); display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Push prompt — shown ONCE to a member who has never been asked: a honey-
-     tinted glass card with "Turn on" (honey pill) and "Not now" (remembered).
-     Never at launch; here, where a like is worth something. */
-  .push { display: flex; align-items: center; gap: 14px; margin: 24px 20px 0; padding: 14px; border-radius: 22px; background: color-mix(in srgb, var(--honey) 5%, rgba(255,255,255,.06)); border-color: color-mix(in srgb, var(--honey) 28%, transparent); }
-  .push .ic { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--honey); flex: none; }
+  /* Push prompt — shown ONCE to a member who has never been asked: a square
+     veil with an ember bell, "Turn on" (a square ink block, black text) and
+     "Not now" (remembered). Never at launch; here, where a like is worth
+     something. It fades in. */
+  .push { display: flex; align-items: flex-start; gap: 14px; margin-left: var(--gutter); margin-right: var(--gutter); padding: 20px; }
+  .push .ic { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--ember); flex: none; }
   .push h3 { font-size: 16px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
-  .push p { font-size: 12px; color: var(--ink-soft); margin: 3px 0 0; }
-  .push .ctl { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-  .push .on { height: 32px; padding: 0 14px; border-radius: 999px; background: var(--honey); color: #000; font-size: 13px; font-weight: var(--w-medium); display: inline-flex; align-items: center; }
-  .push .later { font-size: 13px; font-weight: var(--w-medium); color: var(--ink-soft); }
-  .sec { margin-top: 24px; }
-  .rows { display: flex; flex-direction: column; gap: 10px; margin: 0 20px 10px; }
-  /* ActivityRow — "Name practiced Title": name and title in ink at Medium, the
-     verb quieter; eyebrow beneath is the track (or library) and a relative
-     time. Your own lines read "You". */
-  .row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 22px; }
-  .row.mine { padding-right: 18px; }
-  .row .like, .row .like-self { margin-left: auto; }
-  .row .member-menu { margin-left: -4px; }
+  .push p { font-size: 12px; color: var(--ink-soft); margin: 4px 0 0; }
+  .push .ctl { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .push .on { height: 36px; padding: 0 16px; background: var(--ink); color: #000; font-size: 13px; font-weight: var(--w-medium); display: inline-flex; align-items: center; }
+  .push .later { font-size: 13px; font-weight: var(--w-medium); color: var(--ink-soft); padding: 0 6px; }
+  .feed > .sec + .sec { margin-top: 44px; }
+  .feed .section-label { margin-bottom: 4px; }
+  .rows { display: flex; flex-direction: column; margin: 0 var(--gutter); }
+  /* ActivityRow — an open row on black, a hairline between rows (not above
+     the first): "Name practiced Title" (name and title in ink at Medium, the
+     verb quieter); the track and a relative time beneath. Your own lines read
+     "You". */
+  .row { display: flex; align-items: center; gap: 14px; padding: 18px 0; }
+  .row + .row { border-top: 0.5px solid var(--line); }
   .row .tx { flex: 1; min-width: 0; }
-  .row p { margin: 0; font-size: 15px; line-height: 1.35; color: var(--ink-soft); }
+  .row p { margin: 0; font-size: 15px; line-height: 1.4; color: var(--ink-soft); }
   .row p b { font-weight: var(--w-medium); color: var(--ink); }
   .row .meta { display: block; margin-top: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .member-menu { margin: 0 -10px 0 -14px; }
 
-  /* EMPTY STATES (glass card, headline 20 + body 14): All → "Quiet for now";
-     Friends with no friends → "Practice alongside people you know" + "Find
-     friends →"; Friends with none active → "Nothing from your friends yet".
-     Offline / failed use the same two-state copy as Programs. Not drawn. */
+  /* EMPTY STATES (open text under a hairline, headline 20 light + body 14):
+     All → "Quiet for now"; Friends with no friends → "Practice alongside
+     people you know" + "Find friends →" (ember); Friends with none active →
+     "Nothing from your friends yet". Offline / failed use the same two-state
+     copy as Programs. Not drawn. */
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -95,38 +105,35 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(1.1) brightness(.6) blur(24px);transform:scale(1.1)"></div>
-    <div class="vignette vignette--deep"></div>
-    <div class="top-scrim"></div>
-    <div class="aurora" style="opacity:.25;mix-blend-mode:plus-lighter"></div>
+    <div class="atmosphere atmosphere--dusk"></div>
 
     <div class="hdr">
-      <div class="tx on-photo">
+      <div class="tx">
         <p class="eb">Together</p>
         <h1>Community</h1>
         <p class="sub">What the circle is practicing, as it happens.</p>
       </div>
       <div class="right">
-        <div class="bell glass"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><span class="badge">1</span></div>
+        <div class="bell"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><span class="badge">1</span></div>
         <!-- Your own avatar (members only). Tapping opens the You tab, where the photo is set. -->
         <div class="av t1">H</div>
       </div>
     </div>
 
     <div class="controls">
-      <div class="scope glass">
+      <div class="scope">
         <button class="is-active">All</button>
         <button>Friends</button>
       </div>
       <!-- Badge = requests waiting on you. Opens friends.html (account-gated). -->
-      <button class="friends-btn glass">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.4"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2z"/><path d="M18 8v6M15 11h6"/></svg>
+      <button class="friends-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="9" cy="8" r="3.4"/><path d="M3 19c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2z"/><path d="M18 8v6M15 11h6"/></svg>
         Friends <span class="badge">1</span>
       </button>
     </div>
 
     <div class="push glass">
-      <div class="ic glass"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg></div>
+      <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/><circle cx="18" cy="6" r="2.5" fill="currentColor" stroke="none"/></svg></div>
       <div>
         <h3>Hear when someone likes your practice</h3>
         <p>A quiet nudge, only for likes on what you finish.</p>
@@ -134,26 +141,28 @@
       </div>
     </div>
 
+    <div class="feed">
     <div class="sec">
       <div class="section-label"><span class="title">Today</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like glass on"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
-        <div class="row glass mine"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
-        <div class="row glass"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like on"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
+        <div class="row"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Yesterday</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
-        <div class="row glass"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
       <div class="section-label"><span class="title">Earlier</span></div>
       <div class="rows">
-        <div class="row glass"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like glass"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
+    </div>
     </div>
   </div>
 

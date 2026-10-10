@@ -7,41 +7,29 @@
 <link rel="stylesheet" href="shared/frame.css">
 <link rel="stylesheet" href="shared/app.css">
 <style>
-  .cover { width: 920px; max-width: 100%; border-radius: 28px; overflow: hidden; border: 1px solid var(--line); position: relative; }
-  .cover .bg { position: absolute; inset: 0; background: url('assets/retreat-mallorca.jpg') center/cover; filter: brightness(.5) saturate(1.1); }
-  .cover .au { position: absolute; inset: 0; }
-  .cover .inner { position: relative; padding: 64px 56px; }
-  .cover img { width: 96px; }
-  .cover .eb { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,.75); margin: 24px 0 0; }
-  .cover h1 { font-size: 52px; font-weight: 500; letter-spacing: -1px; color: #fff; margin: 10px 0 0; }
-  .cover p { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.82); margin: 16px 0 0; max-width: 540px; }
-  .groups { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-  .grp { font-size: 12px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border); color: #fff; }
-  .note { margin-top: 26px; font-size: 12px; color: rgba(255,255,255,.6); max-width: 560px; line-height: 1.6; }
-  .note code { color: var(--honey); }
+  .cover { width: 920px; max-width: 100%; overflow: hidden; border: 0.5px solid var(--line); position: relative; isolation: isolate; }
+  .cover .bg { position: absolute; inset: 0 0 0 55%; background: url('assets/retreat-mallorca.jpg') center/cover; filter: saturate(.9) brightness(.8);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%); mask-image: linear-gradient(90deg, transparent 0%, #000 45%); }
+  .cover .inner { position: relative; padding: 72px 56px 64px; max-width: 600px; }
+  .cover img { width: 80px; }
+  .cover .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 40px 0 0; }
+  .cover h1 { font-size: 52px; font-weight: 300; letter-spacing: -1.4px; color: var(--ink); margin: 12px 0 0; }
+  .cover p { font-size: 15px; line-height: 1.65; color: var(--ink-soft); margin: 18px 0 0; max-width: 520px; }
+  .groups { margin-top: 40px; padding-top: 14px; border-top: 0.5px solid var(--line); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); line-height: 2; }
+  .note { margin-top: 28px; font-size: 12px; color: var(--muted); max-width: 520px; line-height: 1.7; }
+  .note code { color: var(--ember); }
 </style>
 </head><body>
 <div class="stage">
   <div class="cover">
+    <div class="atmosphere atmosphere--moss" style="--atmos-reach:80%"></div>
     <div class="bg"></div>
-    <div class="au aurora" style="opacity:.5"></div>
-    <div class="vignette vignette--deep"></div>
     <div class="inner">
       <img src="assets/logo.png" alt="Soulfull">
       <p class="eb">Design System · iOS</p>
       <h1>Soulfull Gatherings</h1>
-      <p>A faithful HTML mirror of the SwiftUI app — dark, editorial, all-Geist. Every token, component, and screen maps 1:1 to the codebase so edits here translate straight back to Swift.</p>
-      <div class="groups">
-        <span class="grp">Foundations</span>
-        <span class="grp">Components</span>
-        <span class="grp">Welcome</span>
-        <span class="grp">Onboarding</span>
-        <span class="grp">Home</span>
-        <span class="grp">Digital Retreats</span>
-        <span class="grp">Retreats</span>
-        <span class="grp">Practice</span>
-        <span class="grp">Tabs</span>
-      </div>
+      <p>A faithful HTML mirror of the SwiftUI app — black and near-white, square, still, all-Geist. Every token, component, and screen maps 1:1 to the codebase so edits here translate straight back to Swift.</p>
+      <div class="groups">Foundations · Components · Welcome · Onboarding · Home · Digital Retreats · Retreats · Practice · Tabs</div>
       <p class="note">Edit shared tokens in <code>shared/tokens.css</code> (maps to <code>Theme.swift</code>) and component styles in <code>shared/app.css</code>. Screen cards compose those classes — change a token once and every screen updates. See <code>README.md</code> for the full round-trip workflow.</p>
     </div>
   </div>

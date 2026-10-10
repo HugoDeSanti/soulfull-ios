@@ -7,59 +7,51 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .scr { padding-top: 50px; padding-bottom: 130px; }
-  .hdr { text-align: center; padding: 10px 24px 2px; }
-  .hdr img { width: 84px; }
-  .greet { padding: 6px 24px 0; }
-  .greet .eb { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 0; }
-  .greet h1 { font-size: 38px; font-weight: var(--w-regular); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
-  .greet p { font-size: 14px; color: var(--ink-on-photo); margin: 8px 0 0; }
-  .sec { margin-top: 28px; }
-  .moods { display: flex; gap: 10px; overflow-x: auto; padding: 0 24px; scrollbar-width: none; }
-  .moods::-webkit-scrollbar { display: none; }
+  /* HomeView — on the moss atmosphere (no photo). Sections 64px apart
+     (Theme.sectionGap); everything at the 24px gutter. */
+  .scr { padding-top: 86px; padding-bottom: 130px; }
+  .scr > .sec + .sec { margin-top: 64px; }
+  .hdr { text-align: center; }
+  .hdr img { width: 72px; }
+  .greet { padding: 40px var(--gutter) 0; }
+  .greet .eb { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .greet h1 { font-size: 42px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 0; }
+  .greet .streak { margin-top: 16px; }
+  .greet p { font-size: 14px; color: var(--ink-soft); margin: 16px 0 0; }
+  .moods { margin-top: -10px; }
 
-  .day-open { margin: 0 20px; display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 22px; border: 1px solid color-mix(in srgb, var(--honey) 38%, transparent); }
-  .day-open .thumb { width: 64px; height: 64px; border-radius: 14px; flex: none; background-size: cover; background-position: center; border: 1px solid var(--glass-border); }
+  /* "Day N is open" — a square veil: square 64 thumb, ember eyebrow, a light arrow. */
+  .day-open { margin: 0 var(--gutter); display: flex; gap: 14px; align-items: flex-start; padding: 20px; }
+  .day-open .thumb { width: 64px; height: 64px; flex: none; background-size: cover; background-position: center; }
   .day-open .left { flex: 1; }
-  .day-open .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--honey); margin: 0; }
-  .day-open h3 { font-size: 19px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
+  .day-open .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ember); margin: 0; }
+  .day-open h3 { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
   .day-open .prog-name { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
   .day-open .chev { color: var(--ink-soft); margin-top: 6px; }
+  .continue { margin: 0 var(--gutter); }
 
-  .ritual { margin: 0 20px; position: relative; border-radius: 22px; overflow: hidden; padding: 18px; border: 1px solid var(--glass-border); }
-  .ritual .aurora { opacity: .55; }
-  .ritual .body { position: relative; }
-  .ritual .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin: 0; }
-  .ritual h3 { font-size: 22px; letter-spacing: -0.2px; color: var(--ink); margin: 6px 0 0; }
-  .ritual .meta { font-size: 11.5px; font-weight: 500; color: #fff; opacity: .85; margin: 6px 0 0; }
-  .ritual .begin { display: inline-flex; margin-top: 12px; padding: 8px 14px; border: 1px solid rgba(255,255,255,.85); border-radius: 999px; font-size: 14px; color: #fff; }
+  /* Today's ritual — the page's one warm thing: a full ember wash falling from
+     the card's top edge (Atmosphere reach 1.15, intensity 1, inside the card),
+     as Open lays its daily card. Square, hairline, padding 24. */
+  .ritual { margin: 0 var(--gutter); overflow: hidden; padding: 24px; border: var(--hairline) solid var(--glass-border); }
+  .ritual .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(242,241,237,.8); margin: 0 0 12px; }
+  .ritual h3 { font-size: 28px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
+  .ritual .meta { font-size: 13px; color: rgba(242,241,237,.85); margin: 6px 0 0; }
+  .ritual .begin { display: inline-flex; align-items: center; gap: 8px; margin-top: 34px; padding: 10px 16px;
+    border: var(--hairline) solid rgba(242,241,237,.7); font-size: 12px; font-weight: var(--w-medium); letter-spacing: .4px; color: var(--ink); }
 
-  .journey { margin: 0 20px; display: flex; gap: 14px; align-items: center; }
-  .journey .num { width: 84px; height: 84px; border-radius: 16px; display: grid; place-items: center; font-size: 38px; font-weight: 200; color: var(--ink); flex: none; }
-  .journey .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin: 0; }
-  .journey h4 { font-size: 20px; letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
-  .journey .with { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-  .journey .bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,0.14); margin-top: 10px; overflow: hidden; }
-  .journey .bar i { display: block; width: 43%; height: 100%; background: linear-gradient(90deg, var(--honey), var(--ink)); }
-
-  .rcard { width: 260px; flex: none; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); }
-  .rcard .hero { height: 150px; position: relative; background-size: cover; background-position: center; }
+  /* Shelves: a square photograph with its name set beneath on the page — no
+     box around it, as Open lays its shelves. 260 wide; 170 tall for
+     gatherings, 200 for digital retreats. */
+  .rcard { width: 260px; flex: none; }
+  .rcard .hero { height: 170px; position: relative; background-size: cover; background-position: center; }
   .rcard .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.55)); }
-  .rcard .hero .m { position: absolute; left: 14px; bottom: 12px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
-  .rcard .t { padding: 14px 16px; }
-  .rcard .t .name { font-size: 22px; letter-spacing: -0.2px; color: var(--ink); }
-  .rcard .t .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  /* Digital retreats shelf: the same card with a taller (200pt) cover. */
+  .rcard .hero .m { position: absolute; left: 14px; bottom: 14px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); }
+  .rcard .t { padding-top: 14px; }
+  .rcard .t .name { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.3px; color: var(--ink); }
+  .rcard .t .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
   .rcard--digital .hero { height: 200px; }
-
-  .circle-row { margin: 0 20px 10px; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; border: 1px solid var(--glass-border); }
-  .circle-row .av { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; font-size: 18px; color: var(--ink); flex: none; }
-  .circle-row .live { display: flex; align-items: center; gap: 6px; }
-  /* Static live dot — Home's dots don't animate (matches HomeView). */
-  .circle-row .live .dot { width: 6px; height: 6px; border-radius: 999px; background: #fff; display: inline-block; }
-  .circle-row .live .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
-  .circle-row h5 { font-size: 17px; letter-spacing: -0.3px; color: var(--ink); margin: 3px 0 0; }
-  .circle-row .sub { font-size: 11px; color: var(--muted); margin: 2px 0 0; }
+  .rcard--digital .hero .ov { background: linear-gradient(180deg, transparent, rgba(0,0,0,.62)); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -69,26 +61,32 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="hdr"><img src="../assets/logo.png" alt=""></div>
-    <div class="greet on-photo">
-      <p class="eb">Good morning</p>
-      <h1>Hugo.</h1>
-      <!-- Shown only at >= 2 consecutive days (PracticeProgressStore.streakDays). -->
-      <div class="streak">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4.5 4 8a4 4 0 0 1-8 0c0-1 .3-2 .8-2.8C9 9 9 11 10 11c1.5 0 1-4 2-9Z"/><path d="M12 22a6 6 0 0 0 6-6c0-2-1-4-2.5-5.5.2 3-1.5 4.5-3 4.5s-2.2-1-2-2.5C9 14 6 15.5 6 18a6 6 0 0 0 6 4Z"/></svg>
-        <span>4 days in a row</span>
+    <div class="atmosphere atmosphere--moss"></div>
+    <div class="sec">
+      <div class="hdr"><img src="../assets/logo.png" alt=""></div>
+      <div class="greet">
+        <p class="eb">Good morning,</p>
+        <h1>Hugo.</h1>
+        <!-- Shown only at >= 2 consecutive days (PracticeProgressStore.streakDays). -->
+        <div class="streak">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4.5 4 8a4 4 0 0 1-8 0c0-1 .3-2 .8-2.8C9 9 9 11 10 11c1.5 0 1-4 2-9Z"/><path d="M12 22a6 6 0 0 0 6-6c0-2-1-4-2.5-5.5.2 3-1.5 4.5-3 4.5s-2.2-1-2-2.5C9 14 6 15.5 6 18a6 6 0 0 0 6 4Z"/></svg>
+          <span>4 days in a row</span>
+        </div>
+        <p>Take your time. We're here with you.</p>
       </div>
-      <p>Take your time. We're here with you.</p>
     </div>
 
     <div class="sec">
       <div class="section-label"><span class="title">How do you feel?</span></div>
+      <!-- A mood is a word: inkSoft until chosen, then ink with a hairline
+           under it that fades in. The ritual card below follows it. -->
       <div class="moods">
-        <span class="mood-chip is-active">Tender</span>
-        <span class="mood-chip">Restless</span>
-        <span class="mood-chip">Open</span>
-        <span class="mood-chip">Heavy</span>
-        <span class="mood-chip">Hopeful</span>
+        <span class="mood-chip is-active">Anxious</span>
+        <span class="mood-chip">Grateful</span>
+        <span class="mood-chip">Tired</span>
+        <span class="mood-chip">Joyful</span>
+        <span class="mood-chip">Tender</span>
+        <span class="mood-chip">Calm</span>
       </div>
     </div>
 
@@ -103,7 +101,7 @@
         <h3>Letting go</h3>
         <p class="prog-name">Finding Ground</p>
       </div>
-      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></span>
     </div>
 
     <!-- Continue where you left off. Sits ABOVE the ritual: picking up
@@ -112,28 +110,27 @@
          no card, nothing invented. -->
     <div class="sec continue glass">
       <div class="left">
-        <p class="eb">Continue</p>
+        <p class="eb eyebrow" style="font-size:10px">Continue</p>
         <h3>Coherent Breathing</h3>
         <div class="foot">
           <span class="prog-rule" style="width:64px"><i style="width:38%"></i></span>
           <span class="left-label">6 min left</span>
         </div>
       </div>
-      <span class="play"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+      <span class="play"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
     </div>
 
-    <div class="sec ritual glass">
-      <div class="aurora"></div>
-      <div class="body">
-        <!-- Eyebrow, headline and lead all follow the selected mood chip
-             (MoodChip.ritual / .ritualLead / .suggests). With no chip selected
-             this reads "Today's Ritual" / "Begin where you are". "Begin now"
-             switches to the Practice tab and opens the suggested section. -->
-        <p class="eb">Because you feel anxious</p>
-        <h3>Unwind the jaw</h3>
-        <p class="meta">Release the clench we hold without noticing</p>
-        <span class="begin">Begin now</span>
-      </div>
+    <div class="sec ritual" style="--atmos-reach:115%;--atmos-intensity:1">
+      <div class="atmosphere atmosphere--ember"></div>
+      <!-- Eyebrow, headline and lead all follow the selected mood
+           (MoodChip.ritual / .ritualLead / .suggests). With no mood selected
+           this reads "Today's Ritual" / "Begin where you are" / "A short
+           practice for whatever today is". "Begin now" switches to the
+           Practice tab and opens the suggested section. -->
+      <p class="eb">Because you feel anxious</p>
+      <h3>Unwind the jaw</h3>
+      <p class="meta">Release the clench we hold without noticing</p>
+      <span class="begin">Begin now <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></span>
     </div>
 
     <!-- The two shelves close the page: digital retreats, then upcoming

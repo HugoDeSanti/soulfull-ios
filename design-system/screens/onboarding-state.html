@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .eb { font-size: 12px; letter-spacing: 0.2px; color: rgba(255,255,255,0.75); margin: 0 0 12px; }
+  .eb { font-size: 12px; letter-spacing: 0.2px; color: var(--ink-on-photo); margin: 0 0 18px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
 </style>
 </head><body>
@@ -17,20 +17,20 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
   <div class="screen safe-top">
-    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
-    <div class="vignette vignette--deep"></div>
+    <div class="photo" style="background-image:url('../assets/onb-bg.jpg');filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.06)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30),rgba(0,0,0,.62))"></div>
     <div class="top-scrim"></div>
 
-    <div class="onb-top">
-      <div class="circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="onb-top on-photo">
+      <button class="glyph-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg></button>
       <div class="onb-progress"><div class="onb-track"><div class="onb-fill" style="width:75%"></div></div></div>
       <span class="onb-counter">3/4</span>
       <button class="onb-skip">skip</button>
     </div>
 
     <div class="onb-body">
-      <p class="eb">Choose one</p>
-      <h2 class="onb-q">how is your nervous system today?</h2>
+      <p class="eb on-photo">Choose one</p>
+      <h2 class="onb-q on-photo">how is your nervous system today?</h2>
       <div class="grid2">
         <div class="option-card"><div class="idx">01</div><div class="lbl">Wired &amp; running fast</div></div>
         <div class="option-card is-selected"><div class="idx">02</div><div class="lbl">Tired but holding on</div></div>

@@ -2,6 +2,12 @@
    Soulfull Gatherings — Components & screen styles
    Each block mirrors a Swift view. The header comment names the Swift source so
    a change here maps to a known file.
+
+   The direction is "still" (2026-10-10): black and near-white, colour only in
+   photography and the atmosphere washes; every corner square (only faces, dots
+   and the player's breath ring are round); hairlines instead of boxes where a
+   box only grouped text; a press dims (opacity .55), nothing scales, springs or
+   bounces; things fade in and breathe.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------------
@@ -16,33 +22,81 @@
   color: var(--ink-soft);
   margin: 0;
 }
-.headline { font-family: var(--font); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
+/* Display sizes are Light with tight kerning; nothing heavier than Medium. */
+.headline { font-family: var(--font); font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
 .body     { font-family: var(--font); color: var(--ink-soft); margin: 0; line-height: 1.45; }
 .ink { color: var(--ink); } .ink-soft { color: var(--ink-soft); }
-.muted { color: var(--muted); } .honey { color: var(--honey); }
+.muted { color: var(--muted); } .ember { color: var(--ember); }
+
+/* Hairline rule (the Rectangle().fill(Theme.line).frame(height: 0.5) that
+   replaced boxes across the app: PracticeRule, the feed's rows, GuideCard). */
+.hair, .rule-h { height: 0.5px; background: var(--line); border: 0; margin: 0; }
 
 /* ---------------------------------------------------------------------------
-   Glass surfaces  (SoulGlass.swift — material + hairline; Liquid Glass on iOS26)
+   Veil surfaces  (SoulGlass.swift) — a light frost under a black wash, with a
+   hairline, square. The same on every OS: no Liquid Glass (its lensing and
+   touch-bounce read as playful).
    --------------------------------------------------------------------------- */
 .glass {
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--hairline) solid var(--glass-border);
 }
-.glass-strong { border-color: var(--glass-border-high); background: rgba(255,255,255,0.09); }
-/* GlassCard (Components.swift) */
+.glass-strong { border-color: var(--glass-border-high); }
+/* GlassCard (Components.swift) — padding 20 */
 .glass-card {
-  border-radius: var(--card-radius);
-  padding: 16px;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid var(--glass-border);
+  padding: 20px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--hairline) solid var(--glass-border);
+}
+
+/* Touch (Pressable.swift — SoulPressableStyle): a press is a change of light.
+   Dims to .55 in .12s, comes back over .5s. Never a scale. */
+.sg-press { transition: opacity var(--ease-release); }
+.sg-press:active { opacity: .55; transition: opacity var(--ease-press); }
+
+/* ---------------------------------------------------------------------------
+   Atmosphere  (Atmosphere.swift) — the ground of every screen that isn't a
+   photograph: black, with one tone falling from the top edge, black by
+   --atmos-reach. Page grounds: reach 50%, intensity .55 (tokens.css). Home's
+   ritual card sets `--atmos-reach: 115%; --atmos-intensity: 1` on itself.
+   Breathes: the wash's opacity goes × .78 ↔ 1 over two breaths; holds still
+   under prefers-reduced-motion.
+   --------------------------------------------------------------------------- */
+/* Drop <div class="atmosphere atmosphere--moss"></div> as the first child of
+   a screen (or a card): it sits behind everything else in its parent, which
+   becomes a stacking context. On a scrolling screen it scrolls with the page,
+   which is what the app's `.background { Atmosphere }` does. */
+:where(:has(> .atmosphere)) { position: relative; }
+:has(> .atmosphere) { isolation: isolate; }
+.atmosphere { position: absolute; inset: 0; z-index: -1; background: var(--bg); pointer-events: none; }
+.atmosphere::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    var(--a-top) 0%,
+    var(--a-mid) calc(var(--atmos-reach) * 0.38),
+    var(--a-low) calc(var(--atmos-reach) * 0.72),
+    #000 var(--atmos-reach));
+  opacity: var(--atmos-intensity);
+  animation: atmos-breathe calc(var(--breath) * 2) ease-in-out infinite alternate;
+}
+.atmosphere--moss  { --a-top: var(--atmos-moss-top);  --a-mid: var(--atmos-moss-mid);  --a-low: var(--atmos-moss-low); }
+.atmosphere--ember { --a-top: var(--atmos-ember-top); --a-mid: var(--atmos-ember-mid); --a-low: var(--atmos-ember-low); }
+.atmosphere--dusk  { --a-top: var(--atmos-dusk-top);  --a-mid: var(--atmos-dusk-mid);  --a-low: var(--atmos-dusk-low); }
+.atmosphere--slate { --a-top: var(--atmos-slate-top); --a-mid: var(--atmos-slate-mid); --a-low: var(--atmos-slate-low); }
+@keyframes atmos-breathe {
+  0%   { opacity: calc(var(--atmos-intensity) * 0.78); }
+  100% { opacity: var(--atmos-intensity); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere::before { animation: none; }
 }
 
 /* ---------------------------------------------------------------------------
-   SGPrimaryButton  (Components.swift) — ghost pill / filled pill
+   SGPrimaryButton  (Components.swift) — square: an ink hairline, or filled ink
    --------------------------------------------------------------------------- */
 .sg-btn {
   display: inline-flex;
@@ -51,8 +105,8 @@
   gap: 8px;
   width: 100%;
   padding: 18px 24px;
-  border-radius: var(--pill-radius);
-  border: 1px solid var(--ink);
+  border-radius: 0;
+  border: var(--hairline) solid rgba(242,241,237,0.7);
   background: transparent;
   color: var(--ink);
   font-family: var(--font);
@@ -60,128 +114,142 @@
   font-size: 15px;
   letter-spacing: 0.4px;
   cursor: pointer;
-  transition: transform .18s cubic-bezier(.2,.7,.3,1);
+  transition: opacity var(--ease-release);
 }
-.sg-btn:active { transform: scale(.975); }
-.sg-btn--filled { background: #ffffff; border-color: #ffffff; color: #000; }
+.sg-btn:active { opacity: .55; transition: opacity var(--ease-press); }
+.sg-btn--filled { background: var(--ink); border-color: var(--ink); color: #000; }
 .sg-btn--auto { width: auto; padding-left: 36px; padding-right: 36px; }
-.sg-btn[disabled], .sg-btn.is-disabled { opacity: .45; pointer-events: none; }
+.sg-btn[disabled], .sg-btn.is-disabled { opacity: .4; pointer-events: none; }
 
 /* Sign in with Apple — AppleSignInButton.swift. A native control, so it keeps
-   its own metrics (54px white capsule, 19px system-font label) rather than the
-   Geist sg-btn scale. Apple is the only third-party provider the app offers. */
+   its own metrics (54px tall, 19px system-font label). Apple draws its own
+   rounded fill, which can't be clipped from outside; white behind it fills
+   the corners in, so it reads square. White, not ink: the corners have to
+   match Apple's fill. Apple is the only third-party provider the app offers. */
 .social { display: flex; flex-direction: column; gap: 12px; }
 .social-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; height: 54px; border: 0; border-radius: 999px;
+  width: 100%; height: 54px; border: 0; border-radius: 0;
   background: #ffffff; color: #000;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   font-size: 19px; font-weight: 500; cursor: pointer;
+  transition: opacity var(--ease-release);
 }
-.social-btn:active { transform: scale(.975); }
+.social-btn:active { opacity: .55; }
 .social-btn svg { flex: none; }
 
 /* "or" rule between the social buttons and the email form. */
 .or-rule { display: flex; align-items: center; gap: 12px; }
-.or-rule::before, .or-rule::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.or-rule::before, .or-rule::after { content: ""; flex: 1; height: 0.5px; background: var(--line); }
 .or-rule span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 
 /* Quiet secondary text button */
 .quiet-btn {
   background: none; border: 0; cursor: pointer;
-  font-family: var(--font); font-size: 13px; color: rgba(255,255,255,.6);
+  font-family: var(--font); font-size: 13px; color: var(--ink-soft);
 }
 
 /* ---------------------------------------------------------------------------
-   Chips  (capsule glass)  — used for meta pills, intentions
+   Chips — square hairline boxes where a chip survives (a state chip on a
+   program card, a report reason). Meta pills became " · " text (.meta-line).
    --------------------------------------------------------------------------- */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px;
-  border-radius: var(--pill-radius);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--glass-border);
+  padding: 7px 12px;
+  border-radius: 0;
+  background: rgba(0,0,0,0.5);
+  border: var(--hairline) solid var(--glass-border);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   font-size: 11px; font-weight: var(--w-medium); color: var(--ink);
 }
 
-/* Mood chips (HomeView) */
+/* Mood chips (HomeView.moodChip) — a mood is a word, as Open sets its tabs:
+   Light 15 in --ink-soft, 26px apart; chosen = ink with a 1px ink line 7px
+   under it that fades in. Nothing grows or glows. 44px target. */
 .mood-chip {
-  display: inline-flex; align-items: center;
-  padding: 10px 16px;
-  border-radius: var(--pill-radius);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  font-size: 13px; color: var(--ink);
+  display: inline-flex; align-items: center; position: relative;
+  padding: 13px 0;
+  border: 0; background: none;
+  font-family: var(--font); font-size: 15px; font-weight: var(--w-light);
+  color: var(--ink-soft);
   white-space: nowrap; cursor: pointer;
-  transition: transform .25s cubic-bezier(.2,.8,.2,1);
+  transition: color var(--ease-settle);
 }
-.mood-chip.is-active {
-  background: var(--ink); color: #000; border-color: var(--ink);
-  transform: scale(1.06);
-  box-shadow: 0 2px 12px rgba(229,199,102,0.35);
+.mood-chip::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 1px;
+  background: var(--ink); opacity: 0; transition: opacity var(--ease-settle);
 }
+.mood-chip.is-active { color: var(--ink); }
+.mood-chip.is-active::after { opacity: 1; }
+.moods { display: flex; gap: 26px; overflow-x: auto; padding: 0 var(--gutter); scrollbar-width: none; }
+.moods::-webkit-scrollbar { display: none; }
 
 /* ---------------------------------------------------------------------------
-   OptionCard  (OnboardingView) — glass tile, honey bloom on select
+   OptionCard  (OnboardingView) — square veiled tile: "01" + label. Chosen:
+   the hairline turns to ink (.75), the surface lifts a shade (ink @ .07), the
+   numeral turns ink and the label Medium. Nothing glows, grows or glints.
    --------------------------------------------------------------------------- */
 .option-card {
   position: relative;
   min-height: 108px;
   padding: 16px;
-  border-radius: var(--card-radius);
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.20);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  overflow: hidden;
-  display: flex; flex-direction: column; justify-content: space-between;
+  border-radius: 0;
+  background: rgba(0,0,0,0.5);
+  border: var(--hairline) solid var(--glass-border-high);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  display: flex; flex-direction: column; justify-content: flex-end;
   cursor: pointer;
-  transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s, background .3s;
+  transition: border-color var(--ease-settle), background var(--ease-settle);
 }
-.option-card .idx { font-size: 11px; color: rgba(255,255,255,0.62); margin-bottom: 14px; }
+.option-card .idx { font-size: 11px; letter-spacing: 1.2px; color: var(--ink-soft); margin-bottom: 14px; position: absolute; top: 16px; left: 16px; }
 .option-card .lbl { font-size: 15px; color: var(--ink); }
 .option-card.is-selected {
-  background: rgba(255,255,255,0.22);
-  border-color: rgba(229,199,102,0.6);
-  transform: scale(1.02);
+  background: linear-gradient(rgba(242,241,237,0.07), rgba(242,241,237,0.07)), rgba(0,0,0,0.5);
+  border-color: rgba(242,241,237,0.75);
 }
-.option-card.is-selected .idx { color: var(--honey); }
+.option-card.is-selected .idx { color: var(--ink); }
 .option-card.is-selected .lbl { font-weight: var(--w-medium); }
-/* honey bloom bottom-right */
-.option-card.is-selected::after {
-  content: ""; position: absolute; width: 220px; height: 220px;
-  right: -60px; bottom: -50px;
-  background: radial-gradient(circle, rgba(229,199,102,0.55) 0%, rgba(229,199,102,0.18) 40%, transparent 70%);
-  pointer-events: none;
-}
 .option-card--subtle { min-height: 64px; padding: 18px; align-items: center; justify-content: center; }
-.option-card--subtle .lbl { font-size: 13px; }
+.option-card--subtle .lbl { font-size: 13px; color: rgba(242,241,237,0.85); }
 
 /* ---------------------------------------------------------------------------
-   CircleIconButton  (Components.swift)
+   GlyphButton  (Components.swift) — a bare glyph, as Open draws its ← and ×:
+   17px light, ink, in a 44px square target. No circle, no glass. A soft shadow
+   keeps it legible on a photo and vanishes on black. Back is an arrow (←),
+   close is ×.
    --------------------------------------------------------------------------- */
-.circle-btn {
+.glyph-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--glass-border-high);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  color: var(--ink); cursor: pointer; flex: none;
+  width: 44px; height: 44px; flex: none;
+  background: none; border: 0; padding: 0;
+  color: var(--ink); cursor: pointer;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,.45));
+  transition: opacity var(--ease-release);
 }
-.circle-btn svg { width: 15px; height: 15px; }
-.circle-btn--lg { width: 42px; height: 42px; }
+.glyph-btn:active { opacity: .55; }
+.glyph-btn svg { width: 17px; height: 17px; stroke-width: 1.2; }
 
 /* ---------------------------------------------------------------------------
-   SectionLabel  (Components.swift)
+   SectionLabel  (Components.swift) — opens a section as a printed page does:
+   a hairline across the measure, then 14px below it a small tracked caps label
+   in ink; the action ("ALL") in ink-soft. The size lives in the content.
+   Markup: <div class="section-label"><span class="title">…</span>
+   <span class="action">All</span></div>. Set --sl-pad: 0 where the label
+   already sits inside the gutter.
    --------------------------------------------------------------------------- */
 .section-label {
+  --sl-pad: var(--gutter);
+  position: relative;
   display: flex; align-items: baseline; justify-content: space-between;
-  padding: 0 24px; margin-bottom: 14px;
+  padding: 14.5px var(--sl-pad) 0; margin-bottom: 20px;
 }
-.section-label .title { font-size: 22px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); }
-.section-label .action { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+.section-label::before {
+  content: ""; position: absolute; top: 0; left: var(--sl-pad); right: var(--sl-pad);
+  height: 0.5px; background: var(--line);
+}
+.section-label .title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: var(--w-regular); color: var(--ink); }
+.section-label .action { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
 
 /* ---------------------------------------------------------------------------
    BottomNav  (App/BottomNav.swift) — flat, docked, static tab bar
@@ -194,7 +262,8 @@
   z-index: 50;
 }
 /* Each item is as wide as its own label plus an equal share of what's left
-   (NavBarLayout) — six equal slots put "Digital Retreats" into "Gatherings". */
+   (NavBarLayout) — six equal slots put "Digital Retreats" into "Gatherings".
+   Ink when selected, muted when not; nothing moves. */
 .nav-item {
   flex: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
   height: 46px; color: var(--muted); cursor: pointer;
@@ -203,24 +272,26 @@
 .nav-item svg { width: 20px; height: 20px; }
 .nav-item .nav-label { font-size: 10px; font-weight: var(--w-medium); letter-spacing: 0.3px; white-space: nowrap; }
 .nav-item.is-active { color: var(--ink); }
-/* The You item: the member's AvatarView (photo, or initial on their tone). */
+/* The You item: the member's AvatarView (photo, or initial on their tone),
+   ringed 1px in ink 2px out while selected. A face — so it stays round. */
 .nav-item .nav-avatar { width: 22px; height: 22px; border-radius: 50%; opacity: .75;
   display: grid; place-items: center; font-size: 10px; color: var(--ink);
-  background: linear-gradient(135deg, #8c7030, #614a1a);
-  box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.2px transparent; }
-.nav-item.is-active .nav-avatar { opacity: 1; box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.2px var(--ink); }
+  background: linear-gradient(135deg, #733f1f, #45210d);
+  box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3px transparent; }
+.nav-item.is-active .nav-avatar { opacity: 1; box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3px var(--ink); }
 
 /* ---------------------------------------------------------------------------
-   Photo backdrop  (PhotoBackdrop in Components.swift)
+   Photo backdrop  (PhotoBackdrop in Components.swift) — only where the
+   photograph is the content: Welcome, onboarding, the retreat stack and
+   detail. Saturation .9 (a shade quieter than life); blur ≤ 6.
    --------------------------------------------------------------------------- */
 .photo {
   position: absolute; inset: 0;
   background-size: cover; background-position: center;
-  filter: saturate(1.15) brightness(0.95);
+  filter: saturate(0.9) brightness(0.95);
 }
-.photo--blur5  { filter: saturate(1.15) brightness(0.95) blur(5px);  transform: scale(1.08); }
-.photo--blur8  { filter: saturate(1.15) brightness(0.95) blur(8px);  transform: scale(1.10); }
-.photo--blur22 { filter: saturate(1.15) brightness(0.9)  blur(22px); transform: scale(1.18); }
+.photo--blur5  { filter: saturate(0.9) brightness(0.95) blur(5px);  transform: scale(1.08); }
+.photo--blur8  { filter: saturate(0.9) brightness(0.95) blur(6px);  transform: scale(1.08); }
 .vignette { position: absolute; inset: 0; pointer-events: none; }
 .vignette--soft { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.30), rgba(0,0,0,0.55)); }
 .vignette--deep { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.40), rgba(0,0,0,0.75)); }
@@ -238,46 +309,45 @@
   background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.21), transparent);
 }
 
-/* statusBarScrim() (Components.swift): the canvas (--bg) rising behind the
-   status bar once a screen's content has scrolled up under the clock. It is
-   invisible at rest, and the screens here are drawn at rest, so none carries
-   it; add .statusbar--scrim to show one scrolled. It fades in over the first
-   36px of scroll (later on the digital retreat heroes, whose own scrim carries
-   the photo). It is only as deep as the status bar itself: dense behind the
-   clock (0.92 → 0.84), then eased out over its last 22px, so it covers the
-   clock and nothing of the page (`reach` takes it further on a screen with a
-   pinned Back bar). The always-on band it replaced read as a black bar cut
-   across every photo, and a version 40px deeper than the status bar still
-   read as a dark bar across every scrolled screen. Drawn behind the clock and
-   glyphs, above the page. */
+/* statusBarScrim() (Components.swift): the canvas (--bg, black) rising behind
+   the status bar once a screen's content has scrolled up under the clock. It
+   is invisible at rest, and the screens here are drawn at rest, so none
+   carries it; add .statusbar--scrim to show one scrolled. It fades in over the
+   first 36px of scroll (later on the digital retreat heroes, whose own scrim
+   carries the photo). It is only as deep as the status bar itself: dense
+   behind the clock (0.92 → 0.84), then eased out over its last 22px, so it
+   covers the clock and nothing of the page (`reach` takes it further on a
+   screen with a pinned Back bar). */
 .statusbar--scrim::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 54px;
   z-index: -1; pointer-events: none;
   background: linear-gradient(180deg,
-    rgba(11,12,7,0.92) 0%, rgba(11,12,7,0.84) 59.3%, rgba(11,12,7,0.6) 71.5%,
-    rgba(11,12,7,0.28) 83.7%, rgba(11,12,7,0.08) 93.5%, rgba(11,12,7,0) 100%);
+    rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.84) 59.3%, rgba(0,0,0,0.6) 71.5%,
+    rgba(0,0,0,0.28) 83.7%, rgba(0,0,0,0.08) 93.5%, rgba(0,0,0,0) 100%);
 }
 
 /* ---------------------------------------------------------------------------
    Type over photography  (View.onPhoto() in Components.swift)
 
-   Text laid on a photo rather than on glass. A tight shadow for edge definition
-   plus a wide, weaker halo; both vanish over dark ground, so the utility is
-   safe on any photo-backed text block. Pair it with the palette rule: eyebrows
-   in --ink-soft (never --muted, which sinks into the scrim) and sublines in
-   --ink-on-photo at 14px.
+   Text laid on a photo rather than on a veil or black. A tight shadow for edge
+   definition plus a wide, weaker halo; both vanish over dark ground. Pair it
+   with the palette rule: eyebrows in --ink-soft (never --muted, which sinks
+   into the scrim) and sublines in --ink-on-photo at 14px. Text on black or an
+   atmosphere needs none of this.
    --------------------------------------------------------------------------- */
 .on-photo { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }
 
 /* ---------------------------------------------------------------------------
-   Aurora background  (ShaderFX.AuroraBackground) — CSS approximation
+   Aurora background  (ShaderFX.AuroraBackground) — CSS approximation. The
+   practice player's ground only (near-black moss, the brand olive, an umber);
+   every other screen sits on the stiller .atmosphere.
    --------------------------------------------------------------------------- */
 .aurora {
   position: absolute; inset: -20%;
   background:
-    radial-gradient(40% 50% at 25% 30%, rgba(119,128,59,0.55), transparent 70%),
-    radial-gradient(45% 55% at 75% 35%, rgba(229,199,102,0.30), transparent 70%),
-    radial-gradient(50% 60% at 55% 75%, rgba(62,67,21,0.55), transparent 72%);
+    radial-gradient(40% 50% at 25% 30%, rgba(61,69,25,0.55), transparent 70%),
+    radial-gradient(45% 55% at 75% 35%, rgba(87,46,20,0.45), transparent 70%),
+    radial-gradient(50% 60% at 55% 75%, rgba(8,9,4,0.8), transparent 72%);
   filter: blur(30px);
   animation: aurora-drift 18s ease-in-out infinite alternate;
   pointer-events: none;
@@ -288,21 +358,21 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Signature motion  (BreathingModifier / PulseModifier)
+   Idle motion  (BreathingModifier / PulseModifier) — at breath pace (--breath).
+   Breathing barely scales (.98–1.02) and lets opacity carry it; the pulse is
+   light only (opacity .35 ↔ 1 at half a breath).
    --------------------------------------------------------------------------- */
-.breathing { animation: breathe 5.5s ease-in-out infinite alternate; }
+.breathing { animation: breathe var(--breath) ease-in-out infinite alternate; }
 @keyframes breathe {
-  0%   { transform: scale(0.94); opacity: 0.85; }
-  100% { transform: scale(1.06); opacity: 1; }
+  0%   { transform: scale(0.98); opacity: 0.8; }
+  100% { transform: scale(1.02); opacity: 1; }
 }
 .pulse-dot {
-  width: 6px; height: 6px; border-radius: 999px; background: #fff;
-  display: inline-block; animation: pulse 1s ease-in-out infinite alternate;
+  width: 6px; height: 6px; border-radius: 999px; background: var(--ink);
+  display: inline-block; animation: pulse calc(var(--breath) / 2) ease-in-out infinite alternate;
 }
-@keyframes pulse { 0% { transform: scale(.85); opacity:.4; } 100% { transform: scale(1); opacity:1; } }
-@keyframes halo-breathe {
-  0% { transform: scale(0.85); opacity: .35; } 100% { transform: scale(1.15); opacity: .6; }
-}
+@keyframes pulse { 0% { opacity: .35; } 100% { opacity: 1; } }
+@keyframes halo-breathe { 0% { opacity: .55; } 100% { opacity: 1; } }
 
 /* ---------------------------------------------------------------------------
    Misc layout helpers used across screens
@@ -312,86 +382,87 @@
 .between { justify-content: space-between; }
 .center { align-items: center; }
 .gap6 { gap: 6px; } .gap8 { gap: 8px; } .gap10 { gap: 10px; } .gap12 { gap: 12px; } .gap14 { gap: 14px; }
-.hscroll { display: flex; gap: 14px; overflow-x: auto; padding: 0 24px 4px; scrollbar-width: none; }
+.hscroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 var(--gutter) 4px; scrollbar-width: none; }
 .hscroll::-webkit-scrollbar { display: none; }
 .fill { position: absolute; inset: 0; }
-.divider { height: 1px; background: rgba(255,255,255,0.10); }
-.meta-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 999px;
-  background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  font-size: 11px; font-weight: var(--w-medium); color: var(--ink);
-}
+.divider { height: 0.5px; background: var(--line); }
+/* The meta pills became one line of type: "July 21–26 · 14 guests · $4,400". */
+.meta-line { font-size: 12px; letter-spacing: 0.3px; color: var(--ink); }
+.meta-line .sep { color: var(--ink-soft); padding: 0 6px; }
+/* Legacy name kept for cards that still say meta-pill: now plain text. */
+.meta-pill { display: inline; padding: 0; border: 0; background: none;
+  font-size: 12px; font-weight: var(--w-regular); color: var(--ink); }
 
 /* ---------------------------------------------------------------------------
    Onboarding shell  (OnboardingView)
    --------------------------------------------------------------------------- */
-.onb-top { position: relative; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 16px 22px 0; }
-.onb-progress { flex: 1; }
-.onb-track { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.16); overflow: hidden; }
-.onb-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(229,199,102,0.85), var(--ink)); transform-origin: left; }
-.onb-counter { font-size: 13px; color: rgba(255,255,255,0.62); }
-.onb-skip { background: none; border: 0; font-family: var(--font); font-size: 14px; color: rgba(255,255,255,0.62); cursor: pointer; }
-.onb-body { position: relative; z-index: 5; padding: 30px 22px 0; }
-.onb-q { font-size: 34px; font-weight: var(--w-regular); letter-spacing: -0.4px; line-height: 1.1; color: var(--ink); margin: 0 0 22px; }
-.onb-bottom { position: absolute; left: 0; right: 0; bottom: 36px; padding: 0 22px; z-index: 5; }
+.onb-top { position: relative; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter) 0 calc(var(--gutter) - 13px); }
+.onb-progress { flex: 1; display: flex; align-items: center; gap: 14px; }
+/* A 1px ink run on an 18% ink track, eased from step to step. */
+.onb-track { flex: 1; height: 1px; background: rgba(242,241,237,0.18); overflow: hidden; }
+.onb-fill { height: 100%; background: var(--ink); transform-origin: left; transition: transform var(--ease-settle); }
+.onb-counter { font-size: 13px; color: var(--ink-on-photo); font-variant-numeric: tabular-nums; }
+.onb-skip { background: none; border: 0; font-family: var(--font); font-size: 14px; color: var(--ink-on-photo); cursor: pointer; }
+.onb-body { position: relative; z-index: 5; padding: 32px calc(var(--gutter) - 8px) 0; }
+.onb-q { font-size: 34px; font-weight: var(--w-light); letter-spacing: -0.7px; line-height: 1.1; color: var(--ink); margin: 0 0 22px; }
+.onb-bottom { position: absolute; left: 0; right: 0; bottom: 28px; padding: 0 var(--gutter); z-index: 5; }
 
 /* ---------------------------------------------------------------------------
-   NumberedStepRow  (PracticeShared.swift) — used by Movement / Recipe
+   NumberedStepRow  (PracticeShared.swift) — used by Movement / Recipe. The
+   number is a folio ("01") in the margin, not a numeral in a disc.
    --------------------------------------------------------------------------- */
 .steps { display: flex; flex-direction: column; gap: 14px; }
-.num-step { display: flex; gap: 14px; align-items: flex-start; }
-.num-step .n { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; flex: none;
-  font-size: 13px; color: var(--ink); background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); }
+.num-step { display: flex; gap: 16px; align-items: baseline; }
+.num-step .n { width: 26px; flex: none; font-size: 12px; font-weight: var(--w-medium); letter-spacing: 1.5px; color: var(--muted); }
 .num-step .t { font-size: 15px; line-height: 1.45; color: var(--ink); }
-.num-step .d { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
-.practice-back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.num-step .d { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 2px; }
+/* PracticeBackBar: a bare ← and the page it returns to, as Open draws it. */
+.practice-back { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
+.practice-back svg { width: 15px; height: 15px; stroke-width: 1.2; }
 
 /* SafetyNoteCard  (PracticeShared.swift) — "Before you begin", first in the
    Breathwork and Somatic Exercises session lists (PracticeCategory.safetyNote;
-   Meditation has none). Glass, radius 18, 14 padding: honey heart.text.square
-   glyph (16), eyebrow 10 / tracking 2 / --ink-soft, text 13 --ink-soft. Read
-   once on the way in, never a modal. Sits 16 above the first row. */
-.safety-note { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 18px; margin-bottom: 6px; }
-.safety-note > svg { flex: none; color: var(--honey); margin-top: 1px; }
+   Meditation has none). Set open on the ground under a hairline, like a note at
+   the head of a page: ember heart.text.square glyph (15, light), eyebrow 10 /
+   tracking 2 / --ink-soft, text 13 --ink-soft. 20px from the rule to the text.
+   Read once on the way in, never a modal. */
+.safety-note { display: flex; align-items: flex-start; gap: 14px; padding: 20px 0 0; border-top: 0.5px solid var(--line); margin-bottom: 6px; }
+.safety-note > svg { flex: none; color: var(--ember); margin-top: 1px; }
 .safety-note > div { flex: 1; min-width: 0; }
 .safety-note .sn-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-.safety-note .sn-tx { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 5px 0 0; }
+.safety-note .sn-tx { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 8px 0 0; }
 
 /* ── Practice progress ───────────────────────────────────────────────────────
-   Mirrors ProgressRule (PracticeShared.swift) and the progress states added to
-   PracticeListView / HomeView. Quiet by design: the rule reads as an underline
-   until you look at it, which is the right weight for something that must not
-   feel like a task tracker. */
+   Mirrors ProgressRule (PracticeShared.swift) and the progress states on
+   PracticeListView / HomeView. Quiet by design: a 1px rule that reads as an
+   underline until you look at it — the right weight for something that must
+   not feel like a task tracker. */
 
 .prog-rule {
   position: relative;
-  width: 92px; height: 2px;
-  border-radius: var(--pill-radius);
-  background: rgba(245,243,232,.18);
+  width: 92px; height: 1px;
+  background: rgba(242,241,237,.18);
 }
 .prog-rule > i {
   position: absolute; inset: 0 auto 0 0;
-  display: block; height: 2px;
-  border-radius: var(--pill-radius);
-  background: color-mix(in srgb, var(--honey) 80%, transparent);
+  display: block; height: 1px; min-width: 3px;
+  background: color-mix(in srgb, var(--ember) 85%, transparent);
 }
 /* Remaining-time text on a row that can be resumed. */
-.meta .resume { color: var(--honey); }
+.meta .resume { color: var(--ember); }
 /* Completion seal, replacing the chevron. */
-.seal { color: color-mix(in srgb, var(--honey) 85%, transparent); display: flex; }
+.seal { color: color-mix(in srgb, var(--ember) 85%, transparent); display: flex; }
 
-/* Home's "Continue where you left off" card. Glass, not the ritual card's
-   aurora — it is a resumption, not an invitation. */
+/* Home's "Continue where you left off" card. A square veil, not the ritual
+   card's ember wash — it is a resumption, not an invitation. Ember CONTINUE,
+   a Light 20 title, a square hairline play mark (40px) instead of a disc. */
 .continue {
   display: flex; align-items: center; gap: 14px;
-  padding: 16px;
-  border-radius: var(--card-radius);
+  padding: 20px;
 }
-.continue .eb { color: var(--honey); margin: 0 0 5px; }
+.continue .eb { color: var(--ember); margin: 0 0 5px; }
 .continue h3 {
-  font-size: 19px; line-height: 1.18; letter-spacing: -.2px;
+  font-size: 20px; font-weight: var(--w-light); line-height: 1.18; letter-spacing: -.2px;
   color: var(--ink); margin: 0;
 }
 .continue .left { flex: 1; min-width: 0; }
@@ -401,8 +472,8 @@
   color: var(--ink-soft);
 }
 .continue .play {
-  flex: none; width: 38px; height: 38px; border-radius: var(--pill-radius);
-  background: var(--ink); color: #000;
+  flex: none; width: 40px; height: 40px;
+  border: var(--hairline) solid rgba(242,241,237,0.7); color: var(--ink);
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -411,60 +482,61 @@
 .streak {
   display: flex; align-items: center; gap: 7px;
   margin-top: 8px;
-  color: var(--honey);
+  color: var(--ember);
   font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
 }
 
 /* ---- Presence — PresenceBadge.swift -------------------------------------
    Three overlapping faces + "75.7k present". Absent entirely below 3 people
-   (server-side). Journal prompts: count only, no faces. */
+   (server-side). Journal prompts: count only, no faces. Faces stay round. */
 .presence { display: flex; align-items: center; gap: 8px; margin-top: 6px;
   font-size: 12px; font-weight: 500; color: var(--ink-soft); }
 .presence .faces { display: flex; }
 .presence .faces i { width: 20px; height: 20px; border-radius: 50%; margin-left: -6px;
   display: grid; place-items: center; font-style: normal; font-size: 8.5px; color: var(--ink);
-  border: 1px solid var(--glass-border-high); }
+  border: var(--hairline) solid var(--glass-border); }
 .presence .faces i:first-child { margin-left: 0; }
-.presence .faces i:nth-child(1) { background: linear-gradient(135deg, #4a5c6e, #2b3a4a); z-index: 3; }
-.presence .faces i:nth-child(2) { background: linear-gradient(135deg, #806b4f, #544530); z-index: 2; }
-.presence .faces i:nth-child(3) { background: linear-gradient(135deg, #4f5c29, #333d17); z-index: 1; }
+.presence .faces i:nth-child(1) { background: linear-gradient(135deg, #334054, #1a2130); z-index: 3; }
+.presence .faces i:nth-child(2) { background: linear-gradient(135deg, #73401f, #45210d); z-index: 2; }
+.presence .faces i:nth-child(3) { background: linear-gradient(135deg, #454d1c, #262b0d); z-index: 1; }
 
 /* ---- Your guide — Features/Instructors/GuideCard.swift ------------------
    On the page of anything a guide made, when its content names one — a digital
    retreat, a session, a journal prompt, movement sequence or recipe, each by
-   its own row's instructor_id. Never on the Practice
-   landing. 50pt face in a 1px honey ring 3pt out, YOUR GUIDE eyebrow, name
-   (headline 19), what they teach (body 12, muted), chevron. Glass — so never
-   inside a text halo. Absent when nothing names a guide. Tap → the guide's
-   profile (instructor-profile), whose back bar names this page. */
-.guide-card { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; }
-.guide-card .ring { flex: none; padding: 3px; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--honey) 40%, transparent); }
-.guide-card .av { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 21px; font-weight: 500; color: var(--ink); border: 1px solid var(--glass-border-high);
-  background-image: linear-gradient(135deg, #4f5c29, #333d17); }
+   its own row's instructor_id. Never on the Practice landing. Set open between
+   two hairlines (Open's "TEACHER"): a 50px face, YOUR GUIDE eyebrow, name
+   (Light 19), what they teach (12, muted), a light chevron. 18px above and
+   below. Tap → the guide's profile (instructor-profile), whose back bar names
+   this page. */
+.guide-card { display: flex; align-items: center; gap: 16px; padding: 18px 0;
+  border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); }
+.guide-card .av { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font-size: 21px; font-weight: 500; color: var(--ink); border: var(--hairline) solid var(--glass-border);
+  background-image: linear-gradient(135deg, #454d1c, #262b0d); background-size: cover; background-position: center; }
 .guide-card .tx { flex: 1; min-width: 0; }
 .guide-card .gc-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-.guide-card .gc-nm { font-size: 19px; letter-spacing: -0.2px; color: var(--ink); margin: 3px 0 0; }
-.guide-card .gc-ti { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
+.guide-card .gc-nm { font-size: 19px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
+.guide-card .gc-ti { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 .guide-card > svg { flex: none; color: var(--ink-soft); }
-/* The player's compact form — GuideCredit: a 24pt face, "with …" and a
-   chevron on a glass capsule. Plain "with …" text when the media has no guide. */
-.guide-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 11px 4px 4px;
-  border-radius: 999px; font-size: 13px; color: var(--ink); }
+/* The player's compact form — GuideCredit: a 24px face, "with …" and a light
+   → , with no box (a face and a line, like the credit under a track), in a
+   44px-tall target. Plain "with …" text when the media has no guide. */
+.guide-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-size: 13px; color: var(--ink); }
 .guide-chip .av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 10px; font-weight: 500; border: 1px solid var(--glass-border-high);
-  background-image: linear-gradient(135deg, #4a5c6e, #2b3a4a); }
+  font-size: 10px; font-weight: 500; border: var(--hairline) solid var(--glass-border);
+  background-image: linear-gradient(135deg, #334054, #1a2130); background-size: cover; background-position: center; }
 .guide-chip svg { color: var(--ink-soft); }
 
 /* ---- Member safety — Features/Community/MemberSafety.swift --------------
    MemberSafetyMenu: "⋯" beside every OTHER member — a feed line (after the
-   like pill), a Friends row (after its pills), a like notification (trailing,
-   when the liker is known). Never beside yourself. A 14pt semibold ellipsis
-   in --ink-soft inside a 32×44 target (rendering gotcha 5). It opens a system
-   menu: "Report <Name>" (flag) · "Block <Name>" (hand.raised, destructive).
-   Report opens report-member; Block asks first (an iOS action sheet, copy on
-   the community card). A guest can report; blocking needs an account. */
+   heart), a Friends row (after its buttons), a like notification (trailing,
+   when the liker is known). Never beside yourself. A 15px regular ellipsis in
+   --ink-soft inside a 44×44 target (rendering gotcha 5); hosts pull it in
+   with negative margin. It opens a system menu: "Report <Name>" (flag) ·
+   "Block <Name>" (hand.raised, destructive). Report opens report-member; Block
+   asks first (an iOS action sheet, copy on the community card). A guest can
+   report; blocking needs an account. */
 .member-menu { display: inline-flex; align-items: center; justify-content: center; flex: none;
-  width: 32px; height: 44px; color: var(--ink-soft); background: none; border: 0; padding: 0; cursor: pointer; }
+  width: 44px; height: 44px; margin: 0 -10px; color: var(--ink-soft); background: none; border: 0; padding: 0; cursor: pointer; }
 .member-menu svg { display: block; }

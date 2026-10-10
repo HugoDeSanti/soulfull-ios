@@ -7,30 +7,40 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  .close { position: absolute; top: 50px; right: 22px; z-index: 20; }
-  .stagewrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 30px; }
-  .halo { position: absolute; top: 30%; left: 50%; width: 430px; height: 430px; transform: translate(-50%,-50%);
-    background: radial-gradient(circle, rgba(229,199,102,0.25), transparent 60%); filter: blur(30px);
-    animation: halo-breathe 5.5s ease-in-out infinite alternate; }
-  .art { position: relative; width: 248px; height: 248px; border-radius: 30px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
-    background: url('../assets/practice-meditation.jpg') center/cover; animation: breathe 5.5s ease-in-out infinite alternate; }
-  .meta { text-align: center; margin-top: 40px; }
-  .meta .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin: 0; }
-  .meta h2 { font-size: 28px; font-weight: var(--w-regular); letter-spacing: -0.4px; color: var(--ink); margin: 8px 0 0; }
-  .meta .with { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; }
+  /* PracticePlayerView (audio) — the room the session happens in: the
+     artwork's own tones drifting at breath pace (the aurora; no grain, no
+     glow). A square-cut 220 cover inside a hairline breath circle, the one
+     guide that moves: it widens and fades at breath pace. */
+  .close { position: absolute; top: 50px; right: calc(var(--gutter) - 13px); z-index: 20; }
+  .stagewrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 0 var(--gutter) 54px; }
+  .stagewrap .sp { flex: 1; }
+  .breath { position: relative; width: 312px; height: 312px; display: grid; place-items: center; margin-bottom: 48px; }
+  .breath .ring { position: absolute; inset: 0; border-radius: 50%; border: var(--hairline) solid rgba(242,241,237,0.22); animation: ring-breathe var(--breath) ease-in-out infinite alternate; }
+  @keyframes ring-breathe { 0% { transform: scale(.94); opacity: .25; } 100% { transform: scale(1.06); opacity: .6; } }
+  .art { position: relative; width: 220px; height: 220px; border: var(--hairline) solid rgba(242,241,237,0.18);
+    background: url('../assets/practice-meditation.jpg') center/cover; }
+  .meta { text-align: center; padding: 0 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .meta .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .meta h2 { font-size: 28px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 0; }
   /* PracticeCategory.safetyReminder, under the guide credit: breathwork "Stop
      if you feel light-headed, and breathe normally." · somatic "Go gently, and
-     stop if anything hurts." · meditation none. Body 12, white 60%. The video
-     player carries the same line under its title (11, white 70%). */
-  .meta .safety { font-size: 12px; line-height: 1.4; color: rgba(255,255,255,0.6); margin: 6px 0 0; }
-  .scrub { width: 100%; margin-top: 34px; }
-  .scrub .track { height: 5px; border-radius: 999px; background: rgba(255,255,255,0.18); position: relative; }
-  .scrub .track .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 32%; background: var(--ink); border-radius: 999px; }
-  .scrub .track .thumb { position: absolute; left: 32%; top: 50%; width: 12px; height: 12px; border-radius: 999px; background: #fff; transform: translate(-50%,-50%); box-shadow: 0 0 5px rgba(0,0,0,.3); }
-  .scrub .times { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.55); }
-  .controls { display: flex; align-items: center; gap: 44px; margin-top: 38px; }
-  .controls .skip { width: 52px; height: 52px; }
-  .controls .play { width: 76px; height: 76px; border-radius: 999px; background: #fff; display: grid; place-items: center; color: #000; box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
+     stop if anything hurts." · meditation none. Body 12, inkSoft. The video
+     player carries the same line under its title (11). */
+  .meta .safety { font-size: 12px; line-height: 1.4; color: var(--ink-soft); margin: 8px 0 0; }
+  /* SoulScrubber — a 1px track (3px while dragging), an ink run, and an
+     upright 2px tick for the playhead (14px tall; 22 while dragging). */
+  .scrub { width: 100%; }
+  .scrub .track { height: 26px; position: relative; }
+  .scrub .track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(242,241,237,0.18); }
+  .scrub .track .fill { position: absolute; left: 0; top: 50%; height: 1px; width: 32%; background: var(--ink); }
+  .scrub .track .thumb { position: absolute; left: 32%; top: 50%; width: 2px; height: 14px; background: var(--ink); transform: translate(-50%,-50%); }
+  .scrub .times { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  .controls { display: flex; align-items: center; gap: 44px; margin-top: 26px; }
+  .controls .skip { width: 52px; height: 52px; display: grid; place-items: center; color: var(--ink); }
+  .controls .skip svg { width: 22px; height: 22px; }
+  /* Play/pause — a 72 square drawn in an ink hairline; the glyph crossfades
+     between play and pause. No disc, no morph. */
+  .controls .play { width: 72px; height: 72px; border: var(--hairline) solid rgba(242,241,237,0.7); display: grid; place-items: center; color: var(--ink); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -39,30 +49,32 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
 
-  <span class="close circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+  <span class="close glyph-btn" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen">
     <div class="fill" style="background:var(--bg)"></div>
-    <div class="aurora" style="opacity:.8"></div>
+    <div class="aurora" style="opacity:.9"></div>
     <div class="stagewrap">
-      <div class="halo"></div>
-      <div class="art"></div>
+      <div class="sp"></div>
+      <div class="breath"><span class="ring"></span><div class="art"></div></div>
       <div class="meta">
         <p class="eb">Now Playing · 4 min 32 sec</p>
         <h2>Coherent Breath</h2>
-        <!-- GuideCredit: a face chip when the session names its guide; tapping closes the
-             player and opens their profile on the stack below. Plain "with …" otherwise. -->
-        <a class="guide-chip glass" style="margin-top:8px"><span class="av">D</span>with Dr. Anya Iyer<svg width="7" height="10" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 1 5 5-5 5"/></svg></a>
+        <!-- GuideCredit: a face and a line when the session names its guide;
+             tapping closes the player and opens their profile on the stack
+             below. Plain "with …" otherwise. -->
+        <a class="guide-chip"><span class="av">D</span>with Dr. Anya Iyer<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></a>
         <p class="safety">Stop if you feel light-headed, and breathe normally.</p>
       </div>
+      <div class="sp"></div>
       <div class="scrub">
         <div class="track"><div class="fill"></div><div class="thumb"></div></div>
         <div class="times"><span>1:27</span><span>-3:05</span></div>
       </div>
       <div class="controls">
-        <span class="skip circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 8 5 12l6 4V8zM19 8l-6 4 6 4V8z"/></svg></span>
-        <span class="play"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></span>
-        <span class="skip circle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 8l6 4-6 4V8zM5 8l6 4-6 4V8z"/></svg></span>
+        <span class="skip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4"/><text x="12" y="15.5" font-size="7" text-anchor="middle" fill="currentColor" stroke="none" font-family="Geist">15</text></svg></span>
+        <span class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></span>
+        <span class="skip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/><text x="12" y="15.5" font-size="7" text-anchor="middle" fill="currentColor" stroke="none" font-family="Geist">15</text></svg></span>
       </div>
     </div>
   </div>

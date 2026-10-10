@@ -9,46 +9,48 @@
 <!--
   RetreatsStackView (stack mode) — the root of the GATHERINGS TAB (2026-09-25).
   Home's "Upcoming gatherings" shelf and its ALL hand off here. Maps 1:1:
-  - .topbar   → topBar: the ONE mode toggle (grid ↔ list). No Back as a tab root
-                (it has "‹ Back" only when pushed, e.g. the -preview-retreats hook).
-                Shared by both modes; never scales or blurs.
+  - .topbar   → topBar: the ONE mode toggle (grid ↔ list), a bare GlyphButton.
+                No Back as a tab root (it has "← Back" only when pushed, e.g. the
+                -preview-retreats hook). Shared by both modes; never scales or blurs.
   - .intro    → stackIntro: eyebrow in --ink-soft, the folio, a 14px subline in
                 --ink-on-photo. The folio ("03 / 04") follows the centred name and
                 replaces the old static "07" count circle.
   - .item     → row(): the NAME ONLY. The trailing guest count was removed — it
                 read as a bare footnote number. Size lives on retreat-detail.
                 In the app every name is 54px and a scroll-driven "focus lens"
-                scales it (0.8 → 1) and inks it (0.4 → 1) as it nears the centre
-                line; only the weight (Light → SemiBold) switches discretely.
-  - .botcard  → bottomCard: one fact per line (country / dates / tags) + the
-                "Explore" pill. The whole card is the tap target. It read
+                inks it (0.32 → 1) as it nears the centre line; only the weight
+                (Thin → Regular) switches discretely. Nothing changes size — it
+                used to scale 0.8 → 1.
+  - .botcard  → bottomCard: a square veil, one fact per line (country / dates /
+                tags) + a square ink "Explore →" block. Its details crossfade as
+                the stack moves; the panel holds still. The whole card is the tap
+                target. It read
                 "Reserve", which it never did — it opens the retreat. Sits 8pt
                 above the docked tab bar (BottomNav.height).
 -->
 <style>
-  .topbar { position: relative; z-index: 6; display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px 24px 0; }
-  .back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+  .topbar { position: relative; z-index: 6; display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px calc(var(--gutter) - 12px) 0 var(--gutter); }
+  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; color: var(--ink); }
 
-  .intro { position: relative; z-index: 5; padding: 18px 24px 10px; }
+  .intro { position: relative; z-index: 5; padding: 18px var(--gutter) 10px; }
   .intro .row { display: flex; justify-content: space-between; align-items: baseline; }
   .intro .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .intro .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: pre; }
   .intro .folio b { font-weight: 500; color: var(--ink); }
-  .intro p { font-size: 14px; line-height: 1.45; color: var(--ink-on-photo); margin: 8px 0 0; }
+  .intro p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px 0 0; }
 
-  .stack { position: relative; z-index: 5; padding: 64px 24px 0;
+  .stack { position: relative; z-index: 5; padding: 64px var(--gutter) 0;
     -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 72%, transparent 100%);
             mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 72%, transparent 100%); }
   .item { height: 84px; display: flex; align-items: center; }
-  .item .name { font-size: 54px; font-weight: 300; letter-spacing: -1.6px; color: #fff; line-height: 1; white-space: nowrap;
-    transform-origin: left center; transform: scale(.8); opacity: .4; }
-  .item.active .name { font-weight: 600; transform: none; opacity: 1; }
+  .item .name { font-size: 54px; font-weight: 100; letter-spacing: -1.6px; color: var(--ink); line-height: 1; white-space: nowrap; opacity: .32; }
+  .item.active .name { font-weight: 400; opacity: 1; }
 
-  .botcard { position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border-radius: 22px; }
+  .botcard { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 96px; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; }
   .botcard .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .botcard .when { font-size: 16px; font-weight: 500; letter-spacing: -0.2px; color: var(--ink); margin-top: 5px; }
   .botcard .tags { font-size: 13px; color: var(--ink-soft); margin-top: 5px; white-space: nowrap; }
-  .botcard .go { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #000; font-size: 13px; font-weight: 500; padding: 11px 18px; border-radius: 999px; flex: none; }
+  .botcard .go { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: #000; font-size: 13px; font-weight: 500; padding: 12px 18px; flex: none; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -58,12 +60,12 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen safe-top">
-    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg')"></div>
+    <div class="photo" style="background-image:url('../assets/retreat-mallorca.jpg');filter:saturate(.9)"></div>
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.15),rgba(0,0,0,.45),rgba(0,0,0,.78))"></div>
     <div class="top-scrim"></div>
 
     <div class="topbar">
-      <span class="circle-btn circle-btn--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+      <span class="glyph-btn" aria-label="All gatherings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg></span>
     </div>
 
     <div class="intro on-photo">
@@ -87,7 +89,7 @@
         <div class="when">July 21–26, 2027</div>
         <div class="tags">Hyrox · Recovery · Wellness</div>
       </div>
-      <span class="go">Explore <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      <span class="go">Explore <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></span>
     </div>
   </div>
 

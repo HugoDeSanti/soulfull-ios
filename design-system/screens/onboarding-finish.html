@@ -9,11 +9,12 @@
 <style>
   .wrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; padding: 0 32px; }
-  .wrap img { width: 160px; filter: drop-shadow(0 0 24px rgba(255,255,255,0.18)); }
-  .eb { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-soft); margin: 24px 0 0; }
-  .quote { font-style: italic; font-size: 28px; line-height: 1.28; color: var(--ink); margin: 18px 0 0; max-width: 320px; }
-  .sub { font-size: 14px; color: rgba(245,243,232,0.75); margin: 18px 0 0; }
-  .cta { position: absolute; left: 0; right: 0; bottom: 40px; padding: 0 32px; }
+  /* FinishStepView: the logo breathes in light, with no glow behind it. */
+  .wrap img { width: 140px; }
+  .eb { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-soft); margin: 36px 0 0; }
+  .quote { font-style: italic; font-weight: var(--w-light); font-size: 28px; letter-spacing: -0.4px; line-height: 1.28; color: var(--ink); margin: 20px 0 0; max-width: 320px; }
+  .sub { font-size: 14px; color: var(--ink-on-photo); margin: 18px 0 0; max-width: 300px; }
+  .cta { position: absolute; left: 0; right: 0; bottom: 32px; padding: 0 var(--gutter); }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -22,16 +23,16 @@
     <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
     <span class="batt"><i></i></span></span></div>
   <div class="screen">
-    <div class="photo" style="background-image:url('../assets/finish-bg.jpg');filter:saturate(1.15) brightness(.85) blur(6px);transform:scale(1.1)"></div>
-    <div class="vignette vignette--deep"></div>
+    <div class="photo" style="background-image:url('../assets/finish-bg.jpg');filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.06)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.30),rgba(0,0,0,.62))"></div>
     <div class="top-scrim"></div>
     <div class="wrap">
       <img class="breathing" src="../assets/logo.png" alt="Soulfull">
-      <p class="eb">Welcome, Hugo</p>
-      <p class="quote">&ldquo;The soul knows the way — we're simply here to walk beside you.&rdquo;</p>
-      <p class="sub">Your space is ready whenever you are.</p>
+      <p class="eb on-photo">Welcome, Hugo</p>
+      <p class="quote on-photo">&ldquo;The soul knows the way — we're simply here to walk beside you.&rdquo;</p>
+      <p class="sub on-photo">Your space is ready whenever you are.</p>
     </div>
-    <div class="cta"><button class="sg-btn sg-btn--filled">I'm ready</button></div>
+    <div class="cta"><button class="sg-btn">I'm ready</button></div>
   </div>
   <div class="home-indicator"></div>
 </div></div>
