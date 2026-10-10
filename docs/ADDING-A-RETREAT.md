@@ -3,11 +3,7 @@
 **No app release required.** A retreat is a row in `retreats` plus a photo in
 Storage. Both are things you do in the Supabase dashboard.
 
-This was not true before 2026-09-11: `image_url` held an *asset-catalog name*
-compiled into the app, and the long-form brochure lived in Swift
-(`RetreatExperience.curated(for:)` — a switch statement with one case, matched
-on the retreat's name). Adding a retreat meant shipping a build. Both are now
-data. See `supabase/migrations/0011_retreats_self_serve.sql`.
+The schema is `supabase/migrations/0011_retreats_self_serve.sql`.
 
 ---
 
@@ -39,14 +35,9 @@ Dashboard → **Storage** → `retreat-images` → Upload.
   and busy in its upper third will fight the header — `PhotoBackdrop` darkens
   the top band, but it can't rescue a white sky.
 
-> **The photos already there** were uploaded on 2026-09-14 from the app bundle,
-> and all seven rows point at them. The `retreat-*` imagesets stay in
-> `Assets.xcassets` — the Practice mock content still borrows them as placeholder
-> art — but nothing in the retreat catalog reads them any more.
->
-> Note the originals are small: five of the seven are only 736px wide, which the
-> full-bleed hero upscales on a 3× phone. If you are reshooting, ~2000px on the
-> long edge is the target.
+> **The photos there today are small:** five of the seven are only 736px wide,
+> which the full-bleed hero upscales on a 3× phone. If you are reshooting,
+> ~2000px on the long edge is the target.
 
 ## 2. Insert the row
 
@@ -134,11 +125,7 @@ Convention: a **folder per retreat instance**, named after the hero file's stem
 and `ImageSource` splits on the first slash only, so the bucket is still
 `retreat-images` and the rest is the object path.
 
-These were hardcoded `Image("mb-villa")` in the views until 2026-09-14 — "mb"
-for *Mallorca brochure*. That was fine while Mallorca was the only trip with
-content and wrong the moment it wasn't: reserving Patagonia would have shown a
-Mallorca villa on the packing screen, confidently, with nothing to suggest
-anything was off. Leaving them out now renders a deliberate blank instead.
+A missing path renders the espresso ground, never another retreat's photo.
 
 ### Two things to know
 
@@ -175,16 +162,12 @@ with *your* new row — for that, open the retreat in the app and look.
 
 ## Other imagery already in the bucket
 
-Uploaded 2026-09-14 when the post-purchase screens stopped hardcoding them:
-
 | Path | Used by |
 |---|---|
 | `mallorca-2027-07/{welcome,featured-todo,todos,packing,guides}.jpg` | the four trip screens, via `post_booking` |
 | `mallorca-2027-07/{hero,checkout,cycle,dinner,recover,swim,yoga}.jpg` | **nothing yet** — they were in the app bundle unreferenced. Parked here so a future brochure can point at them (element photography, say) without a release. |
 
-`members/g-martinez.jpg` was here too and was **deleted on 2026-09-30**. It was a
-person's photograph at a public URL, and nothing had ever displayed it: the
-testimonial section renders quote, author and attribution only. If a
+The testimonial section shows quote, author and attribution only. If a
 testimonial should ever show a face, upload one with that person's consent
 and add a `testimonial.image` field and an avatar in `testimonialSection`.
 
@@ -192,6 +175,3 @@ and add a `testimonial.image` field and an avatar in `testimonialSection`.
 
 - The **four element icons** are SF Symbols, so those are data — but the
   *layout* of the brochure is not. A new section type means Swift.
-- (No longer: **practice content**. Sessions were always a table, and journal
-  prompts, movement sequences and recipes became tables in 0021 — see
-  `docs/ADDING-A-WRITTEN-PRACTICE.md`.)

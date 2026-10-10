@@ -55,8 +55,9 @@ enum AppFeatures {
     /// Deposit + installments on the retreat checkout (a deposit due today,
     /// with the balance billed monthly).
     ///
-    /// **Off, because it is not built.** The plan is `docs/PLAN-deposit-installments.md`;
-    /// the server charges the retreat's full `price_usd` in one payment.
+    /// **Off, because it is not built.** A parked design is in git history
+    /// (`git show a755604:docs/PLAN-deposit-installments.md`); the server
+    /// charges the retreat's full `price_usd` in one payment.
     ///
     /// This flag exists because the copy shipped ahead of the capability and
     /// reached the pay button: the since-deleted `RetreatCheckoutView` rendered

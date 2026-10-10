@@ -131,7 +131,7 @@ SoulfullGatherings/
 
 ## Design system
 
-The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors or font sizes.** The colors were converted by hand from oklch tokens to sRGB, so if a token changes, recompute it by hand.
+The direction is "quiet luxury, editorial": atmosphere (shader surfaces that drift at breath pace, 4–6s cycles, never strobing), physics (every tap squishes, every push zooms) and magazine layout (oversized tight-kerned headlines, eyebrows, full-bleed photography, numbered folios over dots). All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors or font sizes.** The colors were converted by hand from oklch tokens to sRGB, so if a token changes, recompute it by hand.
 
 | Token | Usage |
 |---|---|
@@ -150,7 +150,7 @@ The direction is "quiet luxury, editorial" (`docs/DESIGN.md`). All brand values 
 - **Everything is Geist** (Thin to Bold). There is no serif and no SF Pro. Headlines use negative `kerning` (−0.2/−0.3); body text and eyebrows use positive `tracking` (2–3).
 - **Glass** always goes through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCapsule` / `.soulGlassCard`): real `glassEffect` on iOS 26+, material + hairline below that. It is the only place that branches on OS. Feature code never does.
 - **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which gives a spring squish and a haptic on touch-down. Don't put `onTapGesture` on cards.
-- **Shaders** go only through the `ShaderFX` wrappers (grain / aurora / shimmer / dissolve / ripple), which all respect Reduce Motion. `PulseModifier` loops forever, so use it only for persistent live indicators.
+- **Shaders** go only through the `ShaderFX` wrappers (grain / aurora / shimmer / dissolve / ripple), which all respect Reduce Motion. Film grain goes over the aurora only, never over photography (it read as too busy there). `PulseModifier` loops forever, so use it only for persistent live indicators.
 - **Navigation:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`. Tab roots report pushes through a `navHidden` binding (one per tab, because every tab keeps its stack) so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
 - **Type over photography is one rule in three parts, used together:**
   1. `PhotoBackdrop` draws a `topScrim` (default 0.45 over 340pt). Pass `0` only for a screen with an empty top.
@@ -290,11 +290,12 @@ Every practice opened is recorded to `practice_plays`. That table is the member'
 - **Client-reported seconds are capped, not proven.** Making payouts defensible against a determined cheat would need an Edge Function that cross-checks the Storage access logs.
 
 ### Digital programs (the Programs tab)
-Spec: `docs/PLAN-digital-programs.md`. A program is free to join (behind the account gate), self-paced, and opens a day at a time.
+A program is free to join (behind the account gate), self-paced, and opens a day at a time. Its days live in the hand-authored `programs.curriculum` jsonb: `0014_seed_program_finding_ground.sql` is the complete worked example (activities are `{"kind", "content_id", "note"}`), and it fails soft like the brochure.
 - **The unlock rule is the feature.** Day 1 opens on enrolment. Day N+1 opens when **every activity of day N is done _and_ the local date has moved past the day day N was finished on** (`startOfDay + 1 day`, not `+86400`).
   - The rule lives in `ProgramUnlockRule`.
   - `ProgramDayState` keeps `complete` / `open` / `opens(date)` / `awaitingPreviousDay` separate, because "come back tomorrow" and "not finished yet" call for different actions.
-- ⚠️ **An activity counts toward a day only if it was completed after that day unlocked** (`lastPlayedAt >= dayUnlockedAt`). `practice_progress.completed` never resets, so without this rule a member's past practice would complete days the moment they enrol.
+- ⚠️ **An activity counts toward a day only if it was completed after that day unlocked** (`lastPlayedAt >= dayUnlockedAt`). `practice_progress.completed` never resets, so without this rule a member's past practice would complete days the moment they enrol. The same practice on day 2 and day 6 has to be done twice, on purpose.
+- **The device clock decides the date,** so winding it forward skips the wait. Accepted: this is a free program, not an exam.
 - **Day completion is latched,** even though activity completion is not.
 - **Programs record nothing of their own.** Activities open the same screens as the Practice tab and write `practice_plays` the same way, so a creator is paid identically either way. Leaving a program clears the enrolment and day rows and **touches no play history**.
 - **Missing activities:**
@@ -428,7 +429,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 
 ## App Store (v1)
 
-The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Review is in `docs/APP-REVIEW-NOTES.md`. The build-level items (icon, launch screen, signing, privacy manifest, export compliance, push and Apple entitlements) are done. Rules to keep:
+The submission checklist and the text for App Review are in `docs/APP-REVIEW-NOTES.md`. The build-level items (icon, launch screen, signing, privacy manifest, export compliance, push and Apple entitlements) are done. Rules to keep:
 - **Launch screen:** use the `UILaunchScreen` dict + the `LaunchBackground` colour. Don't bring back `UILaunchStoryboardName`.
 - **Devices and signing:** iPhone only (`TARGETED_DEVICE_FAMILY: "1"`). Archiving needs a real `DEVELOPMENT_TEAM` in `Secrets.xcconfig`.
 - **Age rating: 13+** (owner's call, 2026-10-08). The new questionnaire is answered with user-generated content, health/wellness topics and social media **yes**, everything else none. The API computed 4+ from that, so `ageRatingOverrideV2 = THIRTEEN_PLUS` sets 13+, matching the Terms' minimum age and the public member feed; the legacy `appStoreAgeRating` reads it as 12+. Nothing in the app may mention alcohol, tobacco or drugs — check brochure copy before adding it (Guideline 2.3.6; the website's Chamonix page has a wine tasting).
@@ -443,7 +444,7 @@ The full audit is in `docs/APP-STORE-READINESS.html`, and the text for App Revie
 | Flag | v1 | Notes |
 |---|---|---|
 | `paymentsEnabled` | `false` | The retreat button reads "Request a place" → `RetreatEnquiryView` → `send-retreat-enquiry` emails info@soulfullgatherings.com. Turning payments on is a checklist, not a one-line flip (see the flag's doc comment). |
-| `depositInstallmentsEnabled` | `false` | Deposit + instalments exists only as brochure copy (`docs/PLAN-deposit-installments.md`, unbuilt); the server charges the full price. **Never put brochure copy on a pay button.** |
+| `depositInstallmentsEnabled` | `false` | Deposit + instalments exists only as brochure copy and is unbuilt (a parked design: `git show a755604:docs/PLAN-deposit-installments.md`); the server charges the full price. **Never put brochure copy on a pay button.** |
 
 **Practice media appears only once data exists, with no code switch.** `PracticeViewModel` has no mock fallback, because shipping sample media is a Guideline 2.1 rejection. `availablePracticeCategories()` returns `.known(Set)` or `.unknown`:
 - A track **known to be empty** is dimmed and marked "SOON".

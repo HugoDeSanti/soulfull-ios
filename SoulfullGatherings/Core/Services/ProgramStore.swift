@@ -21,7 +21,7 @@
 //  That ledger is what creator payouts are drawn from — append-mostly, no
 //  delete policy — and a program day is not a payable event. The activities
 //  *inside* a day still record to it exactly as they do from the Practice tab,
-//  so a creator is paid the same either way. See docs/PLAN-digital-programs.md.
+//  so a creator is paid the same either way. See CLAUDE.md → Digital programs.
 //
 
 import SwiftUI

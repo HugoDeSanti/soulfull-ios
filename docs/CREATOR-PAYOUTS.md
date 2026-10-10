@@ -29,8 +29,8 @@ What counts:
   (`practice_plays.instructor_id`, stamped by the server). Reassigning a
   session later doesn't move past earnings.
 - **Months are UTC months.**
-- A session with no guide (`instructor_id` null, like the "Soulfull Studio"
-  placeholders) is in nobody's share and doesn't dilute anyone's.
+- A session with no guide (`instructor_id` null) is in nobody's share and
+  doesn't dilute anyone's.
 
 ## Each month
 

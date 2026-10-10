@@ -14,12 +14,12 @@ ships from `SoulfullGatherings/` and never imports anything here.
   Feature views                  screens/*.html                   Feature views
 ```
 
-1. **You push** this bundle to a Claude Design project (already done — see below).
+1. **You push** changed cards with `/sync-design push` (incremental, never the whole bundle).
 2. **UX team edits** in the browser: nudge a color, retype copy, re-space a card,
    try a new layout on a screen.
-3. **You pull their changes** (`DesignSync get_file`) in a Claude Code session and
-   ask Claude to "port the Claude Design changes back to Swift." Because the
-   mapping is 1:1, most edits are mechanical.
+3. **You pull their changes** with `/sync-design pull` in a Claude Code session,
+   which ports them back to Swift. Because the mapping is 1:1, most edits are
+   mechanical.
 
 ## How it maps to the codebase
 
@@ -85,30 +85,37 @@ this; the surface is its own ground.
   `Resources/Fonts/`.
 - **Images:** downscaled copies of the real asset-catalog photos live in `assets/`.
 
-## v1 App Store scope (affects several cards)
+## Keep the mirror matching the shipping app
 
-The 1.0 submission ships a narrower app than this mirror once showed. Keep the
-mirror matching the **shipping** app; parked work stays under
-`Screens · Parked (post-v1)`.
+The mirror shows what a member can reach in the current build, nothing parked.
+`git log -- design-system` has the history of each card; these are the rules
+that still bite when a card is edited:
 
-| Change | Mirror effect |
-|---|---|
-| **Report and Block** (2026-10-08) | Guideline 1.2 asks for both wherever members see each other. `MemberSafetyMenu` (`Features/Community/MemberSafety.swift`) → `.member-menu` in `shared/app.css`: a "⋯" (14pt semibold, `--ink-soft`, 32×44 target) after the like pill on every **other** member's line in `community` (your own line has none), after the pills on every `friends` row, and trailing on a `notifications` row whose liker is known. It opens a system menu — Report <Name> · Block <Name> (destructive). Block asks first in an iOS action sheet; the mirror has no card for system dialogs, so its copy lives in `community`'s header comment. Two new cards in `Screens · Tabs`: `report-member` (`ReportMemberSheet.swift` — REPORT eyebrow, the member on glass, five reason rows with a honey ring + radio when chosen, an optional note, "Send report", the 24-hour promise) and `report-member-sent` (honey seal, "Thank you", an outline "Block <Name>" with its consequence, "Done"); and `blocked-members` (`BlockedMembersView.swift`, a sheet from a new **Blocked members** row under "Share my practice" on `profile`). The reason titles are the team's email labels and the Edge Function's strings — change both together. |
-| **Safety notes, agreement, copy** (2026-10-08) | `.safety-note` in `shared/app.css` (`SafetyNoteCard`, `PracticeShared.swift`): "Before you begin" on glass, first in the Breathwork and Somatic Exercises lists (`practice-list`); `player` gains the one-line reminder under the guide credit. `account` gets a new create-mode subtitle and the agreement line under the mode toggle (see *Accounts are just-in-time*). `welcome-slide` body copy is new. `profile`'s Delete account reads `--danger` (`Theme.danger`, new) instead of a raw hex. |
-| **Guide dashboard** (2026-10-07) | A new card, `guide-dashboard.html` (`Screens · Tabs`), maps to `Features/Instructors/GuideDashboardView.swift`: a sheet over the You tab for a member the team has linked to a guide. Close button in a pinned bar over a `--bg` fade (rows pass beneath it). The guide's photo blurred to a colour field; a 76pt face in a honey ring, "GUIDE DASHBOARD", the name. **This month** on honey-tinted glass (6% / 30%): a 52pt Light hero that is the estimate, or the share ("12.4%") with **no amount** while the month's pool isn't set; a status chip that is always icon + word (Estimate · Pool not set · To be paid · Paid <date>); three figures. **People**: all-time count, then six 22pt columns (4pt rounded data-end, hairline baseline), only the selected month honey, tap to read it. **Past months**: "Paid to date", then one glass row per closed month (minutes · share · people, amount + chip). **Your practices** (glyph disc, kind · minutes or finished, honey "+N this month", people on the right), and **Digital retreats**. `profile.html` gains the **As a guide** section (`GuideSummaryCard`: honey-tinted glass, "<Month> so far", people · min heard · est. earned), which only a linked guide ever sees. |
-| **Instructor profiles** (2026-09-28) | A new card, `instructor-profile.html` (`Screens · Practice`), maps to `Features/Instructors/InstructorProfileView.swift`: the guide's photo blurred to a colour field behind a 112pt portrait (honey ring 6pt out, a breathing honey halo), title eyebrow and name, **Followers \| Following** (headline-28 numbers, compact and rounded down like presence), a "Followed by" line (≤3 overlapping 24pt faces — yours first once you follow — and at most two names), a 196pt honey **Follow** pill that becomes quiet glass "✓ Following", About, and the Library (digital retreats, sessions, then the credited Movement / Recipes / Journal prompts). **Guides are met on the pages of what they made, never on the Practice landing** (a Guides shelf was tried and removed the same day): `.guide-card` in `shared/app.css` (`GuideCard.swift` — "Your guide", 50pt face in a honey ring, name, what they teach, chevron) sits on `program-detail` (before The days), `exercise-detail` and `recipe-detail` (after the header) and `journal-detail` (at the foot, clear of the editor); `player` gets the compact `.guide-chip` (`GuideCredit`). Absent wherever the content names no guide. |
-| **Gatherings tab; Programs → Digital Retreats** (2026-09-25) | `bottom-nav` is **six** items — Home · Gatherings · Digital Retreats · Practice · Community · You — and `.nav-item` is `flex: auto` (content-sized slots + an equal share of the spare, `NavBarLayout`), because six equal slots put "Digital Retreats" into "Gatherings". Gatherings (a folded-map glyph) is the retreats stack as a tab root: `retreats-stack` / `retreats-catalog` lose "‹ Back" and gain the bar, the bottom card sits 8pt above it. `home` gains the Digital Retreats shelf it was missing and ends on Upcoming gatherings — both shelves hand off to their tabs. Every member-facing "program" is now "digital retreat": `programs` (title, "More digital retreats"), `program-detail` (back label, "Start this digital retreat", "Leave this digital retreat"), the `Screens · Digital Retreats` group. File paths are unchanged, so each card syncs to the same place. |
-| **Community tab added** (2026-09-22; the old Circle placeholder — cut under Guideline 4.2 — is gone, this is its real successor) | `bottom-nav` is **five** items — Home · Programs · Practice · Community · You. `community.html` moved to `Screens · Tabs` and is the live feed: `AvatarView` (photo, or the initial on one of five id-picked tones), the All \| Friends scope toggle (a cream lens on glass, BottomNav's physics), the Friends button with a request badge, and `ActivityRow` ("Name practiced Title" + track · time) grouped Today / Yesterday / Earlier. `friends.html` is the pushed Friends screen (search by name, Requests / Sent / Friends with honey-fill primary pills). **Likes (same day):** each row carries a `LikeButton` — heart + count on a glass capsule, honey when yours, count-only on your own line — and the header a bell with an unread badge; `notifications.html` is the pushed list ("Alma G. liked your Morning Mobility practice", unread rows honey-dotted for the visit). A one-time **push prompt card** ("Hear when someone likes your practice" — Turn on / Not now) sits between the controls and the feed for a member who has never been asked. `profile.html` gains the 92pt avatar with a camera badge in place of the logo, and a Community section with the "Share my practice" toggle. Journal prompts never appear in the feed. |
-| **Presence** (2026-09-23) | `PresenceBadge.swift` → `.presence` in `shared/app.css`: up to three overlapping 20pt faces (friends first) + "75.7k present" in `--ink-soft` body 12 medium. On practice rows (`practice-list.html`), recipe/exercise/journal detail (`recipe-detail.html`), program cards (`programs.html`, Home's shelf) and the program hero (`program-detail.html`). Absent below 3 people; journal prompts show the count with no faces. |
-| **Programs tab added** | A fourth tab of self-paced, multi-day journeys — three new cards in `Screens · Programs`, and a "Day N is open" card on `home`. Free to browse, free to join, but joining needs an account (`AccountGate`), which is why `program-detail` is readable end to end while its CTA is the gate. |
-| **Reservations off, Stripe dependency dropped** | `retreat-detail` CTA reads **"Request a place"** and opens `retreat-enquiry` (the retreat application form), with no other state: there is no client-side checkout left to push to. `retreat-checkout` is **deleted** from the mirror along with `RetreatCheckoutView.swift` and `PaymentService.swift`; recover both from git history if payments return. The Mallorca post-purchase cards (hub, to-dos, packing, guides) stay — they are trip logistics, not payment. |
-| **No offline fallback for retreats** | The app no longer substitutes sample retreats when a fetch fails — it renders an explicit *"No internet connection"* or *"Couldn't load retreats"* state instead (Guideline 2.1(a): placeholder content must be scrubbed). **Not modelled here**: this mirror shows happy-path screens only, and has never carried error, empty or offline states — `ConnectionBanner` has no card either. If the UX team wants to design these, they are `RetreatsLoadFailure` in `RetreatsViewModel.swift` (a two-line card on `home`, a full-screen state on `retreats-stack`). |
-| **Catalog photos come from Storage** | Retreat photography is fetched from the public `retreat-images` bucket, not bundled, so a new retreat needs no release. While a photo loads — or if it fails — the app paints a quiet two-stop gradient (`Theme.surface` → `Theme.bgDeep`) rather than a blank. **Not modelled here**, like the other loading states; the mirror shows loaded screens. |
-| **Practice media tracks gated** | Somatic Exercises / Breathwork / Meditation carry a `SOON` badge, read "Coming soon", and are dimmed (`.pcard--soon`) until the `practice_sessions` table is seeded. |
-| **Practice sections renamed, Personal Massages removed** | The Somatic track reads **"Somatic Exercises"**, the Exercises section reads **"Movement"** (`exercise-detail`'s back bar and card name follow), and the Personal Massages section is gone: `massage-detail.html` and `assets/practice-massage.jpg` are **deleted**, not parked. Home's Anxious and Tender mood chips used to point there and now point at Movement and Journal. The `massage` content kind is gone from Swift and from the DB check constraint too (migration 0012) — safe only because the app has no users yet and so no play history to strand. |
-| **Legal links added** | `profile` gains a Privacy · Terms · Support row. |
-| **The You tab keeps your practice** (2026-09-18) | `profile` becomes a scrolling page: four glass stat tiles (current streak — honey-tinted while alive — best streak, classes taken, minutes practiced), then **Digital retreats** (programs in progress, then completed) and **In-person retreats** (paid bookings whose retreat has ended), then the account actions. It maps to `Features/Profile/ProfileView.swift` (renamed from `ProfilePlaceholder`). A **guest** sees one "Keep it with you" card in place of all three sections, and each section's empty state is described in comments on the card rather than drawn. The card's `bottom-nav` is now four items, too; it was still three. |
-| **No AI anywhere** | The app has no AI companion or chat and none is planned. `mallorca-chatbot` is **deleted** (it was a live `window.claude.complete` prototype), the hub's wide tile now opens an email to the team instead of a chat, and the third welcome slide — "Soul AI · Meet Soul, your companion through the journey" — is gone from `WelcomeView`. **Don't reintroduce an assistant card**: shipping UI that advertises an AI the app doesn't have is a metadata-accuracy rejection, and it ran on every first launch. |
+- **Happy path only.** There are no error, empty, offline or loading states
+  (`ConnectionBanner`, `RetreatsLoadFailure`, the gradient a photo paints while
+  it loads). A guest's or an empty section's state is described in a comment on
+  the card rather than drawn.
+- **Six tabs:** Home · Gatherings · Digital Retreats · Practice · Community ·
+  You. `.nav-item` is `flex: auto` (`NavBarLayout`), because six equal slots
+  push "Digital Retreats" into "Gatherings".
+- **"Program" is "digital retreat"** in every word a member reads. File names
+  keep "program", so each card syncs to the same place.
+- **Guides appear only on the pages of what they made:** `.guide-card` on
+  `program-detail`, `exercise-detail`, `recipe-detail` and `journal-detail`,
+  `.guide-chip` on `player`. Never on `practice-landing`.
+- **Report and Block:** a `.member-menu` "⋯" sits beside every *other* member
+  (`community`, `friends`, `notifications`), never on your own line. The Block
+  confirmation is a system sheet with no card; its copy is in `community`'s
+  header comment. The report reasons in `report-member` are the team's email
+  labels and `report-member`'s strings, so change them together.
+- **Presence** (`.presence`) is absent below 3 people, and journal prompts show
+  a count with no faces. Journal prompts never appear in the feed.
+- **Practice media tracks** with no rows are dimmed with a `SOON` badge
+  (`.pcard--soon`).
+- **Retreats:** the CTA reads "Request a place" and opens `retreat-enquiry`.
+  There is no checkout card while payments are off.
+- **No AI, anywhere.** Don't add an assistant or chat card: UI that advertises
+  an AI the app doesn't have is a metadata-accuracy rejection.
 
 ## Accounts are just-in-time (affects the account card)
 
@@ -120,21 +127,19 @@ guest opens an actual practice, then replays the tap they were making.
 |---|---|
 | **Sign in with Apple first** | `account` leads with a single `.social-btn` pill, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px white capsule, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled. |
 | **Confirmation is a code, not just a link** | A second card, `account-confirm`, is the state after "Create account" when Supabase email confirmation is on. It leads with a **code field** (one wide field, not a row of boxes — iOS one-time-code autofill targets a single field, and the digit count is the project's `mailer_otp_length`, currently 6) because the emailed *link* can only complete on the iPhone that signed up. Below it: Confirm email · Send a new code (60s cooldown = `smtp_max_frequency`) · Use a different sign-in. |
-| **Forgot password is a code too** (2026-10-07) | In sign-in mode a "Forgot password?" link (13px ink, underlined, trailing under the password field) opens two more states of the same sheet: `account-reset` (the address, carried over from the form → Send code, plus a line pointing Apple members back to Apple) and `account-reset-code` (the code field from `account-confirm` **and** a new-password field in one step → Set new password · Send a new code · Back to sign in). The copy never says whether the address has an account. The email has a code and no link (`supabase/templates/README.md`). |
-| **What continuing agrees to** (2026-10-08) | Under the mode toggle, in both modes, a centered 12px `--muted` line: what other members see (first name, last initial, photo) and that continuing agrees to the Terms (which carry the community standards Guideline 1.2 asks for) and acknowledges the Privacy Policy. The two links are `--ink-soft`, not underlined. |
+| **Forgot password is a code too** | In sign-in mode a "Forgot password?" link (13px ink, underlined, trailing under the password field) opens two more states of the same sheet: `account-reset` (the address, carried over from the form → Send code, plus a line pointing Apple members back to Apple) and `account-reset-code` (the code field from `account-confirm` **and** a new-password field in one step → Set new password · Send a new code · Back to sign in). The copy never says whether the address has an account. The email has a code and no link (`supabase/templates/README.md`). |
+| **What continuing agrees to** | Under the mode toggle, in both modes, a centered 12px `--muted` line: what other members see (first name, last initial, photo) and that continuing agrees to the Terms (which carry the community standards Guideline 1.2 asks for) and acknowledges the Privacy Policy. The two links are `--ink-soft`, not underlined. |
 | **The sheet arrives mid-tap** | Its subtitle has to justify the interruption and promise the tap isn't lost, which is why the copy reads "we'll pick up exactly where you were" rather than a generic pitch. |
-| **No onboarding gate card** | A full-screen `onboarding-account` card existed briefly on 3 September and was deleted the same day — a hard registration wall put the app in scope for App Store Guideline 5.1.1(i). The four `onboarding-*` question cards keep their `.onb-skip` control. |
+| **No onboarding gate card** | A registration wall at the end of onboarding falls under Guideline 5.1.1(i), so there is none. The four `onboarding-*` question cards keep their `.onb-skip` control. |
 
-> **Apple is the only third-party provider.** Google was built and then removed
-> before shipping (2026-09-03) — don't re-add a second `.social-btn` to the
-> account card without the Swift change to match.
+> **Apple is the only third-party provider.** Don't add a second `.social-btn`
+> to the account card without the Swift change to match.
 
 ## Card groups in Claude Design
 
 `Overview` · `Foundations` · `Components` · `Screens · Welcome` ·
 `Screens · Onboarding` · `Screens · Home` · `Screens · Digital Retreats` ·
-`Screens · Retreats` · `Screens · Practice` · `Screens · Tabs` ·
-`Screens · Parked (post-v1)`
+`Screens · Retreats` · `Screens · Practice` · `Screens · Tabs`
 
 Cards are indexed by the first-line `<!-- @dsCard group="…" name="…" -->` marker
 in each HTML file.
@@ -143,8 +148,8 @@ in each HTML file.
 
 Self-paced, multi-day journeys — "programs" in the code and the files, "digital
 retreats" to a member. Mapped to `Features/Programs/**` and
-`Core/Services/ProgramStore.swift`; the full spec is
-`docs/PLAN-digital-programs.md`.
+`Core/Services/ProgramStore.swift`; the rules are in `CLAUDE.md` → *Digital
+programs*.
 
 **The one thing not to flatten when redesigning these.** A day can be
 unavailable for two different reasons, and they need two different sentences:
@@ -208,11 +213,8 @@ website's own thank-you message.
 terracotta / olive / gold on an espresso canvas, all-Geist — defined inline as a
 per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
 Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
-The original **brochure-light** versions (cream / Cormorant / Pinyon) were kept
-outside this tree in `docs/design-brochure-backup/` until 2026-09-07; recover
-them with `git show d20e3f6:docs/design-brochure-backup/`. When porting back to
-Swift, map the `.mb` tokens to `RetreatPalette` — don't reintroduce the light
-palette or fold these into the global `Theme`.
+When porting back to Swift, map the `.mb` tokens to `RetreatPalette`, and don't
+fold them into the global `Theme`.
 
 ## Run it locally
 

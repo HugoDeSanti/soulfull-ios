@@ -9,7 +9,7 @@
 //  progress from `RetreatTripStore`, and a grid into the rest of the trip.
 //  The "Group chat" tile opens the retreat's external WhatsApp invite
 //  (`retreat.groupChatURL`, sourced from Supabase) — group chat is not built
-//  in-app (see docs/PLAN-group-chat.md).
+//  in-app (a parked design: `git show a755604:docs/PLAN-group-chat.md`).
 //
 
 import SwiftUI

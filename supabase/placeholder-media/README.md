@@ -22,10 +22,11 @@ image service involved:
 - **Sound:** a synthesized drone pad, a struck singing bowl, and (for the breathwork) a noise swell that rises on each inhale and falls on each exhale.
 - **Video:** a faceless flat-illustration figure in the Theme palette, rendered frame by frame with Core Graphics. She does four parts: reach with the breath, side sway, knee-bounce shake-out, and a hand on the heart and belly. Geist captions sit in the lower third, clear of the player's title bar.
 
-Each row is credited to "Soulfull Studio" and linked to no instructor, so no
-Guide card appears and no real or invented person is named. Test plays still
-go into `practice_plays` (the payout ledger) with that creator. Leave it out of
-any payout.
+`seed.sql` credits each row to "Soulfull Studio" with no instructor. On the
+live project they have since been pointed at `alma-guerra` ("Hugo Santi", the
+owner's test account) like every other practice, so they show a Guide card and
+their test plays in `practice_plays` (the payout ledger) credit that guide.
+Leave them out of any payout.
 
 ## Seeding
 
