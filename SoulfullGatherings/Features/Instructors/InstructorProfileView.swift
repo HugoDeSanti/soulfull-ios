@@ -78,6 +78,7 @@ struct InstructorProfileView: View {
             .padding(.horizontal, 20)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .background {
             // Their own photograph, blurred until it is only its colour — so
             // each guide's page has a temperature of its own.

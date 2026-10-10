@@ -66,7 +66,7 @@ change it in both places or the mirror drifts:
 | Where | CSS | Swift |
 |---|---|---|
 | Header band darkening | `.top-scrim` (after `.vignette`) | `PhotoBackdrop(topScrim:)`, default `0.45` over `340pt` |
-| Status bar band (tab shell only) | `.statusbar--scrim` on `.statusbar` | `MainTabView.StatusBarScrim`: `Theme.bgDeep` 0.94 → 0.86 behind the clock, → 0 over a 14pt tail below the status bar |
+| Status bar band (scrolled state only) | `.statusbar--scrim` on `.statusbar` (no at-rest screen carries it) | `View.statusBarScrim(fadeIn:holding:)` in `Components.swift`, on each tab-shell `ScrollView`: invisible at rest, fades in over the first 36pt of scroll; `Theme.bg` 0.92 → 0.84 behind the clock (+ `holding` under a pinned Back bar), then eased to 0 over a 40pt tail |
 | Text halo | `.on-photo` | `View.onPhoto()` |
 | Eyebrow colour | `--ink-soft` | `Theme.inkSoft` |
 | Subline colour / size | `--ink-on-photo` at 14px | `Theme.inkOnPhoto`, `Theme.body(14)` |

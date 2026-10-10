@@ -208,6 +208,84 @@ extension View {
     }
 }
 
+// MARK: - Status bar scrim
+
+extension View {
+    /// A soft rise of the canvas colour behind the status bar, there only once
+    /// this scroll view's content has moved up under the clock.
+    ///
+    /// At rest the page runs clean to the top edge. The band used to be on all
+    /// the time, over every screen in the tab shell: a near-solid dark slab
+    /// cut across the photo. Scrolled, cream headlines and glass chips would
+    /// collide with the clock, so the band fades in over `fadeIn` points of
+    /// scroll and sinks them into the canvas first — the same move as the
+    /// retreat detail's and the recipe's top-bar scrims.
+    ///
+    /// Apply it to the `ScrollView` itself, since it reads that view's scroll
+    /// geometry, and before a pinned overlay such as a `PracticeBackBar`, so
+    /// the bar draws above it. `holding` keeps the band at full strength that
+    /// far below the status bar, to sit behind a pinned bar too. A hero screen
+    /// starts `fadeIn` late, so the band doesn't darken a photo nothing has
+    /// reached yet.
+    func statusBarScrim(fadeIn: ClosedRange<CGFloat> = 0...36, holding: CGFloat = 0) -> some View {
+        modifier(StatusBarScrim(fadeIn: fadeIn, holding: holding))
+    }
+}
+
+private struct StatusBarScrim: ViewModifier {
+    let fadeIn: ClosedRange<CGFloat>
+    let holding: CGFloat
+    @State private var opacity: Double = 0
+
+    /// How far the band thins out below the held part. Fixed in points, so a
+    /// tall band doesn't get a long, muddy edge.
+    private static let tail: CGFloat = 40
+
+    func body(content: Content) -> some View {
+        content
+            .onScrollGeometryChange(for: Double.self) { geo in
+                let y = geo.contentOffset.y + geo.contentInsets.top
+                let t = (y - fadeIn.lowerBound) / (fadeIn.upperBound - fadeIn.lowerBound)
+                // In twentieths, so a page scrolling well past the band
+                // doesn't re-render this on every frame.
+                return (min(1, max(0, t)) * 20).rounded() / 20
+            } action: { _, new in
+                opacity = new
+            }
+            .overlay(alignment: .top) {
+                // From the top of the safe area, with the band reaching up
+                // through the status bar to the screen's edge, whatever its
+                // height on this device.
+                Color.clear
+                    .frame(height: holding + Self.tail)
+                    .frame(maxWidth: .infinity)
+                    .background { band.ignoresSafeArea(edges: .top) }
+                    .opacity(opacity)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+    }
+
+    /// Dense through the status bar and `holding`, enough to sink cream type
+    /// behind the clock, then eased out over `tail`, so there's no edge to
+    /// find. (A frosted material was tried: over the already-blurred
+    /// backdrops it read as a flat grey slab with a visible edge.)
+    private var band: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [Theme.bg.opacity(0.92), Theme.bg.opacity(0.84)],
+                           startPoint: .top, endPoint: .bottom)
+            LinearGradient(stops: [
+                .init(color: Theme.bg.opacity(0.84), location: 0),
+                .init(color: Theme.bg.opacity(0.6), location: 0.3),
+                .init(color: Theme.bg.opacity(0.28), location: 0.6),
+                .init(color: Theme.bg.opacity(0.08), location: 0.84),
+                .init(color: Theme.bg.opacity(0), location: 1),
+            ], startPoint: .top, endPoint: .bottom)
+                .frame(height: Self.tail)
+        }
+    }
+}
+
 // MARK: - Small circular icon button (back / close)
 
 struct CircleIconButton: View {

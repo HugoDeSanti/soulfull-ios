@@ -88,6 +88,7 @@ struct ProfileView: View {
             }
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .refreshable {
             guard isMember else { return }
             async let mine: Void = vm.load(force: true, settings: settings)

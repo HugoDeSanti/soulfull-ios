@@ -56,6 +56,7 @@ struct ProgramsView: View {
             .padding(.top, 10)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .background {
             PhotoBackdrop(imageName: active?.imageUrl ?? "onb-bg", blur: 26, darken: 0.8)
                 .animation(.easeInOut(duration: 0.6), value: active?.id)

@@ -66,6 +66,7 @@ struct HomeView: View {
             .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: history.resumable?.id)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .background {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
         }

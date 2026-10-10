@@ -32,6 +32,7 @@ struct NotificationsView: View {
             .padding(.horizontal, 20)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .background {
             PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8)
         }

@@ -66,6 +66,7 @@ struct PracticeView: View {
             .padding(.horizontal, 20)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .pinchBrowsable(zoomedOut: $sheet)
         .background {
             PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.76)

@@ -61,6 +61,7 @@ struct CommunityView: View {
             .padding(.top, 10)
         }
         .scrollIndicators(.hidden)
+        .statusBarScrim()
         .refreshable { await vm.load(isMember: isMember, force: true) }
         .background {
             ZStack {

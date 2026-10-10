@@ -139,11 +139,6 @@ struct MainTabView: View {
                 .ignoresSafeArea()
                 .id(shell)
 
-            // Keeps scrolled text from running into the clock — every screen's
-            // content scrolls up under the status bar, and nothing sat between
-            // them.
-            StatusBarScrim()
-
             // Docked nav. Static: it hides on detail pushes without moving.
             BottomNav(current: $tab)
                 .opacity(navHidden ? 0 : 1)
@@ -699,36 +694,6 @@ final class TabPagerController: UIViewController {
         host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(host.view)
         showing = selection
-    }
-}
-
-// MARK: - Status bar scrim
-
-/// A soft dark band behind the status bar, fading out just below it. Scroll
-/// content runs up under the clock on every screen, and cream headlines and
-/// glass chips used to collide with it there. `PhotoBackdrop`'s top scrim sits
-/// behind the content, so it couldn't separate them.
-private struct StatusBarScrim: View {
-    var body: some View {
-        // A 14pt tail at the top of the safe area, whose background reaches up
-        // through the status bar to the screen's edge — whatever its height on
-        // this device.
-        Color.clear
-            .frame(height: 14)
-            .frame(maxWidth: .infinity)
-            .background {
-                // Near-solid behind the clock, falling away over the tail: a
-                // plain fade from the top let headlines read straight through.
-                LinearGradient(stops: [
-                    .init(color: Theme.bgDeep.opacity(0.94), location: 0),
-                    .init(color: Theme.bgDeep.opacity(0.86), location: 0.62),
-                    .init(color: Theme.bgDeep.opacity(0), location: 1),
-                ], startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea(edges: .top)
-            }
-            .frame(maxHeight: .infinity, alignment: .top)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 }
 

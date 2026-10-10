@@ -72,6 +72,13 @@ struct ProgramDetailView: View {
             }
         }
         .scrollIndicators(.hidden)
+        // The hero runs up under the clock, as the retreat's and the recipe's
+        // do, rather than stopping short of it on a strip of bare canvas. The
+        // overlays below still keep to the safe area.
+        .ignoresSafeArea(edges: .top)
+        // Late, so the hero's own scrim carries the photo; held, so the band
+        // sits behind the pinned Back link as well as the clock.
+        .statusBarScrim(fadeIn: 130...230, holding: 52)
         .background { Theme.bg.ignoresSafeArea() }
         .overlay(alignment: .topLeading) {
             PracticeBackBar(label: "Digital Retreats")
