@@ -67,15 +67,19 @@ final class GatheringsTabTests: XCTestCase {
         return false
     }
 
-    /// Scrolls Home until `element` can be tapped. The gatherings shelf is the
-    /// last thing on the page.
+    /// Scrolls Home until `element`'s centre — where `tap()` lands — sits
+    /// above the docked bar. The gatherings shelf is the last thing on the
+    /// page. An element under the bar still reports hittable, and the tap
+    /// would land on a tab.
     private func scrollHome(to element: XCUIElement, _ app: XCUIApplication) {
+        let floor = app.windows.firstMatch.frame.maxY - 140
         var tries = 0
-        while !element.isHittable && tries < 8 {
+        while (!element.isHittable || element.frame.midY > floor) && tries < 8 {
             app.swipeUp(velocity: .slow)
             tries += 1
         }
-        XCTAssertTrue(element.isHittable, "Home's gatherings shelf never scrolled into reach")
+        XCTAssertTrue(element.isHittable && element.frame.midY <= floor,
+                      "Home's gatherings shelf never scrolled clear of the tab bar")
     }
 
     /// As a tab root the stack has nothing to go back to, and the card pinned

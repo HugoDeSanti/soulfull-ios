@@ -29,16 +29,16 @@ struct GuideSummaryCard: View {
                     Text("GUIDE DASHBOARD")
                         .font(Theme.eyebrow(10))
                         .tracking(3)
-                        .foregroundStyle(Theme.honey)
+                        .foregroundStyle(Theme.inkSoft)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .light))
                         .foregroundStyle(Theme.muted)
                 }
                 Text("\(dashboard.thisMonth.name()) so far")
-                    .font(Theme.headline(22))
+                    .font(Theme.headline(22, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.4)
                 HStack(alignment: .top, spacing: 12) {
                     GuideFigure(value: month.people.formatted(), label: "People")
                     GuideFigure(value: month.minutesHeard.formatted(), label: "Min heard")
@@ -46,9 +46,9 @@ struct GuideSummaryCard: View {
                                 label: GuideCopy.amountLabel(month.standing(thisMonth: dashboard.thisMonth)))
                 }
             }
-            .padding(18)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(tint: Theme.honey.opacity(0.08), stroke: Theme.honey.opacity(0.35))
+            .soulGlassCard()
         }
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens your guide dashboard")
@@ -80,13 +80,13 @@ struct GuideDashboardView: View {
                 }
                 Color.clear.frame(height: 60)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .refreshable { await vm.load() }
         .background {
-            // Their own portrait, blurred to its colour, as on their profile.
-            PhotoBackdrop(imageName: vm.dashboard?.photoUrl ?? "home-bg", blur: 48, darken: 0.86)
+            // The ember wash, as on their profile.
+            Atmosphere(tone: .ember)
         }
         // A bar of its own rather than an overlay: as an overlay the rows
         // scrolled straight through the button, and a row under it took the
@@ -96,16 +96,18 @@ struct GuideDashboardView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack {
                 Spacer()
-                CircleIconButton(systemName: "xmark", size: 38) {
+                GlyphButton(systemName: "xmark") {
                     Haptics.tap()
                     dismiss()
                 }
                 .accessibilityLabel("Close")
                 .accessibilityIdentifier("guide-dashboard-close")
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
+            // The 44pt target's glyph sits ~13pt inside it; this lands the ×
+            // on the page margin.
+            .padding(.horizontal, Theme.gutter - 13)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
             .background {
                 LinearGradient(colors: [Theme.bg.opacity(0.92), Theme.bg.opacity(0.6), .clear],
                                startPoint: .top, endPoint: .bottom)
@@ -113,6 +115,7 @@ struct GuideDashboardView: View {
                     .allowsHitTesting(false)
             }
         }
+        .presentationCornerRadius(0)
         // Re-read on open: the card's read may be from the morning. The
         // figures on screen stay up while it runs.
         .task { await vm.load() }
@@ -129,9 +132,9 @@ struct GuideDashboardView: View {
             }
 
             ThisMonthCard(dashboard: dashboard)
-                .padding(.top, 28)
+                .padding(.top, 36)
 
-            VStack(spacing: 36) {
+            VStack(spacing: 56) {
                 audience(dashboard)
                 earnings(dashboard)
                 practices(dashboard)
@@ -139,34 +142,31 @@ struct GuideDashboardView: View {
                     programs(dashboard)
                 }
             }
-            .padding(.top, 36)
+            .padding(.top, Theme.sectionGap)
         }
     }
 
     // MARK: Header
 
     private func header(_ dashboard: GuideDashboard) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             AvatarView(avatarUrl: dashboard.photoUrl, name: dashboard.name,
                        seed: dashboard.instructorID, size: 76)
-                .padding(5)
-                .overlay(Circle().strokeBorder(Theme.honey.opacity(0.35), lineWidth: 1))
             VStack(spacing: 10) {
                 Text("GUIDE DASHBOARD")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
                 Text(dashboard.name)
-                    .font(Theme.headline(32))
+                    .font(Theme.headline(32, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.7)
                     .multilineTextAlignment(.center)
                 Text("Who practiced with you, and what it earned.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
             }
-            .onPhoto()
         }
         .frame(maxWidth: .infinity)
     }
@@ -188,7 +188,8 @@ struct GuideDashboardView: View {
             } label: {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
-                    .foregroundStyle(Theme.honey)
+                    .underline()
+                    .foregroundStyle(Theme.ink)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
@@ -203,9 +204,9 @@ struct GuideDashboardView: View {
     // MARK: People
 
     private func audience(_ dashboard: GuideDashboard) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             sectionTitle("People")
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(dashboard.totals.people.formatted())
                         .font(Theme.headline(40, weight: .light))
@@ -223,19 +224,17 @@ struct GuideDashboardView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("guide-people-total")
 
-                Rectangle().fill(Theme.line).frame(height: 1)
+                Rectangle().fill(Theme.line).frame(height: 0.5)
 
                 PeopleByMonthChart(months: dashboard.recentMonths(6), thisMonth: dashboard.thisMonth)
             }
-            .padding(18)
-            .soulGlassCard()
         }
     }
 
     // MARK: Earnings
 
     private func earnings(_ dashboard: GuideDashboard) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             sectionTitle("Past months")
 
             if let paid = dashboard.paidToDate {
@@ -251,9 +250,6 @@ struct GuideDashboardView: View {
                         .font(Theme.body(15, weight: .medium))
                         .foregroundStyle(Theme.ink)
                 }
-                .padding(.horizontal, 4)
-                // On the photo, not on glass.
-                .onPhoto()
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("guide-paid-to-date")
             }
@@ -263,11 +259,12 @@ struct GuideDashboardView: View {
                 note(title: "Your first month is still running",
                      detail: "\(dashboard.thisMonth.name()) closes on \(GuideCopy.closingDate(of: dashboard.thisMonth)). Its pool, your share and what you earned will be kept here.")
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     ForEach(past) { month in
                         GuideMonthRow(month: month, thisMonth: dashboard.thisMonth)
                             .listReveal()
                     }
+                    PracticeRule()
                 }
             }
         }
@@ -276,28 +273,29 @@ struct GuideDashboardView: View {
     // MARK: Practices
 
     private func practices(_ dashboard: GuideDashboard) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             sectionTitle("Your practices")
             if dashboard.practices.isEmpty {
                 note(title: "Nobody has opened one yet",
                      detail: "Each of your practices appears here once someone opens it, with how many people it has reached.")
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     ForEach(dashboard.practices) { practice in
                         GuidePracticeRow(practice: practice)
                             .listReveal()
                     }
+                    PracticeRule()
                 }
             }
         }
     }
 
     private func programs(_ dashboard: GuideDashboard) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             sectionTitle("Digital retreats")
-            VStack(spacing: 10) {
+            VStack(spacing: 0) {
                 ForEach(dashboard.programs) { program in
-                    HStack(spacing: 14) {
+                    HStack(spacing: 16) {
                         GuideGlyph(systemName: "leaf")
                         VStack(alignment: .leading, spacing: 5) {
                             Text(program.title)
@@ -311,30 +309,33 @@ struct GuideDashboardView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(14)
-                    .soulGlassCard()
+                    .padding(.vertical, 16)
+                    .overlay(alignment: .top) { PracticeRule() }
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("guide-program-row")
                 }
+                PracticeRule()
             }
         }
     }
 
     // MARK: Pieces
 
+    /// A section opens as `SectionLabel` does: a hairline across the measure
+    /// and a small caps label under it.
     private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(Theme.headline(22))
-            .foregroundStyle(Theme.ink)
-            .kerning(-0.2)
-            .padding(.horizontal, 4)
-            .onPhoto()
+        VStack(alignment: .leading, spacing: 14) {
+            PracticeRule()
+            Text(title)
+                .sgEyebrow(color: Theme.ink)
+                .accessibilityAddTraits(.isHeader)
+        }
     }
 
     private func note(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(Theme.headline(17))
+                .font(Theme.headline(17, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.2)
             Text(detail)
@@ -344,22 +345,19 @@ struct GuideDashboardView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
         .accessibilityElement(children: .combine)
     }
 
     private var unlinked: some View {
         VStack(spacing: 10) {
             Text("No guide dashboard")
-                .font(Theme.headline(24))
+                .font(Theme.headline(24, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("This account isn't linked to a guide. If it should be, write to us and we'll set it up.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
         }
-        .onPhoto()
         .padding(.horizontal, 20)
     }
 }
@@ -378,7 +376,7 @@ private struct ThisMonthCard: View {
                 Text("\(dashboard.thisMonth.name()) so far".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2.4)
-                    .foregroundStyle(Theme.honey)
+                    .foregroundStyle(Theme.inkSoft)
                 Spacer()
                 StandingChip(standing: standing)
             }
@@ -407,8 +405,8 @@ private struct ThisMonthCard: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
 
-            Rectangle().fill(Theme.line).frame(height: 1)
-                .padding(.vertical, 18)
+            Rectangle().fill(Theme.line).frame(height: 0.5)
+                .padding(.vertical, 20)
 
             HStack(alignment: .top, spacing: 12) {
                 GuideFigure(value: month.people.formatted(), label: "People")
@@ -416,8 +414,8 @@ private struct ThisMonthCard: View {
                 GuideFigure(value: month.completions.formatted(), label: "Finished")
             }
         }
-        .padding(20)
-        .soulGlassCard(tint: Theme.honey.opacity(0.06), stroke: Theme.honey.opacity(0.3))
+        .padding(24)
+        .soulGlassCard()
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("guide-this-month")
     }
@@ -445,7 +443,7 @@ private struct ThisMonthCard: View {
 // MARK: - People by month
 
 /// One column per month, oldest on the left. The selected month (this one to
-/// start with) is the only coloured bar and the one the figure above reads,
+/// start with) is the only bright bar and the one the figure above reads,
 /// so the chart needs no axis: tap a month to read it. The table of the same
 /// numbers is the Past months list below.
 private struct PeopleByMonthChart: View {
@@ -477,7 +475,7 @@ private struct PeopleByMonthChart: View {
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.inkSoft)
             }
-            .animation(.snappy, value: focus.month)
+            .animation(Theme.Motion.settle, value: focus.month)
 
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(months) { month in
@@ -486,7 +484,7 @@ private struct PeopleByMonthChart: View {
             }
             .overlay(alignment: .top) {
                 // The baseline, a hairline under the bars.
-                Rectangle().fill(Theme.line).frame(height: 1)
+                Rectangle().fill(Theme.line).frame(height: 0.5)
                     .offset(y: plotHeight)
                     .allowsHitTesting(false)
             }
@@ -496,7 +494,7 @@ private struct PeopleByMonthChart: View {
             if reduceMotion {
                 grown = true
             } else {
-                withAnimation(.spring(response: 0.9, dampingFraction: 0.86).delay(0.15)) { grown = true }
+                withAnimation(Theme.Motion.reveal.delay(0.15)) { grown = true }
             }
         }
     }
@@ -516,11 +514,10 @@ private struct PeopleByMonthChart: View {
                 Color.clear
                     .frame(height: plotHeight)
                     .overlay(alignment: .bottom) {
-                        UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4,
-                                               style: .continuous)
-                            .fill(isFocus ? Theme.honey : Theme.inkSoft.opacity(0.3))
-                            .frame(width: 22, height: grown ? height : 0)
-                            .animation(.snappy, value: isFocus)
+                        Rectangle()
+                            .fill(isFocus ? Theme.ink : Theme.inkSoft.opacity(0.25))
+                            .frame(width: 18, height: grown ? height : 0)
+                            .animation(Theme.Motion.settle, value: isFocus)
                     }
                 Text(month.month.shortName().uppercased())
                     .font(Theme.eyebrow(10))
@@ -569,8 +566,8 @@ private struct GuideMonthRow: View {
                 StandingChip(standing: standing)
             }
         }
-        .padding(16)
-        .soulGlassCard()
+        .padding(.vertical, 18)
+        .overlay(alignment: .top) { PracticeRule() }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("guide-month-row")
     }
@@ -592,7 +589,7 @@ private struct GuidePracticeRow: View {
     let practice: GuidePracticeStat
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             GuideGlyph(systemName: GuideCopy.glyph(practice.kind))
             VStack(alignment: .leading, spacing: 5) {
                 Text(practice.title)
@@ -608,7 +605,7 @@ private struct GuidePracticeRow: View {
                 if practice.peopleThisMonth > 0 {
                     Text("+\(practice.peopleThisMonth.formatted()) this month")
                         .font(Theme.body(11, weight: .medium))
-                        .foregroundStyle(Theme.honey)
+                        .foregroundStyle(Theme.ember)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -625,8 +622,8 @@ private struct GuidePracticeRow: View {
                     .foregroundStyle(Theme.muted)
             }
         }
-        .padding(14)
-        .soulGlassCard()
+        .padding(.vertical, 16)
+        .overlay(alignment: .top) { PracticeRule() }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("guide-practice-row")
     }
@@ -681,24 +678,23 @@ private struct StandingChip: View {
 
     private var style: (String, String, Color) {
         switch standing {
-        case .estimate:           ("chart.line.uptrend.xyaxis", "Estimate", Theme.honey)
+        case .estimate:           ("chart.line.uptrend.xyaxis", "Estimate", Theme.ember)
         case .awaitingPool:       ("hourglass", "Pool not set", Theme.muted)
-        case .due:                ("clock", "To be paid", Theme.honey)
+        case .due:                ("clock", "To be paid", Theme.ember)
         case .paid(_, let date):  ("checkmark.seal.fill", "Paid \(GuideCopy.day(date))", Theme.accentSoft)
         }
     }
 }
 
+/// A row's kind, as a bare glyph in the margin — no disc behind it.
 private struct GuideGlyph: View {
     let systemName: String
 
     var body: some View {
         Image(systemName: systemName)
-            .font(.system(size: 15, weight: .regular))
+            .font(.system(size: 15, weight: .light))
             .foregroundStyle(Theme.inkSoft)
-            .frame(width: 40, height: 40)
-            .background(Circle().fill(Theme.surface.opacity(0.7)))
-            .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
+            .frame(width: 28)
             .accessibilityHidden(true)
     }
 }

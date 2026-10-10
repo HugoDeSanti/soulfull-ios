@@ -2,10 +2,12 @@
 //  HomeView.swift
 //  Soulfull Gatherings
 //
-//  The main landing screen. Sections rise out of a blur as they scroll in,
-//  card imagery drifts in parallax, mood chips bloom on selection, and the
-//  ritual card has a living aurora interior. The two shelves at the foot —
-//  digital retreats, then upcoming gatherings — hand off to their own tabs.
+//  The main landing screen, on the moss atmosphere. Sections fade up from
+//  half-light as they scroll in, a mood is a word underlined when chosen,
+//  and the ritual card holds a slow ember wash — the one warm thing on the
+//  page. The two shelves at the foot — digital retreats, then upcoming
+//  gatherings — are square photographs with their names set beneath, and
+//  hand off to their own tabs.
 //
 
 import SwiftUI
@@ -33,7 +35,7 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 32) {
+            VStack(spacing: Theme.sectionGap) {
                 header
                 section { moodRow }
                 // Picking up something already begun beats being handed
@@ -58,17 +60,17 @@ struct HomeView: View {
                 section { upcomingGatherings }
                 Color.clear.frame(height: 120)
             }
-            .padding(.top, 24)
+            .padding(.top, 32)
             // The day card and the Continue card arrive after the page has
             // drawn, above the ritual. Animated, the ritual eases down rather
             // than jumping out from under a reaching thumb.
-            .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: openProgramDay?.1.id)
-            .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: history.resumable?.id)
+            .animation(reduceMotion ? nil : Theme.Motion.settle, value: openProgramDay?.1.id)
+            .animation(reduceMotion ? nil : Theme.Motion.settle, value: history.resumable?.id)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
+            Atmosphere(tone: .moss)
         }
         .task { await vm.load() }
         .task { await history.refresh() }
@@ -86,38 +88,34 @@ struct HomeView: View {
         return nil
     }
 
-    /// Shared scroll-in reveal: sections rise out of a blur as they enter
-    /// from the bottom; nothing happens scrolling back past the top. Under
-    /// Reduce Motion they only fade.
+    /// Shared scroll-in reveal: sections fade up from half-light as they
+    /// enter from the bottom; nothing happens scrolling back past the top.
+    /// Light only — they used to rise out of a blur as well; nothing travels
+    /// now.
     private func section(@ViewBuilder _ content: () -> some View) -> some View {
-        let still = reduceMotion
-        return content()
+        content()
             .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
-                let entering = max(phase.value, 0) // only the bottom edge
-                return view
-                    .opacity(1 - entering * 0.6)
-                    .blur(radius: still ? 0 : entering * 3)
-                    .offset(y: still ? 0 : entering * 26)
+                view.opacity(1 - max(phase.value, 0) * 0.6) // only the bottom edge
             }
     }
 
     // MARK: - Sections
 
     private var header: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 40) {
             Image("soulfull-logo-white")
                 .resizable().scaledToFit()
-                .frame(width: 88, height: 88)
+                .frame(width: 72, height: 72)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(vm.greeting.uppercased())
-                    .font(Theme.eyebrow(12))
+                    .font(Theme.eyebrow(11))
                     .tracking(2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.inkSoft)
                 Text("\(settings.userName.isEmpty ? "Friend" : settings.userName).")
-                    .font(Theme.headline(38))
+                    .font(Theme.headline(42, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.8)
                 // A streak is only worth naming once it is one; a single day
                 // is just today, and calling that a run is exactly the
                 // manufactured momentum this screen had removed from it.
@@ -129,62 +127,58 @@ struct HomeView: View {
                             .font(Theme.eyebrow(11))
                             .tracking(1.5)
                     }
-                    .foregroundStyle(Theme.honey)
+                    .foregroundStyle(Theme.ember)
                     .padding(.top, 8)
                     .accessibilityLabel("\(history.streakDays) day practice streak")
                 }
 
                 Text("Take your time. We're here with you.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            // Sits on the brightest part of home-bg (blur 3) — see onPhoto().
-            .onPhoto()
+            .padding(.horizontal, Theme.gutter)
         }
     }
 
     private var moodRow: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "How do you feel?")
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 26) {
                     ForEach(vm.moods) { m in
                         moodChip(m)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 6) // headroom for the selection pop
+                .padding(.horizontal, Theme.gutter)
             }
         }
     }
 
+    /// A mood is a word, as Open sets its tabs: grey until chosen, then ink
+    /// with a hairline under it. Nothing grows or glows — the line fades in.
     private func moodChip(_ m: MoodChip) -> some View {
         let selected = vm.selectedMood == m.id
         return Button {
             vm.tapMood(m.id)
         } label: {
             Text(m.label)
-                .font(Theme.body(13, weight: selected ? .medium : .regular))
-                .foregroundStyle(selected ? Color.black : Theme.ink)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background {
-                    if selected {
-                        Capsule().fill(Theme.ink)
-                            .shadow(color: Theme.honey.opacity(0.35), radius: 12, y: 2)
-                    } else {
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Capsule().strokeBorder(Theme.glassBorder, lineWidth: 1))
-                    }
+                .font(Theme.body(15, weight: .light))
+                .foregroundStyle(selected ? Theme.ink : Theme.inkSoft)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(Theme.ink)
+                        .frame(height: 1)
+                        .offset(y: 7)
+                        .opacity(selected ? 1 : 0)
                 }
-                .scaleEffect(selected ? 1.06 : 1)
-                .animation(.spring(response: 0.38, dampingFraction: 0.6), value: selected)
+                // A 44pt target around a word.
+                .padding(.vertical, 13)
+                .contentShape(Rectangle())
+                .animation(Theme.Motion.settle, value: selected)
         }
-        .buttonStyle(SoulPressableStyle(scale: 0.9, hapticOnPress: false, dim: false))
+        .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         .accessibilityLabel(m.label)
         .accessibilityHint("Suggests a practice for feeling \(m.label.lowercased())")
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -201,9 +195,9 @@ struct HomeView: View {
                     Text("CONTINUE")
                         .font(Theme.eyebrow(10))
                         .tracking(2)
-                        .foregroundStyle(Theme.honey)
+                        .foregroundStyle(Theme.ember)
                     Text(progress.title)
-                        .font(Theme.headline(19))
+                        .font(Theme.headline(20, weight: .light))
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.2)
                         .lineLimit(2)
@@ -221,18 +215,19 @@ struct HomeView: View {
                     .padding(.top, 2)
                 }
                 Spacer(minLength: 8)
+                // A square play mark in a hairline, not a filled disc.
                 Image(systemName: "play.fill")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.black)
-                    .frame(width: 38, height: 38)
-                    .background(Circle().fill(Theme.ink))
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 40, height: 40)
+                    .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
             }
-            .padding(16)
+            .padding(20)
             .frame(maxWidth: .infinity)
-            .soulGlassCard(radius: 22)
-            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .soulGlassCard()
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Continue \(progress.title)")
         .accessibilityHint("Opens \(progress.menuItem.title)")
@@ -241,57 +236,53 @@ struct HomeView: View {
 
     private var todaysRitual: some View {
         PressableCard(action: { onOpenPractice(vm.ritualDestination) }) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(vm.mood == nil ? "TODAY'S RITUAL" : "BECAUSE YOU FEEL \(vm.mood!.label.uppercased())")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
-                    .foregroundStyle(.white)
-                    .padding(.bottom, 4)
+                    .foregroundStyle(Theme.ink.opacity(0.8))
+                    .padding(.bottom, 6)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Text(vm.ritualTitle)
-                    .font(Theme.headline(22))
+                    .font(Theme.headline(28, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.5)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(vm.ritualLead)
-                    .font(Theme.body(11.5, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.top, 2)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.ink.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 6, height: 6)
                     Text("Begin now")
-                        .font(Theme.body(11.5, weight: .semibold))
+                        .font(Theme.body(12, weight: .medium))
                         .tracking(0.4)
-                        .foregroundStyle(.white)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 11, weight: .light))
                 }
-                .animation(.easeInOut(duration: 0.25), value: vm.selectedMood)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .foregroundStyle(Theme.ink)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 .overlay(
-                    Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1)
+                    Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
                 )
-                .padding(.top, 12)
+                .padding(.top, 28)
             }
+            .animation(Theme.Motion.settle, value: vm.selectedMood)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
+            .padding(24)
             .background {
-                // Living interior: slow aurora under the glass.
-                AuroraBackground(speed: 0.7)
-                    .opacity(0.55)
-                    .overlay(.ultraThinMaterial)
+                // The page's one warm thing: a slow ember wash falling from
+                // the card's top edge, as Open lays its daily card.
+                Atmosphere(tone: .ember, reach: 1.15, intensity: 1, fillsScreen: false)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .clipped()
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                Rectangle().strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(vm.ritualTitle). \(vm.ritualLead)")
         .accessibilityHint("Opens \(vm.ritualDestination.title)")
@@ -299,7 +290,7 @@ struct HomeView: View {
     }
 
     private var upcomingGatherings: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             SectionLabel(title: "Upcoming gatherings", action: "ALL",
                          actionLabel: "All gatherings") {
                 onOpenRetreats()
@@ -315,25 +306,24 @@ struct HomeView: View {
                     if vm.retreatsLoaded {
                         Text("New gatherings are on their way. Dates appear here as they're announced.")
                             .font(Theme.body(13))
-                            .foregroundStyle(Theme.inkOnPhoto)
+                            .foregroundStyle(Theme.inkSoft)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .onPhoto()
                     } else {
                         ProgressView()
                             .tint(Theme.ink)
                             .frame(maxWidth: .infinity, minHeight: 150)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 16) {
                         ForEach(vm.retreats.prefix(5)) { r in
                             retreatCard(r)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, Theme.gutter)
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
@@ -361,14 +351,16 @@ struct HomeView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .soulGlassCard(radius: Theme.cardRadius)
-        .padding(.horizontal, 20)
+        .soulGlassCard()
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(failure.title). \(failure.detail)")
     }
 
+    /// A square photograph with its name set beneath on the page — no box
+    /// around it, as Open lays its shelves.
     private func retreatCard(_ r: Retreat) -> some View {
         PressableCard(action: { onOpenRetreat(r) }) {
             VStack(alignment: .leading, spacing: 0) {
@@ -376,40 +368,36 @@ struct HomeView: View {
                     CatalogImage(r.imageUrl) { image in
                         image
                             .resizable().scaledToFill()
-                            .frame(width: 260, height: 150)
+                            .frame(width: 260, height: 170)
                             .clipped()
                     }
-                    .frame(width: 260, height: 150)
+                    .frame(width: 260, height: 170)
                     .clipped()
                     LinearGradient(colors: [.clear, .black.opacity(0.55)],
                                    startPoint: .top, endPoint: .bottom)
                     Text("\(r.country) · \(r.when)".uppercased())
                         .font(Theme.eyebrow(10))
                         .tracking(2)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.ink)
                         .padding(14)
                 }
-                .frame(width: 260, height: 150)
+                .frame(width: 260, height: 170)
                 .clipped()
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(r.name)
-                        .font(Theme.headline(22))
+                        .font(Theme.headline(20, weight: .light))
                         .foregroundStyle(Theme.ink)
-                        .kerning(-0.2)
+                        .kerning(-0.3)
                     Text("\(r.durationDays) days · \(r.maxGuests) guests")
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.muted)
                 }
-                .padding(16)
+                .padding(.top, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(width: 260)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.glassBorder, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(Rectangle())
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(r.name), \(r.country). \(r.when). \(r.durationDays) days, \(r.maxGuests) guests")
@@ -417,7 +405,7 @@ struct HomeView: View {
     }
 
     private var digitalRetreats: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             // Both the "ALL" action and pressable cards came back when the
             // Digital Retreats tab gave them somewhere to go — see the note
             // that used to sit here about the shelf being informational.
@@ -425,7 +413,7 @@ struct HomeView: View {
                          actionLabel: "All digital retreats") { onOpenProgram(nil) }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
+                HStack(spacing: 16) {
                     ForEach(vm.programs) { p in
                         PressableCard(action: { onOpenProgram(p.id) }) {
                             programCard(p)
@@ -433,7 +421,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("home-program-card")
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned(limitBehavior: .never))
@@ -460,7 +448,7 @@ struct HomeView: View {
                 Text("\(p.metaLine) · DIGITAL".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.ink)
                     .padding(14)
             }
             .frame(width: 260, height: 200)
@@ -468,9 +456,9 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(p.title)
-                    .font(Theme.headline(22))
+                    .font(Theme.headline(20, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.3)
                     .lineLimit(2)
                 Text("with \(p.lead)")
                     .font(Theme.body(12))
@@ -478,16 +466,11 @@ struct HomeView: View {
                 PresenceLine(programID: p.id, faceSize: 18)
                     .padding(.top, 6)
             }
-            .padding(16)
+            .padding(.top, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(width: 260)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(p.title), with \(p.lead), \(p.days) day digital retreat\(PresenceStore.shared.presence(programID: p.id).map { ", \($0.label)" } ?? "")")
         .accessibilityHint("Opens the digital retreat")
@@ -503,19 +486,15 @@ struct HomeView: View {
             HStack(alignment: .top, spacing: 14) {
                 CatalogImage(day.imageUrl ?? program.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 64, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Theme.glassBorder, lineWidth: 1)
-                    )
+                    .clipped()
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("DAY \(day.day) IS OPEN")
                         .font(Theme.eyebrow(10))
                         .tracking(2)
-                        .foregroundStyle(Theme.honey)
+                        .foregroundStyle(Theme.ember)
                     Text(day.title)
-                        .font(Theme.headline(19))
+                        .font(Theme.headline(20, weight: .light))
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -524,19 +503,15 @@ struct HomeView: View {
                         .foregroundStyle(Theme.muted)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .light))
                     .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 6)
             }
-            .padding(16)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .soulGlassCard()
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(Theme.honey.opacity(0.38), lineWidth: 1)
-            )
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Day \(day.day) of \(program.title) is open: \(day.title)")

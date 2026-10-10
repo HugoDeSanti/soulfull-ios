@@ -85,14 +85,14 @@ struct PresenceLine: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.3), value: presence)
+        .animation(Theme.Motion.reveal, value: presence)
         .task { await store.refresh() }
     }
 }
 
 #Preview {
     ZStack {
-        PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
+        Atmosphere()
         VStack(alignment: .leading, spacing: 16) {
             PresenceBadge(presence: Presence(count: 75_700, faces: [
                 CommunityMember(id: UUID(), displayName: "Alma G.", avatarUrl: nil),

@@ -40,6 +40,22 @@ final class ProgramTests: XCTestCase {
         return app
     }
 
+    /// Scrolls Home until `element`'s centre — where `tap()` lands — sits
+    /// above the docked bar. `isHittable` alone isn't enough: an element under
+    /// the bar still reports hittable, and the tap then lands on a tab. The
+    /// Digital Retreats shelf starts exactly there since Home's header gained
+    /// its space.
+    private func scrollClearOfTheBar(_ element: XCUIElement, _ app: XCUIApplication) {
+        let floor = app.windows.firstMatch.frame.maxY - 140
+        var tries = 0
+        while (!element.isHittable || element.frame.midY > floor) && tries < 8 {
+            app.swipeUp(velocity: .slow)
+            tries += 1
+        }
+        XCTAssertTrue(element.isHittable && element.frame.midY <= floor,
+                      "The Digital Retreats shelf never scrolled clear of the tab bar")
+    }
+
     /// The fail-soft guard. A broken curriculum renders as a program with no
     /// days and no error, so the assertion has to be on the days themselves.
     /// The catalog comes from Supabase, filtered to `published`: no fixture is
@@ -82,12 +98,7 @@ final class ProgramTests: XCTestCase {
         XCTAssertTrue(all.waitForExistence(timeout: 30), "Home never finished loading")
 
         // The shelf sits near the foot of Home; scroll it into view before tapping.
-        var tries = 0
-        while !all.isHittable && tries < 6 {
-            app.swipeUp(velocity: .slow)
-            tries += 1
-        }
-        XCTAssertTrue(all.isHittable, "The Digital Retreats shelf never scrolled into reach")
+        scrollClearOfTheBar(all, app)
         shot(app, "06-home-shelf")
         all.tap()
 
@@ -109,12 +120,7 @@ final class ProgramTests: XCTestCase {
         app.buttons["Home"].tap()
         let card = app.buttons.matching(identifier: "home-program-card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 30), "No digital retreat on Home's shelf")
-        var tries = 0
-        while !card.isHittable && tries < 6 {
-            app.swipeUp(velocity: .slow)
-            tries += 1
-        }
-        XCTAssertTrue(card.isHittable, "The Digital Retreats shelf never scrolled into reach")
+        scrollClearOfTheBar(card, app)
         card.tap()
 
         XCTAssertTrue(app.buttons["Start this digital retreat"].waitForExistence(timeout: 15),

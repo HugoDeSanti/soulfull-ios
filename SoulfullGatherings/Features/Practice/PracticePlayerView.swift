@@ -3,9 +3,10 @@
 //  Soulfull Gatherings
 //
 //  Resolves a session's media URL and plays it. Audio gets the full
-//  now-playing room: an aurora graded from the artwork, breathing halo and
-//  cover, a custom scrubber with haptic ends, ±15s, and a morphing
-//  play/pause. Video keeps AVKit's transport inside branded chrome.
+//  now-playing room: an aurora graded from the artwork, a breathing ring
+//  around a square-cut cover, a hairline scrubber with haptic ends, ±15s,
+//  and a square play/pause. Video keeps AVKit's transport inside branded
+//  chrome.
 //
 //  URL resolution: absolute http(s) paths play directly; bucket-relative
 //  paths are signed via `SupabaseService.signedMediaURL`.
@@ -80,7 +81,7 @@ struct PracticePlayerView: View {
             } else if let loadFailure {
                 errorView(loadFailure)
             } else {
-                AuroraBackground(speed: 1.2)
+                AuroraBackground(speed: 0.9)
                     .ignoresSafeArea()
                     .overlay(ProgressView().tint(Theme.ink))
             }
@@ -89,7 +90,7 @@ struct PracticePlayerView: View {
             VStack {
                 HStack {
                     Spacer()
-                    CircleIconButton(systemName: "xmark", size: 38) {
+                    GlyphButton(systemName: "xmark") {
                         Haptics.tap()
                         dismiss()
                     }
@@ -97,10 +98,13 @@ struct PracticePlayerView: View {
                 }
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
+            // The 44pt target's glyph sits ~13pt inside it; this lands the ×
+            // on the page margin.
+            .padding(.horizontal, Theme.gutter - 13)
+            .padding(.top, 14)
         }
         .preferredColorScheme(.dark)
+        .presentationCornerRadius(0)
         .task(id: attempt) { await resolveAndPlay() }
         .onAppear { tones = ArtworkTones.extract(from: media.imageUrl) }
         .onDisappear { tearDown() }
@@ -124,54 +128,48 @@ struct PracticePlayerView: View {
 
     private var audioStage: some View {
         ZStack {
-            AuroraBackground(
-                toneA: tones?.base ?? Color(red: 0.10, green: 0.12, blue: 0.05),
-                toneB: tones?.mid ?? Color(red: 0.24, green: 0.27, blue: 0.10),
-                toneC: tones?.top ?? Color(red: 0.36, green: 0.31, blue: 0.13),
-                speed: 0.9
-            )
-            .filmGrain(intensity: 0.05)
+            // The room the session happens in: the artwork's own tones
+            // drifting at breath pace. No grain — the room is still.
+            Group {
+                if let tones {
+                    AuroraBackground(tones: tones, speed: 0.9)
+                } else {
+                    AuroraBackground(speed: 0.9)
+                }
+            }
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()
 
-                // Breathing halo + artwork
+                // The breath circle around a square-cut cover. The ring is the
+                // one guide that moves: it widens and fades at breath pace.
                 ZStack {
                     Circle()
-                        .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                        .strokeBorder(Theme.ink.opacity(0.22), lineWidth: Theme.hairline)
                         .frame(width: 312, height: 312)
-                        .breathing(scale: 0.92...1.1, opacity: 0.25...0.6, period: 6)
-                    Circle()
-                        .fill(
-                            RadialGradient(colors: [Color.white.opacity(0.10), .clear],
-                                           center: .center, startRadius: 60, endRadius: 220)
-                        )
-                        .frame(width: 430, height: 430)
-                        .breathing(scale: 0.9...1.08, opacity: 0.5...1.0, period: 6)
+                        .breathing(scale: 0.94...1.06, opacity: 0.25...0.6)
 
                     CatalogImage(media.imageUrl) { $0.resizable().scaledToFill() }
-                        .frame(width: 248, height: 248)
-                        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                        .frame(width: 220, height: 220)
+                        .clipped()
                         .overlay(
-                            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                            Rectangle()
+                                .strokeBorder(Theme.ink.opacity(0.18), lineWidth: Theme.hairline)
                         )
-                        .shadow(color: .black.opacity(0.45), radius: 30, y: 16)
-                        .breathing(scale: 0.985...1.015, opacity: 1.0...1.0, period: 6)
                 }
-                .padding(.bottom, 36)
+                .padding(.bottom, 48)
 
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     Text("NOW PLAYING · \(media.durationLabel)".uppercased())
                         .font(Theme.eyebrow(10))
                         .tracking(2.5)
-                        .foregroundStyle(Color.white.opacity(0.6))
+                        .foregroundStyle(Theme.inkSoft)
                     Text(media.title)
-                        .font(Theme.headline(28))
+                        .font(Theme.headline(28, weight: .light))
                         .foregroundStyle(Theme.ink)
                         .multilineTextAlignment(.center)
-                        .kerning(-0.4)
+                        .kerning(-0.6)
                     // The guide, as a chip that opens their profile — the
                     // sheet closes first so it is pushed on the stack below.
                     GuideCredit(instructorID: media.instructorID,
@@ -184,13 +182,13 @@ struct PracticePlayerView: View {
                     if let reminder = media.category?.safetyReminder {
                         Text(reminder)
                             .font(Theme.body(12))
-                            .foregroundStyle(Color.white.opacity(0.6))
+                            .foregroundStyle(Theme.inkSoft)
                             .multilineTextAlignment(.center)
-                            .padding(.top, 6)
+                            .padding(.top, 8)
                             .accessibilityIdentifier("player-safety")
                     }
                 }
-                .padding(.horizontal, 28)
+                .padding(.horizontal, Theme.gutter + 8)
 
                 Spacer()
 
@@ -209,19 +207,21 @@ struct PracticePlayerView: View {
         HStack(spacing: 44) {
             skipButton(icon: "gobackward.15", by: -AudioTransport.skipInterval, transport: transport)
 
+            // A square drawn in a hairline, the glyph crossfading between
+            // play and pause — no disc, no morph.
             Button {
                 Haptics.bump()
                 transport.togglePlay()
             } label: {
                 Image(systemName: transport.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 26, weight: .bold))
-                    .contentTransition(.symbolEffect(.replace.downUp.byLayer))
-                    .foregroundStyle(.black)
-                    .frame(width: 76, height: 76)
-                    .background(Circle().fill(.white))
-                    .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+                    .font(.system(size: 22, weight: .regular))
+                    .contentTransition(.opacity)
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 72, height: 72)
+                    .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(SoulPressableStyle(scale: 0.92, hapticOnPress: false, dim: false))
+            .buttonStyle(SoulPressableStyle(hapticOnPress: false))
             .accessibilityLabel(transport.isPlaying ? "Pause" : "Play")
 
             skipButton(icon: "goforward.15", by: AudioTransport.skipInterval, transport: transport)
@@ -233,14 +233,14 @@ struct PracticePlayerView: View {
             transport.skip(seconds)
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 22, weight: .medium))
+                .font(.system(size: 22, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .frame(width: 52, height: 52)
                 // Gotcha #5: a framed glyph answers only where it draws, so
-                // the 52pt circle around it was dead.
-                .contentShape(Circle())
+                // the 52pt square around it was dead.
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.soulPressableChip)
+        .buttonStyle(.soulPressable)
         .accessibilityLabel(seconds < 0 ? "Back 15 seconds" : "Forward 15 seconds")
     }
 
@@ -261,19 +261,19 @@ struct PracticePlayerView: View {
                             Text("with \(media.lead)".uppercased())
                                 .font(Theme.eyebrow(9))
                                 .tracking(2)
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(Theme.inkSoft)
                             Text(media.title)
-                                .font(Theme.headline(20))
-                                .foregroundStyle(.white)
+                                .font(Theme.headline(20, weight: .light))
+                                .foregroundStyle(Theme.ink)
                                 .kerning(-0.3)
                             if let reminder = media.category?.safetyReminder {
                                 Text(reminder)
                                     .font(Theme.body(11))
-                                    .foregroundStyle(Color.white.opacity(0.7))
+                                    .foregroundStyle(Theme.inkSoft)
                                     .padding(.top, 2)
                             }
                         }
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, Theme.gutter)
                         .padding(.bottom, 8)
                     }
                     .allowsHitTesting(false)
@@ -291,7 +291,7 @@ struct PracticePlayerView: View {
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text(failure.title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text(failure.detail)
                 .font(Theme.body(13))
@@ -306,9 +306,9 @@ struct PracticePlayerView: View {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .soulGlassCapsule()
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .soulGlassCard()
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)
@@ -406,7 +406,7 @@ enum PlaybackAudioSession {
     }
 }
 
-// MARK: - Custom scrubber (capsule track, draggable, haptic ends)
+// MARK: - Custom scrubber (hairline track, a tick for the playhead, haptic ends)
 
 private struct SoulScrubber: View {
     @Bindable var transport: AudioTransport
@@ -425,19 +425,19 @@ private struct SoulScrubber: View {
                     : 0
 
                 ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.18))
-                        .frame(height: dragging ? 10 : 5)
+                    Rectangle()
+                        .fill(Theme.ink.opacity(0.18))
+                        .frame(height: dragging ? 3 : 1)
 
-                    Capsule()
+                    Rectangle()
                         .fill(Theme.ink)
-                        .frame(width: max(0, width * fraction), height: dragging ? 10 : 5)
+                        .frame(width: max(0, width * fraction), height: dragging ? 3 : 1)
 
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: dragging ? 18 : 12, height: dragging ? 18 : 12)
-                        .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
-                        .offset(x: width * fraction - (dragging ? 9 : 6))
+                    // The playhead: an upright tick, taller under the finger.
+                    Rectangle()
+                        .fill(Theme.ink)
+                        .frame(width: 2, height: dragging ? 22 : 14)
+                        .offset(x: width * fraction - 1)
                 }
                 .frame(height: 26)
                 .frame(maxHeight: .infinity, alignment: .center)
@@ -465,7 +465,7 @@ private struct SoulScrubber: View {
                             Haptics.select()
                         }
                 )
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: dragging)
+                .animation(dragging ? Theme.Motion.press : Theme.Motion.release, value: dragging)
             }
             .frame(height: 26)
 
@@ -476,9 +476,9 @@ private struct SoulScrubber: View {
             }
             .font(Theme.body(11))
             .monospacedDigit()
-            .foregroundStyle(Color.white.opacity(0.55))
+            .foregroundStyle(Theme.inkSoft)
         }
-        .padding(.horizontal, 30)
+        .padding(.horizontal, Theme.gutter + 6)
         // One element for VoiceOver, which can't perform the drag: swiping up
         // or down moves 15 seconds, as the buttons beside it do.
         .accessibilityElement(children: .ignore)

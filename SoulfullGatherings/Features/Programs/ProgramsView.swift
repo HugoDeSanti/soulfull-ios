@@ -9,19 +9,18 @@
 //  screen with the day the member is actually on, and everything else is
 //  browsable underneath. Browsing needs no account; joining does.
 //
+//  It sits on the ember atmosphere. It used to sit on the program in flight's
+//  own photo, blurred into a tint, which coloured the whole tab.
+//
 
 import SwiftUI
 
 struct ProgramsView: View {
-    /// The Bool says whether this push has a matched zoom source behind it —
-    /// catalog cards register one, the continue card and the cross-tab hand-off
-    /// do not.
-    var onOpenProgram: (Program, Bool) -> Void = { _, _ in }
+    var onOpenProgram: (Program) -> Void = { _ in }
     var onOpenDay: (Program, ProgramDay) -> Void = { _, _ in }
     /// A program another tab asked to open (Home's "Day N is open" card).
     /// Consumed once the catalog has actually loaded, then cleared.
     var pending: Binding<String?> = .constant(nil)
-    var zoomNamespace: Namespace.ID?
 
     @State private var vm = ProgramsViewModel()
     /// Shared membership state. Read inside `body` so the observation registers.
@@ -29,7 +28,7 @@ struct ProgramsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
+            VStack(alignment: .leading, spacing: Theme.sectionGap) {
                 header
 
                 if let active, let day = store.currentDay(active) {
@@ -57,10 +56,7 @@ struct ProgramsView: View {
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
-        .background {
-            PhotoBackdrop(imageName: active?.imageUrl ?? "onb-bg", blur: 26, darken: 0.8)
-                .animation(.easeInOut(duration: 0.6), value: active?.id)
-        }
+        .background { Atmosphere(tone: .ember) }
         .task { await vm.load() }
         .task { await store.refresh() }
         // Coming back to the tab after practicing elsewhere should reflect it:
@@ -103,7 +99,7 @@ struct ProgramsView: View {
         if let day = store.currentDay(program), store.state(program, day: day.day).isOpen {
             onOpenDay(program, day)
         } else {
-            onOpenProgram(program, false)
+            onOpenProgram(program)
         }
     }
 
@@ -116,17 +112,16 @@ struct ProgramsView: View {
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
             Text("Digital Retreats")
-                .font(Theme.headline(38))
+                .font(Theme.headline(38, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.8)
             Text("Guided journeys you walk one day at a time. Take them at whatever speed your life allows.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .onPhoto()
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
     }
 
     // MARK: - Continue card
@@ -140,7 +135,7 @@ struct ProgramsView: View {
             if state.isOpen {
                 onOpenDay(program, day)
             } else {
-                onOpenProgram(program, false)
+                onOpenProgram(program)
             }
         }) {
             VStack(alignment: .leading, spacing: 0) {
@@ -159,11 +154,11 @@ struct ProgramsView: View {
                         Text(state.isOpen ? "CONTINUE" : "UP NEXT")
                             .font(Theme.eyebrow(10))
                             .tracking(3)
-                            .foregroundStyle(Theme.honey)
+                            .foregroundStyle(Theme.ember)
                         Text(program.title)
-                            .font(Theme.headline(27))
+                            .font(Theme.headline(27, weight: .light))
                             .foregroundStyle(Theme.ink)
-                            .kerning(-0.3)
+                            .kerning(-0.5)
                         HStack(spacing: 10) {
                             Text("DAY \(day.day) OF \(total)")
                                 .font(Theme.eyebrow(10))
@@ -173,7 +168,7 @@ struct ProgramsView: View {
                         }
                     }
                     .onPhoto()
-                    .padding(18)
+                    .padding(20)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -194,21 +189,12 @@ struct ProgramsView: View {
                         .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(18)
+                .padding(20)
             }
-            .soulGlassCard()
-            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(Theme.glassBorderHigh, lineWidth: 1)
-            )
+            .soulGlassCard(stroke: Theme.glassBorderHigh)
+            .clipped()
         }
-        // The same zoom source the program's catalog card registered: once
-        // joined, the program moves up here, and a detail that was zoomed open
-        // from the catalog closes back onto this card instead of a card that
-        // is no longer there.
-        .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         // CONTINUE vs UP NEXT, and the state line, are what say what a tap
         // will do — so they're read too.
@@ -238,17 +224,17 @@ struct ProgramsView: View {
         switch state {
         case .open:
             HStack(spacing: 8) {
-                Image(systemName: "arrow.forward.circle.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .regular))
                 Text(done == 0 ? "Begin day \(day.day)"
                                : "\(done) of \(total) done — keep going")
                     .font(Theme.body(13, weight: .medium))
             }
-            .foregroundStyle(Theme.honey)
+            .foregroundStyle(Theme.ember)
         case .opens(let when):
             HStack(spacing: 8) {
                 Image(systemName: "moon.stars")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 13, weight: .light))
                 Text("Opens \(Self.relativeDay(when))")
                     .font(Theme.body(13))
             }
@@ -258,9 +244,9 @@ struct ProgramsView: View {
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
         case .complete:
-            Label("Complete", systemImage: "checkmark.seal.fill")
+            Label("Complete", systemImage: "checkmark")
                 .font(Theme.body(13, weight: .medium))
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.accentSoft)
         }
     }
 
@@ -289,20 +275,19 @@ struct ProgramsView: View {
     private var catalog: some View {
         let others = vm.programs.filter { $0.id != active?.id }
         if !others.isEmpty {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 24) {
                 SectionLabel(title: active == nil ? "All digital retreats" : "More digital retreats")
 
-                VStack(spacing: 14) {
+                VStack(spacing: 24) {
                     ForEach(others) { program in
-                        PressableCard(action: { onOpenProgram(program, true) }) {
+                        PressableCard(action: { onOpenProgram(program) }) {
                             programCard(program)
                         }
-                        .modifier(ProgramZoomSource(id: program.id, namespace: zoomNamespace))
                         .accessibilityIdentifier("program-card")
                         .listReveal()
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
             }
         }
     }
@@ -325,16 +310,16 @@ struct ProgramsView: View {
                         .foregroundStyle(chip.1)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .soulGlassCapsule()
+                        .soulGlassCard()
                         .padding(12)
                 }
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(program.title)
-                    .font(Theme.headline(21))
+                    .font(Theme.headline(21, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.3)
                 if let blurb = program.blurb {
                     Text(blurb)
                         .font(Theme.body(13))
@@ -352,14 +337,10 @@ struct ProgramsView: View {
                     .padding(.top, 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(20)
         }
         .soulGlassCard()
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(Theme.glassBorder, lineWidth: 1)
-        )
+        .clipped()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(program.title). \(program.metaLine), with \(program.lead)\(presenceSuffix(program.id))")
         .accessibilityHint("Opens the digital retreat")
@@ -374,18 +355,19 @@ struct ProgramsView: View {
     private func stateChip(_ program: Program) -> (String, Color)? {
         guard store.isEnrolled(program.id) else { return nil }
         if store.enrollment(program.id)?.completedAt != nil || store.currentDay(program) == nil {
-            return ("COMPLETE", Theme.accent)
+            return ("COMPLETE", Theme.accentSoft)
         }
         let done = store.completedDayCount(program.id)
-        return ("DAY \(done + 1) OF \(program.authoredDays.count)", Theme.honey)
+        return ("DAY \(done + 1) OF \(program.authoredDays.count)", Theme.ember)
     }
 
     // MARK: - Empty / failure
 
+    /// Open on the page under a hairline, not boxed — there's nothing to tap.
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("New digital retreats are on their way")
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("We're putting the finishing touches to the first ones. They'll appear here as soon as they're ready.")
                 .font(Theme.body(14))
@@ -394,15 +376,17 @@ struct ProgramsView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.line).frame(height: 0.5)
+        }
+        .padding(.horizontal, Theme.gutter)
     }
 
     private func unavailable(_ failure: ProgramsLoadFailure) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(failure.title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text(failure.detail)
                 .font(Theme.body(14))
@@ -412,27 +396,14 @@ struct ProgramsView: View {
             SGPrimaryButton(title: "Try again") {
                 Task { await vm.load() }
             }
-            .padding(.top, 4)
+            .padding(.top, 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
-    }
-}
-
-/// `matchedTransitionSource` only when the host handed us a namespace (previews
-/// pass none).
-private struct ProgramZoomSource: ViewModifier {
-    let id: String
-    let namespace: Namespace.ID?
-
-    func body(content: Content) -> some View {
-        if let namespace {
-            content.matchedTransitionSource(id: "program-\(id)", in: namespace)
-        } else {
-            content
+        .padding(.top, 20)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.line).frame(height: 0.5)
         }
+        .padding(.horizontal, Theme.gutter)
     }
 }
 

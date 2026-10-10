@@ -34,7 +34,8 @@ struct PackingListView: View {
             }
             .ignoresSafeArea(.container, edges: .top)
 
-            topBar.padding(.horizontal, 20).padding(.top, 8)
+            // The glyph sits inside a 44pt target; this lines it up with the gutter.
+            topBar.padding(.horizontal, Theme.gutter - 14).padding(.top, 8)
         }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
@@ -53,28 +54,29 @@ struct PackingListView: View {
                 Text("Before You Go".uppercased())
                     .font(Theme.eyebrow(10)).tracking(3).foregroundStyle(RetreatPalette.terracotta)
                 Text("Packing list")
-                    .font(Theme.headline(32, weight: .semibold)).kerning(-0.5)
-                    .foregroundStyle(.white)
+                    .font(Theme.headline(32, weight: .light)).kerning(-0.6)
+                    .foregroundStyle(RetreatPalette.cream)
             }
-            .padding(.horizontal, 24).padding(.bottom, 18)
+            .padding(.horizontal, Theme.gutter).padding(.bottom, 18)
         }
         .frame(height: 240)
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("From riding gear to evening dinners — everything you'll want with you. Tap to tick items off as you pack.")
                 .font(Theme.body(13)).foregroundStyle(RetreatPalette.creamSoft).lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 6)
+                .padding(.bottom, 24)
 
+            // Rows ruled by hairlines, not boxed one by one.
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 row(index: index, item: item)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 22)
-        .padding(.bottom, 60)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 28)
+        .padding(.bottom, 64)
     }
 
     private func row(index: Int, item: String) -> some View {
@@ -83,16 +85,19 @@ struct PackingListView: View {
             Haptics.select()
             trip.toggleTodo(id(index), retreatID: retreat.id)
         } label: {
-            HStack(spacing: 14) {
+            HStack(spacing: 16) {
+                // A square box, filled when ticked.
                 ZStack {
-                    Circle()
+                    Rectangle()
                         .fill(done ? RetreatPalette.olive : Color.clear)
-                        .overlay(Circle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted, lineWidth: 1.5))
+                        .overlay(Rectangle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
+                                                          lineWidth: Theme.hairline))
                     if done {
-                        Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                        Image(systemName: "checkmark").font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(RetreatPalette.cream)
                     }
                 }
-                .frame(width: 26, height: 26)
+                .frame(width: 18, height: 18)
                 Text(item)
                     .font(Theme.body(15))
                     .foregroundStyle(done ? RetreatPalette.muted : RetreatPalette.cream)
@@ -100,24 +105,21 @@ struct PackingListView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
-            .padding(16)
+            .padding(.vertical, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(radius: 14, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+            .overlay(alignment: .top) {
+                Rectangle().fill(RetreatPalette.glassLine).frame(height: 0.5)
+            }
+            .contentShape(Rectangle())
+            .animation(Theme.Motion.settle, value: done)
         }
         .buttonStyle(.soulPressableQuiet)
     }
 
     private var topBar: some View {
         HStack {
-            Button {
-                Haptics.tap(); dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, interactive: true, stroke: RetreatPalette.glassLine)
-            }
-            .buttonStyle(.soulPressableChip)
+            GlyphButton(systemName: "arrow.left") { dismiss() }
+                .accessibilityLabel("Back")
             Spacer()
         }
     }

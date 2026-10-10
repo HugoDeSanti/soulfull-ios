@@ -25,14 +25,14 @@ struct ConnectionBanner: View {
         VStack(spacing: 0) {
             // `needsRetry` stays true for the whole of a retry (`isRetrying`
             // only swaps the button for a spinner), so the banner no longer
-            // slides away the moment Retry is tapped.
+            // fades away the moment Retry is tapped.
             if auth.needsRetry {
                 banner
                     .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity)
             }
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: auth.needsRetry)
+        .animation(Theme.Motion.settle, value: auth.needsRetry)
     }
 
     /// Offline and "our end" call for different things: reconnecting, or
@@ -55,8 +55,8 @@ struct ConnectionBanner: View {
     private var banner: some View {
         HStack(spacing: 12) {
             Image(systemName: isOffline ? "wifi.exclamationmark" : "exclamationmark.icloud")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Theme.honey)
+                .font(.system(size: 15, weight: .light))
+                .foregroundStyle(Theme.ember)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -79,24 +79,24 @@ struct ConnectionBanner: View {
                         ProgressView().controlSize(.small).tint(Theme.ink)
                     } else {
                         Text("Retry")
-                            .font(Theme.body(12, weight: .semibold))
+                            .font(Theme.body(12, weight: .medium))
                             .foregroundStyle(Theme.ink)
                     }
                 }
                 .frame(minWidth: 44)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .soulGlassCapsule()
-                // Glass adds no tappable fill on iOS 26 (gotcha #5).
-                .contentShape(Capsule())
+                .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                // The hairline draws no fill to hit-test (gotcha #5).
+                .contentShape(Rectangle())
             }
             .buttonStyle(.soulPressableQuiet)
             .disabled(auth.isRetrying)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .soulGlassCard(radius: 16)
         .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .soulGlassCard()
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(message)")
         .accessibilityValue(auth.isRetrying ? "Reconnecting" : "")

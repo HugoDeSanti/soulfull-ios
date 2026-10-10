@@ -44,11 +44,12 @@ struct MemberSafetyMenu: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Theme.inkSoft)
                 // A 44pt target around a glyph that draws a fraction of it
-                // (rendering gotcha 5).
-                .frame(width: 32, height: 44)
+                // (rendering gotcha 5). Hosts pull it in with negative padding
+                // so the dots sit near what they belong to.
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .accessibilityLabel("More for \(member.displayName)")

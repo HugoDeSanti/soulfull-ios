@@ -14,7 +14,6 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(AppState.self) private var app
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm: OnboardingViewModel
 
     /// False for a member who signed in before onboarding — see
@@ -41,16 +40,16 @@ struct OnboardingView: View {
                         case .finish:    EmptyView()
                         }
                     }
-                    // Soft (blur-free) variant: the name step's TextField is
-                    // UIKit-backed and can't sit under a Metal filter pass.
-                    // A plain fade under Reduce Motion, which drops the slide.
-                    .transition(reduceMotion ? .opacity : .editorialPageSoft)
+                    // Soft (blur-free) variant, a plain crossfade: the name
+                    // step's TextField is UIKit-backed and can't sit under a
+                    // Metal filter pass.
+                    .transition(.editorialPageSoft)
                     .id(vm.step)
                 }
                 .transition(.opacity)
             }
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: vm.step)
+        .animation(Theme.Motion.settle, value: vm.step)
         // Allow native swipe-from-edge to act as "back".
         .gesture(
             DragGesture(minimumDistance: 24)
@@ -79,12 +78,14 @@ private struct OnboardingShell<StepBody: View>: View {
 
             VStack(spacing: 0) {
                 topBar
-                    .padding(.horizontal, 22)
-                    .padding(.top, 16)
+                    // The back glyph's 44pt square centres it on the gutter.
+                    .padding(.leading, Theme.gutter - 13)
+                    .padding(.trailing, Theme.gutter)
+                    .padding(.top, 10)
 
                 stepBody()
-                    .padding(.horizontal, 22)
-                    .padding(.top, 26)
+                    .padding(.horizontal, Theme.gutter - 8)
+                    .padding(.top, 32)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
                 SGPrimaryButton(
@@ -93,7 +94,7 @@ private struct OnboardingShell<StepBody: View>: View {
                 ) {
                     vm.next()
                 }
-                .padding(.horizontal, 22)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.bottom, 28)
             }
         }
@@ -102,10 +103,10 @@ private struct OnboardingShell<StepBody: View>: View {
     private var topBar: some View {
         HStack(spacing: 10) {
             if !vm.isFirstStep {
-                CircleIconButton(systemName: "chevron.left", size: 36) { vm.back() }
+                GlyphButton(systemName: "arrow.left") { vm.back() }
                     .accessibilityLabel("Back")
             } else {
-                Color.clear.frame(width: 36, height: 36)
+                Color.clear.frame(width: 44, height: 44)
             }
 
             // Progress bar + counter
@@ -113,14 +114,15 @@ private struct OnboardingShell<StepBody: View>: View {
                 progressBar
                 Text("\(vm.step.index + 1)/\(OnboardingViewModel.Step.questionCount)")
                     .font(Theme.body(13))
-                    .foregroundStyle(Color.white.opacity(0.78))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.inkOnPhoto)
                 Button {
                     Haptics.tap()
                     app.finishOnboardingSkipping(name: vm.name)
                 } label: {
                     Text("skip")
                         .font(Theme.body(14))
-                        .foregroundStyle(Color.white.opacity(0.78))
+                        .foregroundStyle(Theme.inkOnPhoto)
                         // A 44pt target around a 14pt word without moving it:
                         // the padding grows the hit area, and the negative
                         // padding hands the room back so the bar keeps its
@@ -139,21 +141,19 @@ private struct OnboardingShell<StepBody: View>: View {
     }
 
     private var progressBar: some View {
-        // Track + leading-anchored scale fill — no GeometryReader, so the bar
-        // can never over-claim width inside the HStack.
-        Capsule()
-            .fill(Color.white.opacity(0.16))
+        // A hairline track with an ink run along it, eased from step to
+        // step. The run is a leading-anchored scale fill — no GeometryReader,
+        // so the bar can never over-claim width inside the HStack.
+        Rectangle()
+            .fill(Theme.ink.opacity(0.18))
             .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(
-                        LinearGradient(colors: [Theme.honey.opacity(0.85), Theme.ink],
-                                       startPoint: .leading, endPoint: .trailing)
-                    )
+                Rectangle()
+                    .fill(Theme.ink)
                     .scaleEffect(x: progress, y: 1, anchor: .leading)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.75), value: progress)
+                    .animation(Theme.Motion.settle, value: progress)
             }
-            .clipShape(Capsule())
-            .frame(height: 4)
+            .clipped()
+            .frame(height: 1)
             .frame(maxWidth: .infinity)
     }
 
@@ -172,11 +172,11 @@ private struct NameStep: View {
         VStack(spacing: 26) {
             Spacer()
             Text("What should we call you?")
-                .font(Theme.headline(30))
+                .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
-                .kerning(-0.2)
+                .kerning(-0.5)
                 // The question only: never the TextField underneath it.
                 .onPhoto()
 
@@ -184,7 +184,7 @@ private struct NameStep: View {
                 Text("Your name")
                     .font(Theme.headline(20))
                     .italic()
-                    .foregroundStyle(Color.white.opacity(0.45))
+                    .foregroundStyle(Theme.ink.opacity(0.45))
             )
             .focused($focused)
             .textContentType(.givenName)
@@ -204,10 +204,9 @@ private struct NameStep: View {
             .frame(maxWidth: 260)
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(focused ? Theme.honey.opacity(0.75) : Color.white.opacity(0.35))
+                    .fill(Theme.ink.opacity(focused ? 0.85 : 0.35))
                     .frame(height: 1)
-                    .shadow(color: focused ? Theme.honey.opacity(0.5) : .clear, radius: 6, y: 2)
-                    .animation(.easeInOut(duration: 0.35), value: focused)
+                    .animation(Theme.Motion.settle, value: focused)
             }
             Spacer()
             Spacer()
@@ -346,9 +345,8 @@ private struct FinishStepView: View {
 
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
-                    .frame(width: 160, height: 160)
-                    .shadow(color: .white.opacity(0.18), radius: 24)
-                    .breathing(scale: 0.94...1.06, opacity: 0.85...1.0, period: 5)
+                    .frame(width: 140, height: 140)
+                    .breathing(scale: 0.985...1.015, opacity: 0.8...1.0)
                     // Decorative: the welcome line under it does the talking.
                     .accessibilityHidden(true)
 
@@ -356,16 +354,17 @@ private struct FinishStepView: View {
                     .font(Theme.eyebrow(11))
                     .tracking(4)
                     .foregroundStyle(Theme.inkSoft)
-                    .padding(.top, 24)
+                    .padding(.top, 36)
                     .onPhoto()
 
                 Text("\u{201C}The soul knows the way — we're simply here to walk beside you.\u{201D}")
-                    .font(Theme.headline(28))
+                    .font(Theme.headline(28, weight: .light))
                     .italic()
                     .foregroundStyle(Theme.ink)
+                    .kerning(-0.4)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 320)
-                    .padding(.top, 18)
+                    .padding(.top, 20)
                     .onPhoto()
 
                 Text("Your space is ready whenever you are.")
@@ -381,17 +380,16 @@ private struct FinishStepView: View {
                 SGPrimaryButton(title: "I'm ready") {
                     onEnter()
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.bottom, 32)
             }
         }
     }
 }
 
-// MARK: - Option card (glass tile with index + label + honey glow when selected)
+// MARK: - Option card (square veiled tile: index + label; chosen = ink hairline)
 
 private struct OptionCard: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let index: Int?
     let label: String
     let selected: Bool
@@ -406,7 +404,7 @@ private struct OptionCard: View {
                         Text(String(format: "%02d", idx))
                             .font(Theme.body(11))
                             .tracking(1.2)
-                            .foregroundStyle(selected ? Theme.honey : Color.white.opacity(0.62))
+                            .foregroundStyle(selected ? Theme.ink : Theme.inkSoft)
                             .padding(.bottom, 14)
                     }
                     Text(label)
@@ -420,43 +418,15 @@ private struct OptionCard: View {
                 .padding(subtle ? 18 : 16)
             }
             .frame(minHeight: subtle ? 64 : 108)
-            .background {
-                ZStack {
-                    RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
-                        .fill(Color.white.opacity(selected ? 0.22 : 0.10))
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
-                    if selected && !subtle {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [Theme.honey.opacity(0.55), Theme.honey.opacity(0.18), .clear],
-                                    center: .center, startRadius: 6, endRadius: 90
-                                )
-                            )
-                            .blur(radius: 8)
-                            .frame(width: 220, height: 220)
-                            .offset(x: 60, y: 50)
-                            .transition(reduceMotion
-                                        ? .opacity
-                                        : .opacity.combined(with: .scale(scale: 0.4, anchor: .bottomTrailing)))
-                    }
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: subtle ? 28 : 26, style: .continuous)
-                    .strokeBorder(selected ? Theme.honey.opacity(0.6) : Color.white.opacity(0.20), lineWidth: 1)
-            }
-            .shimmer(on: selected)
-            // Under Reduce Motion a choice is marked by its fill, stroke and
-            // glow alone: no swelling, no bounce.
-            .scaleEffect(selected && !reduceMotion ? 1.02 : 1.0)
-            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.38, dampingFraction: 0.66),
-                       value: selected)
+            // Chosen: the hairline turns to ink and the surface lifts a
+            // shade. Nothing glows, grows or glints — it settles.
+            .soulGlassCard(tint: selected ? Theme.ink.opacity(0.07) : nil,
+                           stroke: selected ? Theme.ink.opacity(0.75) : Theme.glassBorderHigh)
+            .animation(Theme.Motion.settle, value: selected)
         }
         .buttonStyle(.soulPressableQuiet)
-        // A choice shows only as colour (fill, stroke, glow), which VoiceOver
-        // can't see: say "selected" out loud.
+        // A choice shows only as a change of line and numeral, which
+        // VoiceOver can't see: say "selected" out loud.
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("onboarding-option")
     }
@@ -468,7 +438,7 @@ private struct OptionCard: View {
 private func eyebrow(_ text: String) -> some View {
     Text(text)
         .font(Theme.body(12))
-        .foregroundStyle(Color.white.opacity(0.75))
+        .foregroundStyle(Theme.inkOnPhoto)
         .tracking(0.2)
         .padding(.horizontal, 2)
         .onPhoto()
@@ -477,11 +447,11 @@ private func eyebrow(_ text: String) -> some View {
 @ViewBuilder @MainActor
 private func headline(_ text: String) -> some View {
     Text(text)
-        .font(Theme.headline(34))
+        .font(Theme.headline(34, weight: .light))
         .foregroundStyle(Theme.ink)
         .multilineTextAlignment(.leading)
         .lineSpacing(2)
-        .kerning(-0.4)
+        .kerning(-0.7)
         .frame(maxWidth: 320, alignment: .leading)
         .onPhoto()
 }

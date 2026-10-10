@@ -22,10 +22,10 @@
 //  the Email answer *is* the account's address: shown, locked, and taken from
 //  the JWT server-side rather than typed.
 //
-//  Type sits on the retreat's own photograph here, so the header follows the
-//  one rule: `topScrim` on the backdrop, `.onPhoto()` on the copy — and on the
-//  copy only. The fields are UIKit-backed; a shadow over one of those is
-//  rendering gotcha #1.
+//  The form sits on the ember atmosphere — black, with the gatherings' warm
+//  wash at the top — not on the retreat's photograph blurred into a tint.
+//  With no photo under the type, the copy needs no `.onPhoto()` shadow, and
+//  the fields stay clear of any: they are UIKit-backed (rendering gotcha #1).
 //
 
 import SwiftUI
@@ -78,7 +78,7 @@ struct RetreatEnquiryView: View {
 
     var body: some View {
         ZStack {
-            PhotoBackdrop(imageName: retreat.imageUrl, blur: 26, darken: 0.86, topScrim: 0.55)
+            Atmosphere(tone: .ember)
 
             if vm.didSend {
                 sentPanel
@@ -89,6 +89,7 @@ struct RetreatEnquiryView: View {
             closeButton
         }
         .preferredColorScheme(.dark)
+        .presentationCornerRadius(0)
         // The phone's number pad has no Return key and the About box spends
         // Return on new lines, so neither had a way on or a way out of the
         // keyboard. One bar over every field gives both.
@@ -117,7 +118,7 @@ struct RetreatEnquiryView: View {
 
     private var form: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(alignment: .leading, spacing: 40) {
                 header
 
                 nameQuestion
@@ -134,9 +135,9 @@ struct RetreatEnquiryView: View {
 
                 submitSection
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.gutter)
             .padding(.top, 86)
-            .padding(.bottom, 48)
+            .padding(.bottom, 56)
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -145,16 +146,15 @@ struct RetreatEnquiryView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Join a retreat").sgEyebrow()
             Text("Request a place")
-                .font(Theme.headline(32))
+                .font(Theme.headline(32, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.5)
             Text("Our groups are kept intentionally small. This form lets us know you a little before we connect on an enrollment call.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onPhoto()
         .padding(.bottom, 2)
     }
 
@@ -214,7 +214,7 @@ struct RetreatEnquiryView: View {
                     )
                     .datePickerStyle(.wheel)
                     .labelsHidden()
-                    .tint(Theme.honey)
+                    .tint(Theme.ink)
                     .frame(maxWidth: .infinity)
                     .fieldSurface(active: true)
                 }
@@ -372,10 +372,9 @@ struct RetreatEnquiryView: View {
             if !vm.canSubmit {
                 Text("Still to answer — \(vm.missingAnswers.joined(separator: " · "))")
                     .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
-                    .onPhoto()
                     .accessibilityIdentifier("enquiry-missing")
             }
 
@@ -385,18 +384,17 @@ struct RetreatEnquiryView: View {
 
             Text("Sent to \(RetreatEnquiry.recipient), and we'll reply to your account's email.")
                 .font(Theme.body(11))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.muted)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
-                .onPhoto()
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 4)
     }
 
-    /// Glass rather than an alert: a failed send leaves the applicant on a
-    /// full form they may want to check, and an alert would cover it and then
-    /// need dismissing before they could reach the button again.
+    /// A veiled panel rather than an alert: a failed send leaves the applicant
+    /// on a full form they may want to check, and an alert would cover it and
+    /// then need dismissing before they could reach the button again.
     private func errorBanner(_ message: String) -> some View {
         Text(message)
             .font(Theme.body(13))
@@ -404,13 +402,9 @@ struct RetreatEnquiryView: View {
             .multilineTextAlignment(.center)
             .lineSpacing(2)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.honey.opacity(0.5), lineWidth: 1)
-            )
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .soulGlassCard(stroke: Theme.ember.opacity(0.5))
             .accessibilityIdentifier("enquiry-error")
     }
 
@@ -426,20 +420,19 @@ struct RetreatEnquiryView: View {
     private var sentPanel: some View {
         VStack(spacing: 18) {
             Image(systemName: "envelope.open")
-                .font(.system(size: 38, weight: .light))
-                .foregroundStyle(Theme.honey)
+                .font(.system(size: 34, weight: .thin))
+                .foregroundStyle(Theme.ember)
             VStack(spacing: 14) {
                 Text("Thank you for your interest in Soulfull Gatherings.")
-                    .font(Theme.headline(26))
+                    .font(Theme.headline(26, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.4)
                 Text("We read every application personally, because the room matters to us as much as it will to you.\n\nWe will be in touch as new gatherings open that feel right for you. Keep an eye on your inbox and WhatsApp.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(3)
             }
             .multilineTextAlignment(.center)
-            .onPhoto()
 
             SGPrimaryButton(title: "Back to the retreat") { dismiss() }
                 .padding(.top, 6)
@@ -455,8 +448,8 @@ struct RetreatEnquiryView: View {
         VStack {
             HStack {
                 Spacer()
-                CircleIconButton(systemName: "xmark", size: 38) {
-                    Haptics.tap()
+                // The press already gives the haptic.
+                GlyphButton(systemName: "xmark") {
                     if vm.hasContent && !vm.didSend {
                         confirmDiscard = true
                     } else {
@@ -473,8 +466,10 @@ struct RetreatEnquiryView: View {
             }
             Spacer()
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 16)
+        // The glyph sits inside a 44pt target; this lines the glyph itself
+        // up with the gutter.
+        .padding(.horizontal, Theme.gutter - 14)
+        .padding(.top, 10)
     }
 
     private func keyboardButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -484,7 +479,7 @@ struct RetreatEnquiryView: View {
         } label: {
             Text(title)
                 .font(Theme.body(15, weight: .medium))
-                .foregroundStyle(Theme.honey)
+                .foregroundStyle(Theme.ink)
         }
     }
 
@@ -516,13 +511,11 @@ struct RetreatEnquiryView: View {
                 if let help {
                     Text(help)
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.inkOnPhoto)
+                        .foregroundStyle(Theme.inkSoft)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            // Copy only — never the field below it.
-            .onPhoto()
 
             content()
         }
@@ -546,10 +539,17 @@ struct RetreatEnquiryView: View {
             Haptics.select()
             action()
         } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(selected ? Theme.honey : Theme.inkSoft)
+            HStack(alignment: .top, spacing: 14) {
+                // A square mark, filled when chosen — no radio circle.
+                Rectangle()
+                    .strokeBorder(selected ? Theme.ink : Theme.inkSoft.opacity(0.6), lineWidth: Theme.hairline)
+                    .frame(width: 16, height: 16)
+                    .overlay {
+                        if selected {
+                            Rectangle().fill(Theme.ink).frame(width: 8, height: 8)
+                        }
+                    }
+                    .padding(.top, 1)
                 Text(label)
                     .font(Theme.body(14, weight: selected ? .medium : .regular))
                     .foregroundStyle(Theme.ink)
@@ -557,19 +557,20 @@ struct RetreatEnquiryView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(selected ? 0.13 : 0.06))
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Rectangle()
+                    .fill(Theme.ink.opacity(selected ? 0.06 : 0.02))
+                    .background(.ultraThinMaterial, in: Rectangle())
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(selected ? Theme.honey.opacity(0.55) : Theme.glassBorder, lineWidth: 1)
+                Rectangle()
+                    .strokeBorder(selected ? Theme.ink.opacity(0.7) : Theme.glassBorder, lineWidth: Theme.hairline)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+            .animation(Theme.Motion.settle, value: selected)
         }
         .buttonStyle(.soulPressableQuiet)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
@@ -579,14 +580,15 @@ struct RetreatEnquiryView: View {
 // MARK: - Field surface
 
 private extension View {
-    /// The one glass surface every control on this form sits on. No shadow —
-    /// these wrap UIKit-backed views.
+    /// The one square surface every control on this form sits on. No shadow
+    /// and no blur over the field itself — these wrap UIKit-backed views; the
+    /// material is a background behind them.
     func fieldSurface(active: Bool) -> some View {
         self
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.ultraThinMaterial, in: Rectangle())
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(active ? Theme.glassBorderHigh : Theme.glassBorder, lineWidth: 1)
+                Rectangle()
+                    .strokeBorder(active ? Theme.ink.opacity(0.6) : Theme.glassBorder, lineWidth: Theme.hairline)
             )
     }
 }

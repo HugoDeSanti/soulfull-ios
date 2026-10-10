@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Who liked your practices. Pushed from the bell on the Community tab, or by
-//  a tapped like push. Unread rows carry a honey dot for this visit; each is
+//  a tapped like push. Unread rows carry an ember dot for this visit; each is
 //  marked read once the screen has shown it — by id, so a like that lands
 //  later stays unread until it too is on screen — and the server latches that.
 //
@@ -22,20 +22,18 @@ struct NotificationsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 36) {
                 PracticeBackBar(label: "Community")
                 header
                 content
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
-        .background {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8)
-        }
+        .background { Atmosphere(tone: .dusk) }
         .refreshable { await vm.loadNotifications(force: true) }
         .task {
             PushRegistrar.shared.clearBadge()
@@ -69,16 +67,15 @@ struct NotificationsView: View {
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
             Text("Notifications")
-                .font(Theme.headline(34))
+                .font(Theme.headline(34, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.7)
             Text("When someone likes a practice you finished, it lands here.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .onPhoto()
     }
 
     @ViewBuilder
@@ -91,8 +88,9 @@ struct NotificationsView: View {
         } else if let failure = vm.notificationsFailure, vm.notifications.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Text(failure.title)
-                    .font(Theme.headline(20))
+                    .font(Theme.headline(22, weight: .light))
                     .foregroundStyle(Theme.ink)
+                    .kerning(-0.3)
                 Text(failure.detail)
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkSoft)
@@ -101,17 +99,17 @@ struct NotificationsView: View {
                 SGPrimaryButton(title: "Try again") {
                     Task { await vm.loadNotifications(force: true) }
                 }
-                .padding(.top, 4)
+                .padding(.top, 14)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .soulGlassCard()
+            .padding(.top, 22)
+            .overlay(alignment: .top) { Hairline() }
         } else if vm.notifications.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Nothing yet")
-                    .font(Theme.headline(20))
+                    .font(Theme.headline(22, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.2)
+                    .kerning(-0.3)
                 Text("Finish a practice and it joins the Community feed, where people can like it. You'll hear about it here.")
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkSoft)
@@ -119,14 +117,16 @@ struct NotificationsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .soulGlassCard()
+            .padding(.top, 22)
+            .overlay(alignment: .top) { Hairline() }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("notifications-empty")
         } else {
-            VStack(spacing: 10) {
+            // Open rows on black, ruled above and between.
+            VStack(spacing: 0) {
                 ForEach(vm.notifications) { note in
                     row(note, unread: unreadAtOpen.contains(note.id))
+                        .overlay(alignment: .top) { Hairline() }
                         .listReveal()
                 }
             }
@@ -153,20 +153,19 @@ struct NotificationsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             if unread {
                 Circle()
-                    .fill(Theme.honey)
-                    .frame(width: 8, height: 8)
+                    .fill(Theme.ember)
+                    .frame(width: 6, height: 6)
                     .accessibilityHidden(true)
             }
             if let actor = note.actor {
                 MemberSafetyMenu(member: actor,
                                  onReport: { reporting = ReportTarget(member: actor, playID: note.playID) },
                                  onBlock: { blocking = actor })
+                    .padding(.leading, -8)
+                    .padding(.trailing, -10)
             }
         }
-        .padding(12)
-        .padding(.trailing, note.actor == nil ? 6 : 0)
-        .soulGlassCard(tint: unread ? Theme.honey.opacity(0.05) : nil,
-                       stroke: unread ? Theme.honey.opacity(0.28) : Theme.glassBorder)
+        .padding(.vertical, 18)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(note.actor?.displayName ?? "Someone") liked your \(note.practiceTitle ?? "practice") practice, \(relative(note.createdAt))\(unread ? ", new" : "")")
         .accessibilityIdentifier("notification-row")
@@ -194,6 +193,16 @@ struct NotificationsView: View {
                                            to: calendar.startOfDay(for: .now)).day ?? 0
         if days < 7 { return date.formatted(.dateTime.weekday(.wide)) }
         return date.formatted(.dateTime.day().month(.abbreviated))
+    }
+}
+
+/// The rule above a row and an open block.
+private struct Hairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(Theme.line)
+            .frame(height: 0.5)
+            .accessibilityHidden(true)
     }
 }
 

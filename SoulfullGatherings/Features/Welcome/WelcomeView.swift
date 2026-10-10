@@ -2,10 +2,11 @@
 //  WelcomeView.swift
 //  Soulfull Gatherings
 //
-//  Splash (logo breathing over the tropical backdrop) → 3 explainer slides.
-//  The backdrop pans like a slow camera move as slides advance; copy rises
-//  out of a blur; a folio counter + hairline segments replace dots. Under
-//  Reduce Motion the camera holds still and copy simply fades.
+//  Splash (the logo breathing in light over the tropical backdrop) → the
+//  explainer slides. The backdrop pans like a slow camera move as slides
+//  advance; copy comes into focus where it stands; a folio counter +
+//  hairline segments replace dots. Under Reduce Motion the camera holds
+//  still and copy simply fades.
 //
 //  "I already have an account" offers a sign-in sheet. Closing it leaves
 //  them here, free to Begin as a guest: it is an offer, not a gate.
@@ -67,15 +68,14 @@ struct WelcomeView: View {
                 step = 1
             }
         }
-        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.65, dampingFraction: 0.85),
-                   value: step)
+        .animation(reduceMotion ? Theme.Motion.settle : Theme.Motion.stage, value: step)
         .sheet(isPresented: $showSignIn, onDismiss: { app.returnFromWelcomeSignIn() }) {
             AccountView(mode: .signIn)
         }
     }
 
-    /// The blur-rise and the paired page handoff, or a plain fade under
-    /// Reduce Motion: both move copy 14–22pt as well as blurring it.
+    /// The focus-pull and the paired page handoff, or a plain fade under
+    /// Reduce Motion, which drops the blur as well.
     private var rise: AnyTransition { reduceMotion ? .opacity : .editorialRise }
     private var page: AnyTransition { reduceMotion ? .opacity : .editorialPage }
 
@@ -83,24 +83,13 @@ struct WelcomeView: View {
 
     private var splash: some View {
         ZStack {
-            // Halo
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color(white: 0.96).opacity(0.20), .clear],
-                        center: .center, startRadius: 30, endRadius: 280
-                    )
-                )
-                .frame(width: 520, height: 520)
-                .blur(radius: 24)
-                .breathing(scale: 0.82...1.22, opacity: 0.35...0.65, period: 5.5)
-
-            // Wordmark
+            // Wordmark — alone, with the photograph and space around it. It
+            // breathes in light; its size barely moves.
             Image("soulfull-logo-white")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 220, height: 220)
-                .breathing(scale: 0.93...1.07, opacity: 0.84...1.0, period: 5.5)
+                .frame(width: 180, height: 180)
+                .breathing(scale: 0.985...1.015, opacity: 0.8...1.0)
                 .accessibilityLabel("Soulfull")
 
             VStack {
@@ -108,10 +97,10 @@ struct WelcomeView: View {
                 Text("TAP TO CONTINUE")
                     .font(Theme.eyebrow(11))
                     .tracking(3.4)
-                    .foregroundStyle(Color(white: 0.92).opacity(0.72))
+                    .foregroundStyle(Theme.inkSoft)
                     .padding(14)
                     .onPhoto()
-                    .breathing(scale: 1.0...1.0, opacity: 0.45...0.9, period: 2.8)
+                    .breathing(scale: 1.0...1.0, opacity: 0.4...0.9)
                     .padding(.bottom, 32)
             }
         }
@@ -137,33 +126,33 @@ struct WelcomeView: View {
                 Spacer()
                 folio
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.gutter)
             .padding(.top, 24)
 
             Spacer()
 
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 20) {
                 Text(slide.eyebrow.uppercased())
-                    .font(Theme.eyebrow(9))
+                    .font(Theme.eyebrow(10))
                     .tracking(3)
-                    .foregroundStyle(Color(white: 0.95).opacity(0.7))
+                    .foregroundStyle(Theme.inkSoft)
 
                 twoTone(first: slide.firstHalf, accent: slide.accentHalf)
 
                 Text(slide.body)
-                    .font(Theme.body(13))
-                    .foregroundStyle(Color.white.opacity(0.8))
+                    .font(Theme.body(14))
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, Theme.gutter)
             .onPhoto()
             .id(slide.id)
             .transition(page)
 
             // Hairline progress segments
             segments
-                .padding(.horizontal, 30)
-                .padding(.top, 26)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.top, 36)
 
             VStack(spacing: 4) {
                 SGPrimaryButton(title: isLast ? "Begin" : "Next") {
@@ -184,7 +173,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("I already have an account")
                             .font(Theme.body(13))
-                            .foregroundStyle(Color.white.opacity(0.6))
+                            .foregroundStyle(Theme.inkSoft)
                             .padding(.horizontal, 12)
                             // 44pt tall, and tappable between the letters
                             // (gotcha #5).
@@ -195,8 +184,8 @@ struct WelcomeView: View {
                     .transition(rise)
                 }
             }
-            .padding(.horizontal, 30)
-            .padding(.top, 26)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.top, 28)
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -216,14 +205,14 @@ struct WelcomeView: View {
         } // end if step > 0
     }
 
-    /// Magazine folio — "02 / 03" with the current number animating.
+    /// Magazine folio — "02 / 03", the current number crossfading.
     private var folio: some View {
         HStack(spacing: 3) {
             Text(String(format: "%02d", step))
-                .contentTransition(.numericText(value: Double(step)))
-                .foregroundStyle(.white)
+                .contentTransition(.opacity)
+                .foregroundStyle(Theme.ink)
             Text("/ \(String(format: "%02d", slides.count))")
-                .foregroundStyle(Color.white.opacity(0.5))
+                .foregroundStyle(Theme.ink.opacity(0.5))
         }
         .font(Theme.body(12, weight: .medium))
         .tracking(1.5)
@@ -231,13 +220,13 @@ struct WelcomeView: View {
         .padding(.top, 6)
     }
 
-    /// Tappable hairline segments — the filled run grows with a spring.
+    /// Tappable hairline segments — the filled run lights with the step's ease.
     private var segments: some View {
         HStack(spacing: 6) {
             ForEach(1...slides.count, id: \.self) { i in
-                Capsule()
-                    .fill(i <= step ? Color.white.opacity(0.92) : Color.white.opacity(0.22))
-                    .frame(height: 2)
+                Rectangle()
+                    .fill(i <= step ? Theme.ink.opacity(0.92) : Theme.ink.opacity(0.22))
+                    .frame(height: 1)
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle().inset(by: -12))
                     .onTapGesture {
@@ -250,9 +239,9 @@ struct WelcomeView: View {
 
     private func twoTone(first: String, accent: String) -> some View {
         (Text(first + " ").foregroundStyle(Theme.ink)
-         + Text(accent).foregroundStyle(Color.white.opacity(0.62)))
-            .font(Theme.headline(26, weight: .medium))
-            .kerning(-0.4)
+         + Text(accent).foregroundStyle(Theme.ink.opacity(0.62)))
+            .font(Theme.headline(30, weight: .light))
+            .kerning(-0.6)
             .multilineTextAlignment(.leading)
             .lineSpacing(2)
     }

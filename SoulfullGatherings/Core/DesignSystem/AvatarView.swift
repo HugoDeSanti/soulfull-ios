@@ -3,7 +3,8 @@
 //  Soulfull Gatherings
 //
 //  A member's face in a circle — their photo when they've set one, their
-//  initial on a quiet tone when they haven't. The tone is picked from the
+//  initial on a quiet tone when they haven't. A face is the one surface the
+//  app keeps round; everything else is square. The tone is picked from the
 //  member's id, so the same person always gets the same colour and a feed of
 //  people without photos still reads as a feed of different people.
 //
@@ -33,7 +34,7 @@ struct AvatarView: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
-        .overlay(Circle().strokeBorder(Theme.glassBorderHigh, lineWidth: 1))
+        .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline))
         .accessibilityHidden(true)
     }
 
@@ -43,14 +44,14 @@ struct AvatarView: View {
         return String(first).uppercased()
     }
 
-    /// Five tones off the brand: olive, honey, a dusty rose, a slate, a sand.
-    /// All dark enough for cream type, all quiet enough to sit on glass.
+    /// Five tones off the atmospheres: moss, ember, dusk, slate and an umber.
+    /// All dark enough for ink, all quiet enough to sit on black.
     private static let tones: [LinearGradient] = [
-        (Color(red: 0.31, green: 0.36, blue: 0.16), Color(red: 0.20, green: 0.24, blue: 0.09)),
-        (Color(red: 0.55, green: 0.44, blue: 0.18), Color(red: 0.38, green: 0.29, blue: 0.10)),
-        (Color(red: 0.52, green: 0.31, blue: 0.30), Color(red: 0.34, green: 0.19, blue: 0.19)),
-        (Color(red: 0.29, green: 0.36, blue: 0.43), Color(red: 0.17, green: 0.23, blue: 0.29)),
-        (Color(red: 0.50, green: 0.42, blue: 0.31), Color(red: 0.33, green: 0.27, blue: 0.19)),
+        (Color(red: 0.27, green: 0.30, blue: 0.11), Color(red: 0.15, green: 0.17, blue: 0.05)),
+        (Color(red: 0.45, green: 0.25, blue: 0.12), Color(red: 0.27, green: 0.13, blue: 0.05)),
+        (Color(red: 0.42, green: 0.24, blue: 0.22), Color(red: 0.25, green: 0.13, blue: 0.12)),
+        (Color(red: 0.20, green: 0.25, blue: 0.33), Color(red: 0.10, green: 0.13, blue: 0.19)),
+        (Color(red: 0.33, green: 0.27, blue: 0.20), Color(red: 0.19, green: 0.15, blue: 0.10)),
     ].map { LinearGradient(colors: [$0.0, $0.1], startPoint: .topLeading, endPoint: .bottomTrailing) }
 
     static func tone(for seed: String) -> LinearGradient {
@@ -63,7 +64,7 @@ struct AvatarView: View {
 
 #Preview {
     ZStack {
-        PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
+        Atmosphere(tone: .dusk)
         HStack(spacing: 16) {
             AvatarView(avatarUrl: nil, name: "Hugo D.", seed: "a", size: 56)
             AvatarView(avatarUrl: nil, name: "Alma G.", seed: "b", size: 56)

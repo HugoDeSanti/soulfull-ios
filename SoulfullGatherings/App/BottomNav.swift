@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  A flat bar docked to the bottom edge: six evenly spaced items, a thin
-//  glyph over a small label, cream when selected and muted when not. It does
+//  glyph over a small label, ink when selected and muted when not. It does
 //  not move — no sliding lens, no bounce, no squish — so the only thing that
 //  changes on a tap is the colour. The You item is the member's own face
 //  (their photo, or their initial on their tone); a guest, who has no face
@@ -120,7 +120,8 @@ private struct NavBarLayout: Layout {
     }
 }
 
-/// The member's face, ringed in cream while the You tab is selected.
+/// The member's face, ringed in ink while the You tab is selected. A face is
+/// the one thing the app keeps round.
 private struct YouNavIcon: View {
     let active: Bool
     @Environment(AuthManager.self) private var auth
@@ -134,7 +135,7 @@ private struct YouNavIcon: View {
                        size: 22)
                 .padding(2)
                 .overlay {
-                    Circle().strokeBorder(active ? Theme.ink : .clear, lineWidth: 1.2)
+                    Circle().strokeBorder(active ? Theme.ink : .clear, lineWidth: 1)
                 }
                 .opacity(active ? 1 : 0.75)
         } else {
@@ -153,7 +154,7 @@ private struct StaticNavButtonStyle: ButtonStyle {
 
 #Preview {
     ZStack {
-        PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.5)
+        Atmosphere()
         VStack { Spacer(); BottomNav(current: .constant(.home)) }
     }
     .environment(AuthManager(settings: AppSettings()))

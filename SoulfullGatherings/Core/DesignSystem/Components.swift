@@ -2,13 +2,14 @@
 //  Components.swift
 //  Soulfull Gatherings
 //
-//  Reusable building blocks — buttons, glass cards, image backdrops,
-//  section labels. Anything used by 2+ screens lives here.
+//  Reusable building blocks — buttons, veiled cards, image backdrops,
+//  section labels. Anything used by 2+ screens lives here. Every shape is
+//  square (see `Theme` → Shape) and every motion an ease (→ Motion).
 //
 
 import SwiftUI
 
-// MARK: - Primary button (ghost pill, cream stroke on dark)
+// MARK: - Primary button (square: a hairline in ink, or filled ink)
 
 struct SGPrimaryButton: View {
     let title: String
@@ -33,40 +34,43 @@ struct SGPrimaryButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(
-                Capsule()
-                    .fill(filled ? Color.white : Color.clear)
+                Rectangle()
+                    .fill(filled ? Theme.ink : Color.clear)
                     .overlay(
-                        Capsule().strokeBorder(Theme.ink, lineWidth: filled ? 0 : 1)
+                        Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: filled ? 0 : Theme.hairline)
                     )
             )
-            .opacity(enabled ? 1 : 0.45)
-            .contentShape(Capsule())
+            .opacity(enabled ? 1 : 0.4)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(SoulPressableStyle(scale: 0.975, hapticOnPress: false, dim: false))
+        .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         // The dimming above is only how it looks. Without this VoiceOver
         // announced a live button that did nothing when activated, and the
-        // press still squished. The look is unchanged: the label draws its own
-        // dim, and the style doesn't read `isEnabled`.
+        // press still dimmed it. The look is unchanged: the label draws its
+        // own dim, and the style doesn't read `isEnabled`.
         .disabled(!enabled)
     }
 }
 
-// MARK: - Glass card (system material wrapper)
+// MARK: - Glass card (a veiled square surface)
 
 struct GlassCard<Content: View>: View {
-    var radius: CGFloat = Theme.cardRadius
-    var padding: CGFloat = 16
+    var padding: CGFloat = 20
     @ViewBuilder var content: Content
 
     var body: some View {
         content
             .padding(padding)
-            .soulGlassCard(radius: radius)
+            .soulGlassCard()
     }
 }
 
-// MARK: - Section header (eyebrow-styled section title used on Home / Library)
+// MARK: - Section header (a hairline, then a tracked caps label)
 
+/// Opens a section the way a printed page does: a rule across the measure,
+/// and under it a small tracked label. The size lives in the content below
+/// it, not in the heading, so a page reads as quiet sections with air
+/// between them rather than a stack of headlines.
 struct SectionLabel: View {
     let title: String
     var action: String? = nil
@@ -80,28 +84,37 @@ struct SectionLabel: View {
     var onAction: (() -> Void)? = nil
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(Theme.headline(22))
-                .foregroundStyle(Theme.ink)
-                .kerning(-0.2)
-            Spacer()
-            if let action, let onAction {
-                Button {
-                    Haptics.tap()
-                    onAction()
-                } label: {
-                    Text(action)
-                        .font(Theme.body(12))
-                        .tracking(1)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Theme.inkSoft)
+        VStack(alignment: .leading, spacing: 14) {
+            Rectangle()
+                .fill(Theme.line)
+                .frame(height: 0.5)
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .sgEyebrow(color: Theme.ink)
+                    // Shown in caps, read as written: VoiceOver spells some
+                    // all-caps words out, and the heading used to be in
+                    // sentence case, which is what the UI tests look for.
+                    .accessibilityLabel(title)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                if let action, let onAction {
+                    Button {
+                        Haptics.tap()
+                        onAction()
+                    } label: {
+                        Text(action)
+                            .sgEyebrow(color: Theme.inkSoft)
+                            // A 44pt target around a small caps word.
+                            .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.soulPressable)
+                    .padding(.vertical, -14)
+                    .accessibilityLabel(actionLabel ?? action)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(actionLabel ?? action)
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, Theme.gutter)
     }
 }
 
@@ -149,7 +162,9 @@ struct PhotoBackdrop: View {
                             .resizable()
                             .scaledToFill()
                             .blur(radius: blur)
-                            .saturation(1.15)
+                            // Photography a shade quieter than life, as
+                            // Open's is — warm, muted, never vivid.
+                            .saturation(0.9)
                             .brightness(-0.05)
                             .scaleEffect(pan == 0 ? 1.06 : 1.16)
                             .offset(x: -pan * 22)
@@ -289,11 +304,14 @@ private struct StatusBarScrim: ViewModifier {
     }
 }
 
-// MARK: - Small circular icon button (back / close)
+// MARK: - Glyph button (back / close / view toggle)
 
-struct CircleIconButton: View {
+/// A bare glyph, the way Open draws its ← and ×: no circle, no glass. The
+/// tappable area is still a 44pt square around it — a glyph only answers
+/// taps where it draws (rendering gotcha 5). A soft shadow keeps it legible
+/// where it sits on a photograph, and vanishes on black.
+struct GlyphButton: View {
     let systemName: String
-    var size: CGFloat = 40
     let action: () -> Void
 
     var body: some View {
@@ -301,19 +319,13 @@ struct CircleIconButton: View {
             action()
         } label: {
             Image(systemName: systemName)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 17, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .frame(width: size, height: size)
-                .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
-                // Without this the button only hit-tests the drawn glyph — an
-                // Image stretched by `.frame` leaves the surrounding area
-                // non-interactive, and `glassEffect` (iOS 26) contributes no
-                // hit-testable fill the way `.ultraThinMaterial` did. Every
-                // CircleIconButton in the app was a ~11pt target inside a 38pt
-                // circle; the account sheet's close button is where it showed.
-                .contentShape(Circle())
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+                .shadow(color: .black.opacity(0.45), radius: 6)
         }
-        .buttonStyle(.soulPressableChip)
+        .buttonStyle(.soulPressable)
     }
 }
 
@@ -326,21 +338,14 @@ struct TabPlaceholder: View {
 
     var body: some View {
         ZStack {
-            PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
-
-            // Living veil over the photo — placeholders still breathe.
-            AuroraBackground(speed: 0.7)
-                .opacity(0.4)
-                .blendMode(.plusLighter)
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
+            Atmosphere(tone: .moss)
 
             VStack(spacing: 18) {
                 Spacer()
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
                     .frame(width: 72, height: 72)
-                    .breathing(scale: 0.95...1.05, opacity: 0.75...0.95, period: 5.5)
+                    .breathing(scale: 1...1, opacity: 0.6...0.95)
                 Text(eyebrow.uppercased())
                     .font(Theme.eyebrow(11))
                     .tracking(3)
@@ -366,15 +371,17 @@ struct TabPlaceholder: View {
     }
 }
 
-// MARK: - Pulse modifier (white dot live-indicator, used for circles and live events)
+// MARK: - Pulse modifier (a live indicator that glows and fades)
 
+/// Light, not size: the dot brightens and dims at half a breath. Static
+/// under Reduce Motion.
 struct PulseModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var on = false
     func body(content: Content) -> some View {
         content
-            .scaleEffect(on ? 1 : 0.85)
-            .opacity(on ? 1 : 0.4)
-            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: on)
+            .opacity(reduceMotion || on ? 1 : 0.35)
+            .animation(.easeInOut(duration: Theme.Motion.breath / 2).repeatForever(autoreverses: true), value: on)
             .onAppear { on = true }
     }
 }
@@ -385,13 +392,14 @@ extension View {
 
 // MARK: - Breathing (slow scale/opacity loop at breath pace)
 
-/// The app's signature idle motion — a 5–6s inhale/exhale. Use for logos,
-/// halos, and the player's breathing circle. Static under Reduce Motion.
+/// The app's signature idle motion — a slow inhale/exhale. Use for logos,
+/// halos, and the player's breathing circle. Keep the scale small (a few
+/// percent): it should be felt more than seen. Static under Reduce Motion.
 struct BreathingModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    var scaleRange: ClosedRange<CGFloat> = 0.94...1.06
-    var opacityRange: ClosedRange<Double> = 0.85...1.0
-    var period: Double = 5.5
+    var scaleRange: ClosedRange<CGFloat> = 0.98...1.02
+    var opacityRange: ClosedRange<Double> = 0.8...1.0
+    var period: Double = Theme.Motion.breath
     @State private var inhale = false
 
     func body(content: Content) -> some View {
@@ -404,9 +412,9 @@ struct BreathingModifier: ViewModifier {
 }
 
 extension View {
-    func breathing(scale: ClosedRange<CGFloat> = 0.94...1.06,
-                   opacity: ClosedRange<Double> = 0.85...1.0,
-                   period: Double = 5.5) -> some View {
+    func breathing(scale: ClosedRange<CGFloat> = 0.98...1.02,
+                   opacity: ClosedRange<Double> = 0.8...1.0,
+                   period: Double = Theme.Motion.breath) -> some View {
         modifier(BreathingModifier(scaleRange: scale, opacityRange: opacity, period: period))
     }
 }

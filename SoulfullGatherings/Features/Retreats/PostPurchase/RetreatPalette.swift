@@ -27,9 +27,9 @@ enum RetreatPalette {
     /// Accents.
     static let terracotta = Color(hex: "#c47c4c")  // eyebrows, primary CTAs
     static let olive       = Color(hex: "#8d8a4c") // success / booked / checks
-    static let gold        = Color(hex: "#e5c766") // highlight (== Theme.honey)
+    static let gold        = Color(hex: "#e5c766") // highlight (the app's old honey; `Theme.ember` replaced it)
 
-    /// Warm cream-tinted glass (vs the app's white glass).
+    /// Warm cream-tinted veil (vs the app's dark one).
     static let glassTint     = cream.opacity(0.05)
     static let glassLine     = cream.opacity(0.12)
     static let glassLineSoft = cream.opacity(0.08)

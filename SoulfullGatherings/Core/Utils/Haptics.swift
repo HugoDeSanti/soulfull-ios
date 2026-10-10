@@ -11,16 +11,17 @@ import UIKit
 @MainActor
 enum Haptics {
 
-    private static let light        = UIImpactFeedbackGenerator(style: .light)
-    private static let medium       = UIImpactFeedbackGenerator(style: .medium)
+    /// Soft, not light/medium: a damped, rounded knock rather than a click,
+    /// so a touch feels like the screen settling under the finger.
+    private static let soft         = UIImpactFeedbackGenerator(style: .soft)
     private static let selection    = UISelectionFeedbackGenerator()
     private static let notification = UINotificationFeedbackGenerator()
 
-    /// Standard tap — soft. Default for chips, list rows, secondary actions.
-    static func tap()     { light.impactOccurred() }
+    /// Standard tap — faint. Default for chips, list rows, secondary actions.
+    static func tap()     { soft.impactOccurred(intensity: 0.55) }
 
-    /// Stronger tap — for primary CTAs ("Begin", "Reserve").
-    static func bump()    { medium.impactOccurred() }
+    /// Fuller tap — for primary CTAs ("Begin", "Request a place").
+    static func bump()    { soft.impactOccurred(intensity: 1.0) }
 
     /// Selection change — used when the retreat stack scrolls past a new name.
     static func select()  { selection.selectionChanged() }
@@ -30,8 +31,7 @@ enum Haptics {
 
     /// Call when a gesture begins so the engine is fully warmed before impact.
     static func prepare() {
-        light.prepare()
-        medium.prepare()
+        soft.prepare()
         selection.prepare()
         notification.prepare()
     }

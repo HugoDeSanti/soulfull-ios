@@ -32,9 +32,9 @@ struct ProgramDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 32) {
                 hero
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 40) {
                     if let overview = program.curriculum?.overview {
                         Text(overview)
                             .font(Theme.body(15))
@@ -52,7 +52,7 @@ struct ProgramDetailView: View {
                     if let joinError {
                         Text(joinError)
                             .font(Theme.body(13))
-                            .foregroundStyle(Theme.honey)
+                            .foregroundStyle(Theme.ember)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -66,7 +66,7 @@ struct ProgramDetailView: View {
 
                     if enrolled { leaveRow }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
 
                 Color.clear.frame(height: 120)
             }
@@ -82,7 +82,7 @@ struct ProgramDetailView: View {
         .background { Theme.bg.ignoresSafeArea() }
         .overlay(alignment: .topLeading) {
             PracticeBackBar(label: "Digital Retreats")
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.top, 6)
         }
         .task {
@@ -135,9 +135,9 @@ struct ProgramDetailView: View {
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
                 Text(program.title)
-                    .font(Theme.headline(38))
+                    .font(Theme.headline(38, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.4)
+                    .kerning(-0.8)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("with \(program.lead)")
                     .font(Theme.body(14))
@@ -149,14 +149,15 @@ struct ProgramDetailView: View {
                         Text("\(store.completedDayCount(program.id)) OF \(days.count) DAYS")
                             .font(Theme.eyebrow(10))
                             .tracking(2)
-                            .foregroundStyle(Theme.honey)
+                            .foregroundStyle(Theme.ember)
                         ProgressRule(fraction: store.fractionComplete(program), width: 90)
                     }
                     .padding(.top, 4)
                 }
             }
             .onPhoto()
-            .padding(20)
+            .padding(.horizontal, Theme.gutter)
+            .padding(.bottom, 24)
         }
     }
 
@@ -185,8 +186,9 @@ struct ProgramDetailView: View {
                 onOpenDay(current)
             }
         } else if let current, case .opens(let when) = store.state(program, day: current.day) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Image(systemName: "moon.stars")
+                    .font(.system(size: 15, weight: .light))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Day \(current.day) opens \(ProgramsView.relativeDay(when))")
                         .font(Theme.body(14, weight: .medium))
@@ -197,8 +199,8 @@ struct ProgramDetailView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(Theme.honey)
-            .padding(16)
+            .foregroundStyle(Theme.ember)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .soulGlassCard()
         }
@@ -206,10 +208,14 @@ struct ProgramDetailView: View {
 
     // MARK: - Days
 
+    /// The days as a ruled list — each under a hairline, none in a box.
     private var dayList: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             SectionLabel(title: "The days")
-            VStack(spacing: 10) {
+                // `SectionLabel` brings its own page margin; this list already
+                // sits inside one.
+                .padding(.horizontal, -Theme.gutter)
+            VStack(spacing: 0) {
                 ForEach(days) { day in
                     dayRow(day)
                         .listReveal()
@@ -231,12 +237,12 @@ struct ProgramDetailView: View {
             }
             onOpenDay(day)
         }) {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
                 dayMarker(day, state: state)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(day.title)
-                        .font(Theme.headline(17))
+                        .font(Theme.headline(18, weight: .light))
                         .foregroundStyle(enrolled && !state.isComplete && !state.isOpen ? Theme.inkSoft : Theme.ink)
                         .kerning(-0.2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -253,21 +259,18 @@ struct ProgramDetailView: View {
                 Spacer(minLength: 0)
 
                 if openable {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Theme.inkSoft)
-                        .padding(.top, 4)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundStyle(Theme.ink)
                 }
             }
-            .padding(16)
+            .padding(.vertical, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard()
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(state.isOpen && enrolled ? Theme.honey.opacity(0.4) : Theme.glassBorder,
-                                  lineWidth: 1)
-            )
-            .opacity(enrolled && !state.isComplete && !state.isOpen ? 0.72 : 1)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Theme.line).frame(height: 0.5)
+            }
+            .contentShape(Rectangle())
+            .opacity(enrolled && !state.isComplete && !state.isOpen ? 0.6 : 1)
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("program-day-row")
@@ -278,25 +281,17 @@ struct ProgramDetailView: View {
         .accessibilityRemoveTraits(openable ? [] : .isButton)
     }
 
+    /// The day as a folio numeral — "01" — with no circle round it. Ink
+    /// when it's the day to open, moss once it's done, muted otherwise; the
+    /// status line under the title says the rest in words.
     private func dayMarker(_ day: ProgramDay, state: ProgramDayState) -> some View {
-        ZStack {
-            Circle()
-                .fill(state.isComplete ? Theme.accent.opacity(0.22) : Theme.ink.opacity(0.08))
-                .frame(width: 38, height: 38)
-            Circle()
-                .strokeBorder(state.isComplete ? Theme.accent.opacity(0.5) : Theme.glassBorder, lineWidth: 1)
-                .frame(width: 38, height: 38)
-
-            if state.isComplete {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-            } else {
-                Text("\(day.day)")
-                    .font(Theme.body(14, weight: .semibold))
-                    .foregroundStyle(state.isOpen && enrolled ? Theme.honey : Theme.inkSoft)
-            }
-        }
+        Text(String(format: "%02d", day.day))
+            .font(Theme.body(12, weight: .medium))
+            .tracking(1.5)
+            .monospacedDigit()
+            .foregroundStyle(state.isComplete ? Theme.accentSoft
+                             : (state.isOpen && enrolled ? Theme.ink : Theme.muted))
+            .frame(width: 24, alignment: .leading)
     }
 
     /// How many practices a day holds. The authored count until every one has
@@ -331,27 +326,28 @@ struct ProgramDetailView: View {
 
         HStack(spacing: 6) {
             if case .opens = state {
-                Image(systemName: "moon.stars").font(.system(size: 10, weight: .medium))
+                Image(systemName: "moon.stars").font(.system(size: 10, weight: .light))
             } else if case .awaitingPreviousDay = state, enrolled {
-                Image(systemName: "lock").font(.system(size: 10, weight: .medium))
+                Image(systemName: "lock").font(.system(size: 10, weight: .light))
             }
             Text(label.uppercased())
                 .font(Theme.eyebrow(10))
                 .tracking(1.6)
         }
-        .foregroundStyle(state.isOpen && enrolled ? Theme.honey : Theme.muted)
+        .foregroundStyle(state.isOpen && enrolled ? Theme.ember : Theme.muted)
     }
 
     // MARK: - Bits
 
+    /// Open on the page under a hairline — words to read, nothing to tap.
     private func closingCard(_ closing: ProgramClosing) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("DIGITAL RETREAT COMPLETE", systemImage: "checkmark.seal.fill")
+        VStack(alignment: .leading, spacing: 10) {
+            Label("DIGITAL RETREAT COMPLETE", systemImage: "checkmark")
                 .font(Theme.eyebrow(10))
                 .tracking(2)
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.accentSoft)
             Text(closing.title)
-                .font(Theme.headline(22))
+                .font(Theme.headline(22, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -362,8 +358,10 @@ struct ProgramDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard(tint: Theme.accent.opacity(0.1))
+        .padding(.top, 20)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.line).frame(height: 0.5)
+        }
     }
 
     private var notReadyNote: some View {
@@ -373,8 +371,10 @@ struct ProgramDetailView: View {
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .soulGlassCard()
+            .padding(.top, 20)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Theme.line).frame(height: 0.5)
+            }
     }
 
     private var leaveRow: some View {
@@ -386,6 +386,8 @@ struct ProgramDetailView: View {
                 .font(Theme.body(13))
                 .underline()
                 .foregroundStyle(Theme.muted)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, alignment: .center)

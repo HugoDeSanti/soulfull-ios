@@ -3,10 +3,10 @@
 //  Soulfull Gatherings
 //
 //  A guide's page, opened from the "Your guide" card on anything they made.
-//  Their portrait breathing over their own photograph, blurred to a colour
-//  field; the two numbers — followers, following — with the faces of a few
-//  people who follow them; Follow; the bio; and everything they have
-//  published, which opens exactly where it would from anywhere else.
+//  Their portrait on black under the ember wash; the two numbers —
+//  followers, following — with the faces of a few people who follow them;
+//  Follow; the bio; and everything they have published, set open between
+//  hairlines, which opens exactly where it would from anywhere else.
 //
 //  Open to a guest end to end. Following and playing are the two things on
 //  the page that need an account; both go through `requireAccount`.
@@ -75,14 +75,12 @@ struct InstructorProfileView: View {
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            // Their own photograph, blurred until it is only its colour — so
-            // each guide's page has a temperature of its own.
-            PhotoBackdrop(imageName: vm.instructor?.photoUrl ?? "home-bg", blur: 48, darken: 0.86)
+            Atmosphere(tone: .ember)
         }
         // Whoever is asking changes "followed by me" and "is me": re-read on
         // sign-in, which is also when a gated Follow is replayed.
@@ -102,42 +100,32 @@ struct InstructorProfileView: View {
     private func profile(_ instructor: Instructor) -> some View {
         VStack(spacing: 0) {
             header(instructor)
-                .padding(.top, 26)
+                .padding(.top, 36)
             stats
-                .padding(.top, 26)
+                .padding(.top, 36)
             followedBy
-                .padding(.top, 14)
+                .padding(.top, 16)
             followControl(instructor)
-                .padding(.top, 20)
+                .padding(.top, 28)
             if let bio = instructor.bio {
                 about(bio)
-                    .padding(.top, 36)
+                    .padding(.top, 56)
             }
             library(instructor)
-                .padding(.top, 36)
+                .padding(.top, Theme.sectionGap)
         }
     }
 
     // MARK: Header
 
     private func header(_ instructor: Instructor) -> some View {
-        VStack(spacing: 16) {
+        // The portrait alone — a face is the one round thing on the page — with
+        // nothing glowing behind it: the wash above is the page's warmth.
+        VStack(spacing: 20) {
             AvatarView(avatarUrl: instructor.photoUrl, name: instructor.name,
                        seed: instructor.id, size: 112)
-                .padding(6)
-                .overlay(Circle().strokeBorder(Theme.honey.opacity(0.35), lineWidth: 1))
-                .background {
-                    // A slow honey halo: the portrait breathes, the page
-                    // stays still. In a background so it never takes space.
-                    Circle()
-                        .fill(RadialGradient(colors: [Theme.honey.opacity(0.34), .clear],
-                                             center: .center, startRadius: 52, endRadius: 118))
-                        .frame(width: 236, height: 236)
-                        .breathing(scale: 0.9...1.04, opacity: 0.65...1, period: 6)
-                        .allowsHitTesting(false)
-                }
 
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 if let title = instructor.title {
                     Text(title.uppercased())
                         .font(Theme.eyebrow(11))
@@ -146,15 +134,14 @@ struct InstructorProfileView: View {
                         .multilineTextAlignment(.center)
                 }
                 Text(instructor.name)
-                    .font(Theme.headline(38))
+                    .font(Theme.headline(38, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.4)
+                    .kerning(-0.8)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("instructor-name")
             }
-            .onPhoto()
         }
         .frame(maxWidth: .infinity)
     }
@@ -169,23 +156,23 @@ struct InstructorProfileView: View {
                  spoken: social.map { "\($0.followers.formatted()) \($0.followers == 1 ? "follower" : "followers")" },
                  id: "instructor-followers")
             Rectangle()
-                .fill(Theme.glassBorderHigh)
-                .frame(width: 1, height: 36)
+                .fill(Theme.line)
+                .frame(width: 0.5, height: 36)
             stat(value: social.map { Presence.compact($0.following) },
                  label: "Following",
                  spoken: social.map { "Following \($0.following.formatted())" },
                  id: "instructor-following")
         }
         .frame(maxWidth: 280)
-        .animation(.snappy(duration: 0.35), value: social)
+        .animation(Theme.Motion.settle, value: social)
     }
 
     private func stat(value: String?, label: String, spoken: String?, id: String) -> some View {
         VStack(spacing: 5) {
             Text(value ?? "–")
-                .font(Theme.headline(28))
+                .font(Theme.headline(28, weight: .light))
                 .foregroundStyle(value == nil ? Theme.muted : Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.5)
                 .contentTransition(.numericText())
             Text(label.uppercased())
                 .font(Theme.eyebrow(10))
@@ -193,7 +180,6 @@ struct InstructorProfileView: View {
                 .foregroundStyle(Theme.inkSoft)
         }
         .frame(maxWidth: .infinity)
-        .onPhoto()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken ?? "\(label), not loaded")
         // The label is the exact number, which is what should be spoken; the
@@ -216,7 +202,6 @@ struct InstructorProfileView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .contentTransition(.opacity)
             }
-            .onPhoto()
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(line)
@@ -235,10 +220,10 @@ struct InstructorProfileView: View {
                 AvatarView(avatarUrl: member.avatarUrl, name: member.displayName,
                            seed: member.id.uuidString, size: 24)
                     .zIndex(Double(3 - index))
-                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    .transition(.opacity)
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: social.followedByMe)
+        .animation(Theme.Motion.settle, value: social.followedByMe)
     }
 
     // MARK: Follow
@@ -250,9 +235,9 @@ struct InstructorProfileView: View {
                 Label("This is your profile", systemImage: "person.crop.circle")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.inkSoft)
-                    .padding(.horizontal, 16)
-                    .frame(height: 38)
-                    .soulGlassCapsule()
+                    .padding(.horizontal, 18)
+                    .frame(height: 40)
+                    .soulGlassCard()
             } else {
                 // Quieted until the numbers land: "Follow" may not be true
                 // yet. Still tappable — the model reads them first and never
@@ -267,13 +252,13 @@ struct InstructorProfileView: View {
             if let error = vm.followError {
                 Text(error)
                     .font(Theme.body(13))
-                    .foregroundStyle(Theme.honey)
+                    .foregroundStyle(Theme.ember)
                     .multilineTextAlignment(.center)
                     .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity)
-        .animation(.easeOut(duration: 0.25), value: vm.followError)
+        .animation(Theme.Motion.settle, value: vm.followError)
     }
 
     // MARK: About
@@ -283,24 +268,23 @@ struct InstructorProfileView: View {
         // measured: a bio is a paragraph or two, and "More" under a text that
         // wasn't cut would be a button that does nothing.
         let foldable = bio.count > 260
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 14) {
+            PracticeRule()
             Text("ABOUT")
                 .font(Theme.eyebrow(11))
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
-                .onPhoto()
             Text(bio)
                 .font(Theme.body(15))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(5)
                 .lineLimit(foldable && !bioExpanded ? 5 : nil)
                 .fixedSize(horizontal: false, vertical: true)
-                .onPhoto()
                 .accessibilityIdentifier("instructor-bio")
             if foldable {
                 Button {
                     Haptics.tap()
-                    withAnimation(.easeInOut(duration: 0.3)) { bioExpanded.toggle() }
+                    withAnimation(Theme.Motion.settle) { bioExpanded.toggle() }
                 } label: {
                     Text(bioExpanded ? "Less" : "More")
                         .font(Theme.body(13, weight: .medium))
@@ -322,25 +306,25 @@ struct InstructorProfileView: View {
     // MARK: Library
 
     private func library(_ instructor: Instructor) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 14) {
+                PracticeRule()
                 Text("LIBRARY")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
                 Text("Practices with \(instructor.firstName)")
-                    .font(Theme.headline(26))
+                    .font(Theme.headline(26, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.5)
             }
-            .onPhoto()
 
             if let library = vm.library {
                 if library.isEmpty {
                     emptyLibrary(instructor)
                 } else {
                     if !library.programs.isEmpty {
-                        librarySection("Digital retreats") {
+                        librarySection("Digital retreats", rows: false) {
                             ForEach(library.programs) { program in
                                 programCard(program)
                                     .listReveal()
@@ -398,15 +382,24 @@ struct InstructorProfileView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func librarySection<Content: View>(_ title: String,
+    /// A titled run of the library. Rows (`rows: true`) sit open on the
+    /// ground, each under a hairline, with one more closing the run; photo
+    /// cards (`rows: false`) stand apart with space between them.
+    private func librarySection<Content: View>(_ title: String, rows: Bool = true,
                                                @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title.uppercased())
                 .font(Theme.eyebrow(10))
                 .tracking(2)
                 .foregroundStyle(Theme.inkSoft)
-                .onPhoto()
-            VStack(spacing: 10) { content() }
+            if rows {
+                VStack(spacing: 0) {
+                    content()
+                    PracticeRule()
+                }
+            } else {
+                VStack(spacing: 20) { content() }
+            }
         }
     }
 
@@ -426,24 +419,24 @@ struct InstructorProfileView: View {
                     Text(program.metaLine.uppercased())
                         .font(Theme.eyebrow(10))
                         .tracking(2)
-                        .foregroundStyle(Color.white.opacity(0.85))
+                        .foregroundStyle(Theme.inkOnPhoto)
                     Text(program.title)
-                        .font(Theme.headline(24))
-                        .foregroundStyle(.white)
-                        .kerning(-0.3)
+                        .font(Theme.headline(24, weight: .light))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.5)
                     if let blurb = program.blurb {
                         Text(blurb)
                             .font(Theme.body(12))
-                            .foregroundStyle(Color.white.opacity(0.8))
+                            .foregroundStyle(Theme.inkOnPhoto)
                             .lineLimit(2)
                     }
                 }
-                .padding(16)
+                .padding(20)
             }
             .frame(height: 176)
-            .soulGlassCard(radius: Theme.cardRadius)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .soulGlassCard()
+            .clipped()
+            .contentShape(Rectangle())
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(program.title), digital retreat, \(program.metaLine)")
@@ -453,19 +446,19 @@ struct InstructorProfileView: View {
 
     private func sessionRow(_ session: PracticeSession) -> some View {
         let progress = history.progress(kind: .session, contentID: session.id)
-        return HStack(spacing: 14) {
+        return HStack(spacing: 16) {
             ZStack {
                 CatalogImage(session.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 60, height: 60)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .clipped()
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Theme.ink)
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                Rectangle()
+                    .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
 
             VStack(alignment: .leading, spacing: 5) {
@@ -478,7 +471,7 @@ struct InstructorProfileView: View {
                     Text(session.category.title)
                     Text("·")
                     if let p = progress, p.isResumable, let remaining = p.remainingLabel {
-                        Text(remaining).foregroundStyle(Theme.honey)
+                        Text(remaining).foregroundStyle(Theme.ember)
                     } else {
                         Text(session.durationLabel)
                     }
@@ -496,18 +489,18 @@ struct InstructorProfileView: View {
             if progress?.completed == true {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 15))
-                    .foregroundStyle(Theme.honey.opacity(0.85))
+                    .foregroundStyle(Theme.ember.opacity(0.85))
                     .accessibilityLabel("Completed")
             } else {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .light))
                     .foregroundStyle(Theme.muted)
             }
         }
-        .padding(12)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        .soulGlassCard(radius: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .top) { PracticeRule() }
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
@@ -516,19 +509,19 @@ struct InstructorProfileView: View {
     private func writtenRow(_ content: ProgramActivityContent, image: String,
                             meta: String, glyph: String) -> some View {
         PressableCard(action: { onOpenPractice(content) }) {
-            HStack(spacing: 14) {
+            HStack(spacing: 16) {
                 ZStack {
                     CatalogImage(image) { $0.resizable().scaledToFill() }
                         .frame(width: 60, height: 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .clipped()
                     Image(systemName: glyph)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(Theme.ink)
                         .shadow(color: .black.opacity(0.5), radius: 4)
                 }
                 .overlay(
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                    Rectangle()
+                        .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
                 )
                 VStack(alignment: .leading, spacing: 5) {
                     Text(content.title)
@@ -544,13 +537,13 @@ struct InstructorProfileView: View {
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .light))
                     .foregroundStyle(Theme.muted)
             }
-            .padding(12)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .soulGlassCard(radius: 18)
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(alignment: .top) { PracticeRule() }
+            .contentShape(Rectangle())
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("instructor-library-practice")
@@ -561,9 +554,9 @@ struct InstructorProfileView: View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: "sparkles")
                 .font(.system(size: 18, weight: .light))
-                .foregroundStyle(Theme.honey)
+                .foregroundStyle(Theme.ember)
             Text("Nothing published yet")
-                .font(Theme.headline(18))
+                .font(Theme.headline(18, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .padding(.top, 4)
             Text("\(instructor.firstName)'s first practices are on their way.")
@@ -572,8 +565,9 @@ struct InstructorProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
+        .padding(.vertical, 20)
+        .overlay(alignment: .top) { PracticeRule() }
+        .overlay(alignment: .bottom) { PracticeRule() }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("instructor-library-empty")
     }
@@ -586,7 +580,7 @@ struct InstructorProfileView: View {
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text("This profile isn't available")
-                .font(Theme.headline(22))
+                .font(Theme.headline(22, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("It may have been taken down. Anything this guide published is still in the library.")
                 .font(Theme.body(13))
@@ -594,7 +588,6 @@ struct InstructorProfileView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .onPhoto()
         .frame(maxWidth: .infinity)
         .padding(.top, 140)
     }
@@ -606,7 +599,7 @@ struct InstructorProfileView: View {
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text(failure.title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text(failure.detail)
                 .font(Theme.body(13))
@@ -620,9 +613,9 @@ struct InstructorProfileView: View {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .soulGlassCapsule()
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .soulGlassCard()
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)
@@ -633,8 +626,8 @@ struct InstructorProfileView: View {
 
 // MARK: - Follow button
 
-/// Honey and filled to ask; quiet glass with a check once it's done — the
-/// same two weights the Friends screen gives its primary and secondary verbs.
+/// Filled ink to ask; a quiet veil with a hairline and a check once it's
+/// done — square either way, and the change between them is a fade.
 private struct FollowButton: View {
     let following: Bool
     let busy: Bool
@@ -648,29 +641,29 @@ private struct FollowButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: following ? "checkmark" : "plus")
-                    .font(.system(size: 13, weight: .semibold))
-                    .contentTransition(.symbolEffect(.replace))
+                    .font(.system(size: 13, weight: .regular))
+                    .contentTransition(.opacity)
                 Text(following ? "Following" : "Follow")
                     .font(Theme.body(15, weight: .medium))
                     .tracking(0.3)
-                    .contentTransition(.interpolate)
+                    .contentTransition(.opacity)
             }
             .foregroundStyle(following ? Theme.ink : Color.black)
             .frame(width: 196, height: 50)
             .background {
                 if !following {
-                    Capsule().fill(Theme.honey)
+                    Rectangle().fill(Theme.ink)
                         .transition(.opacity)
                 }
             }
             .modifier(GlassWhenFollowing(enabled: following))
-            .contentShape(Capsule())
+            .contentShape(Rectangle())
             .opacity(busy || !settled ? 0.6 : 1)
         }
         .buttonStyle(.soulPressableQuiet)
         .disabled(busy)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: following)
-        .animation(.easeOut(duration: 0.25), value: settled)
+        .animation(Theme.Motion.settle, value: following)
+        .animation(Theme.Motion.settle, value: settled)
         .accessibilityLabel(following ? "Following" : "Follow")
         .accessibilityHint(following ? "Unfollows \(name)" : "Follows \(name)")
         .accessibilityIdentifier("instructor-follow")
@@ -681,7 +674,7 @@ private struct GlassWhenFollowing: ViewModifier {
     let enabled: Bool
     func body(content: Content) -> some View {
         if enabled {
-            content.soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
+            content.soulGlassCard(stroke: Theme.glassBorderHigh)
         } else {
             content
         }

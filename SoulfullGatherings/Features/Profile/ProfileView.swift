@@ -62,7 +62,7 @@ struct ProfileView: View {
                     .padding(.top, 28)
 
                 if isMember {
-                    VStack(spacing: 36) {
+                    VStack(spacing: Theme.sectionGap) {
                         if let dashboard = guide.dashboard {
                             guideSection(dashboard)
                         }
@@ -71,18 +71,18 @@ struct ProfileView: View {
                         inPersonSection
                         communitySection
                     }
-                    .padding(.top, 38)
+                    .padding(.top, 56)
                 } else {
                     guestInvitation
-                        .padding(.top, 34)
+                        .padding(.top, 56)
                 }
 
                 VStack(spacing: 16) {
                     accountActions
                     legalLinks
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 44)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.top, Theme.sectionGap)
 
                 Color.clear.frame(height: 120)
             }
@@ -95,16 +95,7 @@ struct ProfileView: View {
             async let guiding: Void = guide.load(for: identity)
             _ = await (mine, guiding)
         }
-        .background {
-            ZStack {
-                PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
-                AuroraBackground(speed: 0.7)
-                    .opacity(0.35)
-                    .blendMode(.plusLighter)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-            }
-        }
+        .background { Atmosphere(tone: .moss) }
         .task(id: identity) {
             // A guest has nothing to load, but whatever the last member left
             // here still has to go — their sharing answer included.
@@ -200,24 +191,21 @@ struct ProfileView: View {
             } else {
                 Image("soulfull-logo-white")
                     .resizable().scaledToFit()
-                    .frame(width: 88, height: 88)
-                    .breathing(scale: 0.96...1.04, opacity: 0.82...0.95, period: 5.5)
+                    .frame(width: 80, height: 80)
+                    .breathing(scale: 1...1, opacity: 0.6...0.95)
             }
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
                 Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
                     .font(Theme.eyebrow(12))
                     .tracking(3)
                     .foregroundStyle(Theme.ink)
                 Text("Welcome back.")
-                    .font(Theme.headline(36))
+                    .font(Theme.headline(36, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.8)
 
                 accountStatus
             }
-            // This block is centred over the open sky of home-bg, the
-            // brightest ground in the app — see View.onPhoto().
-            .onPhoto()
             intentionsRow
         }
     }
@@ -240,47 +228,45 @@ struct ProfileView: View {
                             ProgressView().tint(Theme.ink)
                         }
                     }
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                // A small square of ink at the face's shoulder: the photo
+                // can be changed.
+                Image(systemName: "camera")
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(Color.black)
-                    .frame(width: 28, height: 28)
-                    .background(Theme.ink, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.bg, lineWidth: 2))
+                    .frame(width: 24, height: 24)
+                    .background(Theme.ink, in: Rectangle())
+                    .overlay(Rectangle().strokeBorder(Theme.bg, lineWidth: 2))
                     .offset(x: 2, y: 2)
             }
             .contentShape(Circle())
         }
-        .buttonStyle(.soulPressableChip)
+        .buttonStyle(.soulPressable)
         .disabled(vm.isUploadingAvatar)
         .accessibilityLabel(settings.avatarUrl == nil ? "Add a profile photo" : "Change your profile photo")
         .accessibilityIdentifier("profile-avatar")
     }
 
-    /// What they came here for, as quiet glass chips.
+    /// What they came here for, as one quiet line — words and dots, no chips.
     @ViewBuilder
     private var intentionsRow: some View {
         let intentions = IntentionOption.all.filter { settings.intentions.contains($0.id) }
         if !intentions.isEmpty {
-            HStack(spacing: 8) {
-                ForEach(intentions.prefix(3)) { intention in
-                    Text(intention.label)
-                        .font(Theme.body(11))
-                        .foregroundStyle(Theme.inkSoft)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .soulGlassCapsule()
-                }
-            }
-            .padding(.top, 6)
+            Text(intentions.prefix(3).map(\.label).joined(separator: "  ·  "))
+                .font(Theme.body(12))
+                .tracking(0.3)
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.top, 4)
         }
     }
 
     @ViewBuilder
     private var accountStatus: some View {
         if isMember {
-            Label(auth.email ?? "Signed in", systemImage: "checkmark.seal.fill")
+            Label(auth.email ?? "Signed in", systemImage: "checkmark.seal")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
         } else {
             Text("Guest · not signed in")
                 .font(Theme.body(13))
@@ -298,7 +284,7 @@ struct ProfileView: View {
             GuideSummaryCard(dashboard: dashboard) {
                 showGuideDashboard = true
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
     }
 
@@ -309,10 +295,12 @@ struct ProfileView: View {
         let stats = history.stats
         let known = history.ledgerStatus == .loaded
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 24) {
             SectionLabel(title: "Your practice")
 
-            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+            // Open numerals on black, as a printed table: no tiles, a rule
+            // between the two rows.
+            Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 24) {
                 GridRow {
                     StatTile(value: known ? stats.currentStreak : nil,
                              label: "Day streak",
@@ -331,6 +319,10 @@ struct ProfileView: View {
                              spokenValue: known ? days(stats.bestStreak) : nil)
                         .accessibilityIdentifier("stat-best-streak")
                 }
+                Rectangle()
+                    .fill(Theme.line)
+                    .frame(height: 0.5)
+                    .accessibilityHidden(true)
                 GridRow {
                     StatTile(value: known ? stats.classesTaken : nil,
                              label: "Classes taken",
@@ -348,7 +340,7 @@ struct ProfileView: View {
                         .accessibilityIdentifier("stat-minutes")
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
 
             if case .unavailable(let offline) = history.ledgerStatus {
                 retryLine(ProfileLoadFailure(offline: offline))
@@ -378,7 +370,7 @@ struct ProfileView: View {
     // MARK: - Digital retreats
 
     private var digitalSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Digital retreats")
 
             let journeys = vm.journeys
@@ -392,13 +384,16 @@ struct ProfileView: View {
                               detail: "Digital retreats are free, and walked one day at a time.",
                               action: "Browse digital retreats") { onOpenProgram(nil) }
                 } else {
-                    VStack(spacing: 10) {
+                    VStack(spacing: 0) {
                         ForEach(journeys) { journey in
                             journeyRow(journey)
+                                .overlay(alignment: .top) {
+                                    if journey.id != journeys.first?.id { Hairline() }
+                                }
                                 .listReveal()
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, Theme.gutter)
                 }
             }
         }
@@ -424,7 +419,7 @@ struct ProfileView: View {
     private func journeyCard(_ journey: ProgramJourney, opens: Bool) -> some View {
         HistoryRow(imageUrl: journey.program.imageUrl, opens: opens) {
             Text(journey.program.title)
-                .font(Theme.headline(18))
+                .font(Theme.headline(18, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.2)
                 .lineLimit(1)
@@ -434,16 +429,16 @@ struct ProfileView: View {
                     Text("DAY \(day) OF \(total)")
                         .font(Theme.eyebrow(10))
                         .tracking(1.6)
-                        .foregroundStyle(Theme.honey)
+                        .foregroundStyle(Theme.ember)
                     ProgressRule(fraction: fraction, width: 56)
                 }
             case .completed(let date):
                 Label(date.map { "Completed · \($0.formatted(.dateTime.month(.abbreviated).year()))" } ?? "Completed",
-                      systemImage: "checkmark.seal.fill")
+                      systemImage: "checkmark.seal")
                     .font(Theme.body(12, weight: .medium))
-                    // accentSoft, not accent: the deep olive sinks into dark
-                    // glass at this size. Same "done" colour the mirror's
-                    // Programs chip uses.
+                    // accentSoft, not accent: the deep olive sinks into black
+                    // at this size. Same "done" colour the mirror's Programs
+                    // chip uses.
                     .foregroundStyle(Theme.accentSoft)
             }
         }
@@ -453,7 +448,7 @@ struct ProfileView: View {
     // MARK: - In-person retreats
 
     private var inPersonSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "In-person retreats")
 
             Group {
@@ -466,13 +461,13 @@ struct ProfileView: View {
                               detail: "Once you've joined us in person, your retreats are kept here.",
                               action: "Explore retreats", perform: onOpenRetreats)
                 } else {
-                    VStack(spacing: 10) {
+                    VStack(spacing: 0) {
                         ForEach(vm.retreats) { retreat in
                             // Not a link: its detail screen is a booking page,
                             // and this retreat can no longer be booked.
                             HistoryRow(imageUrl: retreat.imageUrl, opens: false) {
                                 Text(retreat.name)
-                                    .font(Theme.headline(18))
+                                    .font(Theme.headline(18, weight: .light))
                                     .foregroundStyle(Theme.ink)
                                     .kerning(-0.2)
                                 Text("\(retreat.country) · \(retreat.whenWithYear)".uppercased())
@@ -484,10 +479,13 @@ struct ProfileView: View {
                             }
                             .accessibilityElement(children: .combine)
                             .accessibilityIdentifier("past-retreat-row")
+                            .overlay(alignment: .top) {
+                                if retreat.id != vm.retreats.first?.id { Hairline() }
+                            }
                             .listReveal()
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, Theme.gutter)
                 }
             }
         }
@@ -500,11 +498,11 @@ struct ProfileView: View {
     /// stay findable and can still add and be added. Below it, the members
     /// they've blocked.
     private var communitySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Community")
 
             HStack(alignment: .center, spacing: 14) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Share my practice")
                         .font(Theme.headline(17))
                         .foregroundStyle(Theme.ink)
@@ -521,7 +519,8 @@ struct ProfileView: View {
                     set: { on in Task { await vm.setShareActivity(on) } }
                 ))
                 .labelsHidden()
-                .tint(Theme.honey)
+                // Moss, as Open's switches are green.
+                .tint(Theme.accentSoft)
                 // Unknown until the profile row is read: dimmed and untouchable
                 // rather than a position the server never confirmed.
                 .disabled(vm.shareActivity == nil || vm.isSavingShare)
@@ -529,9 +528,8 @@ struct ProfileView: View {
                 .accessibilityLabel("Share my practice in the Community feed")
                 .accessibilityIdentifier("share-activity")
             }
-            .padding(16)
-            .soulGlassCard()
-            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .padding(.horizontal, Theme.gutter)
 
             Button {
                 Haptics.tap()
@@ -539,24 +537,24 @@ struct ProfileView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "hand.raised")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 14, weight: .light))
                         .foregroundStyle(Theme.inkSoft)
                         .frame(width: 22)
                     Text("Blocked members")
-                        .font(Theme.body(15, weight: .medium))
+                        .font(Theme.body(15))
                         .foregroundStyle(Theme.ink)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(Theme.muted)
                 }
-                .padding(.horizontal, 16)
-                .frame(height: 52)
-                .soulGlassCard()
-                .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                .frame(height: 56)
+                // A rule above it, under the switch: two rows of one list.
+                .overlay(alignment: .top) { Hairline() }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.soulPressableQuiet)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
             .accessibilityHint("People you've blocked, and Unblock")
             .accessibilityIdentifier("open-blocked-members")
         }
@@ -583,9 +581,9 @@ struct ProfileView: View {
                            perform: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(Theme.headline(18))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.2)
+                .kerning(-0.3)
             Text(detail)
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.inkSoft)
@@ -597,20 +595,18 @@ struct ProfileView: View {
                 HStack(spacing: 6) {
                     Text(action)
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 11, weight: .regular))
                 }
                 .font(Theme.body(13, weight: .medium))
-                .foregroundStyle(Theme.honey)
-                .padding(.vertical, 6)
+                .foregroundStyle(Theme.ember)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.soulPressableQuiet)
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        .padding(.top, 14)
+        .padding(.horizontal, Theme.gutter)
     }
 
     /// "Couldn't find out", as distinct from "nothing there". Retrying reloads
@@ -630,16 +626,14 @@ struct ProfileView: View {
             } label: {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
-                    .foregroundStyle(Theme.honey)
-                    .padding(.vertical, 6)
+                    .foregroundStyle(Theme.ember)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.soulPressableQuiet)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.horizontal, Theme.gutter)
     }
 
     // MARK: - Guest
@@ -647,15 +641,15 @@ struct ProfileView: View {
     /// Every practice is behind the account gate, so a guest has no history —
     /// and four zeros would read as a verdict rather than an invitation.
     private var guestInvitation: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("YOUR PRACTICE")
                 .font(Theme.eyebrow(10))
                 .tracking(3)
-                .foregroundStyle(Theme.honey)
+                .foregroundStyle(Theme.ember)
             Text("Keep it with you")
-                .font(Theme.headline(22))
+                .font(Theme.headline(26, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.2)
+                .kerning(-0.5)
             Text("With an account, your streaks, classes and minutes gather here — alongside every retreat you join, digital or in person.")
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.inkSoft)
@@ -663,9 +657,10 @@ struct ProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        // Open on black under a rule — an invitation, not a box.
+        .padding(.top, 24)
+        .overlay(alignment: .top) { Hairline() }
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("guest-invitation")
     }
@@ -781,9 +776,10 @@ struct ProfileView: View {
 
 // MARK: - Stat tile
 
-/// One number on a glass tile. The figure rolls up from zero the first time it
-/// appears, and rolls again whenever it changes — finishing a practice while
-/// the tab is open moves the streak in place.
+/// One number, open on black: the figure, a small caps label beneath with
+/// its mark, and a line of caption — Open's "5 / DAY STREAK". The figure
+/// fades in once it's known and crossfades when it changes (finishing a
+/// practice while the tab is open moves the streak in place).
 private struct StatTile: View {
     /// Nil until the ledger has loaded: a dash, never a zero that isn't true.
     let value: Int?
@@ -797,58 +793,51 @@ private struct StatTile: View {
     let spokenValue: String?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var shown = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: systemImage)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(accent ? Theme.honey : Theme.inkSoft)
-                .symbolEffect(.breathe, options: .repeat(.continuous),
-                              isActive: breathes && !reduceMotion)
-                .frame(height: 18)
-
-            Spacer(minLength: 12)
-
             Group {
-                if value != nil {
-                    Text(shown.formatted())
-                        .contentTransition(.numericText(value: Double(shown)))
+                if let value {
+                    Text(value.formatted())
                 } else {
                     Text("–")
                 }
             }
-            .font(Theme.headline(40, weight: .light))
+            .font(Theme.headline(44, weight: .light))
             .kerning(-1)
             .foregroundStyle(Theme.ink)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
+            .contentTransition(.opacity)
 
-            Text(label.uppercased())
-                .font(Theme.eyebrow(10))
-                .tracking(1.8)
-                .foregroundStyle(Theme.inkSoft)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.top, 4)
+            HStack(spacing: 6) {
+                // The one warm mark on the table: a streak that's alive.
+                Image(systemName: systemImage)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(accent ? Theme.ember : Theme.muted)
+                    .symbolEffect(.breathe, options: .repeat(.continuous),
+                                  isActive: breathes && !reduceMotion)
+                Text(label.uppercased())
+                    .font(Theme.eyebrow(10))
+                    .tracking(1.8)
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.top, 6)
 
             // Two lines, reserved on every tile: the streak captions need the
-            // room to say plainly what happened, and reserving it keeps all
-            // four tiles the same height whichever caption is showing.
+            // room to say plainly what happened, and reserving it keeps both
+            // rows of the table even whichever caption is showing.
             Text(caption)
                 .font(Theme.body(12))
-                .foregroundStyle(accent ? Theme.honey : Theme.muted)
+                .foregroundStyle(accent ? Theme.inkSoft : Theme.muted)
                 .lineLimit(2, reservesSpace: true)
                 .lineSpacing(1)
-                .padding(.top, 6)
+                .padding(.top, 8)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .frame(minHeight: 118)
-        .padding(16)
-        .soulGlassCard(tint: accent ? Theme.honey.opacity(0.08) : nil,
-                       stroke: accent ? Theme.honey.opacity(0.35) : Theme.glassBorder)
-        .onAppear { roll(to: value) }
-        .onChange(of: value) { _, new in roll(to: new) }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .animation(Theme.Motion.reveal, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
         // The caption is part of what the tile says (that today is done, what counts
@@ -858,33 +847,23 @@ private struct StatTile: View {
             return note.isEmpty ? value : "\(value), \(note)"
         } ?? "Loading")
     }
-
-    private func roll(to target: Int?) {
-        guard let target, target != shown else { return }
-        if reduceMotion {
-            shown = target
-        } else {
-            withAnimation(.spring(response: 0.9, dampingFraction: 0.9).delay(0.15)) {
-                shown = target
-            }
-        }
-    }
 }
 
 // MARK: - History row
 
-/// A thumbnail and two lines on glass — one program or retreat in the
-/// member's history. `opens` adds the chevron that says it goes somewhere.
+/// A square thumbnail and two lines, open on black — one program or retreat
+/// in the member's history. `opens` adds the chevron that says it goes
+/// somewhere. The list draws the rules between rows.
 private struct HistoryRow<Lines: View>: View {
     let imageUrl: String
     var opens = false
     @ViewBuilder var lines: Lines
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             CatalogImage(imageUrl) { $0.resizable().scaledToFill() }
                 .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipped()
 
             VStack(alignment: .leading, spacing: 6) {
                 lines
@@ -893,12 +872,22 @@ private struct HistoryRow<Lines: View>: View {
 
             if opens {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Theme.muted)
             }
         }
-        .padding(12)
-        .padding(.trailing, 4)
-        .soulGlassCard()
+        .padding(.vertical, 16)
+        // The whole row answers a tap, not only its image and text.
+        .contentShape(Rectangle())
+    }
+}
+
+/// The rule between rows and above an open block.
+private struct Hairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(Theme.line)
+            .frame(height: 0.5)
+            .accessibilityHidden(true)
     }
 }

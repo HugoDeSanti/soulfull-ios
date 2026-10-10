@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Shared chrome for the Practice feature: the back bar used on every pushed
-//  screen, and the list scaffold (blurred backdrop + back bar + header) that
+//  screen, and the list scaffold (slate atmosphere + back bar + header) that
 //  every category / section list is built on.
 //
 
@@ -21,15 +21,15 @@ struct PracticeBackBar: View {
                 Haptics.tap()
                 dismiss()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                // A bare ← and the page it returns to, as Open draws it.
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.left").font(.system(size: 15, weight: .light))
                     Text(label)
                         .font(Theme.body(13))
-                        .underline()
                 }
                 .foregroundStyle(Theme.ink)
                 // A 44pt-tall target, gap included — the link answered only on
-                // its chevron and its 13pt text. The negative padding below
+                // its arrow and its 13pt text. The negative padding below
                 // gives the layout its old height back.
                 .padding(.vertical, 14)
                 .padding(.trailing, 16)
@@ -43,39 +43,43 @@ struct PracticeBackBar: View {
     }
 }
 
-// MARK: - List scaffold (backdrop + back bar + icon/title/blurb header)
+// MARK: - List scaffold (atmosphere + back bar + icon/title/blurb header)
 
+/// Every Practice list sits on the slate atmosphere — black, with a cool
+/// wash from the top — rather than its category's photo blurred into a
+/// tint: the photographs belong to the rows.
 struct PracticeListScaffold<Content: View>: View {
     let title: String
     let blurb: String
     let systemImage: String
-    let backdrop: String
     var backLabel: String = "Practices"
     @ViewBuilder var content: Content
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 0) {
                 PracticeBackBar(label: backLabel)
                 header
+                    .padding(.top, 32)
+                    .padding(.bottom, 44)
                 content
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            PhotoBackdrop(imageName: backdrop, blur: 22, darken: 0.78)
+            Atmosphere(tone: .slate)
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .regular))
                 Text(title.uppercased())
                     .font(Theme.eyebrow(11))
                     .tracking(3)
@@ -83,17 +87,30 @@ struct PracticeListScaffold<Content: View>: View {
             .foregroundStyle(Theme.inkSoft)
 
             Text(title)
-                .font(Theme.headline(34))
+                .font(Theme.headline(34, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.8)
             Text(blurb)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(3)
-                .padding(.top, 2)
+                .padding(.top, 4)
         }
-        .padding(.bottom, 4)
-        .onPhoto()
+    }
+}
+
+// MARK: - Hairline rule
+
+/// The rule between rows and sections on a Practice page — Open's divider:
+/// a half-point line of `Theme.line` across the measure, in place of a box
+/// around each row.
+struct PracticeRule: View {
+    var body: some View {
+        Rectangle()
+            .fill(Theme.line)
+            .frame(height: 0.5)
+            .frame(maxWidth: .infinity)
+            .accessibilityHidden(true)
     }
 }
 
@@ -137,7 +154,7 @@ struct WrittenLibraryPlaceholder: View {
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text(title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text(detail)
                 .font(Theme.body(13))
@@ -151,9 +168,9 @@ struct WrittenLibraryPlaceholder: View {
                     Text("Try again")
                         .font(Theme.body(13, weight: .medium))
                         .foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .soulGlassCapsule()
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 12)
+                        .soulGlassCard()
                 }
                 .buttonStyle(.soulPressableQuiet)
                 .padding(.top, 4)
@@ -166,19 +183,20 @@ struct WrittenLibraryPlaceholder: View {
 
 // MARK: - Numbered step row (shared by movement sequences and recipes)
 
+/// A step with its number set as a folio ("01"), the way the landing numbers
+/// its cards — a numeral in the margin, not a numeral in a disc.
 struct NumberedStepRow: View {
     let index: Int
     let title: String
     var detail: String? = nil
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text("\(index)")
-                .font(Theme.body(14, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 30, height: 30)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.glassBorder, lineWidth: 1))
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            Text(String(format: "%02d", index))
+                .font(Theme.body(12, weight: .medium))
+                .tracking(1.5)
+                .foregroundStyle(Theme.muted)
+                .frame(width: 26, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -212,12 +230,12 @@ struct ProgressRule: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            Capsule()
+            Rectangle()
                 .fill(Theme.ink.opacity(0.18))
-                .frame(width: width, height: 2)
-            Capsule()
-                .fill(Theme.honey.opacity(0.8))
-                .frame(width: max(3, width * min(1, max(0, fraction))), height: 2)
+                .frame(width: width, height: 1)
+            Rectangle()
+                .fill(Theme.ember.opacity(0.85))
+                .frame(width: max(3, width * min(1, max(0, fraction))), height: 1)
         }
         .accessibilityHidden(true)
     }
@@ -226,18 +244,19 @@ struct ProgressRule: View {
 // MARK: - Safety note
 
 /// "Before you begin", above a track whose practices can affect the body
-/// (`PracticeCategory.safetyNote`): breathwork and somatic work. A quiet glass
-/// card, read once on the way in — not a modal to dismiss every time.
+/// (`PracticeCategory.safetyNote`): breathwork and somatic work. Set open on
+/// the ground under a hairline, like a note at the head of a page, and read
+/// once on the way in — not a modal to dismiss every time.
 struct SafetyNoteCard: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             Image(systemName: "heart.text.square")
-                .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(Theme.honey)
+                .font(.system(size: 15, weight: .light))
+                .foregroundStyle(Theme.ember)
                 .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("BEFORE YOU BEGIN")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
@@ -245,13 +264,13 @@ struct SafetyNoteCard: View {
                 Text(text)
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.inkSoft)
-                    .lineSpacing(2)
+                    .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
-        .padding(14)
-        .soulGlassCard(radius: 18)
+        .padding(.top, 20)
+        .overlay(alignment: .top) { PracticeRule() }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("safety-note")
     }

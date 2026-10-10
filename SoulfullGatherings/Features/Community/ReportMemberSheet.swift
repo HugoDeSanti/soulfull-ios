@@ -8,7 +8,7 @@
 //  again in the meantime.
 //
 //  The note field is UIKit-backed, so nothing here blurs or shades over it
-//  (rendering gotcha 1): the backdrop sits behind, and the close bar fades
+//  (rendering gotcha 1): the atmosphere sits behind, and the close bar fades
 //  with a gradient, never a blur.
 //
 
@@ -38,16 +38,15 @@ struct ReportMemberSheet: View {
             Group {
                 if didSend { sent } else { form }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.gutter)
             .padding(.bottom, 48)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .background {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0)
-        }
+        .background { Atmosphere(tone: .dusk) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
+        .presentationCornerRadius(0)
         // A half-written report is worth the extra tap.
         .interactiveDismissDisabled(isSending)
         .toolbar {
@@ -62,16 +61,16 @@ struct ReportMemberSheet: View {
     // MARK: - Writing
 
     private var form: some View {
-        VStack(alignment: .leading, spacing: 26) {
+        VStack(alignment: .leading, spacing: 36) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("REPORT")
                     .font(Theme.eyebrow(11))
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
                 Text("Report \(member.displayName)")
-                    .font(Theme.headline(30))
+                    .font(Theme.headline(30, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.6)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Reports are private. \(member.displayName) won't know who sent this.")
                     .font(Theme.body(14))
@@ -88,8 +87,10 @@ struct ReportMemberSheet: View {
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 0)
             }
-            .padding(10)
-            .soulGlassCard(radius: 18)
+            // Who this is about, between two rules — not a card.
+            .padding(.vertical, 14)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.line).frame(height: 0.5) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Theme.line).frame(height: 0.5) }
             .accessibilityElement(children: .combine)
 
             VStack(alignment: .leading, spacing: 10) {
@@ -124,7 +125,7 @@ struct ReportMemberSheet: View {
                 .frame(minHeight: 110)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .soulGlassCard(radius: 16, stroke: noteFocused ? Theme.glassBorderHigh : Theme.glassBorder)
+                .soulGlassCard(stroke: noteFocused ? Theme.glassBorderHigh : Theme.glassBorder)
                 .overlay(alignment: .topLeading) {
                     if details.isEmpty {
                         Text("A few words help us act faster.")
@@ -153,7 +154,7 @@ struct ReportMemberSheet: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .soulGlassCard(tint: Theme.honey.opacity(0.06), stroke: Theme.honey.opacity(0.3))
+                    .soulGlassCard(stroke: Theme.ember.opacity(0.35))
                     .accessibilityIdentifier("report-failure")
                 }
                 SGPrimaryButton(title: isSending ? "Sending…" : "Send report", enabled: report != nil && !isSending,
@@ -177,10 +178,17 @@ struct ReportMemberSheet: View {
             Haptics.select()
             reason = option
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(selected ? Theme.honey : Theme.inkSoft)
+            HStack(spacing: 14) {
+                // A square mark, filled when chosen — no radio circle.
+                Rectangle()
+                    .strokeBorder(selected ? Theme.ink : Theme.inkSoft.opacity(0.6), lineWidth: Theme.hairline)
+                    .frame(width: 16, height: 16)
+                    .overlay {
+                        if selected {
+                            Rectangle().fill(Theme.ink).frame(width: 8, height: 8)
+                        }
+                    }
+                    .accessibilityHidden(true)
                 Text(option.title)
                     .font(Theme.body(14, weight: selected ? .medium : .regular))
                     .foregroundStyle(Theme.ink)
@@ -191,10 +199,9 @@ struct ReportMemberSheet: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(radius: 16,
-                           tint: selected ? Color.white.opacity(0.07) : nil,
-                           stroke: selected ? Theme.honey.opacity(0.55) : Theme.glassBorder)
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .soulGlassCard(stroke: selected ? Theme.ink.opacity(0.7) : Theme.glassBorder)
+            .contentShape(Rectangle())
+            .animation(Theme.Motion.settle, value: selected)
         }
         .buttonStyle(.soulPressableQuiet)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
@@ -210,7 +217,7 @@ struct ReportMemberSheet: View {
         do {
             try await send(report)
             Haptics.success()
-            withAnimation(.easeInOut(duration: 0.3)) { didSend = true }
+            withAnimation(Theme.Motion.settle) { didSend = true }
         } catch {
             Haptics.bump()
             Log.data.error("Report failed: \(error.localizedDescription)")
@@ -226,13 +233,13 @@ struct ReportMemberSheet: View {
     private var sent: some View {
         VStack(spacing: 18) {
             Image(systemName: "checkmark.seal")
-                .font(.system(size: 34, weight: .light))
-                .foregroundStyle(Theme.honey)
-                .padding(.top, 70)
+                .font(.system(size: 30, weight: .thin))
+                .foregroundStyle(Theme.ember)
+                .padding(.top, 80)
             Text("Thank you")
-                .font(Theme.headline(30))
+                .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.6)
             Text(MemberSafetyCopy.reviewPromise)
                 .font(Theme.body(15))
                 .foregroundStyle(Theme.inkSoft)
@@ -266,7 +273,7 @@ struct ReportMemberSheet: View {
     private var closeBar: some View {
         HStack {
             Spacer()
-            CircleIconButton(systemName: "xmark", size: 38) {
+            GlyphButton(systemName: "xmark") {
                 Haptics.tap()
                 dismiss()
             }
@@ -275,9 +282,11 @@ struct ReportMemberSheet: View {
             .disabled(isSending)
             .opacity(isSending ? 0.45 : 1)
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 16)
-        .padding(.bottom, 14)
+        // The glyph sits about a gutter from the edge; its 44pt target
+        // reaches past it.
+        .padding(.horizontal, Theme.gutter - 14)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
         .background {
             LinearGradient(colors: [Theme.bg.opacity(0.92), Theme.bg.opacity(0.6), .clear],
                            startPoint: .top, endPoint: .bottom)

@@ -2,15 +2,15 @@
 //  Shaders.metal
 //  Soulfull Gatherings
 //
-//  The atmosphere layer of the design system. Five stitchable functions,
-//  each reachable through a wrapper in ShaderFX.swift — feature code never
-//  calls ShaderLibrary directly:
+//  The atmosphere layer of the design system. One stitchable function,
+//  reachable through `AuroraBackground` in ShaderFX.swift — feature code
+//  never calls ShaderLibrary directly:
 //
-//    filmGrain     colorEffect       breathing photographic grain
-//    aurora        colorEffect       domain-warped tonal drift (hero backdrops)
-//    shimmer       layerEffect       diagonal specular sweep across glass
-//    noiseDissolve layerEffect       organic dissolve for stage transitions
-//    ripple        distortionEffect  radial wave for backdrop changes
+//    aurora        colorEffect       domain-warped tonal drift (the player)
+//
+//  The film grain, shimmer sweep, noise dissolve and ripple were removed
+//  with the move to still motion: a selection, a stage change and a tap now
+//  fade rather than glint, burn or ripple, and nothing crawls over a page.
 //
 //  Everything drifts at breath pace — time inputs are pre-scaled by the
 //  Swift wrappers so a "1.0" speed reads calm, never busy.
@@ -50,16 +50,6 @@ static inline float fbm(float2 p) {
     return v;
 }
 
-// MARK: - Film grain (colorEffect)
-
-/// Animated photographic grain. `intensity` ≈ 0.04–0.08 for backdrops.
-[[ stitchable ]] half4 filmGrain(float2 position, half4 color, float time, float intensity) {
-    float seed = floor(time * 18.0);                  // re-roll the grain ~18 fps
-    float n = hash21(position + float2(seed * 31.7, seed * 11.3));
-    half g = half((n - 0.5) * intensity);
-    return half4(color.rgb + half3(g) * color.a, color.a);
-}
-
 // MARK: - Aurora (colorEffect)
 
 /// Domain-warped fbm blended across three brand tones. Apply to an opaque
@@ -82,56 +72,4 @@ static inline float fbm(float2 p) {
     col += half3(0.045) * half(smoothstep(0.62, 0.94, f));
 
     return half4(col * color.a, color.a);
-}
-
-// MARK: - Shimmer (layerEffect)
-
-/// One diagonal specular band sweeping the layer as `progress` runs 0→1.
-[[ stitchable ]] half4 shimmer(float2 position, SwiftUI::Layer layer,
-                               float4 bounds, float progress, float intensity) {
-    half4 c = layer.sample(position);
-    float2 size = max(bounds.zw, float2(1.0, 1.0));
-    float2 uv = (position - bounds.xy) / size;
-    float band = uv.x + uv.y * 0.45;
-    float center = mix(-0.5, 1.5, progress);
-    float d = band - center;
-    float glow = exp(-d * d / 0.01) * intensity;
-    return half4(c.rgb + half3(glow) * c.a, c.a);
-}
-
-// MARK: - Noise dissolve (layerEffect)
-
-/// Organic burn-style dissolve. `progress` 0 = fully visible, 1 = gone.
-/// A faint warm lift hugs the dissolving edge so the change feels lit,
-/// not deleted.
-[[ stitchable ]] half4 noiseDissolve(float2 position, SwiftUI::Layer layer,
-                                     float progress, float scale) {
-    half4 c = layer.sample(position);
-    if (progress <= 0.0) { return c; }
-
-    float n = fbm(position / max(scale, 1.0));
-    // Remap noise (≈0.1–0.9 from fbm) so progress 0→1 covers it fully.
-    n = saturate((n - 0.1) * 1.25);
-    float edge = 0.10;
-    float keep = smoothstep(progress - edge, progress + edge, n + edge * 2.0 * (1.0 - progress));
-
-    float rim = keep * (1.0 - smoothstep(0.0, edge * 3.0, n - progress));
-    half3 warm = half3(0.96, 0.88, 0.62);
-    half3 rgb = c.rgb + warm * half(rim * 0.35) * c.a;
-
-    return half4(rgb * half(keep), c.a * half(keep));
-}
-
-// MARK: - Ripple (distortionEffect)
-
-/// Radial wave radiating from `origin`, damped by distance and by `progress`
-/// so it always settles flat by 1.0.
-[[ stitchable ]] float2 ripple(float2 position, float2 origin,
-                               float progress, float amplitude, float wavelength) {
-    float2 dir = position - origin;
-    float d = length(dir);
-    float damp = exp(-d / 900.0) * (1.0 - progress) * (1.0 - progress);
-    float wave = sin((d / max(wavelength, 1.0) - progress * 14.0) * 6.28318);
-    float2 unit = d > 0.001 ? dir / d : float2(0.0, 0.0);
-    return position + unit * wave * amplitude * damp;
 }

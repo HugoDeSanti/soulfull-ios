@@ -41,7 +41,8 @@ struct RetreatGuidesView: View {
             }
             .ignoresSafeArea(.container, edges: .top)
 
-            topBar.padding(.horizontal, 20).padding(.top, 8)
+            // The glyph sits inside a 44pt target; this lines it up with the gutter.
+            topBar.padding(.horizontal, Theme.gutter - 14).padding(.top, 8)
         }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
@@ -62,14 +63,14 @@ struct RetreatGuidesView: View {
                 Text("Your Guides".uppercased())
                     .font(Theme.eyebrow(10)).tracking(3).foregroundStyle(RetreatPalette.terracotta)
                 Text("Book a 1:1 session")
-                    .font(Theme.headline(32, weight: .semibold)).kerning(-0.5)
-                    .foregroundStyle(.white)
+                    .font(Theme.headline(32, weight: .light)).kerning(-0.6)
+                    .foregroundStyle(RetreatPalette.cream)
                 Text("Each guide opens private sessions across the week. Reserve time with whoever you'd like to go deeper with.")
-                    .font(Theme.body(13)).foregroundStyle(.white.opacity(0.9)).lineSpacing(2)
+                    .font(Theme.body(13)).foregroundStyle(RetreatPalette.cream.opacity(0.9)).lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 300, alignment: .leading)
             }
-            .padding(.horizontal, 24).padding(.bottom, 18)
+            .padding(.horizontal, Theme.gutter).padding(.bottom, 18)
         }
         .frame(height: 300)
     }
@@ -77,7 +78,7 @@ struct RetreatGuidesView: View {
     // MARK: - List
 
     private var list: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             ForEach(guides) { guide in
                 guideCard(guide)
             }
@@ -87,9 +88,9 @@ struct RetreatGuidesView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 22)
-        .padding(.bottom, 60)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 28)
+        .padding(.bottom, 64)
     }
 
     private func guideCard(_ guide: RetreatExperience.Guide) -> some View {
@@ -112,7 +113,7 @@ struct RetreatGuidesView: View {
             }
 
             if let theOffer {
-                Rectangle().fill(RetreatPalette.glassLine).frame(height: 1).padding(.vertical, 14)
+                Rectangle().fill(RetreatPalette.glassLine).frame(height: 0.5).padding(.vertical, 16)
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(theOffer.session).font(Theme.body(14)).foregroundStyle(RetreatPalette.cream)
@@ -129,9 +130,9 @@ struct RetreatGuidesView: View {
                 }
             }
         }
-        .padding(18)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .soulGlassCard(radius: 18, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+        .soulGlassCard(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
     }
 
     private func bookButton(guide: RetreatExperience.Guide, booked: Bool) -> some View {
@@ -144,9 +145,11 @@ struct RetreatGuidesView: View {
                 .foregroundStyle(booked ? RetreatPalette.espresso : RetreatPalette.cream)
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(
-                    Capsule().fill(booked ? RetreatPalette.terracotta : Color.clear)
-                        .overlay(Capsule().strokeBorder(booked ? Color.clear : RetreatPalette.cream, lineWidth: 1))
+                    Rectangle().fill(booked ? RetreatPalette.terracotta : Color.clear)
+                        .overlay(Rectangle().strokeBorder(booked ? Color.clear : RetreatPalette.cream.opacity(0.7),
+                                                          lineWidth: Theme.hairline))
                 )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.soulPressableQuiet)
     }
@@ -165,10 +168,10 @@ struct RetreatGuidesView: View {
                         Text(slot)
                             .font(Theme.body(12)).foregroundStyle(RetreatPalette.cream)
                             .lineLimit(1)
-                            .padding(.horizontal, 12).padding(.vertical, 9)
-                            .soulGlassCapsule(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+                            .padding(.horizontal, 12).padding(.vertical, 10)
+                            .soulGlassCard(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
                     }
-                    .buttonStyle(.soulPressableChip)
+                    .buttonStyle(.soulPressable)
                 }
             }
         }
@@ -178,10 +181,10 @@ struct RetreatGuidesView: View {
     private func confirmationRow(guide: RetreatExperience.Guide, time: String) -> some View {
         HStack(spacing: 10) {
             ZStack {
-                Circle().fill(RetreatPalette.olive)
-                Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                Rectangle().fill(RetreatPalette.olive)
+                Image(systemName: "checkmark").font(.system(size: 10, weight: .medium)).foregroundStyle(RetreatPalette.cream)
             }
-            .frame(width: 24, height: 24)
+            .frame(width: 20, height: 20)
             (Text("Booked · ").font(Theme.body(13)).foregroundStyle(RetreatPalette.creamSoft)
                 + Text(time).font(Theme.body(13, weight: .medium)).foregroundStyle(RetreatPalette.cream))
             Spacer()
@@ -199,15 +202,8 @@ struct RetreatGuidesView: View {
 
     private var topBar: some View {
         HStack {
-            Button {
-                Haptics.tap(); dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, interactive: true, stroke: RetreatPalette.glassLine)
-            }
-            .buttonStyle(.soulPressableChip)
+            GlyphButton(systemName: "arrow.left") { dismiss() }
+                .accessibilityLabel("Back")
             Spacer()
         }
     }

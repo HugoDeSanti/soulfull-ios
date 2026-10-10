@@ -38,7 +38,8 @@ struct RetreatTodosView: View {
             }
             .ignoresSafeArea(.container, edges: .top)
 
-            topBar.padding(.horizontal, 20).padding(.top, 8)
+            // The glyph sits inside a 44pt target; this lines it up with the gutter.
+            topBar.padding(.horizontal, Theme.gutter - 14).padding(.top, 8)
 
             VStack { Spacer(); homeBar }
         }
@@ -59,39 +60,32 @@ struct RetreatTodosView: View {
                 .frame(height: 320)
             VStack(spacing: 14) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 58, height: 58)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+                    .font(.system(size: 24, weight: .thin))
+                    .foregroundStyle(RetreatPalette.cream)
                 Text("Your place is secured".uppercased())
                     .font(Theme.eyebrow(10)).tracking(3)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(RetreatPalette.cream.opacity(0.85))
                 Text("A few things before you go")
-                    .font(Theme.headline(30, weight: .semibold)).kerning(-0.5)
-                    .foregroundStyle(.white)
+                    .font(Theme.headline(30, weight: .light)).kerning(-0.6)
+                    .foregroundStyle(RetreatPalette.cream)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                 if let post {
                     receiptPill(post)
                 }
             }
-            .padding(.horizontal, 26)
+            .padding(.horizontal, Theme.gutter)
             .padding(.bottom, 18)
         }
         .frame(height: 320)
     }
 
+    /// The receipt in one line of type — it was a glass pill.
     private func receiptPill(_ post: RetreatExperience.PostBooking) -> some View {
-        HStack(spacing: 8) {
-            Text("\(post.checkout.dueToday) deposit paid")
-                .font(Theme.body(11, weight: .medium))
-            Circle().fill(.white.opacity(0.6)).frame(width: 3, height: 3)
-            Text("No. \(post.checkout.receiptNumber)")
-                .font(Theme.body(11))
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14).padding(.vertical, 8)
-        .soulGlassCapsule(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+        Text("\(post.checkout.dueToday) deposit paid  ·  No. \(post.checkout.receiptNumber)")
+            .font(Theme.body(11))
+            .tracking(0.6)
+            .foregroundStyle(RetreatPalette.cream)
     }
 
     // MARK: - Body
@@ -111,31 +105,33 @@ struct RetreatTodosView: View {
 
             progressBar
 
-            VStack(spacing: 12) {
+            // Rows ruled by hairlines, not boxed one by one.
+            VStack(spacing: 0) {
                 ForEach(todos) { todo in
                     todoRow(todo)
                 }
             }
-            .padding(.top, 6)
+            .padding(.top, 14)
 
             if allDone { allDoneCard }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 28)
         .padding(.bottom, 150)
     }
 
+    /// A hairline track with a solid run across it — no rounded ends.
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(RetreatPalette.espresso2)
-                Capsule()
-                    .fill(LinearGradient(colors: [RetreatPalette.olive, RetreatPalette.terracotta],
-                                         startPoint: .leading, endPoint: .trailing))
+                Rectangle().fill(RetreatPalette.coffee)
+                Rectangle()
+                    .fill(RetreatPalette.terracotta)
                     .frame(width: todos.isEmpty ? 0 : geo.size.width * CGFloat(doneCount) / CGFloat(todos.count))
             }
         }
-        .frame(height: 5)
+        .frame(height: 2)
+        .animation(Theme.Motion.reveal, value: doneCount)
     }
 
     private func todoRow(_ todo: RetreatExperience.PostBooking.TodoItem) -> some View {
@@ -162,8 +158,9 @@ struct RetreatTodosView: View {
                             .foregroundStyle(todo.isMust ? RetreatPalette.espresso : RetreatPalette.terracotta)
                             .padding(.horizontal, 9).padding(.vertical, 4)
                             .background(
-                                Capsule().fill(todo.isMust ? RetreatPalette.terracotta : Color.clear)
-                                    .overlay(Capsule().strokeBorder(RetreatPalette.glassLine, lineWidth: todo.isMust ? 0 : 1))
+                                Rectangle().fill(todo.isMust ? RetreatPalette.terracotta : Color.clear)
+                                    .overlay(Rectangle().strokeBorder(RetreatPalette.glassLine,
+                                                                      lineWidth: todo.isMust ? 0 : Theme.hairline))
                             )
                             .opacity(done ? 0.55 : 1)
                             .padding(.top, 5)
@@ -171,25 +168,31 @@ struct RetreatTodosView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(16)
+            .padding(.vertical, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(radius: 14, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+            .overlay(alignment: .top) {
+                Rectangle().fill(RetreatPalette.glassLine).frame(height: 0.5)
+            }
+            .contentShape(Rectangle())
+            .animation(Theme.Motion.settle, value: done)
         }
         .buttonStyle(.soulPressableQuiet)
     }
 
+    /// A square box, filled when ticked.
     private func checkBox(done: Bool) -> some View {
         ZStack {
-            Circle()
+            Rectangle()
                 .fill(done ? RetreatPalette.olive : Color.clear)
-                .overlay(Circle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted, lineWidth: 1.5))
+                .overlay(Rectangle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
+                                                  lineWidth: Theme.hairline))
             if done {
-                Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
+                Image(systemName: "checkmark").font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(RetreatPalette.cream)
             }
         }
-        .frame(width: 26, height: 26)
-        .padding(.top, 1)
+        .frame(width: 18, height: 18)
+        .padding(.top, 2)
     }
 
     private var allDoneCard: some View {
@@ -202,25 +205,18 @@ struct RetreatTodosView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(22)
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .strokeBorder(RetreatPalette.glassLine, style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
-        .padding(.top, 10)
+        .padding(24)
+        .overlay(Rectangle()
+            .strokeBorder(RetreatPalette.glassLine, style: StrokeStyle(lineWidth: Theme.hairline, dash: [4, 4])))
+        .padding(.top, 20)
     }
 
     // MARK: - Chrome
 
     private var topBar: some View {
         HStack {
-            Button {
-                Haptics.tap(); dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, interactive: true, stroke: RetreatPalette.glassLine)
-            }
-            .buttonStyle(.soulPressableChip)
+            GlyphButton(systemName: "arrow.left") { dismiss() }
+                .accessibilityLabel("Back")
             Spacer()
         }
     }
@@ -233,12 +229,12 @@ struct RetreatTodosView: View {
                 Text("Go to my home")
                     .font(Theme.body(16, weight: .medium)).tracking(0.4)
                     .foregroundStyle(RetreatPalette.espresso)
-                    .frame(maxWidth: .infinity).padding(.vertical, 16)
-                    .background(Capsule().fill(RetreatPalette.terracotta))
+                    .frame(maxWidth: .infinity).padding(.vertical, 18)
+                    .background(Rectangle().fill(RetreatPalette.terracotta))
             }
-            .buttonStyle(SoulPressableStyle(scale: 0.985, hapticOnPress: false, dim: false))
+            .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         }
-        .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 28)
+        .padding(.horizontal, Theme.gutter).padding(.top, 16).padding(.bottom, 28)
         .background(LinearGradient(colors: [RetreatPalette.espresso.opacity(0), RetreatPalette.espresso], startPoint: .top, endPoint: .bottom))
     }
 }

@@ -6,16 +6,16 @@
 //
 //  STACK — the signature typographic scroller: retreat names snap to center
 //  over a crossfading full-bleed photo. The centre line is a focus lens — a
-//  name grows to full size and full ink as it reaches it, continuously with
-//  the scroll rather than on arrival, and each name that settles there ticks
-//  like a picker detent.
+//  name comes up to full ink as it reaches it, continuously with the scroll
+//  rather than on arrival, and each name that settles there ticks like a
+//  picker detent. Light only: the names never change size.
 //
-//  CATALOG — pinch out (or tap the grid button) and the stack recedes into a
-//  magazine contact sheet of covers. Tap a cover to fly back into the stack
-//  focused on that retreat; pinch in to leave the catalog.
+//  CATALOG — pinch out (or tap the grid button) and the stack goes out of
+//  focus behind a magazine contact sheet of covers. Tap a cover to come back
+//  to the stack focused on that retreat; pinch in to leave the catalog.
 //
-//  The pinch is interactive: the live magnification scrubs scale/blur before
-//  committing with a spring, so the zoom feels attached to the fingers.
+//  The pinch is interactive: the live magnification scrubs scale/blur while
+//  the fingers are down, then the mode settles with a slow ease.
 //
 //  The chrome (Back, and the one button that toggles the two modes) sits
 //  above both and never scales, blurs or moves between them — and is there
@@ -33,8 +33,7 @@ import SwiftUI
 
 struct RetreatsStackView: View {
     @Environment(\.dismiss) private var dismiss
-    /// Under Reduce Motion the two modes crossfade: no recede, swell, blur or
-    /// rise, and the focus lens marks the centred name by ink and weight alone.
+    /// Under Reduce Motion the two modes crossfade: no live scrub and no blur.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = RetreatsViewModel()
     @State private var scrollerHeight: CGFloat = 0
@@ -56,7 +55,7 @@ struct RetreatsStackView: View {
 
     private let rowHeight: CGFloat = 84
     private var navClearance: CGFloat { isTabRoot ? BottomNav.height : 0 }
-    private let commitSpring = Animation.spring(response: 0.5, dampingFraction: 0.82)
+    private let commit = Theme.Motion.settle
 
     /// There is a catalog to browse — the mode toggle and the pinch mean
     /// nothing while loading, failed, or empty. A reload over a catalog on
@@ -136,11 +135,10 @@ struct RetreatsStackView: View {
             Spacer()
 
             if hasCatalog {
-                CircleIconButton(systemName: mode == .stack ? "square.grid.2x2" : "text.alignleft",
-                                 size: 42) {
-                    withAnimation(commitSpring) { mode = mode == .stack ? .catalog : .stack }
+                GlyphButton(systemName: mode == .stack ? "square.grid.2x2" : "text.alignleft") {
+                    withAnimation(commit) { mode = mode == .stack ? .catalog : .stack }
                 }
-                .contentTransition(.symbolEffect(.replace))
+                .contentTransition(.opacity)
                 .accessibilityLabel(mode == .stack ? "Show all retreats" : "Show as a list")
                 .transition(.opacity)
             }
@@ -148,9 +146,9 @@ struct RetreatsStackView: View {
         // Holds Back's height when there is no Back, so the intro sits in the
         // same place whether or not the toggle has arrived yet.
         .frame(minHeight: 44)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, Theme.gutter)
         .padding(.top, 4)
-        .animation(.easeInOut(duration: 0.3), value: hasCatalog)
+        .animation(Theme.Motion.settle, value: hasCatalog)
     }
 
     private var backButton: some View {
@@ -158,13 +156,12 @@ struct RetreatsStackView: View {
             Haptics.tap()
             dismiss()
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.left").font(.system(size: 15, weight: .light))
                 Text("Back")
                     .font(Theme.body(13))
-                    .underline()
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.ink)
             .onPhoto()
             // The drawn label is ~20pt tall; give the thumb the full bar.
             .frame(minWidth: 44, minHeight: 44, alignment: .leading)
@@ -183,7 +180,7 @@ struct RetreatsStackView: View {
             }
             .onEnded { value in
                 let m = value.magnification
-                withAnimation(commitSpring) {
+                withAnimation(commit) {
                     if mode == .stack, m < 0.82 {
                         Haptics.bump()
                         mode = .catalog
@@ -197,8 +194,9 @@ struct RetreatsStackView: View {
     }
 
     /// Live scrub applied while the fingers are down — recede when pinching
-    /// out of the stack, swell slightly when pinching out of the catalog.
-    /// Held at rest under Reduce Motion; the pinch still commits.
+    /// out of the stack, swell slightly when pinching out of the catalog. It
+    /// follows the fingers only and is exactly 1 at rest. Held under Reduce
+    /// Motion; the pinch still commits.
     private var scrub: CGFloat {
         guard !reduceMotion else { return 1 }
         switch mode {
@@ -214,10 +212,12 @@ struct RetreatsStackView: View {
             stackIntro
             stackScroller
             bottomCard
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8 + navClearance)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.bottom, 12 + navClearance)
         }
-        .scaleEffect(mode == .catalog && !reduceMotion ? 0.92 : scrub)
+        // Behind the catalog the stack doesn't shrink away; it goes out of
+        // focus where it stands.
+        .scaleEffect(scrub)
         .blur(radius: reduceMotion ? 0 : (mode == .catalog ? 22 : (1 - scrub) * 24))
         // Without the blur, a quarter-ink stack would read as ghost names
         // behind the covers, so Reduce Motion fades it out entirely.
@@ -240,7 +240,7 @@ struct RetreatsStackView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .onPhoto()
-        .padding(.horizontal, 24)
+        .padding(.horizontal, Theme.gutter)
         .padding(.top, 18)
         .padding(.bottom, 10)
     }
@@ -260,7 +260,7 @@ struct RetreatsStackView: View {
             .monospacedDigit()
             .tracking(1)
             .contentTransition(.numericText(value: Double(vm.activeIndex)))
-            .animation(.snappy(duration: 0.3), value: vm.activeIndex)
+            .animation(Theme.Motion.settle, value: vm.activeIndex)
             .accessibilityLabel("Retreat \(vm.activeIndex + 1) of \(vm.retreats.count)")
     }
 
@@ -283,7 +283,7 @@ struct RetreatsStackView: View {
         .contentMargins(.vertical, max(0, (scrollerHeight - rowHeight) / 2), for: .scrollContent)
         // The names share the header's 24pt margin. Without it they ran to the
         // very edge of the glass and the first letter sat under the bezel.
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, Theme.gutter, for: .scrollContent)
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.height
         } action: { newHeight in
@@ -323,25 +323,24 @@ struct RetreatsStackView: View {
 
     private func row(idx: Int, retreat r: Retreat) -> some View {
         let isActive = idx == vm.activeIndex
-        // Local copies: `visualEffect` runs off the main actor and can't read
+        // Local copy: `visualEffect` runs off the main actor and can't read
         // the view's properties.
         let height = rowHeight
-        let lensScales = !reduceMotion
         return Button {
             if isActive {
                 Haptics.bump()
                 onSelect(r)
             } else {
                 Haptics.select()
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                withAnimation(Theme.Motion.settle) {
                     vm.activeIndex = idx
                 }
             }
         } label: {
             Text(r.name)
-                .font(Theme.headline(54, weight: isActive ? .semibold : .light))
+                .font(Theme.headline(54, weight: isActive ? .regular : .thin))
                 .kerning(-1.6)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 // Display type in a fixed-height row: let it grow with the
@@ -352,20 +351,19 @@ struct RetreatsStackView: View {
                 .contentShape(Rectangle())
                 // Unblurred photography in stack mode — see View.onPhoto().
                 .onPhoto()
-                .animation(.easeInOut(duration: 0.3), value: isActive)
+                .animation(Theme.Motion.settle, value: isActive)
         }
         .buttonStyle(.soulPressableQuiet)
         // The focus lens. `focus` is 1 on the centre line and 0 a row away,
-        // read from the row's live position, so size and ink track the finger
+        // read from the row's live position, so the ink tracks the finger
         // instead of jumping when the centred index changes. Only the weight
         // switches discretely — Geist ships static weights, not a variable axis.
+        // It used to scale the names too (0.8 → 1); now nothing changes size.
         .visualEffect { content, proxy in
             let viewport = proxy.bounds(of: .scrollView(axis: .vertical)) ?? .zero
             let distance = abs(viewport.midY - proxy.size.height / 2) / height
             let focus = max(0, 1 - distance)
-            return content
-                .scaleEffect(lensScales ? 0.8 + 0.2 * focus : 1, anchor: .leading)
-                .opacity(0.4 + 0.6 * focus)
+            return content.opacity(0.32 + 0.68 * focus)
         }
         .accessibilityLabel("\(r.name), \(r.country)")
         .accessibilityValue(Self.dateLine(r))
@@ -374,7 +372,7 @@ struct RetreatsStackView: View {
     }
 
     /// The centred retreat's particulars and the way in. Its details crossfade
-    /// as the stack moves; the card itself holds still.
+    /// as the stack moves; the panel itself holds still.
     @ViewBuilder
     private var bottomCard: some View {
         if let r = vm.active {
@@ -382,32 +380,30 @@ struct RetreatsStackView: View {
                 Haptics.bump()
                 onSelect(r)
             }) {
-                HStack(spacing: 14) {
+                HStack(spacing: 16) {
                     ZStack(alignment: .leading) {
                         cardDetails(r)
                             .id(r.id)
-                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 5)))
+                            .transition(.opacity)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .animation(.easeInOut(duration: 0.28), value: r.id)
+                    .animation(Theme.Motion.settle, value: r.id)
 
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         Text("Explore").font(Theme.body(13, weight: .medium))
-                        Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "arrow.right").font(.system(size: 11, weight: .regular))
                     }
                     .foregroundStyle(Color.black)
                     .padding(.horizontal, 18)
-                    .padding(.vertical, 11)
-                    .background(Capsule().fill(Color.white))
+                    .padding(.vertical, 12)
+                    .background(Rectangle().fill(Theme.ink))
                 }
-                .padding(16)
+                .padding(20)
                 .frame(maxWidth: .infinity)
-                .soulGlassCard(radius: Theme.cardRadius, stroke: Theme.glassBorderHigh)
-                // The whole card is the target. On iOS 26 `glassEffect` adds no
-                // hit-testable fill, so without this only the glyphs and the
-                // white pill answered — a tap on the glass between them did
-                // nothing (CLAUDE.md, rendering gotcha #5).
-                .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                .soulGlassCard(stroke: Theme.glassBorderHigh)
+                // The whole panel is the target, not only its glyphs and the
+                // Explore block (CLAUDE.md, rendering gotcha #5).
+                .contentShape(Rectangle())
             }
             .accessibilityLabel("Explore \(r.name). \(r.country), \(Self.dateLine(r))")
         }
@@ -452,14 +448,14 @@ struct RetreatsStackView: View {
 
             ScrollView(showsIndicators: false) {
                 LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
-                    spacing: 14
+                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                    spacing: 12
                 ) {
                     ForEach(Array(vm.retreats.enumerated()), id: \.element.id) { idx, r in
                         coverTile(idx: idx, retreat: r)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.top, 8)
                 Color.clear.frame(height: 60 + navClearance)
             }
@@ -485,7 +481,7 @@ struct RetreatsStackView: View {
         }
         .onPhoto()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, Theme.gutter)
         .padding(.top, 18)
         .padding(.bottom, 18)
     }
@@ -493,7 +489,7 @@ struct RetreatsStackView: View {
     private func coverTile(idx: Int, retreat r: Retreat) -> some View {
         PressableCard(haptic: false, action: {
             Haptics.bump()
-            withAnimation(commitSpring) {
+            withAnimation(commit) {
                 vm.activeIndex = idx
                 mode = .stack
             }
@@ -522,7 +518,7 @@ struct RetreatsStackView: View {
                         Text(String(format: "%02d", idx + 1))
                             .font(Theme.body(11, weight: .medium))
                             .tracking(1.5)
-                            .foregroundStyle(Color.white.opacity(0.85))
+                            .foregroundStyle(Theme.ink.opacity(0.85))
                             .padding(10)
                     }
                     Spacer()
@@ -532,12 +528,12 @@ struct RetreatsStackView: View {
                     Text(r.country.uppercased())
                         .font(Theme.eyebrow(10))
                         .tracking(1.8)
-                        .foregroundStyle(Color.white.opacity(0.82))
+                        .foregroundStyle(Theme.inkSoft)
                         .lineLimit(1)
                     Text(r.name)
-                        .font(Theme.headline(22, weight: .semibold))
+                        .font(Theme.headline(22, weight: .regular))
                         .kerning(-0.5)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                     Text(Self.dateLine(r))
@@ -550,27 +546,21 @@ struct RetreatsStackView: View {
                 .padding(12)
             }
             .frame(height: 224)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipped()
+            // The focused retreat is marked by an ink hairline, nothing more.
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                Rectangle()
                     .strokeBorder(
-                        idx == vm.activeIndex ? Theme.honey.opacity(0.7) : Theme.glassBorder,
-                        lineWidth: 1
+                        idx == vm.activeIndex ? Theme.ink.opacity(0.7) : Theme.glassBorder,
+                        lineWidth: Theme.hairline
                     )
             )
-            .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
         }
         .accessibilityLabel("\(r.name), \(r.country), \(Self.dateLine(r))")
         .accessibilityHint("Brings it into focus")
-        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { [reduceMotion] view, phase in
-            let entering = max(phase.value, 0)
-            // Covers rise and settle into place as they scroll in; under
-            // Reduce Motion they only fade up.
-            let travel: CGFloat = reduceMotion ? 0 : 1
-            return view
-                .opacity(1 - entering * 0.5)
-                .scaleEffect(1 - entering * 0.06 * travel)
-                .offset(y: entering * 18 * travel)
+        // Covers fade up from half-light as they scroll in; they don't move.
+        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
+            view.opacity(1 - max(phase.value, 0) * 0.5)
         }
     }
 
@@ -586,7 +576,7 @@ struct RetreatsStackView: View {
                     .foregroundStyle(Theme.inkSoft)
                     .padding(.bottom, 4)
                 Text(failure.title)
-                    .font(Theme.headline(19, weight: .medium)).kerning(-0.2)
+                    .font(Theme.headline(19, weight: .regular)).kerning(-0.2)
                     .foregroundStyle(Theme.ink)
                 Text(failure.detail)
                     .font(Theme.body(13))
@@ -603,10 +593,11 @@ struct RetreatsStackView: View {
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
-                    .overlay(Capsule().strokeBorder(Theme.glassBorder, lineWidth: 1))
+                    .padding(.vertical, 12)
+                    .overlay(Rectangle().strokeBorder(Theme.glassBorderHigh, lineWidth: Theme.hairline))
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.soulPressableChip)
+            .buttonStyle(.soulPressable)
         }
     }
 
@@ -616,7 +607,7 @@ struct RetreatsStackView: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Text("New gatherings are on their way")
-                .font(Theme.headline(19, weight: .medium)).kerning(-0.2)
+                .font(Theme.headline(19, weight: .regular)).kerning(-0.2)
                 .foregroundStyle(Theme.ink)
             Text("There are no upcoming retreats just now. New dates will appear here as they're announced.")
                 .font(Theme.body(13))
@@ -673,8 +664,8 @@ struct RetreatsStackView: View {
             }
         }
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.7), value: vm.activeIndex)
-        .animation(.easeInOut(duration: 0.5), value: mode)
+        .animation(.easeInOut(duration: 0.9), value: vm.activeIndex)
+        .animation(Theme.Motion.settle, value: mode)
     }
 }
 

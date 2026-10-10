@@ -2,8 +2,9 @@
 //  Theme.swift
 //  Soulfull Gatherings
 //
-//  Brand palette + typography + reusable gradient helpers.
-//  Colors are translated from the original oklch tokens to sRGB.
+//  Brand palette, typography, shape, space and motion.
+//  Colours are hand-picked sRGB (the palette follows the Open app's: black,
+//  near-white, and colour only in photography and the atmosphere washes).
 //
 
 import SwiftUI
@@ -11,63 +12,69 @@ import SwiftUI
 enum Theme {
 
     // MARK: - Colors
+    //
+    // Black and near-white, as the Open app is laid: the colour comes from
+    // photography and from the two atmosphere washes (`Atmosphere`), moss
+    // (the logo's olive) and ember (a copper), never from the chrome.
 
-    /// Near-black canvas with a faint olive tint — matches `bg` in tokens.js.
-    static let bg = Color(red: 0.043, green: 0.047, blue: 0.027)
+    /// True black — the canvas. Every screen that isn't a photograph sits on it.
+    static let bg = Color.black
 
-    /// Slightly lifted surface — used for nav/header strokes.
-    static let bgDeep = Color(red: 0.063, green: 0.069, blue: 0.039)
+    /// The docked bar's ground, one step off black so the bar has an edge.
+    static let bgDeep = Color(red: 0.035, green: 0.035, blue: 0.031)
 
-    /// Card background when not using a material.
-    static let surface = Color(red: 0.082, green: 0.090, blue: 0.051)
+    /// Card fill when a surface needs one — a lifted black, barely warm.
+    static let surface = Color(red: 0.063, green: 0.063, blue: 0.055)
 
-    /// Hairline.
+    /// Hairline — rules between sections and rows.
     static let line = Color.white.opacity(0.10)
 
-    /// Standard glass card / pill border.
-    static let glassBorder = Color.white.opacity(0.14)
+    /// Standard surface stroke.
+    static let glassBorder = Color.white.opacity(0.12)
 
-    /// Stronger border — active states, higher-contrast glass surfaces.
-    static let glassBorderHigh = Color.white.opacity(0.18)
+    /// Stronger stroke — ghost buttons, active states.
+    static let glassBorderHigh = Color.white.opacity(0.22)
 
-    /// The Soulfull logo's olive-green — used as primary accent.
+    /// The Soulfull logo's olive-green — the moss atmosphere's deep tone.
     static let accent = Color(red: 0.244, green: 0.263, blue: 0.082)
 
-    /// Lifted sage for selected states.
-    static let accentSoft = Color(red: 0.467, green: 0.502, blue: 0.231)
+    /// Lifted moss — the moss atmosphere's light tone, and quiet positive marks.
+    static let accentSoft = Color(red: 0.490, green: 0.529, blue: 0.220)
 
-    /// Warm cream — primary text on dark.
-    static let ink = Color(red: 0.961, green: 0.953, blue: 0.910)
+    /// Near-white with the faintest warmth — primary text.
+    static let ink = Color(red: 0.949, green: 0.945, blue: 0.929)
 
-    /// Muted ink — secondary text.
-    static let inkSoft = Color(red: 0.788, green: 0.773, blue: 0.690)
+    /// Warm grey — secondary text.
+    static let inkSoft = Color(red: 0.631, green: 0.624, blue: 0.600)
 
-    /// Tertiary text / metadata. On glass or a card only — over photography it
-    /// sinks into the image; use `inkSoft` there (see `View.onPhoto()`).
-    static let muted = Color(red: 0.478, green: 0.463, blue: 0.388)
+    /// Tertiary text / metadata. On black, glass or a card only — over
+    /// photography it sinks into the image; use `inkSoft` there (see
+    /// `View.onPhoto()`).
+    static let muted = Color(red: 0.420, green: 0.412, blue: 0.392)
 
     /// Body copy that sits directly on photography rather than on glass.
     /// Brighter than `inkSoft`, which washes out over a pale sky — the one
     /// colour for every photo-backed subline in the app.
     static let inkOnPhoto = ink.opacity(0.92)
 
-    /// Honey glow for selected onboarding cards.
-    static let honey = Color(red: 0.898, green: 0.780, blue: 0.400)
+    /// Copper — the one warm mark: what's selected, what's new, what's yours
+    /// today. Used sparingly; most active states are simply `ink`.
+    static let ember = Color(red: 0.816, green: 0.549, blue: 0.369)
 
     /// Muted brick for irreversible actions (Delete account) — quiet enough
-    /// for the dark editorial ground, unmistakable next to cream.
+    /// for the black ground, unmistakable next to ink.
     static let danger = Color(red: 0.85, green: 0.36, blue: 0.33)
 
     // MARK: - Gradients
 
-    /// Brand splash — amber→sage→coal, used on the Welcome splash.
+    /// Brand splash — moss falling to black, top to bottom.
     static let splash = LinearGradient(
         colors: [
-            Color(red: 0.302, green: 0.325, blue: 0.110),
-            Color(red: 0.244, green: 0.263, blue: 0.082),
-            Color(red: 0.173, green: 0.188, blue: 0.063)
+            Color(red: 0.267, green: 0.294, blue: 0.086),
+            Color(red: 0.122, green: 0.133, blue: 0.047),
+            Color.black
         ],
-        startPoint: .topLeading, endPoint: .bottomTrailing
+        startPoint: .top, endPoint: .bottom
     )
 
     /// Universal dark-vignette overlay used over photo backgrounds.
@@ -111,9 +118,44 @@ enum Theme {
     }
 
     // MARK: - Shape
+    //
+    // There are no rounded corners. Rounding read as playful; a surface here
+    // is cut square like a printed page — photographs, cards, buttons and
+    // sheets alike. Only a face (`AvatarView`), a dot and the player's breath
+    // circle are round.
 
-    static let cardRadius: CGFloat = 22
-    static let pillRadius: CGFloat = 999
+    /// The stroke around a surface or a ghost button.
+    static let hairline: CGFloat = 0.75
+
+    // MARK: - Space
+    //
+    // Empty space is part of the layout, not what's left over.
+
+    /// The page's side margin.
+    static let gutter: CGFloat = 24
+
+    /// Between the sections of a page.
+    static let sectionGap: CGFloat = 64
+
+    // MARK: - Motion
+    //
+    // Still motion: things fade in and settle, at breath pace. Nothing
+    // springs, bounces, squishes or overshoots — every curve is an ease.
+
+    enum Motion {
+        /// A finger landing — the surface dims; it never moves.
+        static let press = Animation.easeOut(duration: 0.12)
+        /// The finger lifting — the surface comes back slowly.
+        static let release = Animation.easeInOut(duration: 0.5)
+        /// A state settling: a selection, a toggle, a count, a panel.
+        static let settle = Animation.easeInOut(duration: 0.6)
+        /// Content arriving — a fade, as at the end of an exhale.
+        static let reveal = Animation.easeOut(duration: 1.1)
+        /// A stage handing over (loading → welcome → onboarding → main).
+        static let stage = Animation.easeInOut(duration: 1.2)
+        /// One breath — the period of every idle loop (atmospheres, halos).
+        static let breath: Double = 6
+    }
 }
 
 // MARK: - Color helpers

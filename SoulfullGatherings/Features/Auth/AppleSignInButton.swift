@@ -69,10 +69,14 @@ struct AppleSignInButton: View {
         }
         .signInWithAppleButtonStyle(.white)
         .frame(height: 54)
-        .clipShape(Capsule())
+        // Apple's button draws its own rounded fill, which can't be clipped
+        // square from outside. White behind it fills the corners in, so it
+        // reads as a square white block like the app's other buttons. Pure
+        // white, not `Theme.ink`: the corners have to match Apple's fill.
+        .background(Color.white)
         .opacity(disabled ? 0.5 : 1)
         .disabled(disabled)
-        .animation(.easeInOut(duration: 0.2), value: disabled)
+        .animation(Theme.Motion.settle, value: disabled)
     }
 
     private func handle(_ result: Result<ASAuthorization, Error>, nonce: String) {

@@ -6,9 +6,10 @@
 //  profile is always through something of theirs: a digital retreat, a
 //  session, a movement sequence, a recipe, a prompt.
 //
-//  - `GuideCard` — "Your guide": face, name, what they teach. On every
-//    practice page and every digital retreat whose content names a guide.
-//  - `GuideCredit` — the player's compact "with Alma Guerra" chip, for the
+//  - `GuideCard` — "Your guide": face, name, what they teach, set open
+//    between two hairlines (Open's "TEACHER"). On every practice page and
+//    every digital retreat whose content names a guide.
+//  - `GuideCredit` — the player's compact "with Alma Guerra" credit, for the
 //    sheet where a card would crowd the artwork.
 //
 //  Both open the profile through `openInstructor`, which the tab's navigation
@@ -57,24 +58,22 @@ struct GuideCard: View {
                 .accessibilityIdentifier("guide-card")
             }
         }
-        .animation(.easeOut(duration: 0.25), value: instructor)
+        .animation(Theme.Motion.reveal, value: instructor)
         .task { await directory.refresh() }
     }
 
     private func card(_ instructor: Instructor) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             AvatarView(avatarUrl: instructor.photoUrl, name: instructor.name,
                        seed: instructor.id, size: 50)
-                .padding(3)
-                .overlay(Circle().strokeBorder(Theme.honey.opacity(0.4), lineWidth: 1))
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("YOUR GUIDE")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
                     .foregroundStyle(Theme.inkSoft)
                 Text(instructor.name)
-                    .font(Theme.headline(19))
+                    .font(Theme.headline(19, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.2)
                     .lineLimit(1)
@@ -88,18 +87,23 @@ struct GuideCard: View {
             Spacer(minLength: 0)
             if openInstructor != nil {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .light))
                     .foregroundStyle(Theme.inkSoft)
             }
         }
-        .padding(14)
+        .padding(.vertical, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .soulGlassCard(radius: 20)
-        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .top) { hairline }
+        .overlay(alignment: .bottom) { hairline }
+        .contentShape(Rectangle())
+    }
+
+    private var hairline: some View {
+        Rectangle().fill(Theme.line).frame(height: 0.5)
     }
 }
 
-/// "with Alma Guerra" as a face chip — the player's credit. Falls back to
+/// "with Alma Guerra" beside their face — the player's credit. Falls back to
 /// whatever the host drew before (`fallback`) when the media has no guide.
 struct GuideCredit<Fallback: View>: View {
     let instructorID: String?
@@ -128,15 +132,15 @@ struct GuideCredit<Fallback: View>: View {
                             .font(Theme.body(13))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(1)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 10, weight: .light))
                             .foregroundStyle(Theme.inkSoft)
                     }
-                    .padding(.leading, 4)
-                    .padding(.trailing, 11)
-                    .padding(.vertical, 4)
-                    .soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
-                    .contentShape(Capsule())
+                    // No box: a face and a line, like the credit under a
+                    // track. The frame is the 44pt target the type alone
+                    // wouldn't give (rendering gotcha 5).
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.soulPressableQuiet)
                 .transition(.opacity)
@@ -147,14 +151,14 @@ struct GuideCredit<Fallback: View>: View {
                 fallback
             }
         }
-        .animation(.easeOut(duration: 0.25), value: directory.instructor(id: instructorID))
+        .animation(Theme.Motion.reveal, value: directory.instructor(id: instructorID))
         .task { await directory.refresh() }
     }
 }
 
 #Preview {
     ZStack {
-        PhotoBackdrop(imageName: "home-bg", blur: 24, darken: 0.8)
+        Atmosphere(tone: .ember)
         VStack(alignment: .leading, spacing: 24) {
             GuideCard(instructorID: "alma-guerra", from: "Finding Ground")
             GuideCredit(instructorID: nil, from: "Breath of Fire") {

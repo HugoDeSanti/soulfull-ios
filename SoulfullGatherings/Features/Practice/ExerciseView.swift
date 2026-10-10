@@ -17,19 +17,19 @@ struct ExerciseListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.movement.title,
             blurb: PracticeMenuItem.movement.blurb,
-            systemImage: PracticeMenuItem.movement.systemImage,
-            backdrop: PracticeMenuItem.movement.imageName
+            systemImage: PracticeMenuItem.movement.systemImage
         ) {
             if store.library.exercises.isEmpty {
                 WrittenLibraryPlaceholder(item: .movement, noun: "sequences")
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     ForEach(store.library.exercises) { exercise in
                         PressableCard(action: { onOpen(exercise) }) {
                             exerciseRow(exercise)
                         }
                         .listReveal()
                     }
+                    PracticeRule()
                 }
             }
         }
@@ -37,13 +37,13 @@ struct ExerciseListView: View {
     }
 
     private func exerciseRow(_ exercise: Exercise) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             CatalogImage(exercise.imageUrl) { $0.resizable().scaledToFill() }
                 .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+                .clipped()
+                .overlay(Rectangle().strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline))
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(exercise.title)
                     .font(Theme.headline(17))
                     .foregroundStyle(Theme.ink)
@@ -65,13 +65,13 @@ struct ExerciseListView: View {
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 12, weight: .light))
                 .foregroundStyle(Theme.muted)
         }
-        .padding(14)
+        .padding(.vertical, 18)
         .frame(maxWidth: .infinity)
-        .soulGlassCard(radius: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .top) { PracticeRule() }
+        .contentShape(Rectangle())
     }
 }
 
@@ -82,10 +82,23 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 28) {
                 PracticeBackBar(label: "Movement")
 
-                VStack(alignment: .leading, spacing: 6) {
+                // The sequence's photograph, as a square-cut plate at the head
+                // of the page — it used to be blurred into the page's tint.
+                Color.clear
+                    .frame(height: 220)
+                    .frame(maxWidth: .infinity)
+                    .overlay { CatalogImage(exercise.imageUrl) { $0.resizable().scaledToFill() } }
+                    .clipped()
+                    // `clipped()` clips the drawing, not the hit area: the
+                    // filled photo's overflow lay over the back bar above and
+                    // swallowed its taps. The plate is only a picture.
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Text(exercise.focus.uppercased())
                         Text("·")
@@ -96,50 +109,47 @@ struct ExerciseDetailView: View {
                     .foregroundStyle(Theme.inkSoft)
 
                     Text(exercise.title)
-                        .font(Theme.headline(32))
+                        .font(Theme.headline(32, weight: .light))
                         .foregroundStyle(Theme.ink)
-                        .kerning(-0.3)
+                        .kerning(-0.7)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(exercise.blurb)
                         .font(Theme.body(14))
-                        .foregroundStyle(Theme.inkOnPhoto)
+                        .foregroundStyle(Theme.inkSoft)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                     PresenceLine(kind: .exercise, contentID: exercise.id, faceSize: 22)
                         .padding(.top, 6)
                 }
-                // Header block over the (blurred) photo backdrop.
-                .onPhoto()
 
-                // Glass, so outside the header's halo.
                 GuideCard(instructorID: exercise.instructorID, from: exercise.title)
 
-                Text("THE SEQUENCE")
-                    .font(Theme.eyebrow(11))
-                    .tracking(3)
-                    .foregroundStyle(Theme.inkSoft)
-                    .padding(.top, 4)
-                    .onPhoto()
-
-                VStack(spacing: 14) {
+                // The steps set open under a caps label, divided by hairlines.
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("THE SEQUENCE")
+                        .font(Theme.eyebrow(11))
+                        .tracking(3)
+                        .foregroundStyle(Theme.inkSoft)
+                        .padding(.bottom, 16)
                     ForEach(Array(exercise.steps.enumerated()), id: \.element.id) { index, step in
                         NumberedStepRow(index: index + 1, title: step.name, detail: step.detail)
+                            .padding(.vertical, 16)
+                            .overlay(alignment: .top) { PracticeRule() }
                     }
+                    PracticeRule()
                 }
-                .padding(16)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+                .padding(.top, 20)
 
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .practiceActivity(.exercise(exercise))
         .background {
-            PhotoBackdrop(imageName: exercise.imageUrl, blur: 24, darken: 0.8)
+            Atmosphere(tone: .slate)
         }
     }
 }

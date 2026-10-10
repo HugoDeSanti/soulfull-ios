@@ -48,10 +48,10 @@ struct AccountView: View {
 
     var body: some View {
         ZStack {
-            PhotoBackdrop(imageName: "home-bg", blur: 8, darken: 0.74)
+            Atmosphere(tone: .moss)
 
             ScrollView {
-                VStack(spacing: 22) {
+                VStack(spacing: 24) {
                     if vm.awaitingConfirmation {
                         confirmationPanel
                     } else if let step = vm.passwordReset {
@@ -70,17 +70,20 @@ struct AccountView: View {
                         agreement
                     }
                 }
-                .padding(.horizontal, 26)
+                .padding(.horizontal, Theme.gutter)
                 .padding(.top, 84)
                 .padding(.bottom, 40)
-                .animation(.easeInOut(duration: 0.3), value: vm.passwordReset)
-                .animation(.easeInOut(duration: 0.3), value: vm.resetCodeAccepted)
+                .animation(Theme.Motion.settle, value: vm.passwordReset)
+                .animation(Theme.Motion.settle, value: vm.resetCodeAccepted)
             }
             .scrollDismissesKeyboard(.interactively)
 
             closeButton
         }
         .preferredColorScheme(.dark)
+        // Square, like every other surface: the system sheet's rounded top
+        // was the one curve left on screen.
+        .presentationCornerRadius(0)
         // Swiping the sheet away mid-request used to strand the result on a
         // view model nobody was showing: a sign-up that needed confirming
         // never reached the panel, or the watch below.
@@ -140,8 +143,8 @@ struct AccountView: View {
     private var confirmationPanel: some View {
         VStack(spacing: 16) {
             Image(systemName: "envelope.badge")
-                .font(.system(size: 38, weight: .light))
-                .foregroundStyle(Theme.honey)
+                .font(.system(size: 34, weight: .ultraLight))
+                .foregroundStyle(Theme.ink)
             panelHeading("Almost there — confirm your email",
                          "We sent a code to \(vm.confirmationEmail). Enter it below — it works wherever you read the email, phone or laptop.")
 
@@ -188,17 +191,14 @@ struct AccountView: View {
             .keyboardType(.numberPad)
             .textContentType(.oneTimeCode)
             .multilineTextAlignment(.center)
-            .font(Theme.headline(28))
+            .font(Theme.headline(28, weight: .light))
             .kerning(10)
             .foregroundStyle(Theme.ink)
             .tint(Theme.ink)
-            .padding(.vertical, 16)
+            .padding(.vertical, 18)
             .frame(maxWidth: .infinity)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(focus == .code ? Theme.glassBorderHigh : Theme.glassBorder, lineWidth: 1)
-            )
+            .soulGlass(in: Rectangle(),
+                       stroke: focus == .code ? Theme.ink.opacity(0.6) : Theme.glassBorder)
             .accessibilityLabel(label)
             .accessibilityIdentifier(identifier)
     }
@@ -230,8 +230,8 @@ struct AccountView: View {
     private var resetRequestPanel: some View {
         VStack(spacing: 16) {
             Image(systemName: "key.horizontal")
-                .font(.system(size: 34, weight: .light))
-                .foregroundStyle(Theme.honey)
+                .font(.system(size: 30, weight: .ultraLight))
+                .foregroundStyle(Theme.ink)
                 .accessibilityHidden(true)
             panelHeading("Forgot your password?",
                          "Enter the email you use with Soulfull and we'll send you a code to choose a new one.")
@@ -259,11 +259,10 @@ struct AccountView: View {
             // isn't one anybody would think to type here.
             Text("Joined with Apple? There's no password to reset. Go back and continue with Apple.")
                 .font(Theme.body(12))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 280)
-                .onPhoto()
 
             backToSignInButton
         }
@@ -276,9 +275,9 @@ struct AccountView: View {
     private var newPasswordPanel: some View {
         VStack(spacing: 16) {
             Image(systemName: vm.resetCodeAccepted ? "checkmark.seal" : "envelope.badge")
-                .font(.system(size: 38, weight: .light))
-                .foregroundStyle(Theme.honey)
-                .contentTransition(.symbolEffect(.replace))
+                .font(.system(size: 34, weight: .ultraLight))
+                .foregroundStyle(Theme.ink)
+                .contentTransition(.opacity)
                 .accessibilityHidden(true)
             if vm.resetCodeAccepted {
                 panelHeading("You're signed in",
@@ -322,22 +321,20 @@ struct AccountView: View {
         .padding(.top, 24)
     }
 
-    /// Copy only: the `onPhoto` halo must not wrap the fields below it.
     private func panelHeading(_ title: String, _ detail: String) -> some View {
         VStack(spacing: 16) {
             Text(title)
-                .font(Theme.headline(24))
+                .font(Theme.headline(26, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.2)
+                .kerning(-0.4)
                 .multilineTextAlignment(.center)
             Text(detail)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 300)
         }
-        .onPhoto()
     }
 
     private var backToSignInButton: some View {
@@ -371,19 +368,18 @@ struct AccountView: View {
                 // Decorative: the title under it says where they are.
                 .accessibilityHidden(true)
             Text(vm.mode.title)
-                .font(Theme.headline(30))
+                .font(Theme.headline(32, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.6)
                 .multilineTextAlignment(.center)
             Text(vm.mode.subtitle)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 300)
         }
-        .padding(.bottom, 6)
-        .onPhoto()
+        .padding(.bottom, 12)
     }
 
     // MARK: - Sign in with Apple
@@ -416,7 +412,7 @@ struct AccountView: View {
     private var line: some View {
         Rectangle()
             .fill(Theme.line)
-            .frame(height: 1)
+            .frame(height: 0.5)
             .frame(maxWidth: .infinity)
     }
 
@@ -464,11 +460,10 @@ struct AccountView: View {
     private var passwordRule: some View {
         Text("At least 8 characters")
             .font(Theme.body(12))
-            .foregroundStyle(Theme.inkOnPhoto)
+            .foregroundStyle(Theme.inkSoft)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 18)
             .padding(.top, -6)
-            .onPhoto()
             // Spoken as the password field's hint instead.
             .accessibilityHidden(true)
     }
@@ -498,7 +493,7 @@ struct AccountView: View {
                           identifier: String = "") -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 15, weight: .light))
                 .foregroundStyle(Theme.muted)
                 .frame(width: 22)
                 .accessibilityHidden(true)
@@ -521,12 +516,9 @@ struct AccountView: View {
             .accessibilityIdentifier(identifier)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(focus == field ? Theme.glassBorderHigh : Theme.glassBorder, lineWidth: 1)
-        )
+        .padding(.vertical, 17)
+        .soulGlass(in: Rectangle(),
+                   stroke: focus == field ? Theme.ink.opacity(0.6) : Theme.glassBorder)
     }
 
     private func prompt(_ text: String) -> Text {
@@ -541,13 +533,9 @@ struct AccountView: View {
             .foregroundStyle(Theme.ink)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.honey.opacity(0.5), lineWidth: 1)
-            )
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .soulGlassCard(stroke: Theme.ember.opacity(0.5))
     }
 
     // MARK: - Actions
@@ -606,7 +594,7 @@ struct AccountView: View {
         VStack {
             HStack {
                 Spacer()
-                CircleIconButton(systemName: "xmark", size: 38) {
+                GlyphButton(systemName: "xmark") {
                     Haptics.tap()
                     dismiss()
                 }
@@ -615,8 +603,9 @@ struct AccountView: View {
             }
             Spacer()
         }
-        .padding(.horizontal, 22)
-        .padding(.top, 16)
+        // The glyph's 44pt square centres it on the gutter.
+        .padding(.horizontal, Theme.gutter - 13)
+        .padding(.top, 10)
     }
 
     /// Dismisses on success, and also when the account went permanent by

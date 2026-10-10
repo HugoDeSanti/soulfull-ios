@@ -2,14 +2,16 @@
 //  RetreatDetailView.swift
 //  Soulfull Gatherings
 //
-//  Editorial spread. At rest it's the full-bleed cover — centered title,
-//  white reserve pill, glass meta. Scrolling reveals the story. A retreat
-//  carrying a `RetreatExperience` (e.g. Mallorca) gets the full spread —
-//  invitation, who it's for, the four elements, a member's word, guides,
-//  stay & inclusions; one without falls back to the concise pull-quote /
-//  numbered focus / details layout. The cover photo answers the scroll —
-//  stretching on pull-down, blurring and darkening as the story comes up —
-//  and a glass reserve bar slides in once the hero CTA has scrolled away.
+//  Editorial spread. At rest it's the full-bleed cover — centered title, a
+//  square ink reserve button, the particulars in one line. Scrolling reveals
+//  the story, laid like a printed page: sections opened by a hairline and a
+//  small caps label, with air between them and no boxes. A retreat carrying
+//  a `RetreatExperience` (e.g. Mallorca) gets the full spread — invitation,
+//  who it's for, the four elements, a member's word, guides, stay &
+//  inclusions; one without falls back to the concise pull-quote / numbered
+//  focus / details layout. The cover photo answers the scroll — stretching
+//  on pull-down, going out of focus and nearly to black as the story comes
+//  up — and a reserve bar fades in once the hero CTA has scrolled away.
 //
 
 import SwiftUI
@@ -77,7 +79,7 @@ struct RetreatDetailView: View {
             // Top chrome (back / share)
             VStack {
                 topBar
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Theme.gutter)
                     .padding(.top, 8)
                     .background(alignment: .top) { topBarScrim }
                 Spacer()
@@ -88,10 +90,10 @@ struct RetreatDetailView: View {
                 Spacer()
                 if scrollY > 260 {
                     reserveBar
-                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                        .transition(.opacity)
                 }
             }
-            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: scrollY > 260)
+            .animation(Theme.Motion.settle, value: scrollY > 260)
         }
         .preferredColorScheme(.dark)
         .navigationBarBackButtonHidden(true)
@@ -150,8 +152,10 @@ struct RetreatDetailView: View {
                     startPoint: .top, endPoint: .bottom
                 )
 
-                // Extra dim as the story scrolls up.
-                Color.black.opacity(min(reduceMotion ? 0.62 : 0.45, Double(max(0, scrollY)) / 700))
+                // The story reads on near-black: the photo is the cover, not
+                // the page, so it sinks almost out of sight as the story
+                // comes up.
+                Color.black.opacity(min(reduceMotion ? 0.8 : 0.72, Double(max(0, scrollY)) / 560))
             }
         }
         .ignoresSafeArea()
@@ -166,7 +170,7 @@ struct RetreatDetailView: View {
             VStack(spacing: 18) {
                 Text(exp?.kind ?? "Gathering")
                     .font(Theme.body(15))
-                    .foregroundStyle(Color.white.opacity(0.9))
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -174,9 +178,9 @@ struct RetreatDetailView: View {
                     // right here, so the cover type carries its own ground.
                     .onPhoto()
                 Text(retreat.name)
-                    .font(Theme.headline(64, weight: .semibold))
-                    .kerning(-2.4)
-                    .foregroundStyle(.white)
+                    .font(Theme.headline(64, weight: .light))
+                    .kerning(-2.2)
+                    .foregroundStyle(Theme.ink)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
                     .onPhoto()
@@ -186,26 +190,31 @@ struct RetreatDetailView: View {
                 if let error = vm.errorMessage {
                     Text(error)
                         .font(Theme.body(12))
-                        .foregroundStyle(Color.white.opacity(0.85))
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 300)
                         .padding(.top, 2)
                 }
             }
-            .padding(.horizontal, 24)
-            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: vm.phase)
+            .padding(.horizontal, Theme.gutter)
+            .animation(Theme.Motion.settle, value: vm.phase)
 
             Spacer()
 
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    MetaPill(text: whenLabel)
-                    MetaPill(text: "\(retreat.maxGuests) guests")
-                    MetaPill(text: retreat.priceFormatted)
-                }
+            VStack(spacing: 14) {
+                // The particulars in one line, the way a printed programme
+                // runs them — they were three glass pills.
+                Text([whenLabel, "\(retreat.maxGuests) guests", retreat.priceFormatted]
+                        .joined(separator: "  ·  "))
+                    .font(Theme.body(12))
+                    .tracking(0.6)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .onPhoto()
                 Text(exp?.coverLine ?? retreat.blurb)
                     .font(Theme.body(12))
-                    .foregroundStyle(Color.white.opacity(0.88))
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
                     .frame(maxWidth: 320)
@@ -213,11 +222,11 @@ struct RetreatDetailView: View {
 
                 Image(systemName: "chevron.compact.down")
                     .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(Color.white.opacity(0.7))
-                    .breathing(scale: 1.0...1.0, opacity: 0.35...0.85, period: 2.2)
+                    .foregroundStyle(Theme.ink.opacity(0.7))
+                    .breathing(scale: 1.0...1.0, opacity: 0.35...0.85)
                     .padding(.top, 10)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.gutter)
             .padding(.bottom, 36)
             // Fade the cover furniture as the story arrives.
             .opacity(1 - min(1, Double(max(0, scrollY)) / 220))
@@ -230,18 +239,17 @@ struct RetreatDetailView: View {
         } label: {
             HStack(spacing: 8) {
                 if vm.isReserved {
-                    Image(systemName: "arrow.right").font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "arrow.right").font(.system(size: 14, weight: .regular))
                 }
                 Text(reserveTitle)
                     .font(Theme.body(15, weight: .medium))
             }
             .foregroundStyle(.black)
-            .padding(.horizontal, 36)
-            .padding(.vertical, 14)
-            .background(Capsule().fill(.white))
-            .shadow(color: .black.opacity(0.18), radius: 20, y: 6)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 16)
+            .background(Rectangle().fill(Theme.ink))
         }
-        .buttonStyle(SoulPressableStyle(scale: 0.96, hapticOnPress: false, dim: false))
+        .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         .padding(.top, 4)
         .accessibilityLabel(reserveTitle)
         .accessibilityHint(AppFeatures.paymentsEnabled
@@ -308,7 +316,7 @@ struct RetreatDetailView: View {
     // MARK: Rich story (retreats carrying a RetreatExperience)
 
     private func richStory(_ exp: RetreatExperience) -> some View {
-        VStack(alignment: .leading, spacing: 46) {
+        VStack(alignment: .leading, spacing: Theme.sectionGap) {
             invitationSection(exp)
             whoForSection(exp)
             elementsSection(exp)
@@ -319,8 +327,8 @@ struct RetreatDetailView: View {
             staySection(exp)
             closingCTA
         }
-        .padding(.horizontal, 26)
-        .padding(.top, 34)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 48)
     }
 
     private func invitationSection(_ exp: RetreatExperience) -> some View {
@@ -355,13 +363,13 @@ struct RetreatDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            // Welcome line as a honey-ruled pull-quote.
-            HStack(alignment: .top, spacing: 14) {
+            // Welcome line as a pull-quote, ruled by one ember hairline.
+            HStack(alignment: .top, spacing: 16) {
                 Rectangle()
-                    .fill(Theme.honey.opacity(0.7))
-                    .frame(width: 2)
+                    .fill(Theme.ember.opacity(0.8))
+                    .frame(width: 1)
                 Text(exp.welcome)
-                    .font(Theme.headline(21, weight: .medium))
+                    .font(Theme.headline(21, weight: .light))
                     .kerning(-0.3)
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -378,7 +386,7 @@ struct RetreatDetailView: View {
                     .font(Theme.body(14))
                     .foregroundStyle(Theme.inkSoft)
             }
-            VStack(spacing: 12) {
+            VStack(spacing: 0) {
                 ForEach(Array(exp.elements.enumerated()), id: \.element.id) { idx, el in
                     elementCard(el, folio: idx + 1)
                 }
@@ -386,16 +394,17 @@ struct RetreatDetailView: View {
         }
     }
 
+    /// One of the day's four elements: open on the page, under a hairline,
+    /// rather than in a box.
     private func elementCard(_ el: RetreatExperience.Element, folio: Int) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 13) {
+            HStack(spacing: 12) {
                 Image(systemName: el.systemImage)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.honey)
-                    .frame(width: 40, height: 40)
-                    .soulGlass(in: Circle())
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundStyle(Theme.ember)
+                    .frame(width: 22)
                 Text(el.title)
-                    .font(Theme.headline(25, weight: .semibold))
+                    .font(Theme.headline(25, weight: .light))
                     .kerning(-0.4)
                     .foregroundStyle(Theme.ink)
                 Spacer()
@@ -413,8 +422,8 @@ struct RetreatDetailView: View {
                 ForEach(el.highlights, id: \.self) { highlight in
                     HStack(alignment: .top, spacing: 11) {
                         Circle()
-                            .fill(Theme.honey.opacity(0.8))
-                            .frame(width: 4, height: 4)
+                            .fill(Theme.inkSoft.opacity(0.6))
+                            .frame(width: 3, height: 3)
                             .padding(.top, 7)
                         Text(highlight)
                             .font(Theme.body(14))
@@ -425,9 +434,11 @@ struct RetreatDetailView: View {
                 }
             }
         }
-        .padding(18)
+        .padding(.vertical, 26)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .soulGlassCard(radius: 20)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.line).frame(height: 0.5)
+        }
     }
 
     private func testimonialSection(_ t: RetreatExperience.Testimonial) -> some View {
@@ -435,8 +446,8 @@ struct RetreatDetailView: View {
             sectionEyebrow("A Member's Word")
             VStack(alignment: .leading, spacing: 16) {
                 Text("\u{201C}")
-                    .font(Theme.headline(64, weight: .semibold))
-                    .foregroundStyle(Theme.honey.opacity(0.5))
+                    .font(Theme.headline(56, weight: .thin))
+                    .foregroundStyle(Theme.ember.opacity(0.7))
                     .frame(height: 26, alignment: .top)
                 Text(t.quote)
                     .font(Theme.headline(20, weight: .light))
@@ -455,9 +466,7 @@ struct RetreatDetailView: View {
                         .foregroundStyle(Theme.muted)
                 }
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(radius: 20)
         }
     }
 
@@ -491,10 +500,10 @@ struct RetreatDetailView: View {
                         }
                         Spacer()
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14)
                     .overlay(alignment: .bottom) {
                         if idx < exp.guides.count - 1 {
-                            Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+                            Rectangle().fill(Theme.line).frame(height: 0.5)
                         }
                     }
                 }
@@ -516,13 +525,13 @@ struct RetreatDetailView: View {
                 Text("WHAT'S INCLUDED")
                     .font(Theme.eyebrow(10))
                     .tracking(2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.inkSoft)
                 VStack(alignment: .leading, spacing: 11) {
                     ForEach(exp.inclusions, id: \.self) { item in
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(Theme.honey)
+                                .font(.system(size: 11, weight: .light))
+                                .foregroundStyle(Theme.inkSoft)
                                 .padding(.top, 2)
                             Text(item)
                                 .font(Theme.body(14))
@@ -533,9 +542,11 @@ struct RetreatDetailView: View {
                     }
                 }
             }
-            .padding(18)
+            .padding(.top, 22)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(radius: 20)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Theme.line).frame(height: 0.5)
+            }
 
             if let note = exp.inclusionsNote {
                 Text(note)
@@ -549,7 +560,7 @@ struct RetreatDetailView: View {
     // MARK: Basic story (retreats without rich content)
 
     private var basicStory: some View {
-        VStack(alignment: .leading, spacing: 44) {
+        VStack(alignment: .leading, spacing: Theme.sectionGap) {
             // Pull-quote
             VStack(alignment: .leading, spacing: 14) {
                 sectionEyebrow("The experience")
@@ -569,17 +580,17 @@ struct RetreatDetailView: View {
                         Text(String(format: "%02d", idx + 1))
                             .font(Theme.body(12, weight: .medium))
                             .tracking(1.5)
-                            .foregroundStyle(Theme.honey.opacity(0.85))
+                            .foregroundStyle(Theme.muted)
                         Text(tag)
-                            .font(Theme.headline(24))
+                            .font(Theme.headline(24, weight: .light))
                             .kerning(-0.4)
                             .foregroundStyle(Theme.ink)
                         Spacer()
                     }
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 16)
                     .overlay(alignment: .bottom) {
                         if idx < retreat.tags.count - 1 {
-                            Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
+                            Rectangle().fill(Theme.line).frame(height: 0.5)
                         }
                     }
                 }
@@ -588,7 +599,7 @@ struct RetreatDetailView: View {
             // Details grid
             VStack(alignment: .leading, spacing: 14) {
                 sectionEyebrow("Details")
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible())], spacing: 4) {
                     detailCell(label: "Dates", value: detailWhen)
                     detailCell(label: "Place", value: retreat.country)
                     detailCell(label: "Guests", value: "\(retreat.maxGuests) at most")
@@ -598,8 +609,8 @@ struct RetreatDetailView: View {
 
             closingCTA
         }
-        .padding(.horizontal, 26)
-        .padding(.top, 30)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 48)
     }
 
     // MARK: Shared closing CTA
@@ -607,7 +618,7 @@ struct RetreatDetailView: View {
     private var closingCTA: some View {
         VStack(spacing: 16) {
             Text("\(retreat.maxGuests) places. One table.")
-                .font(Theme.headline(22))
+                .font(Theme.headline(22, weight: .light))
                 .kerning(-0.3)
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.center)
@@ -624,11 +635,18 @@ struct RetreatDetailView: View {
         return "\(whenLabel), \(year)"
     }
 
+    /// Opens a section as `SectionLabel` does everywhere else: a hairline
+    /// across the measure, then a small tracked caps label.
     private func sectionEyebrow(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(Theme.eyebrow(10))
-            .tracking(3)
-            .foregroundStyle(Color.white.opacity(0.6))
+        VStack(alignment: .leading, spacing: 14) {
+            Rectangle()
+                .fill(Theme.line)
+                .frame(height: 0.5)
+            Text(text.uppercased())
+                .font(Theme.eyebrow(10))
+                .tracking(3)
+                .foregroundStyle(Theme.ink)
+        }
     }
 
     private func detailCell(label: String, value: String) -> some View {
@@ -644,8 +662,10 @@ struct RetreatDetailView: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .soulGlassCard(radius: 16)
+        .padding(.vertical, 14)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.line).frame(height: 0.5)
+        }
     }
 
     // MARK: - Pinned reserve bar
@@ -674,15 +694,15 @@ struct RetreatDetailView: View {
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 11)
-                    .background(Capsule().fill(.white))
+                    .padding(.vertical, 12)
+                    .background(Rectangle().fill(Theme.ink))
             }
-            .buttonStyle(SoulPressableStyle(scale: 0.95, hapticOnPress: false, dim: false))
+            .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .soulGlassCapsule(stroke: Theme.glassBorderHigh)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .soulGlassCard(stroke: Theme.glassBorderHigh)
+        .padding(.horizontal, Theme.gutter)
         .padding(.bottom, 24)
     }
 
@@ -692,13 +712,12 @@ struct RetreatDetailView: View {
                 Haptics.tap()
                 dismiss()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.left").font(.system(size: 15, weight: .light))
                     Text("Back")
                         .font(Theme.body(13))
-                        .underline()
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.ink)
                 .onPhoto()
                 // The drawn label is ~20pt tall and only its glyphs answered
                 // (rendering gotcha #5); give the thumb a full 44pt target.
@@ -707,17 +726,17 @@ struct RetreatDetailView: View {
             }
             .buttonStyle(.plain)
             Spacer()
+            // A bare glyph, drawn as `GlyphButton` draws one (a ShareLink
+            // can't be a GlyphButton): a 44pt square answers, not the glyph.
             ShareLink(item: shareMessage) {
                 Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 17, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 38, height: 38)
-                    .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
-                    // Glass adds no tappable fill on iOS 26: without this only
-                    // the glyph answered, an 11pt target in a 38pt circle.
-                    .contentShape(Circle())
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .shadow(color: .black.opacity(0.45), radius: 6)
             }
-            .buttonStyle(.soulPressableChip)
+            .buttonStyle(.soulPressable)
         }
     }
 
@@ -746,21 +765,6 @@ struct RetreatDetailView: View {
 
     private var shareMessage: String {
         "\(retreat.name), \(retreat.country) — \(detailWhen). \(retreat.blurb)"
-    }
-}
-
-// MARK: - Glass meta pill
-
-private struct MetaPill: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(Theme.body(11))
-            .tracking(0.3)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .soulGlassCapsule(stroke: Theme.glassBorderHigh)
     }
 }
 

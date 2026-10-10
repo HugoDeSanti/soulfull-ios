@@ -56,8 +56,9 @@ struct RetreatExperienceHubView: View {
             }
             .ignoresSafeArea(.container, edges: .top)
 
+            // The glyph sits inside a 44pt target; this lines it up with the gutter.
             topBar
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.gutter - 14)
                 .padding(.top, 8)
         }
         .preferredColorScheme(.dark)
@@ -85,18 +86,20 @@ struct RetreatExperienceHubView: View {
                     .font(Theme.eyebrow(10)).tracking(3)
                     .foregroundStyle(RetreatPalette.terracotta)
                 Text("Welcome to the \(retreat.name) Experience")
-                    .font(Theme.headline(34, weight: .semibold)).kerning(-0.6)
-                    .foregroundStyle(.white)
+                    .font(Theme.headline(34, weight: .light)).kerning(-0.8)
+                    .foregroundStyle(RetreatPalette.cream)
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    pill(exp?.dateRange ?? retreat.when)
-                    pill("\(daysToGo) days to go")
-                    pill("Deposit paid", icon: "checkmark")
-                }
+                // The particulars in one line — they were three glass pills.
+                Text([exp?.dateRange ?? retreat.when, "\(daysToGo) days to go", "Deposit paid"]
+                        .joined(separator: "  ·  "))
+                    .font(Theme.body(11)).tracking(0.6)
+                    .foregroundStyle(RetreatPalette.cream)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Theme.gutter)
             .padding(.bottom, 22)
         }
         .frame(height: 380)
@@ -105,7 +108,7 @@ struct RetreatExperienceHubView: View {
     // MARK: - Body content
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 44) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Your place is secured, \(memberName).")
                     .font(Theme.headline(24, weight: .light)).kerning(-0.3)
@@ -120,9 +123,9 @@ struct RetreatExperienceHubView: View {
 
             experienceGrid
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 26)
-        .padding(.bottom, 60)
+        .padding(.horizontal, Theme.gutter)
+        .padding(.top, 28)
+        .padding(.bottom, 64)
     }
 
     private var featuredTodo: some View {
@@ -136,19 +139,19 @@ struct RetreatExperienceHubView: View {
                 VStack(alignment: .leading, spacing: 11) {
                     eyebrow("Before You Go")
                     Text("Your pre-retreat to-do's")
-                        .font(Theme.headline(24, weight: .semibold)).kerning(-0.4)
-                        .foregroundStyle(.white)
+                        .font(Theme.headline(24, weight: .light)).kerning(-0.4)
+                        .foregroundStyle(RetreatPalette.cream)
                     Text("A short checklist to complete before you go — calls, forms, flights and more.")
-                        .font(Theme.body(13)).foregroundStyle(.white.opacity(0.85)).lineSpacing(2)
+                        .font(Theme.body(13)).foregroundStyle(RetreatPalette.cream.opacity(0.85)).lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                     progressBar(done: done, total: total)
                     HStack {
                         Text("\(done) of \(total) complete")
-                            .font(Theme.body(11)).foregroundStyle(.white.opacity(0.8))
+                            .font(Theme.body(11)).foregroundStyle(RetreatPalette.cream.opacity(0.8))
                         Spacer()
-                        HStack(spacing: 5) {
+                        HStack(spacing: 6) {
                             Text("OPEN").font(Theme.eyebrow(10)).tracking(1.5)
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                            Image(systemName: "arrow.right").font(.system(size: 10, weight: .regular))
                         }
                         .foregroundStyle(RetreatPalette.terracotta)
                     }
@@ -156,30 +159,31 @@ struct RetreatExperienceHubView: View {
                 .padding(20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(RetreatPalette.glassLine, lineWidth: 1))
+            .clipped()
+            .overlay(Rectangle().strokeBorder(RetreatPalette.glassLine, lineWidth: Theme.hairline))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.soulPressable)
     }
 
+    /// A hairline track with a solid run across it — no rounded ends.
     private func progressBar(done: Int, total: Int) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.2))
-                Capsule()
-                    .fill(LinearGradient(colors: [RetreatPalette.olive, RetreatPalette.terracotta],
-                                         startPoint: .leading, endPoint: .trailing))
+                Rectangle().fill(RetreatPalette.cream.opacity(0.2))
+                Rectangle()
+                    .fill(RetreatPalette.terracotta)
                     .frame(width: total == 0 ? 0 : geo.size.width * CGFloat(done) / CGFloat(total))
             }
         }
-        .frame(height: 5)
+        .frame(height: 2)
+        .animation(Theme.Motion.reveal, value: done)
     }
 
     // MARK: - Experience grid
 
     private var experienceGrid: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             eyebrow("Your Experience")
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
                       spacing: 12) {
@@ -201,21 +205,19 @@ struct RetreatExperienceHubView: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 0) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 17, weight: .light))
                     .foregroundStyle(RetreatPalette.terracotta)
-                    .frame(width: 36, height: 36)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
-                Spacer(minLength: 14)
+                Spacer(minLength: 18)
                 Text(title)
-                    .font(Theme.headline(18, weight: .semibold)).kerning(-0.3)
+                    .font(Theme.headline(18, weight: .regular)).kerning(-0.3)
                     .foregroundStyle(RetreatPalette.cream)
                 Text(sub)
                     .font(Theme.body(11)).foregroundStyle(RetreatPalette.muted)
                     .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
-            .padding(16)
-            .soulGlassCard(radius: 16, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+            .padding(20)
+            .soulGlassCard(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
         }
         .buttonStyle(.soulPressable)
     }
@@ -232,25 +234,24 @@ struct RetreatExperienceHubView: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: "envelope")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 17, weight: .light))
                     .foregroundStyle(RetreatPalette.terracotta)
-                    .frame(width: 36, height: 36)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+                    .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Questions before you arrive?")
-                        .font(Theme.headline(17, weight: .semibold)).kerning(-0.3)
+                        .font(Theme.headline(17, weight: .regular)).kerning(-0.3)
                         .foregroundStyle(RetreatPalette.cream)
                     Text("Email \(LegalLinks.supportEmail)")
                         .font(Theme.body(11)).foregroundStyle(RetreatPalette.muted)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .light))
                     .foregroundStyle(RetreatPalette.muted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .soulGlassCard(radius: 16, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+            .padding(20)
+            .soulGlassCard(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
         }
         .buttonStyle(.soulPressable)
     }
@@ -259,32 +260,10 @@ struct RetreatExperienceHubView: View {
 
     private var topBar: some View {
         HStack {
-            Button {
-                Haptics.tap()
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .soulGlass(in: Circle(), tint: RetreatPalette.glassTint, interactive: true, stroke: RetreatPalette.glassLine)
-            }
-            .buttonStyle(.soulPressableChip)
+            GlyphButton(systemName: "arrow.left") { dismiss() }
+                .accessibilityLabel("Back")
             Spacer()
         }
-    }
-
-    private func pill(_ text: String, icon: String? = nil) -> some View {
-        HStack(spacing: 6) {
-            if let icon {
-                Image(systemName: icon).font(.system(size: 10, weight: .bold))
-            }
-            Text(text).font(Theme.body(11)).tracking(0.3)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .soulGlassCapsule(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
     }
 
     private func eyebrow(_ text: String) -> some View {

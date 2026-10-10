@@ -6,7 +6,7 @@
 //  whose layout branches on a `zoomedOut` flag (1-column feature spread vs
 //  multi-column contact sheet — a LazyVGrid with stable IDs animates the
 //  morph for free). The pinch is interactive: live magnification scrubs
-//  scale/blur, then commits the flag with a spring and a haptic.
+//  scale/blur, then commits the flag with a slow ease and a haptic.
 //
 
 import SwiftUI
@@ -15,7 +15,7 @@ private struct PinchBrowsableModifier: ViewModifier {
     @Binding var zoomedOut: Bool
     @State private var pinch: CGFloat = 1
 
-    private let commitSpring = Animation.spring(response: 0.5, dampingFraction: 0.82)
+    private let commit = Theme.Motion.settle
 
     /// Temporary scale while fingers are down; exactly 1 at rest.
     private var scrub: CGFloat {
@@ -41,7 +41,7 @@ private struct PinchBrowsableModifier: ViewModifier {
                     }
                     .onEnded { value in
                         let m = value.magnification
-                        withAnimation(commitSpring) {
+                        withAnimation(commit) {
                             if !zoomedOut, m < 0.8 {
                                 Haptics.bump()
                                 zoomedOut = true

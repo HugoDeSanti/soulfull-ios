@@ -75,7 +75,7 @@ final class OnboardingViewModel {
     func next() {
         guard canAdvance else { return }
         Haptics.bump()
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+        withAnimation(Theme.Motion.settle) {
             switch step {
             case .name:      step = .intention
             case .intention: step = .state
@@ -88,7 +88,7 @@ final class OnboardingViewModel {
 
     func back() {
         Haptics.tap()
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+        withAnimation(Theme.Motion.settle) {
             switch step {
             case .name:      break
             case .intention: if firstStep == .name { step = .name }

@@ -108,7 +108,7 @@ SoulfullGatherings/
 │                                  # NavigationStack never reaches the screens inside — so it pushes them down, never over Back)
 ├── Core/
 │   ├── Models/Models.swift        # Every domain model. `.mock` fixtures are for previews / DEBUG screens only
-│   ├── DesignSystem/              # Theme, Components, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
+│   ├── DesignSystem/              # Theme, Components, Atmosphere, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
 │   │                              # PresenceBadge, CatalogImage, AvatarView (tone from a STABLE hash: hashValue is salted per launch)
 │   ├── Services/                  # SupabaseService (actor), SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,
 │   │                              # LocalUserStore, and @Observable singletons: AppClock, PracticeProgressStore, ProgramStore (+ the pure
@@ -131,27 +131,51 @@ SoulfullGatherings/
 
 ## Design system
 
-The direction is "quiet luxury, editorial": atmosphere (shader surfaces that drift at breath pace, 4–6s cycles, never strobing), physics (every tap squishes, every push zooms) and magazine layout (oversized tight-kerned headlines, eyebrows, full-bleed photography, numbered folios over dots). All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors or font sizes.** The colors were converted by hand from oklch tokens to sRGB, so if a token changes, recompute it by hand.
+The direction is **"still"** (owner's brief, 2026-10-10: the rounded, bouncy app read as playful; it should feel serious, with colours like the **Open** meditation app). It has four parts:
+- **Black and near-white.** Colour comes only from photography and the `Atmosphere` washes, never from the chrome.
+- **Square.** Nothing is rounded.
+- **Still motion.** Things fade in and settle at breath pace; nothing springs, bounces, squishes or zooms.
+- **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines.
+
+The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows) is gone; don't bring its idioms back. All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors, font sizes or animation curves.
 
 | Token | Usage |
 |---|---|
-| `Theme.bg` / `bgDeep` | Near-black canvas (faint olive) |
+| `Theme.bg` / `bgDeep` | True black canvas / the docked bar's ground |
 | `Theme.surface` | Card fills |
-| `Theme.ink` / `inkSoft` | Cream primary / secondary text |
-| `Theme.muted` | Tertiary text: **on glass or solid only** |
+| `Theme.ink` / `inkSoft` | Near-white primary / warm grey secondary text |
+| `Theme.muted` | Tertiary text: **on black, glass or a card only** |
 | `Theme.inkOnPhoto` | Body copy directly on a photo |
-| `Theme.accent` / `accentSoft` | Olive brand accent |
-| `Theme.honey` | Amber for selected states |
+| `Theme.accent` / `accentSoft` | Moss (the logo's olive); `accentSoft` also marks "complete" and tints toggles |
+| `Theme.ember` | Copper, the one warm mark: small text marks, counts, an unread dot, the liked heart. **Not** for selected surfaces, which use ink (an ink hairline or a 1pt underline) |
 | `Theme.danger` | Muted brick for irreversible actions (Delete account) |
-| `Theme.line` / `glassBorder` / `glassBorderHigh` | Hairlines / glass strokes |
+| `Theme.line` / `glassBorder` / `glassBorderHigh` / `hairline` (0.75) | Rules / surface strokes / stroke width |
+| `Theme.gutter` (24) / `sectionGap` (64) | Page side margin / space between a page's sections |
+| `Theme.Motion.press` / `release` / `settle` / `reveal` / `stage` / `breath` | The only animation curves: all eases. `settle` (0.6s) when a state changes, `reveal` (1.1s) when something arrives, `breath` (6s) is every idle loop's period |
 | `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
-| `Theme.cardRadius` (22) / `pillRadius` | Shapes |
 
-- **Everything is Geist** (Thin to Bold). There is no serif and no SF Pro. Headlines use negative `kerning` (−0.2/−0.3); body text and eyebrows use positive `tracking` (2–3).
-- **Glass** always goes through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCapsule` / `.soulGlassCard`): real `glassEffect` on iOS 26+, material + hairline below that. It is the only place that branches on OS. Feature code never does.
-- **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which gives a spring squish and a haptic on touch-down. Don't put `onTapGesture` on cards.
-- **Shaders** go only through the `ShaderFX` wrappers (grain / aurora / shimmer / dissolve / ripple), which all respect Reduce Motion. Film grain goes over the aurora only, never over photography (it read as too busy there). `PulseModifier` loops forever, so use it only for persistent live indicators.
-- **Navigation:** pushes from cards use `navigationTransition(.zoom)` with `matchedTransitionSource`. Tab roots report pushes through a `navHidden` binding (one per tab, because every tab keeps its stack) so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
+- **Everything is Geist** (Thin to Bold). There is no serif and no SF Pro. Display headlines are Light or Regular with negative `kerning`; nothing larger than a button label is heavier than Medium. Body text and eyebrows use positive `tracking` (2–3).
+- **Shape: no rounded corners.** Use `Rectangle()` for photos, cards, buttons, chips, bars and progress tracks. Sheets get `.presentationCornerRadius(0)`.
+  - `Circle()` is only for faces (`AvatarView`, guide portraits), dots of 10pt or less, and the player's breath ring.
+  - A number is a folio ("01"), never a numeral in a circle.
+  - A check box is a square hairline box.
+  - Surface strokes are `Theme.hairline`.
+- **Grounds:** a screen that isn't a photograph sits on `Atmosphere(tone:)` (`Core/DesignSystem/Atmosphere.swift`): black, with a quiet single-hue wash falling from the top that breathes over two breaths.
+  - Tones by area: `.moss` for Home, You and Account; `.ember` for Digital Retreats, guides and the enquiry; `.slate` for Practice; `.dusk` for Community.
+  - `PhotoBackdrop` is for screens where the photograph *is* the content: Welcome, Onboarding, the retreat stack and detail. A blurred photo is never a page's ground.
+  - Home's ritual card is the one card with a full-strength wash (`intensity: 1, fillsScreen: false`).
+  - The practice player keeps `AuroraBackground`.
+- **Surfaces** always go through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCard()`): a flat dark veil (a light frost under black) with a hairline, square, the same on every OS.
+  - Liquid Glass (`glassEffect`) was dropped on purpose: its lensing and touch-bounce read as playful.
+  - Prefer no surface at all: a hairline and space separate sections and rows (`SectionLabel` is a rule plus a caps label).
+- **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which **dims** to 0.55 on touch-down with a soft haptic and fades back on release. It never scales. Don't put `onTapGesture` on cards. Back, close and view toggles are `GlyphButton`: a bare glyph in a 44pt square, with `arrow.left` for back and `xmark` for close.
+- **Motion:**
+  - Curves come only from `Theme.Motion`. No `.spring`, `.snappy`, `.bouncy`, `scaleEffect` for emphasis, `.symbolEffect(.bounce)`, `.scale`/`.move`/`.offset` transitions, or shimmer.
+  - Transitions are `.opacity`, or the `editorialRise` focus-fade (blur + opacity, nothing travels) on pure-SwiftUI leaves.
+  - Stage changes crossfade (`AnyTransition.soulStage`). `listReveal()` and scroll transitions change opacity only.
+  - `.breathing` stays within a few percent of scale. `PulseModifier` is opacity-only and loops forever, so use it only for persistent live indicators.
+  - The only shader left is the player's aurora (`ShaderFX`, Reduce Motion aware). Film grain, shimmer, the noise dissolve and the ripple were removed.
+- **Navigation:** pushes are the plain system push (the zoom transitions were removed). Tab roots report pushes through a `navHidden` binding (one per tab, because every tab keeps its stack) so `BottomNav` hides instantly. Retreats and Practice pinch out into a catalog grid, always paired with a visible toggle button.
 - **The top of a screen stays open at rest.** Nothing sits behind the status bar until content scrolls under it: every tab-shell `ScrollView` carries `.statusBarScrim()` (`Components.swift`), which fades a soft `Theme.bg` band in over the first 36pt of scroll. **The band is only as deep as the status bar**, so it covers the clock and nothing of the page: without it the clock prints over the headlines, but a band 40pt deeper read to the owner as too big (2026-10-10). A new scrolling screen needs it, applied to the `ScrollView` itself and before any pinned overlay. A hero screen with a pinned Back bar passes a later `fadeIn` and `reach:` (the digital retreat pages), and the retreat and recipe pages run their own. An always-on band in `MainTabView` was removed at the owner's request (2026-10-09): it read as a black bar cut across every photo.
 - **Type over photography is one rule in three parts, used together:**
   1. `PhotoBackdrop` draws a `topScrim` (default 0.45 over 340pt). Pass `0` only for a screen with an empty top.
@@ -165,7 +189,7 @@ The direction is "quiet luxury, editorial": atmosphere (shader surfaces that dri
 2. **`visualEffect` offsets and scales escape ancestor clips.** Use scroll-driven image motion only on full-bleed surfaces. Cards animate as whole units (`listReveal`).
 3. **`scaledToFill` grows layout, not just drawing,** and pushes siblings off-screen. Contain fill images in `Color.clear.overlay { … }.clipped()`, as `PhotoBackdrop` does.
 4. **`GeometryReader` inside an `HStack` over-claims width.** Prefer leading-anchored `scaleEffect` fills.
-5. **A view only answers taps where it draws something.** A framed `Image` responds on its glyph alone, and on iOS 26 `glassEffect` adds no tappable fill. So `CircleIconButton` was an 11pt target inside a 38pt circle, and a glass `PressableCard` ignored taps between its lines of text. `SoulGlass` now adds `.contentShape(shape)` on iOS 26, so glass surfaces hit-test like the material fallback; **any other tappable thing that draws less than its frame (a framed glyph, plain text with padding) still needs its own `.contentShape(...)` and a 44pt target.** When a button feels dead, check its accessibility frame (a UI test's `app.debugDescription`), not its visual frame.
+5. **A view only answers taps where it draws something.** A framed `Image` responds on its glyph alone, and `glassEffect` added no tappable fill. So the old `CircleIconButton` was an 11pt target inside a 38pt circle, and a glass `PressableCard` ignored taps between its lines of text. `SoulGlass` adds `.contentShape(shape)`, and `GlyphButton` frames its glyph in a 44pt `contentShape`. **Any other tappable thing that draws less than its frame still needs its own `.contentShape(Rectangle())` and a 44pt target.** That covers a bare glyph, a word with an underline, or plain text with padding, which the still design uses a lot. When a button feels dead, check its accessibility frame (a UI test's `app.debugDescription`), not its visual frame.
 
 ## Design ↔ code sync (Claude Design mirror)
 

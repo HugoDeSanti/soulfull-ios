@@ -338,11 +338,7 @@ private struct GatheringsRoot: View {
 /// being something you're reading about and starts being yours.
 private struct ProgramsRoot: View {
     enum Route: Hashable {
-        /// `zoom` is true only when pushed from a catalog card that registered
-        /// a matched source. The continue card and the cross-tab hand-off
-        /// register none, and a zoom transition with no source to grow from is
-        /// a worse push than a plain one.
-        case detail(Program, zoom: Bool)
+        case detail(Program)
         /// The day by NUMBER rather than by value: `ProgramDay` is content that
         /// can be re-authored under a live member, and a stale copy sitting in
         /// the navigation path would keep rendering the old one.
@@ -359,17 +355,15 @@ private struct ProgramsRoot: View {
     @Binding var pending: String?
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
     @State private var path: [Route] = []
-    @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
             // Replace rather than append, as on the Gatherings tab: a hand-off
             // can arrive while the tab is holding a screen from an earlier visit.
             ProgramsView(
-                onOpenProgram: { path = [.detail($0, zoom: $1)] },
+                onOpenProgram: { path = [.detail($0)] },
                 onOpenDay: { program, day in path = [.day(program, day.day)] },
-                pending: $pending,
-                zoomNamespace: zoomNS
+                pending: $pending
             )
             .connectionBannerInset()
             .navigationDestination(for: Route.self) { route in
@@ -402,17 +396,12 @@ private struct ProgramsRoot: View {
     @ViewBuilder
     private func destination(_ route: Route) -> some View {
         switch route {
-        case .detail(let program, let zoom):
-            let detail = ProgramDetailView(
+        case .detail(let program):
+            ProgramDetailView(
                 program: program,
                 onOpenDay: { path.append(.day(program, $0.day)) },
                 requireAccount: requireAccount
             )
-            if zoom {
-                detail.navigationTransition(.zoom(sourceID: "program-\(program.id)", in: zoomNS))
-            } else {
-                detail
-            }
 
         case .day(let program, let number):
             if let day = program.authoredDays.first(where: { $0.day == number }) {
@@ -425,7 +414,7 @@ private struct ProgramsRoot: View {
 
         case .instructor(let id, let from):
             InstructorProfileView(instructorID: id, backLabel: from,
-                                  onOpenProgram: { path.append(.detail($0, zoom: false)) },
+                                  onOpenProgram: { path.append(.detail($0)) },
                                   onOpenPractice: { content in requireAccount { open(content) } },
                                   requireAccount: requireAccount)
         }
@@ -531,11 +520,10 @@ private struct PracticeRoot: View {
     /// digital retreat is opened from, as with Home's shelf.
     var onOpenProgram: (String) -> Void = { _ in }
     @State private var path: [Route] = []
-    @Namespace private var zoomNS
 
     var body: some View {
         NavigationStack(path: $path) {
-            PracticeView(onSelect: open, zoomNamespace: zoomNS)
+            PracticeView(onSelect: open)
                 .connectionBannerInset()
                 .onAppear(perform: consumePending)
                 .onChange(of: pending) { consumePending() }
@@ -586,30 +574,8 @@ private struct PracticeRoot: View {
         }
     }
 
-    /// Zoom-hero source registered by the landing card for each list route;
-    /// detail routes push normally from within their list.
-    private func zoomSourceID(_ route: Route) -> String? {
-        switch route {
-        case .sessions(let category): return category.rawValue
-        case .journalList:            return PracticeMenuItem.journal.rawValue
-        case .exerciseList:           return PracticeMenuItem.movement.rawValue
-        case .recipeList:             return PracticeMenuItem.recipes.rawValue
-        default:                      return nil
-        }
-    }
-
     @ViewBuilder
     private func destination(_ route: Route) -> some View {
-        if let sourceID = zoomSourceID(route) {
-            destinationContent(route)
-                .navigationTransition(.zoom(sourceID: sourceID, in: zoomNS))
-        } else {
-            destinationContent(route)
-        }
-    }
-
-    @ViewBuilder
-    private func destinationContent(_ route: Route) -> some View {
         switch route {
         case .sessions(let category):
             PracticeListView(category: category, requireAccount: requireAccount)

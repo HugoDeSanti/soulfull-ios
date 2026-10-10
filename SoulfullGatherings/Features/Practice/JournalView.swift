@@ -17,19 +17,19 @@ struct JournalListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.journal.title,
             blurb: PracticeMenuItem.journal.blurb,
-            systemImage: PracticeMenuItem.journal.systemImage,
-            backdrop: PracticeMenuItem.journal.imageName
+            systemImage: PracticeMenuItem.journal.systemImage
         ) {
             if store.library.journals.isEmpty {
                 WrittenLibraryPlaceholder(item: .journal, noun: "prompts")
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     ForEach(store.library.journals) { prompt in
                         PressableCard(action: { onOpen(prompt) }) {
                             promptRow(prompt)
                         }
                         .listReveal()
                     }
+                    PracticeRule()
                 }
             }
         }
@@ -37,15 +37,14 @@ struct JournalListView: View {
     }
 
     private func promptRow(_ prompt: JournalPrompt) -> some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 16) {
             Image(systemName: "pencil.line")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
+                .font(.system(size: 15, weight: .light))
+                .foregroundStyle(Theme.inkSoft)
+                .frame(width: 24)
+                .padding(.top, 2)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(prompt.theme.uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2)
@@ -63,14 +62,14 @@ struct JournalListView: View {
                     .padding(.top, 2)
             }
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 12, weight: .light))
                 .foregroundStyle(Theme.muted)
                 .padding(.top, 14)
         }
-        .padding(14)
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity)
-        .soulGlassCard(radius: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .top) { PracticeRule() }
+        .contentShape(Rectangle())
     }
 }
 
@@ -100,7 +99,7 @@ struct JournalDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 28) {
                 PracticeBackBar(label: "Journal")
 
                 // The question recedes while writing so the words take the
@@ -125,7 +124,7 @@ struct JournalDetailView: View {
                     // these lines would be dead without a shape to fill them.
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(SoulPressableStyle(scale: 0.99, dim: false))
+                .buttonStyle(SoulPressableStyle(dim: false))
                 // A button only while writing. Out of the editor the block is
                 // just the question: `.disabled` made VoiceOver read it as
                 // "dimmed, button" with a hint about writing, so touches are
@@ -133,14 +132,14 @@ struct JournalDetailView: View {
                 .allowsHitTesting(writing)
                 .accessibilityRemoveTraits(writing ? [] : .isButton)
                 .accessibilityHint(writing ? "Brings the prompt back while you write" : "")
-                .animation(.easeInOut(duration: 0.35), value: receded)
+                .animation(Theme.Motion.settle, value: receded)
 
-                GlassCard(radius: 18, padding: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
+                GlassCard(padding: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("YOUR REFLECTION")
                             .font(Theme.eyebrow(10))
                             .tracking(2)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.ink)
                         ZStack(alignment: .topLeading) {
                             if entry.isEmpty {
                                 Text("Write freely. No one but you sees this.")
@@ -152,7 +151,7 @@ struct JournalDetailView: View {
                             TextEditor(text: $entry)
                                 .font(Theme.body(15))
                                 .foregroundStyle(Theme.ink)
-                                .tint(Theme.honey)
+                                .tint(Theme.ember)
                                 .scrollContentBackground(.hidden)
                                 .frame(minHeight: 200)
                                 .focused($writing)
@@ -166,7 +165,7 @@ struct JournalDetailView: View {
                     if !entry.isEmpty {
                         Text("\(entry.split(whereSeparator: \.isWhitespace).count) words")
                             .contentTransition(.numericText())
-                            .animation(.default, value: entry.count)
+                            .animation(Theme.Motion.settle, value: entry.count)
                     }
                 }
                 .font(Theme.body(11))
@@ -176,17 +175,17 @@ struct JournalDetailView: View {
                 // and a card between the question and the words would push
                 // the editor down every time the question comes back.
                 GuideCard(instructorID: prompt.instructorID, from: "Journal prompt")
-                    .padding(.top, 10)
+                    .padding(.top, 24)
 
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
+            Atmosphere(tone: .slate)
         }
         .scrollDismissesKeyboard(.interactively)
         .onAppear { entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? "" }
@@ -221,7 +220,7 @@ struct JournalDetailView: View {
                     HStack {
                         Spacer()
                         Button("Done") { writing = false }
-                            .foregroundStyle(Theme.honey)
+                            .foregroundStyle(Theme.ember)
                     }
                 }
             }
@@ -229,37 +228,33 @@ struct JournalDetailView: View {
     }
 
     /// The question itself — eyebrow, title, and the prompt as a pull-quote
-    /// against a honey rule.
+    /// against a thin ember rule.
     private var promptBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(prompt.theme.uppercased())
                 .font(Theme.eyebrow(11))
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
-                .onPhoto()
             Text(prompt.title)
-                .font(Theme.headline(30))
+                .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.6)
                 .fixedSize(horizontal: false, vertical: true)
-                .onPhoto()
 
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 16) {
                 Rectangle()
-                    .fill(Theme.honey.opacity(0.65))
-                    .frame(width: 2)
+                    .fill(Theme.ember.opacity(0.7))
+                    .frame(width: 1)
                 Text(prompt.prompt)
                     .font(Theme.body(15))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true)
-                    .onPhoto()
             }
-            .padding(.top, 8)
+            .padding(.top, 12)
 
             PresenceLine(kind: .journal, contentID: prompt.id)
-                .padding(.top, 6)
-                .onPhoto()
+                .padding(.top, 8)
         }
     }
 
@@ -268,13 +263,12 @@ struct JournalDetailView: View {
     private var peekHint: some View {
         HStack(spacing: 6) {
             Image(systemName: "eye")
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: 9, weight: .regular))
             Text("TAP TO RE-READ")
                 .font(Theme.eyebrow(9))
                 .tracking(2)
         }
         .foregroundStyle(Theme.inkSoft)
-        .onPhoto()
         .padding(.top, 10)
         .transition(.opacity)
     }

@@ -17,13 +17,12 @@ struct RecipeListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.recipes.title,
             blurb: PracticeMenuItem.recipes.blurb,
-            systemImage: PracticeMenuItem.recipes.systemImage,
-            backdrop: PracticeMenuItem.recipes.imageName
+            systemImage: PracticeMenuItem.recipes.systemImage
         ) {
             if store.library.recipes.isEmpty {
                 WrittenLibraryPlaceholder(item: .recipes, noun: "recipes")
             } else {
-                VStack(spacing: 14) {
+                VStack(spacing: 28) {
                     ForEach(store.library.recipes) { recipe in
                         PressableCard(action: { onOpen(recipe) }) {
                             recipeCard(recipe)
@@ -51,12 +50,12 @@ struct RecipeListView: View {
                 Text("\(recipe.angle) · \(recipe.minutes) MIN".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(2)
-                    .foregroundStyle(.white)
-                    .padding(14)
+                    .foregroundStyle(Theme.ink)
+                    .padding(16)
             }
             .frame(height: 160)
             .clipped()
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(recipe.title)
                     .font(Theme.headline(20))
                     .foregroundStyle(Theme.ink)
@@ -69,15 +68,15 @@ struct RecipeListView: View {
                 PresenceLine(kind: .recipe, contentID: recipe.id, faceSize: 18)
                     .padding(.top, 6)
             }
-            .padding(16)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .soulGlassCard(radius: 18)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        // Clip the hit-test region: `scaledToFill` + `.clipped()`/`.clipShape()`
-        // only clip visually, so the hero image's tap area overflows up into
-        // the back bar and the first card swallows the "Practices" tap.
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .soulGlassCard()
+        .clipped()
+        // Clip the hit-test region: `scaledToFill` + `.clipped()` only clip
+        // visually, so the hero image's tap area overflows up into the back
+        // bar and the first card swallows the "Practices" tap.
+        .contentShape(Rectangle())
     }
 }
 
@@ -106,23 +105,27 @@ struct RecipeDetailView: View {
                             .frame(height: 320)
                     }
 
-                    VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 36) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Text(recipe.angle.uppercased())
                             .font(Theme.eyebrow(11))
                             .tracking(3)
                             .foregroundStyle(Theme.muted)
                         Text(recipe.title)
-                            .font(Theme.headline(32))
+                            .font(Theme.headline(32, weight: .light))
                             .foregroundStyle(Theme.ink)
-                            .kerning(-0.3)
+                            .kerning(-0.7)
                             .fixedSize(horizontal: false, vertical: true)
 
+                        // Time and servings as a line of type, not two pills.
                         HStack(spacing: 10) {
-                            metaPill("clock", "\(recipe.minutes) min")
-                            metaPill("person.2", "\(recipe.servings) servings")
+                            metaItem("clock", "\(recipe.minutes) min")
+                            Text("·")
+                            metaItem("person.2", "\(recipe.servings) servings")
                         }
-                        .padding(.top, 2)
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.inkSoft)
+                        .padding(.top, 4)
 
                         PresenceLine(kind: .recipe, contentID: recipe.id, faceSize: 22)
                             .padding(.top, 4)
@@ -146,17 +149,21 @@ struct RecipeDetailView: View {
                     }
 
                     section("METHOD") {
-                        VStack(spacing: 14) {
+                        VStack(spacing: 0) {
                             ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
                                 NumberedStepRow(index: index + 1, title: step)
+                                    .padding(.vertical, 14)
+                                    .overlay(alignment: .top) {
+                                        if index > 0 { PracticeRule() }
+                                    }
                             }
                         }
                     }
 
                     Color.clear.frame(height: 120)
                 }
-                .padding(.top, 18)
-                .padding(.horizontal, 20)
+                .padding(.top, 28)
+                .padding(.horizontal, Theme.gutter)
             }
         }
             .scrollIndicators(.hidden)
@@ -173,18 +180,18 @@ struct RecipeDetailView: View {
                 Haptics.tap()
                 dismiss()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
-                    Text("Recipes").font(Theme.body(13)).underline()
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.left").font(.system(size: 15, weight: .light))
+                    Text("Recipes").font(Theme.body(13))
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.ink)
                 .onPhoto()
                 // The drawn label is ~20pt tall; give the thumb a full row.
                 .frame(minWidth: 44, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 // The link is pinned while the page scrolls under it. Over the
@@ -210,29 +217,29 @@ struct RecipeDetailView: View {
         Double(min(1, max(0, (scrollY - 170) / 60)))
     }
 
-    /// Tappable pantry row: ticking an ingredient springs the check in and
-    /// softens the label — a tiny mise-en-place ritual.
+    /// Tappable pantry row: ticking an ingredient fades a check into its
+    /// square and softens the label — a tiny mise-en-place ritual.
     private func ingredientRow(_ item: String) -> some View {
         let checked = gathered.contains(item)
         return Button {
             Haptics.select()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+            withAnimation(Theme.Motion.settle) {
                 if checked { gathered.remove(item) } else { gathered.insert(item) }
             }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
                 ZStack {
-                    Circle()
-                        .strokeBorder(checked ? Theme.honey : Theme.inkSoft.opacity(0.5), lineWidth: 1.2)
-                        .frame(width: 20, height: 20)
+                    Rectangle()
+                        .strokeBorder(checked ? Theme.ember : Theme.inkSoft.opacity(0.5), lineWidth: Theme.hairline)
+                        .frame(width: 18, height: 18)
                     if checked {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Theme.honey)
-                            .transition(.scale(scale: 0.3).combined(with: .opacity))
+                            .font(.system(size: 10, weight: .regular))
+                            .foregroundStyle(Theme.ember)
+                            .transition(.opacity)
                     }
                 }
-                .padding(.top, 1)
+                .padding(.top, 2)
 
                 Text(item)
                     .font(Theme.body(15))
@@ -241,35 +248,33 @@ struct RecipeDetailView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(checked ? .isSelected : [])
     }
 
-    private func metaPill(_ icon: String, _ text: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(Theme.body(11, weight: .medium))
-            .foregroundStyle(Theme.ink)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.glassBorder, lineWidth: 1))
+    private func metaItem(_ icon: String, _ text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .light))
+            Text(text)
+        }
     }
 
+    /// A section of the page: a hairline across the measure, a caps label,
+    /// and the content set open beneath — no box.
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
+            PracticeRule()
             Text(title)
                 .font(Theme.eyebrow(11))
                 .tracking(3)
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.glassBorder, lineWidth: 1))
     }
 }
 

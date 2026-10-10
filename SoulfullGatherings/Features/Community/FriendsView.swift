@@ -24,7 +24,7 @@ struct FriendsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 36) {
                 PracticeBackBar(label: "Community")
                 header
                 searchField
@@ -50,14 +50,12 @@ struct FriendsView: View {
                 Color.clear.frame(height: 120)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .scrollDismissesKeyboard(.interactively)
-        .background {
-            PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8)
-        }
+        .background { Atmosphere(tone: .dusk) }
         .refreshable { await vm.loadFriendships(force: true) }
         .task { await vm.loadFriendships() }
         .confirmationDialog("Remove \(removing?.other?.displayName ?? "this friend")?",
@@ -85,19 +83,18 @@ struct FriendsView: View {
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
             Text("Your people")
-                .font(Theme.headline(34))
+                .font(Theme.headline(34, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.3)
+                .kerning(-0.7)
             Text("Find the people you practice with. What they finish joins your Friends feed, and what you finish joins theirs.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
+                .foregroundStyle(Theme.inkSoft)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .onPhoto()
     }
 
-    /// UIKit-backed field, so no `.onPhoto()` on this container (gotcha #1).
+    /// UIKit-backed field, so no `.onPhoto()` or blur on this container (gotcha #1).
     private var searchField: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
@@ -117,29 +114,30 @@ struct FriendsView: View {
                     Haptics.tap()
                     vm.searchQuery = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .light))
                         .foregroundStyle(Theme.inkSoft)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.soulPressableChip)
+                .buttonStyle(.soulPressable)
+                .padding(.trailing, -12)
                 .accessibilityLabel("Clear search")
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 48)
-        .soulGlassCard(radius: 16, stroke: searchFocused ? Theme.glassBorderHigh : Theme.glassBorder)
-        .animation(.easeOut(duration: 0.2), value: searchFocused)
+        .padding(.horizontal, 16)
+        .frame(height: 50)
+        .soulGlassCard(stroke: searchFocused ? Theme.glassBorderHigh : Theme.glassBorder)
+        .animation(Theme.Motion.settle, value: searchFocused)
     }
 
     // MARK: - Results
 
     @ViewBuilder
     private var results: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Results")
-                .padding(.horizontal, -20)
+                .padding(.horizontal, -Theme.gutter)
             if vm.isSearching && vm.searchResults.isEmpty {
                 ProgressView()
                     .tint(Theme.inkSoft)
@@ -162,16 +160,17 @@ struct FriendsView: View {
                     } label: {
                         Text("Try again")
                             .font(Theme.body(13, weight: .medium))
-                            .foregroundStyle(Theme.honey)
-                            .padding(.vertical, 6)
+                            .foregroundStyle(Theme.ember)
+                            .frame(minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.soulPressableQuiet)
                 }
                 .foregroundStyle(Theme.inkSoft)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 4)
                 .soulGlassCard()
+                .padding(.top, 10)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("search-failure")
             } else if vm.searchResults.isEmpty {
@@ -180,10 +179,10 @@ struct FriendsView: View {
                     .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 4)
+                    .padding(.top, 10)
             } else {
                 ForEach(vm.searchResults) { member in
-                    MemberRow(member: member) {
+                    MemberRow(member: member, ruled: member.id != vm.searchResults.first?.id) {
                         standingControl(for: member)
                         safetyMenu(for: member)
                     }
@@ -217,12 +216,12 @@ struct FriendsView: View {
 
     private func section<Controls: View>(_ title: String, rows: [Friendship],
                                          @ViewBuilder controls: @escaping (Friendship) -> Controls) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: title)
-                .padding(.horizontal, -20)
+                .padding(.horizontal, -Theme.gutter)
             ForEach(rows) { row in
                 let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
-                MemberRow(member: member) {
+                MemberRow(member: member, ruled: row.id != rows.first?.id) {
                     HStack(spacing: 8) { controls(row) }
                     safetyMenu(for: member)
                 }
@@ -233,9 +232,9 @@ struct FriendsView: View {
 
     @ViewBuilder
     private var friendsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Friends")
-                .padding(.horizontal, -20)
+                .padding(.horizontal, -Theme.gutter)
             if let failure = vm.friendshipsFailure, vm.friendships.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.circle")
@@ -250,16 +249,17 @@ struct FriendsView: View {
                     } label: {
                         Text("Try again")
                             .font(Theme.body(13, weight: .medium))
-                            .foregroundStyle(Theme.honey)
-                            .padding(.vertical, 6)
+                            .foregroundStyle(Theme.ember)
+                            .frame(minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.soulPressableQuiet)
                 }
                 .foregroundStyle(Theme.inkSoft)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 4)
                 .soulGlassCard()
+                .padding(.top, 10)
             } else if vm.friends.isEmpty {
                 Text(vm.friendshipsLoaded
                      ? "No friends yet. Search for someone above to send the first request."
@@ -268,11 +268,11 @@ struct FriendsView: View {
                     .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 4)
+                    .padding(.top, 10)
             } else {
                 ForEach(vm.friends) { row in
                     let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
-                    MemberRow(member: member) {
+                    MemberRow(member: member, ruled: row.id != vm.friends.first?.id) {
                         pill("Remove") { removing = row }
                         safetyMenu(for: member)
                     }
@@ -289,9 +289,12 @@ struct FriendsView: View {
         MemberSafetyMenu(member: member,
                          onReport: { reporting = ReportTarget(member: member) },
                          onBlock: { blocking = member })
-            .padding(.leading, -6)
+            .padding(.leading, -8)
+            .padding(.trailing, -10)
     }
 
+    /// A square button: filled ink for the action a row is waiting on (Add,
+    /// Accept), an ink hairline for the rest.
     private func pill(_ title: String, filled: Bool = false, busy: Bool = false,
                       action: @escaping () -> Void) -> some View {
         Button {
@@ -301,32 +304,42 @@ struct FriendsView: View {
             Text(title)
                 .font(Theme.body(13, weight: .medium))
                 .foregroundStyle(filled ? Color.black : Theme.ink)
+                // Its own width, always: beside a name that takes the rest
+                // of the row, two square buttons were squeezed until
+                // "Accept" broke in half.
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, 14)
                 .frame(height: 34)
                 .background {
                     if filled {
-                        Capsule().fill(Theme.honey)
+                        Rectangle().fill(Theme.ink)
+                    } else {
+                        Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
                     }
                 }
-                .modifier(QuietGlassIfNeeded(enabled: !filled))
-                .contentShape(Capsule())
+                // A 44pt target around the 34pt block.
+                .padding(.vertical, 5)
+                .contentShape(Rectangle())
                 .opacity(busy ? 0.5 : 1)
         }
         .buttonStyle(.soulPressableQuiet)
         .disabled(busy)
     }
 
+    /// Where you stand with someone, said quietly beside their name: no box.
     private func chip(_ title: String, systemImage: String) -> some View {
         HStack(spacing: 5) {
             Image(systemName: systemImage)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 10, weight: .regular))
+            // Caps for the eye only: the label stays "Requested".
             Text(title)
-                .font(Theme.body(12, weight: .medium))
+                .font(Theme.eyebrow(10))
+                .tracking(1.6)
+                .textCase(.uppercase)
         }
         .foregroundStyle(Theme.inkSoft)
-        .padding(.horizontal, 12)
-        .frame(height: 30)
-        .soulGlassCapsule()
+        .frame(height: 44)
         .accessibilityElement(children: .combine)
     }
 
@@ -341,27 +354,18 @@ struct FriendsView: View {
         }
         .foregroundStyle(Theme.inkSoft)
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .soulGlassCard(tint: Theme.honey.opacity(0.06), stroke: Theme.honey.opacity(0.3))
+        .padding(.vertical, 12)
+        .soulGlassCard(stroke: Theme.ember.opacity(0.35))
         .transition(.opacity)
     }
 }
 
-/// Glass behind an unfilled pill only — a filled honey pill needs none.
-private struct QuietGlassIfNeeded: ViewModifier {
-    let enabled: Bool
-    func body(content: Content) -> some View {
-        if enabled {
-            content.soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
-        } else {
-            content
-        }
-    }
-}
-
-/// A face, a name, and whatever control the section puts beside them.
+/// A face, a name, and whatever control the section puts beside them — an
+/// open row on black, with a hairline above it when `ruled` (every row but a
+/// section's first).
 private struct MemberRow<Trailing: View>: View {
     let member: CommunityMember
+    var ruled = false
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -375,9 +379,12 @@ private struct MemberRow<Trailing: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             trailing
         }
-        .padding(10)
-        .padding(.leading, 2)
-        .soulGlassCard(radius: 18)
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) {
+            if ruled {
+                Rectangle().fill(Theme.line).frame(height: 0.5)
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(member.displayName)
     }

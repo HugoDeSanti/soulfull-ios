@@ -25,8 +25,7 @@ struct PracticeListView: View {
         PracticeListScaffold(
             title: category.title,
             blurb: category.blurb,
-            systemImage: category.systemImage,
-            backdrop: category.imageName
+            systemImage: category.systemImage
         ) {
             // A reload (the tab coming back) keeps the rows it has: swapping
             // them for a spinner jumped the scroll back to the top. The
@@ -42,22 +41,20 @@ struct PracticeListView: View {
             } else if vm.isEmpty {
                 emptyState
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     if let note = category.safetyNote {
                         SafetyNoteCard(text: note)
-                            .padding(.bottom, 6)
+                            .padding(.bottom, 36)
                     }
+                    // Open rows on the ground, divided by hairlines, rather
+                    // than a stack of boxes.
                     ForEach(vm.sessions) { session in
                         PressableCard(action: { requireAccount { nowPlaying = session } }) {
                             sessionRow(session)
                         }
-                        .scrollTransition(.interactive(timingCurve: .easeOut), axis: .vertical) { view, phase in
-                            let entering = max(phase.value, 0)
-                            return view
-                                .opacity(1 - entering * 0.5)
-                                .offset(y: entering * 18)
-                        }
+                        .listReveal()
                     }
+                    PracticeRule()
                 }
             }
         }
@@ -82,19 +79,19 @@ struct PracticeListView: View {
     // MARK: - Session row
 
     private func sessionRow(_ session: PracticeSession) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             ZStack {
                 CatalogImage(session.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 68, height: 68)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipped()
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Theme.ink)
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.glassBorder, lineWidth: 1)
+                Rectangle()
+                    .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
 
             VStack(alignment: .leading, spacing: 4) {
@@ -113,7 +110,7 @@ struct PracticeListView: View {
                     Text("·")
                     if let remaining = progress(session)?.remainingLabel, progress(session)?.isResumable == true {
                         Text(remaining)
-                            .foregroundStyle(Theme.honey)
+                            .foregroundStyle(Theme.ember)
                     } else {
                         Text(session.durationLabel)
                     }
@@ -137,18 +134,18 @@ struct PracticeListView: View {
             if progress(session)?.completed == true {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 15))
-                    .foregroundStyle(Theme.honey.opacity(0.85))
+                    .foregroundStyle(Theme.ember.opacity(0.85))
                     .accessibilityLabel("Completed")
             } else {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .light))
                     .foregroundStyle(Theme.muted)
             }
         }
-        .padding(14)
+        .padding(.vertical, 18)
         .frame(maxWidth: .infinity)
-        .soulGlassCard(radius: 18)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .top) { PracticeRule() }
+        .contentShape(Rectangle())
     }
 
     // MARK: - Empty state
@@ -159,7 +156,7 @@ struct PracticeListView: View {
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text("Nothing here yet.")
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("New \(category.title.lowercased()) sessions are on the way.")
                 .font(Theme.body(13))
@@ -178,7 +175,7 @@ struct PracticeListView: View {
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(Theme.muted)
             Text(failure.title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text(failure.detail)
                 .font(Theme.body(13))
@@ -191,9 +188,9 @@ struct PracticeListView: View {
                 Text("Try again")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .soulGlassCapsule()
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .soulGlassCard()
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)

@@ -48,12 +48,12 @@ struct CommunityView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 36) {
                 header
                 controls
                 if showsPushPrompt {
                     pushPrompt
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(.opacity)
                 }
                 feed
                 Color.clear.frame(height: 120)
@@ -63,20 +63,11 @@ struct CommunityView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .refreshable { await vm.load(isMember: isMember, force: true) }
-        .background {
-            ZStack {
-                PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.78)
-                AuroraBackground(speed: 0.5)
-                    .opacity(0.25)
-                    .blendMode(.plusLighter)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-            }
-        }
+        .background { Atmosphere(tone: .dusk) }
         .task(id: identity) { await vm.load(isMember: isMember) }
         .task(id: vm.scope) { await vm.loadActivity() }
         .task(id: identity) { await push.syncIfAuthorized(isMember: auth.hasAccount) }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: showsPushPrompt)
+        .animation(Theme.Motion.settle, value: showsPushPrompt)
         .memberSafety(vm: vm, reporting: $reporting, blocking: $blocking,
                       isMember: isMember, requireAccount: requireAccount)
     }
@@ -85,13 +76,12 @@ struct CommunityView: View {
 
     /// Asks once, here, where a like is worth something — not at launch.
     private var pushPrompt: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .top, spacing: 14) {
             Image(systemName: "bell.badge")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Theme.honey)
-                .frame(width: 40, height: 40)
-                .soulGlass(in: Circle())
-            VStack(alignment: .leading, spacing: 3) {
+                .font(.system(size: 16, weight: .light))
+                .foregroundStyle(Theme.ember)
+                .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Hear when someone likes your practice")
                     .font(Theme.headline(16))
                     .foregroundStyle(Theme.ink)
@@ -109,10 +99,12 @@ struct CommunityView: View {
                         Text("Turn on")
                             .font(Theme.body(13, weight: .medium))
                             .foregroundStyle(Color.black)
-                            .padding(.horizontal, 14)
-                            .frame(height: 32)
-                            .background(Theme.honey, in: Capsule())
-                            .contentShape(Capsule())
+                            .padding(.horizontal, 16)
+                            .frame(height: 36)
+                            .background(Theme.ink, in: Rectangle())
+                            // A 44pt target around the 36pt block.
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.soulPressableQuiet)
                     .accessibilityIdentifier("push-turn-on")
@@ -124,19 +116,20 @@ struct CommunityView: View {
                         Text("Not now")
                             .font(Theme.body(13, weight: .medium))
                             .foregroundStyle(Theme.inkSoft)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 6)
+                            .frame(minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.soulPressableQuiet)
                     .accessibilityIdentifier("push-not-now")
                 }
-                .padding(.top, 6)
+                .padding(.top, 8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
-        .soulGlassCard(tint: Theme.honey.opacity(0.05), stroke: Theme.honey.opacity(0.28))
-        .padding(.horizontal, 20)
+        .padding(20)
+        .soulGlassCard()
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("push-prompt")
     }
@@ -151,16 +144,15 @@ struct CommunityView: View {
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
                 Text("Community")
-                    .font(Theme.headline(38))
+                    .font(Theme.headline(38, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
+                    .kerning(-0.8)
                 Text("What the circle is practicing, as it happens.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkOnPhoto)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .onPhoto()
             Spacer(minLength: 0)
             if isMember {
                 bell
@@ -174,43 +166,43 @@ struct CommunityView: View {
                                size: 46)
                         .contentShape(Circle())
                 }
-                .buttonStyle(.soulPressableChip)
+                .buttonStyle(.soulPressable)
                 .accessibilityLabel("Your profile photo")
                 .accessibilityHint("Opens the You tab, where it can be changed")
                 .padding(.top, 4)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
     }
 
-    /// Likes on your practices. The badge is the unread count.
+    /// Likes on your practices: a bare bell, and the unread count in a small
+    /// ember block at its shoulder.
     private var bell: some View {
         Button {
             Haptics.tap()
             onOpenNotifications()
         } label: {
             ZStack(alignment: .topTrailing) {
-                Image(systemName: vm.unreadCount > 0 ? "bell.badge.fill" : "bell")
-                    .font(.system(size: 15, weight: .medium))
+                Image(systemName: "bell")
+                    .font(.system(size: 17, weight: .light))
                     .foregroundStyle(Theme.ink)
-                    .symbolEffect(.bounce, value: vm.unreadCount)
-                    .frame(width: 46, height: 46)
-                    .soulGlass(in: Circle(), interactive: true, stroke: Theme.glassBorderHigh)
+                    .frame(width: 44, height: 46)
                 if vm.unreadCount > 0 {
                     Text("\(vm.unreadCount)")
-                        .font(Theme.body(11, weight: .semibold))
+                        .font(Theme.body(10, weight: .medium))
                         .foregroundStyle(Color.black)
-                        .padding(.horizontal, 5)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background(Theme.honey, in: Capsule())
-                        .offset(x: 4, y: -4)
-                        .transition(.scale.combined(with: .opacity))
+                        .monospacedDigit()
+                        .padding(.horizontal, 4)
+                        .frame(minWidth: 16, minHeight: 16)
+                        .background(Theme.ember, in: Rectangle())
+                        .offset(x: -4, y: 6)
+                        .transition(.opacity)
                 }
             }
-            .contentShape(Circle())
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.soulPressableChip)
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: vm.unreadCount)
+        .buttonStyle(.soulPressable)
+        .animation(Theme.Motion.settle, value: vm.unreadCount)
         .accessibilityLabel(vm.unreadCount == 0 ? "Notifications" : "Notifications, \(vm.unreadCount) unread")
         .accessibilityIdentifier("community-notifications")
         .padding(.top, 4)
@@ -219,7 +211,7 @@ struct CommunityView: View {
     // MARK: - Scope toggle + friends link
 
     private var controls: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             ScopeToggle(scope: $vm.scope) { chosen in
                 guard chosen == .friends, !isMember else { return true }
                 // A guest asked for Friends: sign in first, then land there.
@@ -234,34 +226,33 @@ struct CommunityView: View {
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "person.badge.plus")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 14, weight: .light))
                     Text("Friends")
-                        .font(Theme.body(13, weight: .medium))
+                        .font(Theme.body(14))
+                        .tracking(0.3)
                     if isMember, !vm.incomingRequests.isEmpty {
                         Text("\(vm.incomingRequests.count)")
-                            .font(Theme.body(11, weight: .semibold))
+                            .font(Theme.body(10, weight: .medium))
                             .foregroundStyle(Color.black)
-                            .padding(.horizontal, 6)
-                            .frame(height: 18)
-                            .background(Theme.honey, in: Capsule())
-                            .transition(.scale.combined(with: .opacity))
+                            .monospacedDigit()
+                            .padding(.horizontal, 4)
+                            .frame(minWidth: 16, minHeight: 16)
+                            .background(Theme.ember, in: Rectangle())
+                            .transition(.opacity)
                     }
                 }
                 .foregroundStyle(Theme.ink)
-                .padding(.leading, 14)
-                .padding(.trailing, 12)
-                .frame(height: 40)
-                .soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
-                .contentShape(Capsule())
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.soulPressableChip)
-            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: vm.incomingRequests.count)
+            .buttonStyle(.soulPressable)
+            .animation(Theme.Motion.settle, value: vm.incomingRequests.count)
             .accessibilityLabel(vm.incomingRequests.isEmpty
                                 ? "Friends"
                                 : "Friends, \(vm.incomingRequests.count) requests waiting")
             .accessibilityIdentifier("community-friends")
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.gutter)
     }
 
     // MARK: - Feed
@@ -283,32 +274,38 @@ struct CommunityView: View {
         } else if lines.isEmpty {
             emptyState
         } else {
-            VStack(alignment: .leading, spacing: 14) {
+            // Open rows on black, a hairline between each: a list, not a stack
+            // of cards.
+            VStack(alignment: .leading, spacing: 44) {
                 ForEach(dayGroups(lines), id: \.title) { group in
-                    SectionLabel(title: group.title)
-                    VStack(spacing: 10) {
-                        ForEach(group.lines) { line in
-                            ActivityRow(line: line, isSelf: line.member.id == vm.selfID,
-                                        busy: vm.busy.contains(line.id)) {
-                                if isMember {
-                                    Task { await vm.toggleLike(line) }
-                                } else {
-                                    requireAccount { Task { await vm.toggleLike(line) } }
+                    VStack(alignment: .leading, spacing: 4) {
+                        SectionLabel(title: group.title)
+                        VStack(spacing: 0) {
+                            ForEach(group.lines) { line in
+                                ActivityRow(line: line, isSelf: line.member.id == vm.selfID,
+                                            busy: vm.busy.contains(line.id)) {
+                                    if isMember {
+                                        Task { await vm.toggleLike(line) }
+                                    } else {
+                                        requireAccount { Task { await vm.toggleLike(line) } }
+                                    }
+                                } onReport: {
+                                    reporting = ReportTarget(member: line.member, playID: line.id)
+                                } onBlock: {
+                                    if isMember { blocking = line.member } else { requireAccount { blocking = line.member } }
                                 }
-                            } onReport: {
-                                reporting = ReportTarget(member: line.member, playID: line.id)
-                            } onBlock: {
-                                if isMember { blocking = line.member } else { requireAccount { blocking = line.member } }
+                                .overlay(alignment: .top) {
+                                    if line.id != group.lines.first?.id { Hairline() }
+                                }
+                                .listReveal()
                             }
-                            .listReveal()
                         }
+                        .padding(.horizontal, Theme.gutter)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
                 }
             }
-            .animation(.easeInOut(duration: 0.25), value: vm.scope)
-            .animation(.easeInOut(duration: 0.3), value: vm.hiddenMembers)
+            .animation(Theme.Motion.settle, value: vm.scope)
+            .animation(Theme.Motion.settle, value: vm.hiddenMembers)
         }
     }
 
@@ -356,9 +353,9 @@ struct CommunityView: View {
                            action: String? = nil, perform: @escaping () -> Void = {}) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(22, weight: .light))
                 .foregroundStyle(Theme.ink)
-                .kerning(-0.2)
+                .kerning(-0.3)
             Text(detail)
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.inkSoft)
@@ -371,21 +368,21 @@ struct CommunityView: View {
                     HStack(spacing: 6) {
                         Text(action)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 11, weight: .regular))
                     }
                     .font(Theme.body(13, weight: .medium))
-                    .foregroundStyle(Theme.honey)
-                    .padding(.vertical, 6)
+                    .foregroundStyle(Theme.ember)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.soulPressableQuiet)
-                .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        // Open on black under a rule — words with air around them, not a box.
+        .padding(.top, 22)
+        .overlay(alignment: .top) { Hairline() }
+        .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("community-empty")
     }
@@ -393,8 +390,9 @@ struct CommunityView: View {
     private func unavailable(_ failure: CommunityLoadFailure) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(failure.title)
-                .font(Theme.headline(20))
+                .font(Theme.headline(22, weight: .light))
                 .foregroundStyle(Theme.ink)
+                .kerning(-0.3)
             Text(failure.detail)
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.inkSoft)
@@ -403,27 +401,28 @@ struct CommunityView: View {
             SGPrimaryButton(title: "Try again") {
                 Task { await vm.load(isMember: isMember, force: true) }
             }
-            .padding(.top, 4)
+            .padding(.top, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soulGlassCard()
-        .padding(.horizontal, 20)
+        .padding(.top, 22)
+        .overlay(alignment: .top) { Hairline() }
+        .padding(.horizontal, Theme.gutter)
     }
 }
 
 // MARK: - Scope toggle
 
-/// All | Friends on one glass capsule, a cream lens sliding behind the chosen
-/// one — the bottom nav's physics at chip scale. `shouldSwitch` lets the host
-/// intercept a choice (a guest choosing Friends) before it lands.
+/// All · Friends as two words, the chosen one in ink with a hairline under
+/// it — Open's text tabs. The rule eases across when the choice changes; the
+/// words never move. `shouldSwitch` lets the host intercept a choice (a guest
+/// choosing Friends) before it lands.
 private struct ScopeToggle: View {
     @Binding var scope: CommunityScope
     var shouldSwitch: (CommunityScope) -> Bool = { _ in true }
-    @Namespace private var lens
+    @Namespace private var underline
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 24) {
             ForEach(CommunityScope.allCases) { option in
                 let active = scope == option
                 Button {
@@ -432,40 +431,48 @@ private struct ScopeToggle: View {
                     scope = option
                 } label: {
                     Text(option.label)
-                        .font(Theme.body(13, weight: .medium))
+                        .font(Theme.body(14))
                         .tracking(0.3)
-                        .foregroundStyle(active ? Color.black : Theme.ink.opacity(0.85))
-                        .padding(.horizontal, 16)
-                        .frame(height: 34)
-                        .background {
+                        .foregroundStyle(active ? Theme.ink : Theme.inkSoft)
+                        .padding(.bottom, 8)
+                        .overlay(alignment: .bottom) {
                             if active {
-                                Capsule()
+                                Rectangle()
                                     .fill(Theme.ink)
-                                    .matchedGeometryEffect(id: "lens", in: lens)
-                                    .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
+                                    .frame(height: 1)
+                                    .matchedGeometryEffect(id: "underline", in: underline)
                             }
                         }
-                        .contentShape(Capsule())
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(SoulPressableStyle(scale: 0.94, hapticOnPress: false, dim: false))
+                .buttonStyle(.soulPressableQuiet)
                 .accessibilityLabel(option.label)
                 .accessibilityAddTraits(active ? .isSelected : [])
                 .accessibilityIdentifier("community-scope-\(option.rawValue)")
             }
         }
-        .padding(3)
-        .soulGlassCapsule(interactive: true, stroke: Theme.glassBorderHigh)
-        .animation(.spring(response: 0.4, dampingFraction: 0.72), value: scope)
+        .animation(Theme.Motion.settle, value: scope)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Show activity from")
+    }
+}
+
+/// The rule between rows and above an open block.
+private struct Hairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(Theme.line)
+            .frame(height: 0.5)
+            .accessibilityHidden(true)
     }
 }
 
 // MARK: - Activity row
 
 /// "Hugo D. practiced Confidence Boost", a face beside it, the track and the
-/// time beneath. Someone else's line ends in their like button and "⋯"
-/// (Report, Block).
+/// time beneath — an open row on black, no card. Someone else's line ends in
+/// their like button and "⋯" (Report, Block).
 private struct ActivityRow: View {
     let line: CommunityActivity
     let isSelf: Bool
@@ -500,22 +507,21 @@ private struct ActivityRow: View {
                 if line.likeCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "heart.fill")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 12, weight: .light))
                         Text("\(line.likeCount)")
                             .font(Theme.body(12, weight: .medium))
                     }
-                    .foregroundStyle(Theme.honey)
+                    .foregroundStyle(Theme.ember)
                     .accessibilityHidden(true)
                 }
             } else {
                 LikeButton(count: line.likeCount, liked: line.likedByMe, busy: busy, action: onLike)
                 MemberSafetyMenu(member: line.member, onReport: onReport, onBlock: onBlock)
-                    .padding(.leading, -4)
+                    .padding(.leading, -14)
+                    .padding(.trailing, -10)
             }
         }
-        .padding(12)
-        .padding(.trailing, isSelf ? 6 : 0)
-        .soulGlassCard()
+        .padding(.vertical, 18)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(spoken)
         .accessibilityIdentifier("activity-row")
@@ -556,8 +562,8 @@ private struct ActivityRow: View {
 
 // MARK: - Like button
 
-/// A heart and a count. Fills honey and bounces when it's yours; the count
-/// rolls rather than snaps. One tap toggles.
+/// A bare heart and a count — no capsule, no glass. Ember when it's yours,
+/// and the change is a crossfade: nothing jumps. One tap toggles.
 private struct LikeButton: View {
     let count: Int
     let liked: Bool
@@ -570,26 +576,22 @@ private struct LikeButton: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: liked ? "heart.fill" : "heart")
-                    .font(.system(size: 14, weight: .medium))
-                    .symbolEffect(.bounce.up, value: liked)
-                    .contentTransition(.symbolEffect(.replace))
+                    .font(.system(size: 15, weight: .light))
+                    .contentTransition(.opacity)
                 if count > 0 {
                     Text("\(count)")
                         .font(Theme.body(12, weight: .medium))
-                        .contentTransition(.numericText(value: Double(count)))
+                        .contentTransition(.opacity)
                         .monospacedDigit()
                 }
             }
-            .foregroundStyle(liked ? Theme.honey : Theme.inkSoft)
-            .padding(.horizontal, 10)
-            .frame(height: 32)
-            .soulGlassCapsule(tint: liked ? Theme.honey.opacity(0.10) : nil, interactive: true,
-                              stroke: liked ? Theme.honey.opacity(0.35) : Theme.glassBorder)
-            .contentShape(Capsule())
-            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: liked)
-            .animation(.easeOut(duration: 0.25), value: count)
+            .foregroundStyle(liked ? Theme.ember : Theme.inkSoft)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .animation(Theme.Motion.settle, value: liked)
+            .animation(Theme.Motion.settle, value: count)
         }
-        .buttonStyle(SoulPressableStyle(scale: 0.88, hapticOnPress: false))
+        .buttonStyle(.soulPressableQuiet)
         .disabled(busy)
         .accessibilityLabel(liked ? "Unlike" : "Like")
         .accessibilityValue(count == 1 ? "1 like" : "\(count) likes")

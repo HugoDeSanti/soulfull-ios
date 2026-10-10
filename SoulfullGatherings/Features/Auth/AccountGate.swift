@@ -21,8 +21,9 @@
 //  version stored `isPresenting` here and bound the sheet to
 //  `$gate.isPresenting`. That was *suspected* of making the sheet
 //  undismissable and restructured on that theory — wrongly: the real cause was
-//  `CircleIconButton` hit-testing, see gotcha #5. This shape is kept because
-//  it's the more conventional one, not because the binding was broken.)
+//  the close button's hit-testing (then a `CircleIconButton`), see gotcha #5.
+//  This shape is kept because it's the more conventional one, not because the
+//  binding was broken.)
 //
 
 import SwiftUI
