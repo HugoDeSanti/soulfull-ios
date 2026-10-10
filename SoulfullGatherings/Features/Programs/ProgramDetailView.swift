@@ -76,9 +76,9 @@ struct ProgramDetailView: View {
         // do, rather than stopping short of it on a strip of bare canvas. The
         // overlays below still keep to the safe area.
         .ignoresSafeArea(edges: .top)
-        // Late, so the hero's own scrim carries the photo; held, so the band
-        // sits behind the pinned Back link as well as the clock.
-        .statusBarScrim(fadeIn: 130...230, holding: 52)
+        // Late, so the hero's own scrim carries the photo; reaching just past
+        // the pinned Back link, so the page doesn't show through it.
+        .statusBarScrim(fadeIn: 130...230, reach: 46)
         .background { Theme.bg.ignoresSafeArea() }
         .overlay(alignment: .topLeading) {
             PracticeBackBar(label: "Digital Retreats")

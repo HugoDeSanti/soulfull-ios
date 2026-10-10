@@ -211,35 +211,39 @@ extension View {
 // MARK: - Status bar scrim
 
 extension View {
-    /// A soft rise of the canvas colour behind the status bar, there only once
-    /// this scroll view's content has moved up under the clock.
+    /// A soft rise of the canvas colour behind the clock, there only once this
+    /// scroll view's content has moved up under it.
     ///
-    /// At rest the page runs clean to the top edge. The band used to be on all
-    /// the time, over every screen in the tab shell: a near-solid dark slab
-    /// cut across the photo. Scrolled, cream headlines and glass chips would
-    /// collide with the clock, so the band fades in over `fadeIn` points of
-    /// scroll and sinks them into the canvas first — the same move as the
-    /// retreat detail's and the recipe's top-bar scrims.
+    /// At rest the page runs clean to the top edge. Scrolled, cream headlines
+    /// and glass chips would collide with the clock, so the band fades in over
+    /// `fadeIn` points of scroll and sinks them into the canvas as they reach
+    /// it — the same move as the retreat detail's and the recipe's scrims.
+    ///
+    /// It is only as deep as the status bar, and fades out inside it, so it
+    /// covers the clock and nothing of the page. It used to be on all the
+    /// time, over every screen (a near-solid slab cut across the photos), and
+    /// then 40pt deeper than the status bar, which still read as a dark bar
+    /// across the top of every scrolled screen.
     ///
     /// Apply it to the `ScrollView` itself, since it reads that view's scroll
     /// geometry, and before a pinned overlay such as a `PracticeBackBar`, so
-    /// the bar draws above it. `holding` keeps the band at full strength that
-    /// far below the status bar, to sit behind a pinned bar too. A hero screen
-    /// starts `fadeIn` late, so the band doesn't darken a photo nothing has
-    /// reached yet.
-    func statusBarScrim(fadeIn: ClosedRange<CGFloat> = 0...36, holding: CGFloat = 0) -> some View {
-        modifier(StatusBarScrim(fadeIn: fadeIn, holding: holding))
+    /// the bar draws above it. `reach` takes the band that far below the
+    /// status bar, to sit behind a pinned bar too. A hero screen starts
+    /// `fadeIn` late, so the band doesn't darken a photo nothing has reached
+    /// yet.
+    func statusBarScrim(fadeIn: ClosedRange<CGFloat> = 0...36, reach: CGFloat = 0) -> some View {
+        modifier(StatusBarScrim(fadeIn: fadeIn, reach: reach))
     }
 }
 
 private struct StatusBarScrim: ViewModifier {
     let fadeIn: ClosedRange<CGFloat>
-    let holding: CGFloat
+    let reach: CGFloat
     @State private var opacity: Double = 0
 
-    /// How far the band thins out below the held part. Fixed in points, so a
-    /// tall band doesn't get a long, muddy edge.
-    private static let tail: CGFloat = 40
+    /// The band's eased bottom edge, inside its height, so the band ends
+    /// where the status bar does rather than below it.
+    private static let fade: CGFloat = 22
 
     func body(content: Content) -> some View {
         content
@@ -257,7 +261,7 @@ private struct StatusBarScrim: ViewModifier {
                 // through the status bar to the screen's edge, whatever its
                 // height on this device.
                 Color.clear
-                    .frame(height: holding + Self.tail)
+                    .frame(height: reach)
                     .frame(maxWidth: .infinity)
                     .background { band.ignoresSafeArea(edges: .top) }
                     .opacity(opacity)
@@ -266,10 +270,9 @@ private struct StatusBarScrim: ViewModifier {
             }
     }
 
-    /// Dense through the status bar and `holding`, enough to sink cream type
-    /// behind the clock, then eased out over `tail`, so there's no edge to
-    /// find. (A frosted material was tried: over the already-blurred
-    /// backdrops it read as a flat grey slab with a visible edge.)
+    /// Dense behind the clock, enough to sink cream type, then eased out over
+    /// `fade`, so there's no edge to find. (A frosted material was tried: over
+    /// the already-blurred backdrops it read as a flat grey slab.)
     private var band: some View {
         VStack(spacing: 0) {
             LinearGradient(colors: [Theme.bg.opacity(0.92), Theme.bg.opacity(0.84)],
@@ -281,7 +284,7 @@ private struct StatusBarScrim: ViewModifier {
                 .init(color: Theme.bg.opacity(0.08), location: 0.84),
                 .init(color: Theme.bg.opacity(0), location: 1),
             ], startPoint: .top, endPoint: .bottom)
-                .frame(height: Self.tail)
+                .frame(height: Self.fade)
         }
     }
 }

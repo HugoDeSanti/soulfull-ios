@@ -243,17 +243,19 @@
    invisible at rest, and the screens here are drawn at rest, so none carries
    it; add .statusbar--scrim to show one scrolled. It fades in over the first
    36px of scroll (later on the digital retreat heroes, whose own scrim carries
-   the photo). Dense behind the clock (0.92 → 0.84 over the ~62px status bar,
-   plus `holding` below it on a screen with a pinned Back bar), then eased out
-   over a 40px tail, so it has no edge. The always-on band it replaced read as
-   a black bar cut across every photo. Drawn behind the clock and glyphs,
-   above the page. */
+   the photo). It is only as deep as the status bar itself: dense behind the
+   clock (0.92 → 0.84), then eased out over its last 22px, so it covers the
+   clock and nothing of the page (`reach` takes it further on a screen with a
+   pinned Back bar). The always-on band it replaced read as a black bar cut
+   across every photo, and a version 40px deeper than the status bar still
+   read as a dark bar across every scrolled screen. Drawn behind the clock and
+   glyphs, above the page. */
 .statusbar--scrim::before {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 102px;
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 54px;
   z-index: -1; pointer-events: none;
   background: linear-gradient(180deg,
-    rgba(11,12,7,0.92) 0%, rgba(11,12,7,0.84) 60.8%, rgba(11,12,7,0.6) 72.5%,
-    rgba(11,12,7,0.28) 84.3%, rgba(11,12,7,0.08) 93.7%, rgba(11,12,7,0) 100%);
+    rgba(11,12,7,0.92) 0%, rgba(11,12,7,0.84) 59.3%, rgba(11,12,7,0.6) 71.5%,
+    rgba(11,12,7,0.28) 83.7%, rgba(11,12,7,0.08) 93.5%, rgba(11,12,7,0) 100%);
 }
 
 /* ---------------------------------------------------------------------------
