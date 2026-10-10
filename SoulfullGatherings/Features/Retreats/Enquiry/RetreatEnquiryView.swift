@@ -22,10 +22,10 @@
 //  the Email answer *is* the account's address: shown, locked, and taken from
 //  the JWT server-side rather than typed.
 //
-//  The form sits on the ember atmosphere — black, with the gatherings' warm
-//  wash at the top — not on the retreat's photograph blurred into a tint.
-//  With no photo under the type, the copy needs no `.onPhoto()` shadow, and
-//  the fields stay clear of any: they are UIKit-backed (rendering gotcha #1).
+//  Type sits on the retreat's own photograph here, so the header follows the
+//  one rule: `topScrim` on the backdrop, `.onPhoto()` on the copy — and on the
+//  copy only. The fields are UIKit-backed; a shadow over one of those is
+//  rendering gotcha #1.
 //
 
 import SwiftUI
@@ -78,7 +78,7 @@ struct RetreatEnquiryView: View {
 
     var body: some View {
         ZStack {
-            Atmosphere(tone: .ember)
+            PhotoBackdrop(imageName: retreat.imageUrl, blur: 26, darken: 0.86, topScrim: 0.55)
 
             if vm.didSend {
                 sentPanel
@@ -151,10 +151,11 @@ struct RetreatEnquiryView: View {
                 .kerning(-0.5)
             Text("Our groups are kept intentionally small. This form lets us know you a little before we connect on an enrollment call.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onPhoto()
         .padding(.bottom, 2)
     }
 
@@ -372,9 +373,10 @@ struct RetreatEnquiryView: View {
             if !vm.canSubmit {
                 Text("Still to answer — \(vm.missingAnswers.joined(separator: " · "))")
                     .font(Theme.body(12))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
                     .lineSpacing(2)
+                    .onPhoto()
                     .accessibilityIdentifier("enquiry-missing")
             }
 
@@ -384,9 +386,10 @@ struct RetreatEnquiryView: View {
 
             Text("Sent to \(RetreatEnquiry.recipient), and we'll reply to your account's email.")
                 .font(Theme.body(11))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
+                .onPhoto()
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 4)
@@ -429,10 +432,11 @@ struct RetreatEnquiryView: View {
                     .kerning(-0.4)
                 Text("We read every application personally, because the room matters to us as much as it will to you.\n\nWe will be in touch as new gatherings open that feel right for you. Keep an eye on your inbox and WhatsApp.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
             }
             .multilineTextAlignment(.center)
+            .onPhoto()
 
             SGPrimaryButton(title: "Back to the retreat") { dismiss() }
                 .padding(.top, 6)
@@ -511,11 +515,13 @@ struct RetreatEnquiryView: View {
                 if let help {
                     Text(help)
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            // Copy only — never the field below it.
+            .onPhoto()
 
             content()
         }

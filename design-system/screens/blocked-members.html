@@ -10,7 +10,8 @@
   /* Features/Community/BlockedMembersView.swift. A sheet from the You tab's
      Community section ("Blocked members" row, profile.html): who you've
      blocked, and Unblock beside each (no confirmation; the row leaves).
-     Ground: the dusk atmosphere; close button in
+     Ground: the page's photo (welcome-bg, blur 28, darken .86, no top
+     scrim), still visible — type on it carries .on-photo; close button in
      a pinned bar with a bg gradient (92% → 60% → clear), as report-member.
      EMPTY: open text under a hairline (body 14 --ink-soft) — "You haven't
      blocked anyone. You can block a member from the ⋯ beside their name in
@@ -18,7 +19,7 @@
      FAILED LOAD: open, headline 20 light "You're offline" / "Couldn't load
      this list", body 14 "Reconnect to see who you've blocked." / "Something
      went wrong at our end. Please try again in a moment.", a square hairline
-     "Try again". A failed Unblock shows a square veil with an ember hairline
+     "Try again". A failed Unblock shows square glass with an ember hairline
      under the header. */
   .scr { padding: 118px var(--gutter) 60px; }
   .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
@@ -27,7 +28,7 @@
   .body { position: relative; z-index: 3; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   h1 { font-size: 30px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 8px 0 0; }
-  .sub { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 8px 0 0; }
+  .sub { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 8px 0 0; }
   .rows { display: flex; flex-direction: column; margin-top: 36px; }
   /* Same anatomy as the Friends screen's MemberRow: face, name, one button;
      open rows divided by hairlines. */
@@ -51,16 +52,19 @@
   <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll scr">
-    <div class="atmosphere atmosphere--dusk"></div>
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(.9) brightness(.4) blur(28px);transform:scale(1.15)"></div>
+    <div class="vignette vignette--deep"></div>
 
     <div class="body">
+      <div class="on-photo">
       <p class="eb">Community</p>
       <h1>Blocked members</h1>
       <p class="sub">You and the people you block don't see each other anywhere in Community. Unblocking doesn't bring back a friendship or likes the block ended.</p>
+      </div>
 
       <div class="rows">
-        <div class="row"><div class="av t4">R</div><span class="name">Rafa M.</span><button class="pill">Unblock</button></div>
-        <div class="row"><div class="av t0">J</div><span class="name">Jules B.</span><button class="pill">Unblock</button></div>
+        <div class="row"><div class="av t4">R</div><span class="name on-photo">Rafa M.</span><button class="pill">Unblock</button></div>
+        <div class="row"><div class="av t0">J</div><span class="name on-photo">Jules B.</span><button class="pill">Unblock</button></div>
       </div>
     </div>
   </div>

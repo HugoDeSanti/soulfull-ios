@@ -154,7 +154,7 @@ private struct StaticNavButtonStyle: ButtonStyle {
 
 #Preview {
     ZStack {
-        Atmosphere()
+        PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.5)
         VStack { Spacer(); BottomNav(current: .constant(.home)) }
     }
     .environment(AuthManager(settings: AppSettings()))

@@ -8,30 +8,31 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   .close { position: absolute; top: 50px; right: calc(var(--gutter) - 13px); z-index: 20; }
-  /* AccountView — on the moss atmosphere (no photo, so no text halo). Square
-     fields on veils with a hairline that turns ink while focused. */
+  /* AccountView — on its photo (PhotoBackdrop "home-bg", blur 8, darken .74),
+     still visible; the copy carries .on-photo, never the fields (UIKit-backed).
+     Square glass fields with a hairline that turns ink while focused. */
   .scr { padding: 84px var(--gutter) 40px; }
   .head { text-align: center; }
   .head img { width: 64px; opacity: .9; }
   .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); margin: 12px 0 0; }
-  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 12px auto 0; max-width: 300px; }
+  .head p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 12px auto 0; max-width: 300px; }
   .fields { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
-  .field-hint { margin: -6px 0 0 18px; font-size: 12px; color: var(--ink-soft); }
+  .field-hint { margin: -6px 0 0 18px; font-size: 12px; color: var(--ink-on-photo); }
   .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; }
   .field.focus { border-color: rgba(242,241,237,.6); }
-  .field svg { color: var(--muted); flex: none; }
+  .field svg { color: var(--ink-soft); flex: none; }
   .field input { flex: 1; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
   .field input::placeholder { color: var(--muted); }
   .submit { margin-top: 18px; }
-  .toggle { text-align: center; margin-top: 22px; font-size: 13px; color: var(--muted); }
+  .toggle { text-align: center; margin-top: 22px; font-size: 13px; color: var(--ink-soft); }
   .toggle b { color: var(--ink); font-weight: 500; }
   /* AccountView.agreement — under the mode toggle in both modes, since this is
      where an account (Apple or email) comes into being. What other members
      see, and what continuing agrees to: the Terms carry the community
-     standards (Guideline 1.2). Body 12 --muted, centered; the two links
-     --ink-soft (LegalLinks.terms / .privacyPolicy). */
-  .agreement { text-align: center; margin: 22px 0 0; padding: 0 6px; font-size: 12px; line-height: 1.5; color: var(--muted); }
-  .agreement a { color: var(--ink-soft); text-decoration: none; }
+     standards (Guideline 1.2). Body 12 --ink-soft on the photo, centered;
+     the two links --ink (LegalLinks.terms / .privacyPolicy). */
+  .agreement { text-align: center; margin: 22px 0 0; padding: 0 6px; font-size: 12px; line-height: 1.5; color: var(--ink-soft); }
+  .agreement a { color: var(--ink); text-decoration: none; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -44,10 +45,12 @@
 
   <div class="screen screen--scroll">
     <!-- Atmosphere(tone: .moss) — it used to be home-bg blurred into the sheet. -->
-    <div class="atmosphere atmosphere--moss"></div>
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(.9) brightness(.65) blur(8px);transform:scale(1.1)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
+    <div class="top-scrim"></div>
 
     <div class="scr">
-      <div class="head">
+      <div class="head on-photo">
         <img src="../assets/logo.png" alt="">
         <h1>Create account</h1>
         <p>Your practice history, streaks and digital retreats are saved to your account — create one and we'll pick up exactly where you were.</p>
@@ -58,7 +61,7 @@
           Continue with Apple
         </button>
       </div>
-      <div class="or-rule" style="margin-top:22px"><span>or</span></div>
+      <div class="or-rule on-photo" style="margin-top:22px"><span>or</span></div>
       <div class="fields">
         <div class="field glass">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
@@ -74,11 +77,11 @@
         </div>
         <!-- AccountView: the rule canSubmit enforces, create mode only. In sign-in mode its place
              is taken by a trailing "Forgot password?" link (13px ink, underlined) → account-reset. -->
-        <p class="field-hint">At least 8 characters</p>
+        <p class="field-hint on-photo">At least 8 characters</p>
       </div>
       <div class="submit"><button class="sg-btn sg-btn--filled">Create account</button></div>
-      <p class="toggle">Already have an account? <b>Sign in</b></p>
-      <p class="agreement">Other members see your first name, last initial and photo in Community. By continuing, you agree to our <a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a>, including our community standards, and acknowledge our <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy Policy</a>.</p>
+      <p class="toggle on-photo">Already have an account? <b>Sign in</b></p>
+      <p class="agreement on-photo">Other members see your first name, last initial and photo in Community. By continuing, you agree to our <a href="https://www.soulfullgatherings.com/soulfull-terms-of-service">Terms</a>, including our community standards, and acknowledge our <a href="https://www.soulfullgatherings.com/soulfull-privacy-policy">Privacy Policy</a>.</p>
     </div>
   </div>
   <div class="home-indicator"></div>

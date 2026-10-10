@@ -132,7 +132,7 @@ SoulfullGatherings/
 ## Design system
 
 The direction is **"still"** (owner's brief, 2026-10-10: the rounded, bouncy app read as playful; it should feel serious, with colours like the **Open** meditation app). It has four parts:
-- **Black and near-white.** Colour comes only from photography and the `Atmosphere` washes, never from the chrome.
+- **Photography and near-white.** Every screen's photograph stays visible behind it; colour comes from photography, never from the chrome.
 - **Square.** Nothing is rounded.
 - **Still motion.** Things fade in and settle at breath pace; nothing springs, bounces, squishes or zooms.
 - **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines.
@@ -160,12 +160,12 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
   - A number is a folio ("01"), never a numeral in a circle.
   - A check box is a square hairline box.
   - Surface strokes are `Theme.hairline`.
-- **Grounds:** a screen that isn't a photograph sits on `Atmosphere(tone:)` (`Core/DesignSystem/Atmosphere.swift`): black, with a quiet single-hue wash falling from the top that breathes over two breaths.
-  - Tones by area: `.moss` for Home, You and Account; `.ember` for Digital Retreats, guides and the enquiry; `.slate` for Practice; `.dusk` for Community.
-  - `PhotoBackdrop` is for screens where the photograph *is* the content: Welcome, Onboarding, the retreat stack and detail. A blurred photo is never a page's ground.
-  - Home's ritual card is the one card with a full-strength wash (`intensity: 1, fillsScreen: false`).
+- **Grounds:** every tab and page sits on its own `PhotoBackdrop`, blurred and darkened, as before the still pass. **The photo must stay visible** (owner, 2026-10-10).
+  - The redesign briefly replaced the photos with black `Atmosphere` washes and put a black wash over every card. Both read as a dark veil and were reverted the same day.
+  - Don't add a deeper dim, a black layer or an opaque ground over a backdrop.
+  - `Atmosphere` (`Core/DesignSystem/Atmosphere.swift`) survives only as Home's ritual card wash (ember, `intensity: 1, fillsScreen: false`).
   - The practice player keeps `AuroraBackground`.
-- **Surfaces** always go through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCard()`): a flat dark veil (a light frost under black) with a hairline, square, the same on every OS.
+- **Surfaces** always go through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCard()`): a light frost (`ultraThinMaterial`) with a hairline, square, the same on every OS. The photo shows through it; there is no black wash over the frost.
   - Liquid Glass (`glassEffect`) was dropped on purpose: its lensing and touch-bounce read as playful.
   - Prefer no surface at all: a hairline and space separate sections and rows (`SectionLabel` is a rule plus a caps label).
 - **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which **dims** to 0.55 on touch-down with a soft haptic and fades back on release. It never scales. Don't put `onTapGesture` on cards. Back, close and view toggles are `GlyphButton`: a bare glyph in a 44pt square, with `arrow.left` for back and `xmark` for close.

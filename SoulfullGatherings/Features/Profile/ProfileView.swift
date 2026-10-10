@@ -95,7 +95,7 @@ struct ProfileView: View {
             async let guiding: Void = guide.load(for: identity)
             _ = await (mine, guiding)
         }
-        .background { Atmosphere(tone: .moss) }
+        .background { PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7) }
         .task(id: identity) {
             // A guest has nothing to load, but whatever the last member left
             // here still has to go — their sharing answer included.
@@ -206,6 +206,9 @@ struct ProfileView: View {
 
                 accountStatus
             }
+            // This block is centred over the open sky of home-bg, the
+            // brightest ground in the app — see View.onPhoto().
+            .onPhoto()
             intentionsRow
         }
     }
@@ -254,8 +257,9 @@ struct ProfileView: View {
             Text(intentions.prefix(3).map(\.label).joined(separator: "  ·  "))
                 .font(Theme.body(12))
                 .tracking(0.3)
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
+                .onPhoto()
                 .padding(.horizontal, Theme.gutter)
                 .padding(.top, 4)
         }
@@ -266,11 +270,11 @@ struct ProfileView: View {
         if isMember {
             Label(auth.email ?? "Signed in", systemImage: "checkmark.seal")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
         } else {
             Text("Guest · not signed in")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
         }
     }
 
@@ -281,6 +285,7 @@ struct ProfileView: View {
     private func guideSection(_ dashboard: GuideDashboard) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionLabel(title: "As a guide")
+                .onPhoto()
             GuideSummaryCard(dashboard: dashboard) {
                 showGuideDashboard = true
             }
@@ -297,8 +302,9 @@ struct ProfileView: View {
 
         VStack(alignment: .leading, spacing: 24) {
             SectionLabel(title: "Your practice")
+                .onPhoto()
 
-            // Open numerals on black, as a printed table: no tiles, a rule
+            // Open numerals on the page, as a printed table: no tiles, a rule
             // between the two rows.
             Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 24) {
                 GridRow {
@@ -372,6 +378,7 @@ struct ProfileView: View {
     private var digitalSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Digital retreats")
+                .onPhoto()
 
             let journeys = vm.journeys
             Group {
@@ -450,6 +457,7 @@ struct ProfileView: View {
     private var inPersonSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "In-person retreats")
+                .onPhoto()
 
             Group {
                 if !vm.retreatsLoaded {
@@ -500,6 +508,7 @@ struct ProfileView: View {
     private var communitySection: some View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Community")
+                .onPhoto()
 
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -509,11 +518,12 @@ struct ProfileView: View {
                         .kerning(-0.2)
                     Text("Your finished practices appear in the Community feed as \u{201C}\(settings.userName.isEmpty ? "You" : Self.abbreviated(settings.userName)) practiced …\u{201D}, and your face among the followers of guides you follow. Journal prompts never appear.")
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .onPhoto()
                 Toggle("", isOn: Binding(
                     get: { vm.shareActivity ?? false },
                     set: { on in Task { await vm.setShareActivity(on) } }
@@ -543,10 +553,11 @@ struct ProfileView: View {
                     Text("Blocked members")
                         .font(Theme.body(15))
                         .foregroundStyle(Theme.ink)
+                        .onPhoto()
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                 }
                 .frame(height: 56)
                 // A rule above it, under the switch: two rows of one list.
@@ -586,7 +597,7 @@ struct ProfileView: View {
                 .kerning(-0.3)
             Text(detail)
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
             Button {
@@ -605,6 +616,7 @@ struct ProfileView: View {
             .buttonStyle(.soulPressableQuiet)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onPhoto()
         .padding(.top, 14)
         .padding(.horizontal, Theme.gutter)
     }
@@ -618,7 +630,7 @@ struct ProfileView: View {
                 .foregroundStyle(Theme.inkSoft)
             Text(failure.line)
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
             Button {
@@ -632,6 +644,7 @@ struct ProfileView: View {
             }
             .buttonStyle(.soulPressableQuiet)
         }
+        .onPhoto()
         .padding(.top, 10)
         .padding(.horizontal, Theme.gutter)
     }
@@ -652,12 +665,13 @@ struct ProfileView: View {
                 .kerning(-0.5)
             Text("With an account, your streaks, classes and minutes gather here — alongside every retreat you join, digital or in person.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        // Open on black under a rule — an invitation, not a box.
+        .onPhoto()
+        // Open on the page under a rule — an invitation, not a box.
         .padding(.top, 24)
         .overlay(alignment: .top) { Hairline() }
         .padding(.horizontal, Theme.gutter)
@@ -685,6 +699,7 @@ struct ProfileView: View {
                     Text(isDeleting ? "Deleting…" : "Delete account")
                         .font(Theme.body(13))
                         .foregroundStyle(Theme.danger)
+                        .onPhoto()
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
                         // The whole row, not just the letters (rendering gotcha 5).
@@ -737,7 +752,8 @@ struct ProfileView: View {
     private var legalDivider: some View {
         Text("·")
             .font(Theme.body(12))
-            .foregroundStyle(Theme.muted)
+            .foregroundStyle(Theme.inkSoft)
+            .onPhoto()
             .padding(.horizontal, 7)
     }
 
@@ -749,6 +765,7 @@ struct ProfileView: View {
             Text(title)
                 .font(Theme.body(12))
                 .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
                 .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
@@ -765,7 +782,8 @@ struct ProfileView: View {
         } label: {
             Text("Reset onboarding")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
         }
@@ -776,7 +794,7 @@ struct ProfileView: View {
 
 // MARK: - Stat tile
 
-/// One number, open on black: the figure, a small caps label beneath with
+/// One number, open on the page: the figure, a small caps label beneath with
 /// its mark, and a line of caption — Open's "5 / DAY STREAK". The figure
 /// fades in once it's known and crossfades when it changes (finishing a
 /// practice while the tab is open moves the streak in place).
@@ -814,7 +832,7 @@ private struct StatTile: View {
                 // The one warm mark on the table: a streak that's alive.
                 Image(systemName: systemImage)
                     .font(.system(size: 10, weight: .regular))
-                    .foregroundStyle(accent ? Theme.ember : Theme.muted)
+                    .foregroundStyle(accent ? Theme.ember : Theme.inkSoft)
                     .symbolEffect(.breathe, options: .repeat(.continuous),
                                   isActive: breathes && !reduceMotion)
                 Text(label.uppercased())
@@ -831,12 +849,14 @@ private struct StatTile: View {
             // rows of the table even whichever caption is showing.
             Text(caption)
                 .font(Theme.body(12))
-                .foregroundStyle(accent ? Theme.inkSoft : Theme.muted)
+                .foregroundStyle(accent ? Theme.inkOnPhoto : Theme.inkSoft)
                 .lineLimit(2, reservesSpace: true)
                 .lineSpacing(1)
                 .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        // Open on the page's photograph, not a tile.
+        .onPhoto()
         .animation(Theme.Motion.reveal, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
@@ -851,7 +871,7 @@ private struct StatTile: View {
 
 // MARK: - History row
 
-/// A square thumbnail and two lines, open on black — one program or retreat
+/// A square thumbnail and two lines, open on the page — one program or retreat
 /// in the member's history. `opens` adds the chevron that says it goes
 /// somewhere. The list draws the rules between rows.
 private struct HistoryRow<Lines: View>: View {
@@ -869,11 +889,12 @@ private struct HistoryRow<Lines: View>: View {
                 lines
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .onPhoto()
 
             if opens {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
         }
         .padding(.vertical, 16)

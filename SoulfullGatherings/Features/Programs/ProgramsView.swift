@@ -56,7 +56,7 @@ struct ProgramsView: View {
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
-        .background { Atmosphere(tone: .ember) }
+        .background { PhotoBackdrop(imageName: active?.imageUrl ?? "onb-bg", blur: 26, darken: 0.8) }
         .task { await vm.load() }
         .task { await store.refresh() }
         // Coming back to the tab after practicing elsewhere should reflect it:
@@ -117,10 +117,11 @@ struct ProgramsView: View {
                 .kerning(-0.8)
             Text("Guided journeys you walk one day at a time. Take them at whatever speed your life allows.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
         .padding(.horizontal, Theme.gutter)
     }
 
@@ -277,6 +278,7 @@ struct ProgramsView: View {
         if !others.isEmpty {
             VStack(alignment: .leading, spacing: 24) {
                 SectionLabel(title: active == nil ? "All digital retreats" : "More digital retreats")
+                    .onPhoto()
 
                 VStack(spacing: 24) {
                     ForEach(others) { program in
@@ -363,7 +365,8 @@ struct ProgramsView: View {
 
     // MARK: - Empty / failure
 
-    /// Open on the page under a hairline, not boxed — there's nothing to tap.
+    /// Open on the page's photo under a hairline, not boxed — there's nothing
+    /// to tap.
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("New digital retreats are on their way")
@@ -371,11 +374,12 @@ struct ProgramsView: View {
                 .foregroundStyle(Theme.ink)
             Text("We're putting the finishing touches to the first ones. They'll appear here as soon as they're ready.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onPhoto()
         .padding(.top, 20)
         .overlay(alignment: .top) {
             Rectangle().fill(Theme.line).frame(height: 0.5)
@@ -388,11 +392,13 @@ struct ProgramsView: View {
             Text(failure.title)
                 .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
+                .onPhoto()
             Text(failure.detail)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
             SGPrimaryButton(title: "Try again") {
                 Task { await vm.load() }
             }

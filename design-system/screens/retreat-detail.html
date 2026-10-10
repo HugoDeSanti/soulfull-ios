@@ -8,10 +8,13 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   /* RetreatDetailView — the hero photograph is the cover; the story below it
-     is open type on near-black (in the app the hero stays behind it and dims
-     to ~0.72 black as the story scrolls up). Every section opens with a
-     hairline + caps label, 64px apart, at the gutter. No boxes: the elements,
-     the testimonial and the inclusions sit under hairlines. */
+     is open type over that same photo, which stays behind it and softens as
+     the story scrolls up (blur up to 14, an extra dim of at most 0.45 — it
+     once sank to 0.72, which read as a dark veil over the place). Drawn here
+     as the story's own blurred, dimmed copy of the photo. Type on it carries
+     .on-photo, metadata --ink-soft. Every section opens with a hairline + caps
+     label, 64px apart, at the gutter. No boxes: the elements, the testimonial
+     and the inclusions sit under hairlines. */
   .topbar { position: absolute; top: 44px; left: 0; right: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding: 8px calc(var(--gutter) - 12px) 8px var(--gutter); }
   .back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; color: var(--ink); text-shadow: 0 1px 4px rgba(0,0,0,.7); }
 
@@ -31,12 +34,18 @@
   .chev { color: rgba(242,241,237,0.7); margin-top: 10px; animation: chev-breathe var(--breath) ease-in-out infinite alternate; }
   @keyframes chev-breathe { 0% { opacity: .35; } 100% { opacity: .85; } }
 
-  .story { position: relative; background: var(--bg); padding: 48px var(--gutter) 0; }
+  .story { position: relative; isolation: isolate; background: var(--bg); padding: 48px var(--gutter) 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); /* .on-photo */ }
+  .story::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)),
+                linear-gradient(180deg, rgba(0,0,0,.64), rgba(0,0,0,.64)),
+                url('../assets/retreat-mallorca.jpg') center/cover;
+    filter: saturate(.9) blur(14px); }
   .story > .sec + .sec { margin-top: 64px; }
   /* sectionEyebrow — a hairline across the measure, then 10px caps in ink. */
   .eb { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 0 0 16px; padding-top: 14px; border-top: 0.5px solid var(--line); }
   .lead { font-size: 27px; font-weight: 300; line-height: 1.38; letter-spacing: -0.4px; color: var(--ink); margin: 0 0 16px; }
-  .para { font-size: 15px; line-height: 1.65; color: var(--ink-soft); margin: 0 0 12px; }
+  .para { font-size: 15px; line-height: 1.65; color: var(--ink-on-photo); margin: 0 0 12px; }
   .sub { font-size: 14px; color: var(--ink-soft); margin: -10px 0 16px; line-height: 1.5; }
   /* Welcome line as a pull-quote, ruled by one ember hairline. */
   .welcome { display: flex; gap: 16px; margin-top: 18px; }
@@ -44,30 +53,30 @@
   .welcome p { font-size: 21px; font-weight: 300; letter-spacing: -0.3px; line-height: 1.3; color: var(--ink); margin: 0; }
 
   /* The day's four elements — open on the page under a hairline, an ember
-     glyph, the title (25 light), a muted folio, then a 3px bullet list. */
+     glyph, the title (25 light), an ink-soft folio, then a 3px bullet list. */
   .el { padding: 26px 0; border-top: 0.5px solid var(--line); }
   .el .h { display: flex; align-items: center; justify-content: space-between; }
   .el .h .l { display: flex; align-items: center; gap: 12px; }
   .el .ic { width: 22px; display: grid; place-items: center; color: var(--ember); flex: none; }
   .el .ti { font-size: 25px; font-weight: 300; letter-spacing: -0.4px; color: var(--ink); }
-  .el .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--muted); }
+  .el .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--ink-soft); }
   .el .sum { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 14px 0 0; }
   .el .hl { list-style: none; padding: 0; margin: 14px 0 0; }
   .el .hl li { font-size: 14px; color: var(--ink); padding: 0 0 9px 14px; position: relative; }
-  .el .hl li::before { content: ""; position: absolute; left: 0; top: 7px; width: 3px; height: 3px; border-radius: 50%; background: rgba(161,159,153,.6); }
+  .el .hl li::before { content: ""; position: absolute; left: 0; top: 7px; width: 3px; height: 3px; border-radius: 50%; background: rgba(201,199,193,.6); }
 
   .quote .qm { font-size: 56px; font-weight: 100; line-height: .6; height: 26px; color: color-mix(in srgb, var(--ember) 70%, transparent); }
   .quote .q { font-size: 20px; font-weight: 300; letter-spacing: -0.2px; line-height: 1.45; color: var(--ink); margin: 16px 0 16px; }
   .quote .au { font-size: 14px; font-weight: 500; color: var(--ink); }
-  .quote .at { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .quote .at { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; }
 
-  /* Guides — initials in a veiled circle (a portrait stand-in, so round),
+  /* Guides — initials in a glass circle (a portrait stand-in, so round),
      rows divided by hairlines. */
   .guide { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
   .guide + .guide { border-top: 0.5px solid var(--line); }
   .guide .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 500; color: var(--ink); flex: none; }
   .guide .n { font-size: 15px; font-weight: 500; color: var(--ink); }
-  .guide .r { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .guide .r { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); margin-top: 2px; }
 
   .inclusions { padding-top: 22px; margin-top: 18px; border-top: 0.5px solid var(--line); }
   .inclusions .eb2 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; }
@@ -106,7 +115,7 @@
     </div>
 
     <!-- Once the cover's CTA scrolls away, a pinned bar fades in at the foot:
-         a square veil (glassBorderHigh) with the name, dates and a square ink
+         square glass (glassBorderHigh) with the name, dates and a square ink
          "Request a place". It fades, never slides. -->
     <div class="story">
       <div class="sec">

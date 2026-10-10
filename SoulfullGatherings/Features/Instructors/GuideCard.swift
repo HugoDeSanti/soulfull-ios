@@ -80,10 +80,13 @@ struct GuideCard: View {
                 if let title = instructor.title {
                     Text(title)
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                         .lineLimit(1)
                 }
             }
+            // No surface of its own: on a practice page it sits straight on
+            // the page's photograph. Harmless over the black of a hero page.
+            .onPhoto()
             Spacer(minLength: 0)
             if openInstructor != nil {
                 Image(systemName: "chevron.right")
@@ -158,7 +161,7 @@ struct GuideCredit<Fallback: View>: View {
 
 #Preview {
     ZStack {
-        Atmosphere(tone: .ember)
+        PhotoBackdrop(imageName: "home-bg", blur: 24, darken: 0.8)
         VStack(alignment: .leading, spacing: 24) {
             GuideCard(instructorID: "alma-guerra", from: "Finding Ground")
             GuideCredit(instructorID: nil, from: "Breath of Fire") {

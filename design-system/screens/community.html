@@ -9,7 +9,8 @@
 <style>
   /* Features/Community/CommunityView.swift. What everyone (or just your
      friends) has finished lately: one open row per finished practice on the
-     dusk atmosphere, a hairline between rows, the member's face beside it,
+     page's photo (welcome-bg, blur 24, darken .78 — still visible; type on it
+     carries .on-photo), a hairline between rows, the member's face beside it,
      grouped Today / Yesterday / Earlier. The feed is
      open to a guest; the Friends filter and the Friends screen are behind the
      account gate. Journal prompts never appear here.
@@ -29,7 +30,7 @@
   .hdr .tx { flex: 1; min-width: 0; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 6px 0 0; }
-  .sub { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 6px 0 0; }
+  .sub { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 6px 0 0; }
 
   /* AvatarView — photo, or the initial on one of five tones picked by the
      member's id (moss, ember, dusk, slate, umber). 46pt in the feed and the
@@ -65,8 +66,8 @@
   .friends-btn { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: .3px; color: var(--ink); }
   .friends-btn .badge { min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); color: #000; font-size: 10px; font-weight: var(--w-medium); display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Push prompt — shown ONCE to a member who has never been asked: a square
-     veil with an ember bell, "Turn on" (a square ink block, black text) and
+  /* Push prompt — shown ONCE to a member who has never been asked: square
+     glass with an ember bell, "Turn on" (a square ink block, black text) and
      "Not now" (remembered). Never at launch; here, where a like is worth
      something. It fades in. */
   .push { display: flex; align-items: flex-start; gap: 14px; margin-left: var(--gutter); margin-right: var(--gutter); padding: 20px; }
@@ -79,7 +80,7 @@
   .feed > .sec + .sec { margin-top: 44px; }
   .feed .section-label { margin-bottom: 4px; }
   .rows { display: flex; flex-direction: column; margin: 0 var(--gutter); }
-  /* ActivityRow — an open row on black, a hairline between rows (not above
+  /* ActivityRow — an open row on the photo, a hairline between rows (not above
      the first): "Name practiced Title" (name and title in ink at Medium, the
      verb quieter); the track and a relative time beneath. Your own lines read
      "You". */
@@ -88,7 +89,7 @@
   .row .tx { flex: 1; min-width: 0; }
   .row p { margin: 0; font-size: 15px; line-height: 1.4; color: var(--ink-soft); }
   .row p b { font-weight: var(--w-medium); color: var(--ink); }
-  .row .meta { display: block; margin-top: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta { display: block; margin-top: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .row .member-menu { margin: 0 -10px 0 -14px; }
 
   /* EMPTY STATES (open text under a hairline, headline 20 light + body 14):
@@ -105,10 +106,12 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="atmosphere atmosphere--dusk"></div>
+    <div class="photo" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(.9) brightness(.6) blur(24px);transform:scale(1.1)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
 
     <div class="hdr">
-      <div class="tx">
+      <div class="tx on-photo">
         <p class="eb">Together</p>
         <h1>Community</h1>
         <p class="sub">What the circle is practicing, as it happens.</p>
@@ -120,7 +123,7 @@
       </div>
     </div>
 
-    <div class="controls">
+    <div class="controls on-photo">
       <div class="scope">
         <button class="is-active">All</button>
         <button>Friends</button>
@@ -143,24 +146,24 @@
 
     <div class="feed">
     <div class="sec">
-      <div class="section-label"><span class="title">Today</span></div>
+      <div class="section-label on-photo"><span class="title">Today</span></div>
       <div class="rows">
-        <div class="row"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like on"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
-        <div class="row"><div class="av t1">H</div><div class="tx"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
-        <div class="row"><div class="av t3">T</div><div class="tx"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t2">A</div><div class="tx on-photo"><p><b>Alma G.</b> practiced <b>Confidence Boost</b></p><span class="meta">Breathwork · 12 min ago</span></div><span class="like on"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>3</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t1">H</div><div class="tx on-photo"><p><b>You</b> practiced <b>Morning Mobility</b></p><span class="meta">Movement · 1 hr ago</span></div><span class="like-self"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span></div>
+        <div class="row"><div class="av t3">T</div><div class="tx on-photo"><p><b>Theo R.</b> practiced <b>Body Scan for Sleep</b></p><span class="meta">Meditation · 5 hr ago</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>1</span><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
-      <div class="section-label"><span class="title">Yesterday</span></div>
+      <div class="section-label on-photo"><span class="title">Yesterday</span></div>
       <div class="rows">
-        <div class="row"><div class="av t4">N</div><div class="tx"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
-        <div class="row"><div class="av t0">M</div><div class="tx"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t4">N</div><div class="tx on-photo"><p><b>Nia</b> practiced <b>Golden Turmeric Broth</b></p><span class="meta">Recipe · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Nia"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t0">M</div><div class="tx on-photo"><p><b>Mateo V.</b> practiced <b>Shaking It Out</b></p><span class="meta">Somatic Exercises · yesterday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg></span><button class="member-menu" aria-label="More for Mateo V."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     <div class="sec">
-      <div class="section-label"><span class="title">Earlier</span></div>
+      <div class="section-label on-photo"><span class="title">Earlier</span></div>
       <div class="rows">
-        <div class="row"><div class="av t2">A</div><div class="tx"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t2">A</div><div class="tx on-photo"><p><b>Alma G.</b> practiced <b>Core &amp; Ground</b></p><span class="meta">Movement · Wednesday</span></div><span class="like"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z"/></svg>2</span><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
     </div>

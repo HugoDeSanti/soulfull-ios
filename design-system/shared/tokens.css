@@ -7,8 +7,8 @@
    truth stores colors as RGB 0–1; the hex values below are the exact sRGB
    conversions (round to nearest 8-bit channel).
 
-   The direction ("still", 2026-10-10): black and near-white as the Open app is
-   laid, colour only in photography and the atmosphere washes; no rounded
+   The direction ("still", 2026-10-10): near-white type over each screen's own
+   photograph, which stays visible (no black ground, no dark wash); no rounded
    corners; motion fades and settles, never bounces; space is part of the page.
 
    Theme.swift            ->  CSS variable
@@ -57,8 +57,8 @@
 
   /* ---- Text ---- */
   --ink:      #f2f1ed;    /* rgb(0.949, 0.945, 0.929)  near-white, faintly warm */
-  --ink-soft: #a19f99;    /* rgb(0.631, 0.624, 0.600)  warm grey */
-  --muted:    #6b6964;    /* rgb(0.420, 0.412, 0.392)  tertiary/metadata — on black, glass or a card */
+  --ink-soft: #c9c7c1;    /* rgb(0.788, 0.780, 0.757)  light warm grey — bright enough for the photo skies */
+  --muted:    #7d7b76;    /* rgb(0.490, 0.482, 0.463)  tertiary/metadata — on glass or a card, never on a photo */
   --ink-on-photo: rgba(242,241,237,0.92);  /* Theme.inkOnPhoto — body copy laid on a photo */
   --ember:    #d08c5e;    /* rgb(0.816, 0.549, 0.369)  copper — the one warm mark, used sparingly */
   --danger:   #d95c54;    /* rgb(0.85, 0.36, 0.33)     muted brick — irreversible actions (Delete account) */
@@ -74,8 +74,9 @@
      top: tone → mid → low → black, at 0 / 0.38 / 0.72 / 1 of `reach`. The
      tones are at full strength here; `.atmosphere` (app.css) lays them at
      `--atmos-intensity` over black and breathes them (× 0.78 ↔ 1 over two
-     breaths). A page ground is the default (reach 0.5, intensity 0.55); a
-     card that carries a full wash (Home's ritual) sets
+     breaths). The defaults below match Atmosphere.swift's (reach 0.5,
+     intensity 0.55), but no page uses it as a ground any more — pages sit on
+     their photos. Its one use, Home's ritual card (ember), sets
      `--atmos-reach: 115%; --atmos-intensity: 1` on itself. */
   --atmos-reach: 50%;
   --atmos-intensity: 0.55;

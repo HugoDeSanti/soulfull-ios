@@ -26,7 +26,7 @@ ships from `SoulfullGatherings/` and never imports anything here.
 | Design System file        | Swift source                          | What lives there |
 |---------------------------|---------------------------------------|------------------|
 | `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`, `Atmosphere.swift` | Colors, gradients, the atmosphere tones, hairline / space / motion, type — one CSS var per `Theme.*` constant |
-| `shared/app.css`          | `Core/DesignSystem/Components.swift` (SGPrimaryButton, GlassCard, SectionLabel, GlyphButton, PhotoBackdrop), `SoulGlass.swift`, `Pressable.swift`, `Atmosphere.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift` | Buttons, veils, the atmosphere, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu |
+| `shared/app.css`          | `Core/DesignSystem/Components.swift` (SGPrimaryButton, GlassCard, SectionLabel, GlyphButton, PhotoBackdrop), `SoulGlass.swift`, `Pressable.swift`, `Atmosphere.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift` | Buttons, glass, the photo backdrop, the ritual card's atmosphere, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu |
 | `shared/frame.css`        | (presentation only)                   | iPhone shell + iOS status bar — not part of the app |
 | `foundations/*.html`      | `Theme.swift`                         | Swatch / type / gradient reference sheets |
 | `components/*.html`       | `Components.swift` et al.             | One card per reusable view |
@@ -34,9 +34,10 @@ ships from `SoulfullGatherings/` and never imports anything here.
 
 ### The direction: still
 
-Since 2026-10-10 the app is laid like the Open app: **black and near-white**,
-colour only in photography and in the slow atmosphere washes; **every corner
-square** (only a face, a dot and the player's breath ring are round);
+Since 2026-10-10 the app is still: near-white type over **each screen's own
+photograph, which stays visible** (no black ground, no dark wash over it or
+over the cards); **every corner square** (only a face, a dot and the player's
+breath ring are round);
 **hairlines and space instead of boxes** wherever a box only grouped text;
 **still motion** — a press dims, things fade in and settle at breath pace,
 nothing springs, squishes, bounces or zooms. Keep new cards inside that.
@@ -53,8 +54,8 @@ matching constant in `Theme.swift`:
 | `--bg-deep` | `Theme.bgDeep` | `#090908` (the docked bar) |
 | `--surface` | `Theme.surface` | `#10100E` |
 | `--ink` | `Theme.ink` | `#F2F1ED` |
-| `--ink-soft` | `Theme.inkSoft` | `#A19F99` |
-| `--muted` | `Theme.muted` | `#6B6964` (never on a photo — see below) |
+| `--ink-soft` | `Theme.inkSoft` | `#C9C7C1` |
+| `--muted` | `Theme.muted` | `#7D7B76` (never on a photo — see below) |
 | `--ink-on-photo` | `Theme.inkOnPhoto` | `rgba(242,241,237,0.92)` (ink @ 0.92) |
 | `--accent` | `Theme.accent` | `#3E4315` (moss deep, the logo) |
 | `--accent-soft` | `Theme.accentSoft` | `#7D8738` (moss light: switches, "complete") |
@@ -65,19 +66,21 @@ matching constant in `Theme.swift`:
 | `--gutter` | `Theme.gutter` | `24` — the page margin |
 | `--section-gap` | `Theme.sectionGap` | `64` — between a page's sections |
 | `--ease-press` … `--ease-stage`, `--breath` | `Theme.Motion.*` | press .12s / release .5s / settle .6s / reveal 1.1s / stage 1.2s; breath 6s |
-| `--atmos-<tone>-top/-mid/-low`, `--atmos-reach`, `--atmos-intensity` | `Atmosphere(tone:reach:intensity:)` | moss · ember · dusk · slate; page ground reach 0.5, intensity 0.55 |
+| `--atmos-<tone>-top/-mid/-low`, `--atmos-reach`, `--atmos-intensity` | `Atmosphere(tone:reach:intensity:)` | moss · ember · dusk · slate; used only by Home's ritual card (ember, reach 1.15, intensity 1) |
 
 There are no radius tokens: `Theme.cardRadius` and `Theme.pillRadius` are gone.
 
 > Theme.swift stores colors as RGB 0–1. To go from a new hex back to Swift:
 > `R/255, G/255, B/255`. e.g. `#D08C5E` → `Color(red: 0.816, green: 0.549, blue: 0.369)`.
 
-**Grounds.** A screen whose photograph is its content (Welcome, onboarding,
-the retreat stack and detail, the post-purchase heroes) keeps it, blur ≤ 6.
-Every other screen sits on `.atmosphere.atmosphere--<tone>` (Home, You,
-Account → moss; Digital Retreats, guides, enquiry → ember; Community and its
-sheets → dusk; Practice and its pages → slate). A content photo is never
-blurred into a page's tint.
+**Grounds.** Every tab and page sits on its own photo backdrop (`.photo` →
+`.vignette` → `.top-scrim`, the first children of `.screen`, which stack behind
+the content), blurred and darkened per screen exactly as its
+`PhotoBackdrop(...)` in Swift, and the photo stays visible. The black
+`.atmosphere` grounds that briefly replaced them read as a dark veil over the
+app and were reverted the same day; `.atmosphere` survives only as Home's
+ritual card wash. Glass (`.glass`, `.glass-card`) is a light frost with a
+hairline, with no black wash, so the photo shows through it too.
 
 ### Type over photography
 
@@ -93,16 +96,17 @@ change it in both places or the mirror drifts:
 | Eyebrow colour | `--ink-soft` | `Theme.inkSoft` |
 | Subline colour / size | `--ink-on-photo` at 14px | `Theme.inkOnPhoto`, `Theme.body(14)` |
 
-`--muted` / `Theme.muted` is for type on **black, a veil or a card** — over a
-photo it sinks into the scrim. Type inside a card or on `--bg` needs none of
-this; the surface is its own ground.
+`--muted` / `Theme.muted` is for type on **glass or a card** — over a photo it
+sinks into the scrim, so text laid on a page (which is always on a photo)
+uses `--ink-soft` instead. Type inside a card needs none of this; the surface
+is its own ground.
 
 ## What's faithful vs. approximated
 
 - **Faithful:** colors, type scale, spacing, copy, layout, component anatomy, Geist.
 - **Approximated (CSS can't do Metal):** the player's aurora shader is a layered
-  CSS gradient drift; the veil's frost is a `backdrop-filter` blur; the
-  atmosphere's breath and the breathing/pulse loops are CSS keyframes. They read
+  CSS gradient drift; glass's frost is a `backdrop-filter` blur; the
+  ritual card's breath and the breathing/pulse loops are CSS keyframes. They read
   correctly but aren't pixel-identical to SwiftUI.
 - **Fonts:** Geist loads from Google Fonts. The app ships the Geist TTFs in
   `Resources/Fonts/`.
@@ -224,7 +228,7 @@ Two other things on the card are **not** free text to restyle:
 
 Submit posts to the `send-retreat-enquiry` Edge Function, which emails the
 answers to the team — so the button does have a **"Sending…"** state, and a
-failure shows a square veil with an ember hairline under it (same anatomy as
+failure shows square glass with an ember hairline under it (same anatomy as
 `account`'s error banner) with every answer left in place. The confirmation afterwards is the
 website's own thank-you message.
 

@@ -17,7 +17,8 @@ struct ExerciseListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.movement.title,
             blurb: PracticeMenuItem.movement.blurb,
-            systemImage: PracticeMenuItem.movement.systemImage
+            systemImage: PracticeMenuItem.movement.systemImage,
+            backdrop: PracticeMenuItem.movement.imageName
         ) {
             if store.library.exercises.isEmpty {
                 WrittenLibraryPlaceholder(item: .movement, noun: "sequences")
@@ -63,10 +64,12 @@ struct ExerciseListView: View {
                 PresenceLine(kind: .exercise, contentID: exercise.id, faceSize: 18)
                     .padding(.top, 4)
             }
+            // The row lies open on the section's photograph.
+            .onPhoto()
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
         }
         .padding(.vertical, 18)
         .frame(maxWidth: .infinity)
@@ -85,19 +88,6 @@ struct ExerciseDetailView: View {
             VStack(alignment: .leading, spacing: 28) {
                 PracticeBackBar(label: "Movement")
 
-                // The sequence's photograph, as a square-cut plate at the head
-                // of the page — it used to be blurred into the page's tint.
-                Color.clear
-                    .frame(height: 220)
-                    .frame(maxWidth: .infinity)
-                    .overlay { CatalogImage(exercise.imageUrl) { $0.resizable().scaledToFill() } }
-                    .clipped()
-                    // `clipped()` clips the drawing, not the hit area: the
-                    // filled photo's overflow lay over the back bar above and
-                    // swallowed its taps. The plate is only a picture.
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Text(exercise.focus.uppercased())
@@ -115,12 +105,14 @@ struct ExerciseDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text(exercise.blurb)
                         .font(Theme.body(14))
-                        .foregroundStyle(Theme.inkSoft)
+                        .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                     PresenceLine(kind: .exercise, contentID: exercise.id, faceSize: 22)
                         .padding(.top, 6)
                 }
+                // Header block over the (blurred) photo backdrop.
+                .onPhoto()
 
                 GuideCard(instructorID: exercise.instructorID, from: exercise.title)
 
@@ -130,9 +122,12 @@ struct ExerciseDetailView: View {
                         .font(Theme.eyebrow(11))
                         .tracking(3)
                         .foregroundStyle(Theme.inkSoft)
+                        .onPhoto()
                         .padding(.bottom, 16)
                     ForEach(Array(exercise.steps.enumerated()), id: \.element.id) { index, step in
+                        // Open on the photograph now, not inside a glass box.
                         NumberedStepRow(index: index + 1, title: step.name, detail: step.detail)
+                            .onPhoto()
                             .padding(.vertical, 16)
                             .overlay(alignment: .top) { PracticeRule() }
                     }
@@ -149,7 +144,7 @@ struct ExerciseDetailView: View {
         .statusBarScrim()
         .practiceActivity(.exercise(exercise))
         .background {
-            Atmosphere(tone: .slate)
+            PhotoBackdrop(imageName: exercise.imageUrl, blur: 24, darken: 0.8)
         }
     }
 }

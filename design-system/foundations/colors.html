@@ -21,7 +21,7 @@
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Foundations</p>
   <h1 class="canvas-headline">Color — Theme.swift</h1>
-  <p class="note">Black and near-white, as the Open app is laid. The colour comes from photography and from the atmosphere washes, never from the chrome. Ember is the one warm mark, used sparingly; most active states are simply ink.</p>
+  <p class="note">Near-white type over each screen's own photograph, which stays visible. The colour comes from photography, never from the chrome. Ember is the one warm mark, used sparingly; most active states are simply ink.</p>
 
   <div class="group-h">Canvas</div>
   <div class="swatches">
@@ -33,8 +33,8 @@
   <div class="group-h">Text</div>
   <div class="swatches">
     <div class="sw"><div class="chipcolor" style="background:var(--ink)"></div><div class="meta"><div class="name">ink</div><div class="swift">Theme.ink · --ink</div><div class="hex">#F2F1ED</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--ink-soft)"></div><div class="meta"><div class="name">inkSoft</div><div class="swift">Theme.inkSoft · --ink-soft</div><div class="hex">#A19F99</div></div></div>
-    <div class="sw"><div class="chipcolor" style="background:var(--muted)"></div><div class="meta"><div class="name">muted</div><div class="swift">Theme.muted · --muted · never on a photo</div><div class="hex">#6B6964</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--ink-soft)"></div><div class="meta"><div class="name">inkSoft</div><div class="swift">Theme.inkSoft · --ink-soft</div><div class="hex">#C9C7C1</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:var(--muted)"></div><div class="meta"><div class="name">muted</div><div class="swift">Theme.muted · --muted · never on a photo</div><div class="hex">#7D7B76</div></div></div>
   </div>
 
   <div class="group-h">Accents</div>
@@ -49,12 +49,12 @@
     <div class="sw"><div class="chipcolor" style="background:var(--danger)"></div><div class="meta"><div class="name">danger</div><div class="swift">Theme.danger · --danger</div><div class="hex">#D95C54</div></div></div>
   </div>
 
-  <div class="group-h">Atmospheres — Atmosphere.swift (page ground: reach 50%, intensity .55)</div>
+  <div class="group-h">Atmospheres — Atmosphere.swift (only Home's ritual card uses one: ember, reach 115%, intensity 1; pages sit on their photos)</div>
   <div class="swatches" style="grid-template-columns: repeat(4, 1fr)">
-    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--moss"></div></div><div class="meta"><div class="name">moss</div><div class="swift">Home · You · Account</div><div class="hex">#3D4416 → #262B0D → #11130A</div></div></div>
-    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--ember"></div></div><div class="meta"><div class="name">ember</div><div class="swift">Digital Retreats · guides · enquiry</div><div class="hex">#663316 → #3D1D0B → #1A0B04</div></div></div>
-    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--dusk"></div></div><div class="meta"><div class="name">dusk</div><div class="swift">Community · friends · safety</div><div class="hex">#5D312C → #361A19 → #160A0A</div></div></div>
-    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--slate"></div></div><div class="meta"><div class="name">slate</div><div class="swift">Practice and its pages</div><div class="hex">#242E3F → #151B26 → #090B10</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--moss"></div></div><div class="meta"><div class="name">moss</div><div class="swift">Atmosphere tone · not in use</div><div class="hex">#3D4416 → #262B0D → #11130A</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--ember" style="--atmos-reach:115%;--atmos-intensity:1"></div></div><div class="meta"><div class="name">ember</div><div class="swift">Home's ritual card</div><div class="hex">#663316 → #3D1D0B → #1A0B04</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--dusk"></div></div><div class="meta"><div class="name">dusk</div><div class="swift">Atmosphere tone · not in use</div><div class="hex">#5D312C → #361A19 → #160A0A</div></div></div>
+    <div class="sw"><div class="chipcolor" style="height:180px"><div class="atmosphere atmosphere--slate"></div></div><div class="meta"><div class="name">slate</div><div class="swift">Atmosphere tone · not in use</div><div class="hex">#242E3F → #151B26 → #090B10</div></div></div>
   </div>
 
   <div class="group-h">Hairlines & surface strokes (white @ alpha, 0.75pt)</div>

@@ -26,7 +26,7 @@ struct BlockedMembersView: View {
         }
         .scrollIndicators(.hidden)
         .refreshable { await vm.load() }
-        .background { Atmosphere(tone: .dusk) }
+        .background { PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
         .presentationCornerRadius(0)
@@ -45,10 +45,11 @@ struct BlockedMembersView: View {
                 .kerning(-0.6)
             Text("You and the people you block don't see each other anywhere in Community. Unblocking doesn't bring back a friendship or likes the block ended.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
     }
 
     @ViewBuilder
@@ -68,26 +69,28 @@ struct BlockedMembersView: View {
                      ? "Reconnect to see who you've blocked."
                      : "Something went wrong at our end. Please try again in a moment.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .fixedSize(horizontal: false, vertical: true)
                 SGPrimaryButton(title: "Try again") { Task { await vm.load() } }
                     .padding(.top, 14)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .onPhoto()
             .padding(.top, 22)
             .overlay(alignment: .top) { Hairline() }
         } else if vm.members.isEmpty {
             Text("You haven't blocked anyone. You can block a member from the ⋯ beside their name in Community.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 22)
                 .overlay(alignment: .top) { Hairline() }
                 .accessibilityIdentifier("blocked-empty")
         } else {
-            // Open rows on black, ruled above and between.
+            // Open rows on the photo, ruled above and between.
             VStack(spacing: 0) {
                 ForEach(vm.members) { member in
                     row(member)
@@ -107,6 +110,7 @@ struct BlockedMembersView: View {
                 .font(Theme.body(15, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
+                .onPhoto()
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button {
                 Haptics.bump()
@@ -115,6 +119,7 @@ struct BlockedMembersView: View {
                 Text("Unblock")
                     .font(Theme.body(13, weight: .medium))
                     .foregroundStyle(Theme.ink)
+                    .onPhoto()
                     .padding(.horizontal, 14)
                     .frame(height: 34)
                     .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))

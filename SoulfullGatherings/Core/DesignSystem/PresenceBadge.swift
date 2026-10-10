@@ -92,7 +92,7 @@ struct PresenceLine: View {
 
 #Preview {
     ZStack {
-        Atmosphere()
+        PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
         VStack(alignment: .leading, spacing: 16) {
             PresenceBadge(presence: Presence(count: 75_700, faces: [
                 CommunityMember(id: UUID(), displayName: "Alma G.", avatarUrl: nil),

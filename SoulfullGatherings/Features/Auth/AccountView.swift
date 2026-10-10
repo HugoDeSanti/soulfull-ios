@@ -48,7 +48,7 @@ struct AccountView: View {
 
     var body: some View {
         ZStack {
-            Atmosphere(tone: .moss)
+            PhotoBackdrop(imageName: "home-bg", blur: 8, darken: 0.74)
 
             ScrollView {
                 VStack(spacing: 24) {
@@ -174,6 +174,7 @@ struct AccountView: View {
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.ink)
                     .underline()
+                    .onPhoto()
                     .padding(.vertical, 10)
                     .widerHitArea(vertical: 4)
             }
@@ -206,7 +207,8 @@ struct AccountView: View {
     private func resendNote(_ msg: String) -> some View {
         Text(msg)
             .font(Theme.body(12))
-            .foregroundStyle(Theme.inkSoft)
+            .foregroundStyle(Theme.inkOnPhoto)
+            .onPhoto()
     }
 
     private func resendButton(_ send: @escaping () async -> Void) -> some View {
@@ -216,8 +218,9 @@ struct AccountView: View {
         } label: {
             Text(vm.resendCooldown > 0 ? "Send a new code in \(vm.resendCooldown)s" : "Send a new code")
                 .font(Theme.body(13))
-                .foregroundStyle(vm.resendCooldown > 0 ? Theme.muted : Theme.ink)
+                .foregroundStyle(vm.resendCooldown > 0 ? Theme.inkSoft : Theme.ink)
                 .underline(vm.resendCooldown == 0)
+                .onPhoto()
                 .padding(.vertical, 6)
                 .widerHitArea(vertical: 8)
         }
@@ -259,10 +262,11 @@ struct AccountView: View {
             // isn't one anybody would think to type here.
             Text("Joined with Apple? There's no password to reset. Go back and continue with Apple.")
                 .font(Theme.body(12))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 280)
+                .onPhoto()
 
             backToSignInButton
         }
@@ -330,11 +334,12 @@ struct AccountView: View {
                 .multilineTextAlignment(.center)
             Text(detail)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 300)
         }
+        .onPhoto()
     }
 
     private var backToSignInButton: some View {
@@ -346,6 +351,7 @@ struct AccountView: View {
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.ink)
                 .underline()
+                .onPhoto()
                 .padding(.vertical, 10)
                 .widerHitArea(vertical: 4)
         }
@@ -374,11 +380,12 @@ struct AccountView: View {
                 .multilineTextAlignment(.center)
             Text(vm.mode.subtitle)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: 300)
         }
+        .onPhoto()
         .padding(.bottom, 12)
     }
 
@@ -403,7 +410,8 @@ struct AccountView: View {
             Text("or")
                 .font(Theme.eyebrow(11))
                 .tracking(2)
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
             line
         }
         .padding(.vertical, 2)
@@ -460,10 +468,11 @@ struct AccountView: View {
     private var passwordRule: some View {
         Text("At least 8 characters")
             .font(Theme.body(12))
-            .foregroundStyle(Theme.inkSoft)
+            .foregroundStyle(Theme.inkOnPhoto)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 18)
             .padding(.top, -6)
+            .onPhoto()
             // Spoken as the password field's hint instead.
             .accessibilityHidden(true)
     }
@@ -477,6 +486,7 @@ struct AccountView: View {
                 .font(Theme.body(13))
                 .foregroundStyle(Theme.ink)
                 .underline()
+                .onPhoto()
                 .widerHitArea(vertical: 14)
         }
         .buttonStyle(.plain)
@@ -557,12 +567,13 @@ struct AccountView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(vm.mode == .createAccount ? "Already have an account?" : "New here?")
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                 Text(vm.mode == .createAccount ? "Sign in" : "Create account")
                     .foregroundStyle(Theme.ink)
                     .underline()
             }
             .font(Theme.body(13))
+            .onPhoto()
             .widerHitArea(vertical: 14)
         }
         .buttonStyle(.plain)
@@ -576,11 +587,13 @@ struct AccountView: View {
     private var agreement: some View {
         Text(Self.agreementText)
             .font(Theme.body(12))
-            .foregroundStyle(Theme.muted)
-            .tint(Theme.inkSoft)
+            // On the photo: `muted` sank into it. The links stand out in ink.
+            .foregroundStyle(Theme.inkSoft)
+            .tint(Theme.ink)
             .multilineTextAlignment(.center)
             .lineSpacing(2)
             .fixedSize(horizontal: false, vertical: true)
+            .onPhoto()
             .padding(.horizontal, 6)
             .accessibilityIdentifier("account-agreement")
     }

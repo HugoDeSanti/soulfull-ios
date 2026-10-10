@@ -64,7 +64,7 @@ struct AvatarView: View {
 
 #Preview {
     ZStack {
-        Atmosphere(tone: .dusk)
+        PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
         HStack(spacing: 16) {
             AvatarView(avatarUrl: nil, name: "Hugo D.", seed: "a", size: 56)
             AvatarView(avatarUrl: nil, name: "Alma G.", seed: "b", size: 56)

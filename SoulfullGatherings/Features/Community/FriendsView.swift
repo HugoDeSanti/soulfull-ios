@@ -55,7 +55,7 @@ struct FriendsView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .scrollDismissesKeyboard(.interactively)
-        .background { Atmosphere(tone: .dusk) }
+        .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8) }
         .refreshable { await vm.loadFriendships(force: true) }
         .task { await vm.loadFriendships() }
         .confirmationDialog("Remove \(removing?.other?.displayName ?? "this friend")?",
@@ -88,10 +88,11 @@ struct FriendsView: View {
                 .kerning(-0.7)
             Text("Find the people you practice with. What they finish joins your Friends feed, and what you finish joins theirs.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
     }
 
     /// UIKit-backed field, so no `.onPhoto()` or blur on this container (gotcha #1).
@@ -138,6 +139,7 @@ struct FriendsView: View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Results")
                 .padding(.horizontal, -Theme.gutter)
+                .onPhoto()
             if vm.isSearching && vm.searchResults.isEmpty {
                 ProgressView()
                     .tint(Theme.inkSoft)
@@ -176,9 +178,10 @@ struct FriendsView: View {
             } else if vm.searchResults.isEmpty {
                 Text("No one by that name yet. Names match what people entered when they joined.")
                     .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
                     .padding(.top, 10)
             } else {
                 ForEach(vm.searchResults) { member in
@@ -219,6 +222,7 @@ struct FriendsView: View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: title)
                 .padding(.horizontal, -Theme.gutter)
+                .onPhoto()
             ForEach(rows) { row in
                 let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
                 MemberRow(member: member, ruled: row.id != rows.first?.id) {
@@ -235,6 +239,7 @@ struct FriendsView: View {
         VStack(alignment: .leading, spacing: 4) {
             SectionLabel(title: "Friends")
                 .padding(.horizontal, -Theme.gutter)
+                .onPhoto()
             if let failure = vm.friendshipsFailure, vm.friendships.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.circle")
@@ -265,9 +270,10 @@ struct FriendsView: View {
                      ? "No friends yet. Search for someone above to send the first request."
                      : " ")
                     .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
                     .padding(.top, 10)
             } else {
                 ForEach(vm.friends) { row in
@@ -309,6 +315,9 @@ struct FriendsView: View {
                 // "Accept" broke in half.
                 .lineLimit(1)
                 .fixedSize()
+                // An outlined label sits on the photo; a filled one has its
+                // own ground, where a halo would only smudge black type.
+                .modifier(OnPhotoUnlessFilled(filled: filled))
                 .padding(.horizontal, 14)
                 .frame(height: 34)
                 .background {
@@ -339,6 +348,7 @@ struct FriendsView: View {
                 .textCase(.uppercase)
         }
         .foregroundStyle(Theme.inkSoft)
+        .onPhoto()
         .frame(height: 44)
         .accessibilityElement(children: .combine)
     }
@@ -361,8 +371,8 @@ struct FriendsView: View {
 }
 
 /// A face, a name, and whatever control the section puts beside them — an
-/// open row on black, with a hairline above it when `ruled` (every row but a
-/// section's first).
+/// open row on the photo, with a hairline above it when `ruled` (every row
+/// but a section's first).
 private struct MemberRow<Trailing: View>: View {
     let member: CommunityMember
     var ruled = false
@@ -376,6 +386,7 @@ private struct MemberRow<Trailing: View>: View {
                 .font(Theme.body(15, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
+                .onPhoto()
                 .frame(maxWidth: .infinity, alignment: .leading)
             trailing
         }
@@ -387,6 +398,15 @@ private struct MemberRow<Trailing: View>: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(member.displayName)
+    }
+}
+
+/// `.onPhoto()` for an outlined button's label only.
+private struct OnPhotoUnlessFilled: ViewModifier {
+    let filled: Bool
+
+    func body(content: Content) -> some View {
+        if filled { content } else { content.onPhoto() }
     }
 }
 

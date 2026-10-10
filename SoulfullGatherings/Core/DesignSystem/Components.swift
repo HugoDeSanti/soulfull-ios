@@ -338,7 +338,7 @@ struct TabPlaceholder: View {
 
     var body: some View {
         ZStack {
-            Atmosphere(tone: .moss)
+            PhotoBackdrop(imageName: "home-bg", blur: 4, darken: 0.7)
 
             VStack(spacing: 18) {
                 Spacer()

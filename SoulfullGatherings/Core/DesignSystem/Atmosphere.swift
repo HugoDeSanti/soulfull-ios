@@ -2,11 +2,11 @@
 //  Atmosphere.swift
 //  Soulfull Gatherings
 //
-//  The ground of every screen that isn't a photograph: black, with one
-//  colour falling from the top edge like light through a doorway, as the
-//  Open app lays its copper and moss washes. It replaces the blurred photo
-//  backdrops the tabs used to sit on, which tinted every screen and blurred
-//  the edge between picture and page.
+//  A single-hue wash falling from the top edge into black, like light
+//  through a doorway, as the Open app lays its copper daily card. Today it
+//  is Home's ritual card. It was briefly the ground of every screen in place
+//  of the photo backdrops, which read as a dark veil over the app and was
+//  reverted the same day (2026-10-10): pages keep their `PhotoBackdrop`.
 //
 //  It breathes: the wash brightens and settles over two breaths, and holds
 //  still under Reduce Motion. Nothing else about it moves.

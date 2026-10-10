@@ -3,11 +3,11 @@
    Each block mirrors a Swift view. The header comment names the Swift source so
    a change here maps to a known file.
 
-   The direction is "still" (2026-10-10): black and near-white, colour only in
-   photography and the atmosphere washes; every corner square (only faces, dots
-   and the player's breath ring are round); hairlines instead of boxes where a
-   box only grouped text; a press dims (opacity .55), nothing scales, springs or
-   bounces; things fade in and breathe.
+   The direction is "still" (2026-10-10): near-white type over each screen's own
+   photograph, which stays visible (no black ground, no dark wash); every corner
+   square (only faces, dots and the player's breath ring are round); hairlines
+   instead of boxes where a box only grouped text; a press dims (opacity .55),
+   nothing scales, springs or bounces; things fade in and breathe.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------------
@@ -33,23 +33,25 @@
 .hair, .rule-h { height: 0.5px; background: var(--line); border: 0; margin: 0; }
 
 /* ---------------------------------------------------------------------------
-   Veil surfaces  (SoulGlass.swift) — a light frost under a black wash, with a
-   hairline, square. The same on every OS: no Liquid Glass (its lensing and
-   touch-bounce read as playful).
+   Glass surfaces  (SoulGlass.swift) — a light frost (ultraThinMaterial) with a
+   hairline, square; the photograph behind shows through. The same on every
+   OS: no Liquid Glass (its lensing and touch-bounce read as playful). A black
+   wash over the frost was tried and removed at the owner's request: it turned
+   every card into a dark slab over the backdrop.
    --------------------------------------------------------------------------- */
 .glass {
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border: var(--hairline) solid var(--glass-border);
 }
 .glass-strong { border-color: var(--glass-border-high); }
 /* GlassCard (Components.swift) — padding 20 */
 .glass-card {
   padding: 20px;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border: var(--hairline) solid var(--glass-border);
 }
 
@@ -59,17 +61,17 @@
 .sg-press:active { opacity: .55; transition: opacity var(--ease-press); }
 
 /* ---------------------------------------------------------------------------
-   Atmosphere  (Atmosphere.swift) — the ground of every screen that isn't a
-   photograph: black, with one tone falling from the top edge, black by
-   --atmos-reach. Page grounds: reach 50%, intensity .55 (tokens.css). Home's
-   ritual card sets `--atmos-reach: 115%; --atmos-intensity: 1` on itself.
+   Atmosphere  (Atmosphere.swift) — one tone falling from the top edge into
+   black, black by --atmos-reach. Today it is only Home's ritual card (ember),
+   which sets `--atmos-reach: 115%; --atmos-intensity: 1` on itself. It was
+   briefly every page's ground in place of the photos, which read as a dark
+   veil over the app and was reverted the same day: pages keep their photo.
    Breathes: the wash's opacity goes × .78 ↔ 1 over two breaths; holds still
    under prefers-reduced-motion.
    --------------------------------------------------------------------------- */
-/* Drop <div class="atmosphere atmosphere--moss"></div> as the first child of
-   a screen (or a card): it sits behind everything else in its parent, which
-   becomes a stacking context. On a scrolling screen it scrolls with the page,
-   which is what the app's `.background { Atmosphere }` does. */
+/* Drop <div class="atmosphere atmosphere--ember"></div> as the first child of
+   a card: it sits behind everything else in its parent, which becomes a
+   stacking context. */
 :where(:has(> .atmosphere)) { position: relative; }
 :has(> .atmosphere) { isolation: isolate; }
 .atmosphere { position: absolute; inset: 0; z-index: -1; background: var(--bg); pointer-events: none; }
@@ -157,7 +159,7 @@
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 12px;
   border-radius: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(255,255,255,0.06);
   border: var(--hairline) solid var(--glass-border);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -186,7 +188,7 @@
 .moods::-webkit-scrollbar { display: none; }
 
 /* ---------------------------------------------------------------------------
-   OptionCard  (OnboardingView) — square veiled tile: "01" + label. Chosen:
+   OptionCard  (OnboardingView) — square glass tile: "01" + label. Chosen:
    the hairline turns to ink (.75), the surface lifts a shade (ink @ .07), the
    numeral turns ink and the label Medium. Nothing glows, grows or glints.
    --------------------------------------------------------------------------- */
@@ -195,9 +197,9 @@
   min-height: 108px;
   padding: 16px;
   border-radius: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(255,255,255,0.10);
   border: var(--hairline) solid var(--glass-border-high);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   display: flex; flex-direction: column; justify-content: flex-end;
   cursor: pointer;
   transition: border-color var(--ease-settle), background var(--ease-settle);
@@ -205,7 +207,7 @@
 .option-card .idx { font-size: 11px; letter-spacing: 1.2px; color: var(--ink-soft); margin-bottom: 14px; position: absolute; top: 16px; left: 16px; }
 .option-card .lbl { font-size: 15px; color: var(--ink); }
 .option-card.is-selected {
-  background: linear-gradient(rgba(242,241,237,0.07), rgba(242,241,237,0.07)), rgba(0,0,0,0.5);
+  background: linear-gradient(rgba(242,241,237,0.07), rgba(242,241,237,0.07)), rgba(255,255,255,0.10);
   border-color: rgba(242,241,237,0.75);
 }
 .option-card.is-selected .idx { color: var(--ink); }
@@ -281,9 +283,10 @@
 .nav-item.is-active .nav-avatar { opacity: 1; box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3px var(--ink); }
 
 /* ---------------------------------------------------------------------------
-   Photo backdrop  (PhotoBackdrop in Components.swift) — only where the
-   photograph is the content: Welcome, onboarding, the retreat stack and
-   detail. Saturation .9 (a shade quieter than life); blur ≤ 6.
+   Photo backdrop  (PhotoBackdrop in Components.swift) — the ground of every
+   tab and page: its photograph, blurred and darkened per screen (the inline
+   filters on each screen card carry that screen's blur / brightness), and it
+   stays visible. Saturation .9 (a shade quieter than life).
    --------------------------------------------------------------------------- */
 .photo {
   position: absolute; inset: 0;
@@ -291,8 +294,13 @@
   filter: saturate(0.9) brightness(0.95);
 }
 .photo--blur5  { filter: saturate(0.9) brightness(0.95) blur(5px);  transform: scale(1.08); }
-.photo--blur8  { filter: saturate(0.9) brightness(0.95) blur(6px);  transform: scale(1.08); }
+.photo--blur8  { filter: saturate(0.9) brightness(0.95) blur(8px);  transform: scale(1.10); }
+.photo--blur22 { filter: saturate(0.9) brightness(0.9)  blur(22px); transform: scale(1.18); }
 .vignette { position: absolute; inset: 0; pointer-events: none; }
+/* A screen's ground layers (.photo → .vignette → .top-scrim, first children of
+   .screen) sit behind its content, which stays in flow above them. */
+.screen:has(> .photo) { isolation: isolate; }
+.screen > :is(.photo, .vignette, .top-scrim) { z-index: -1; }
 .vignette--soft { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.30), rgba(0,0,0,0.55)); }
 .vignette--deep { background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.40), rgba(0,0,0,0.75)); }
 /* Retreat hero (RetreatDetailView.hero). The middle stops hold at ~0.22 — they
@@ -329,18 +337,18 @@
 /* ---------------------------------------------------------------------------
    Type over photography  (View.onPhoto() in Components.swift)
 
-   Text laid on a photo rather than on a veil or black. A tight shadow for edge
+   Text laid on a photo rather than on glass. A tight shadow for edge
    definition plus a wide, weaker halo; both vanish over dark ground. Pair it
    with the palette rule: eyebrows in --ink-soft (never --muted, which sinks
-   into the scrim) and sublines in --ink-on-photo at 14px. Text on black or an
-   atmosphere needs none of this.
+   into the scrim) and sublines in --ink-on-photo at 14px. Every page sits on
+   a photo, so text on the page (not inside a .glass surface) takes this.
    --------------------------------------------------------------------------- */
 .on-photo { text-shadow: 0 1px 4px rgba(0,0,0,.7), 0 0 12px rgba(0,0,0,.4); }
 
 /* ---------------------------------------------------------------------------
    Aurora background  (ShaderFX.AuroraBackground) — CSS approximation. The
    practice player's ground only (near-black moss, the brand olive, an umber);
-   every other screen sits on the stiller .atmosphere.
+   every other screen sits on its photo backdrop.
    --------------------------------------------------------------------------- */
 .aurora {
   position: absolute; inset: -20%;
@@ -453,7 +461,7 @@
 /* Completion seal, replacing the chevron. */
 .seal { color: color-mix(in srgb, var(--ember) 85%, transparent); display: flex; }
 
-/* Home's "Continue where you left off" card. A square veil, not the ritual
+/* Home's "Continue where you left off" card. Square glass, not the ritual
    card's ember wash — it is a resumption, not an invitation. Ember CONTINUE,
    a Light 20 title, a square hairline play mark (40px) instead of a disc. */
 .continue {

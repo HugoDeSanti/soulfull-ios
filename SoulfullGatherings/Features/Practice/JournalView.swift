@@ -17,7 +17,8 @@ struct JournalListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.journal.title,
             blurb: PracticeMenuItem.journal.blurb,
-            systemImage: PracticeMenuItem.journal.systemImage
+            systemImage: PracticeMenuItem.journal.systemImage,
+            backdrop: PracticeMenuItem.journal.imageName
         ) {
             if store.library.journals.isEmpty {
                 WrittenLibraryPlaceholder(item: .journal, noun: "prompts")
@@ -63,9 +64,11 @@ struct JournalListView: View {
             }
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
                 .padding(.top, 14)
         }
+        // The row lies open on the section's photograph.
+        .onPhoto()
         .padding(.vertical, 20)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .top) { PracticeRule() }
@@ -169,7 +172,8 @@ struct JournalDetailView: View {
                     }
                 }
                 .font(Theme.body(11))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
 
                 // At the foot, not above the editor: the page is for writing,
                 // and a card between the question and the words would push
@@ -185,7 +189,7 @@ struct JournalDetailView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            Atmosphere(tone: .slate)
+            PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }
         .scrollDismissesKeyboard(.interactively)
         .onAppear { entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? "" }
@@ -231,15 +235,19 @@ struct JournalDetailView: View {
     /// against a thin ember rule.
     private var promptBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Laid on the prompt's photograph: each line carries its own
+            // ground (the rule stays clean).
             Text(prompt.theme.uppercased())
                 .font(Theme.eyebrow(11))
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
             Text(prompt.title)
                 .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.6)
                 .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
 
             HStack(alignment: .top, spacing: 16) {
                 Rectangle()
@@ -247,14 +255,16 @@ struct JournalDetailView: View {
                     .frame(width: 1)
                 Text(prompt.prompt)
                     .font(Theme.body(15))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
             }
             .padding(.top, 12)
 
             PresenceLine(kind: .journal, contentID: prompt.id)
                 .padding(.top, 8)
+                .onPhoto()
         }
     }
 
@@ -269,6 +279,7 @@ struct JournalDetailView: View {
                 .tracking(2)
         }
         .foregroundStyle(Theme.inkSoft)
+        .onPhoto()
         .padding(.top, 10)
         .transition(.opacity)
     }

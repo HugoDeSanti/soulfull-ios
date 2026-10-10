@@ -13,11 +13,12 @@ enum Theme {
 
     // MARK: - Colors
     //
-    // Black and near-white, as the Open app is laid: the colour comes from
-    // photography and from the two atmosphere washes (`Atmosphere`), moss
-    // (the logo's olive) and ember (a copper), never from the chrome.
+    // Near-white over photography: the colour comes from the photo
+    // backdrops, never from the chrome. Ember (a copper) is the one warm
+    // mark; moss (the logo's olive) the quiet positive one.
 
-    /// True black — the canvas. Every screen that isn't a photograph sits on it.
+    /// True black — the canvas under the photo backdrops, and the ground of
+    /// the few pages without one (the recipe and digital retreat pages).
     static let bg = Color.black
 
     /// The docked bar's ground, one step off black so the bar has an edge.
@@ -44,13 +45,15 @@ enum Theme {
     /// Near-white with the faintest warmth — primary text.
     static let ink = Color(red: 0.949, green: 0.945, blue: 0.929)
 
-    /// Warm grey — secondary text.
-    static let inkSoft = Color(red: 0.631, green: 0.624, blue: 0.600)
+    /// Light warm grey — secondary text. As bright as the old cream's
+    /// secondary: a darker grey (0.63) read well on black but sank into the
+    /// photo backdrops' skies.
+    static let inkSoft = Color(red: 0.788, green: 0.780, blue: 0.757)
 
-    /// Tertiary text / metadata. On black, glass or a card only — over
+    /// Tertiary text / metadata. On glass or a card only — over
     /// photography it sinks into the image; use `inkSoft` there (see
     /// `View.onPhoto()`).
-    static let muted = Color(red: 0.420, green: 0.412, blue: 0.392)
+    static let muted = Color(red: 0.490, green: 0.482, blue: 0.463)
 
     /// Body copy that sits directly on photography rather than on glass.
     /// Brighter than `inkSoft`, which washes out over a pale sky — the one

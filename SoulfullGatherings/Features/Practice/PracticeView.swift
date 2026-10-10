@@ -66,7 +66,7 @@ struct PracticeView: View {
         .statusBarScrim()
         .pinchBrowsable(zoomedOut: $sheet)
         .background {
-            Atmosphere(tone: .slate)
+            PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.76)
         }
         .task {
             availability = await SupabaseService.shared.availablePracticeCategories()
@@ -101,11 +101,13 @@ struct PracticeView: View {
                 // `practice_sessions` is seeded.
                 Text(sheet ? "The whole library, side by side." : headerBlurb)
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(4)
                     .padding(.top, 4)
                     .animation(nil, value: sheet)
             }
+            // Floats on a barely-blurred photo — see View.onPhoto().
+            .onPhoto()
             Spacer()
             GlyphButton(systemName: sheet ? "rectangle.portrait" : "square.grid.2x2") {
                 withAnimation(Theme.Motion.settle) { sheet.toggle() }

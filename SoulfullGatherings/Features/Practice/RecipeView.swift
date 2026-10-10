@@ -17,7 +17,8 @@ struct RecipeListView: View {
         PracticeListScaffold(
             title: PracticeMenuItem.recipes.title,
             blurb: PracticeMenuItem.recipes.blurb,
-            systemImage: PracticeMenuItem.recipes.systemImage
+            systemImage: PracticeMenuItem.recipes.systemImage,
+            backdrop: PracticeMenuItem.recipes.imageName
         ) {
             if store.library.recipes.isEmpty {
                 WrittenLibraryPlaceholder(item: .recipes, noun: "recipes")

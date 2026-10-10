@@ -70,7 +70,7 @@ struct HomeView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            Atmosphere(tone: .moss)
+            PhotoBackdrop(imageName: "home-bg", blur: 3, darken: 0.74)
         }
         .task { await vm.load() }
         .task { await history.refresh() }
@@ -109,9 +109,11 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(vm.greeting.uppercased())
-                    .font(Theme.eyebrow(11))
+                    .font(Theme.eyebrow(12))
                     .tracking(2)
-                    .foregroundStyle(Theme.inkSoft)
+                    // Ink, not inkSoft: it sits on the brightest, haziest
+                    // part of home-bg, where grey caps disappear.
+                    .foregroundStyle(Theme.ink)
                 Text("\(settings.userName.isEmpty ? "Friend" : settings.userName).")
                     .font(Theme.headline(42, weight: .light))
                     .foregroundStyle(Theme.ink)
@@ -134,10 +136,12 @@ struct HomeView: View {
 
                 Text("Take your time. We're here with you.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .padding(.top, 8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            // Sits on the brightest part of home-bg (blur 3) — see onPhoto().
+            .onPhoto()
             .padding(.horizontal, Theme.gutter)
         }
     }
@@ -145,6 +149,7 @@ struct HomeView: View {
     private var moodRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "How do you feel?")
+                .onPhoto()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 26) {
                     ForEach(vm.moods) { m in
@@ -173,6 +178,7 @@ struct HomeView: View {
                         .offset(y: 7)
                         .opacity(selected ? 1 : 0)
                 }
+                .onPhoto()
                 // A 44pt target around a word.
                 .padding(.vertical, 13)
                 .contentShape(Rectangle())
@@ -295,6 +301,7 @@ struct HomeView: View {
                          actionLabel: "All gatherings") {
                 onOpenRetreats()
             }
+            .onPhoto()
 
             if let failure = vm.retreatsFailure {
                 retreatsUnavailable(failure)
@@ -306,9 +313,10 @@ struct HomeView: View {
                     if vm.retreatsLoaded {
                         Text("New gatherings are on their way. Dates appear here as they're announced.")
                             .font(Theme.body(13))
-                            .foregroundStyle(Theme.inkSoft)
+                            .foregroundStyle(Theme.inkOnPhoto)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .onPhoto()
                     } else {
                         ProgressView()
                             .tint(Theme.ink)
@@ -391,8 +399,10 @@ struct HomeView: View {
                         .kerning(-0.3)
                     Text("\(r.durationDays) days · \(r.maxGuests) guests")
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                 }
+                // Set beneath the photo, on the page's own photograph.
+                .onPhoto()
                 .padding(.top, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -411,6 +421,7 @@ struct HomeView: View {
             // that used to sit here about the shelf being informational.
             SectionLabel(title: "Digital Retreats", action: "ALL",
                          actionLabel: "All digital retreats") { onOpenProgram(nil) }
+                .onPhoto()
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
@@ -455,14 +466,18 @@ struct HomeView: View {
             .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(p.title)
-                    .font(Theme.headline(20, weight: .light))
-                    .foregroundStyle(Theme.ink)
-                    .kerning(-0.3)
-                    .lineLimit(2)
-                Text("with \(p.lead)")
-                    .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
+                // Set beneath the photo, on the page's own photograph.
+                Group {
+                    Text(p.title)
+                        .font(Theme.headline(20, weight: .light))
+                        .foregroundStyle(Theme.ink)
+                        .kerning(-0.3)
+                        .lineLimit(2)
+                    Text("with \(p.lead)")
+                        .font(Theme.body(12))
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                .onPhoto()
                 PresenceLine(programID: p.id, faceSize: 18)
                     .padding(.top, 6)
             }

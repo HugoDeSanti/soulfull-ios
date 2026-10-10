@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Shared chrome for the Practice feature: the back bar used on every pushed
-//  screen, and the list scaffold (slate atmosphere + back bar + header) that
+//  screen, and the list scaffold (blurred backdrop + back bar + header) that
 //  every category / section list is built on.
 //
 
@@ -28,6 +28,8 @@ struct PracticeBackBar: View {
                         .font(Theme.body(13))
                 }
                 .foregroundStyle(Theme.ink)
+                // It sits on the page's photograph.
+                .onPhoto()
                 // A 44pt-tall target, gap included — the link answered only on
                 // its arrow and its 13pt text. The negative padding below
                 // gives the layout its old height back.
@@ -43,15 +45,13 @@ struct PracticeBackBar: View {
     }
 }
 
-// MARK: - List scaffold (atmosphere + back bar + icon/title/blurb header)
+// MARK: - List scaffold (backdrop + back bar + icon/title/blurb header)
 
-/// Every Practice list sits on the slate atmosphere — black, with a cool
-/// wash from the top — rather than its category's photo blurred into a
-/// tint: the photographs belong to the rows.
 struct PracticeListScaffold<Content: View>: View {
     let title: String
     let blurb: String
     let systemImage: String
+    let backdrop: String
     var backLabel: String = "Practices"
     @ViewBuilder var content: Content
 
@@ -71,7 +71,7 @@ struct PracticeListScaffold<Content: View>: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            Atmosphere(tone: .slate)
+            PhotoBackdrop(imageName: backdrop, blur: 22, darken: 0.78)
         }
     }
 
@@ -92,10 +92,12 @@ struct PracticeListScaffold<Content: View>: View {
                 .kerning(-0.8)
             Text(blurb)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .padding(.top, 4)
         }
+        // Laid straight on the category's photograph.
+        .onPhoto()
     }
 }
 
@@ -150,16 +152,20 @@ struct WrittenLibraryPlaceholder: View {
 
     private func message(_ systemImage: String, title: String, detail: String, retry: Bool) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.muted)
-            Text(title)
-                .font(Theme.headline(20, weight: .light))
-                .foregroundStyle(Theme.ink)
-            Text(detail)
-                .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
+            // On the list's photograph: the type carries its own ground.
+            Group {
+                Image(systemName: systemImage)
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundStyle(Theme.inkSoft)
+                Text(title)
+                    .font(Theme.headline(20, weight: .light))
+                    .foregroundStyle(Theme.ink)
+                Text(detail)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .multilineTextAlignment(.center)
+            }
+            .onPhoto()
             if retry {
                 Button {
                     Haptics.tap()
@@ -195,7 +201,9 @@ struct NumberedStepRow: View {
             Text(String(format: "%02d", index))
                 .font(Theme.body(12, weight: .medium))
                 .tracking(1.5)
-                .foregroundStyle(Theme.muted)
+                // inkSoft, not muted: on a movement page the row sits on the
+                // sequence's photograph, where muted sinks.
+                .foregroundStyle(Theme.inkSoft)
                 .frame(width: 26, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -263,10 +271,12 @@ struct SafetyNoteCard: View {
                     .foregroundStyle(Theme.inkSoft)
                 Text(text)
                     .font(Theme.body(13))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // Open on the list's photograph, not on glass.
+            .onPhoto()
             Spacer(minLength: 0)
         }
         .padding(.top, 20)

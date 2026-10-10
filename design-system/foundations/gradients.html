@@ -15,7 +15,7 @@
   .tile .swift { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .group-h { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); margin: 34px 0 14px; padding-top: 14px; border-top: 0.5px solid var(--line); }
   .shapes { display: flex; gap: 32px; align-items: flex-end; flex-wrap: wrap; }
-  .shapes .s { background: rgba(0,0,0,.5); border: var(--hairline) solid var(--glass-border); }
+  .shapes .s { background: rgba(255,255,255,.06); border: var(--hairline) solid var(--glass-border); }
   .shapes .label { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; }
   .motion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
   .motion .m { border-top: 0.5px solid var(--line); padding-top: 12px; }
@@ -30,7 +30,6 @@
   <div class="grid">
     <div class="tile"><div class="fillbox" style="background:var(--grad-splash)"></div><div class="meta"><div class="name">splash</div><div class="swift">Theme.splash — moss falling to black, top→bottom</div></div></div>
     <div class="tile"><div class="fillbox" style="background:#3a3520"></div><div class="fillbox" style="margin-top:-150px;background:var(--grad-photo-vignette)"></div><div class="meta"><div class="name">photoVignette</div><div class="swift">Theme.photoVignette — over photography</div></div></div>
-    <div class="tile"><div class="fillbox"><div class="atmosphere atmosphere--moss"></div></div><div class="meta"><div class="name">Atmosphere — page ground</div><div class="swift">Atmosphere(tone:) · reach .5 · intensity .55 · breathes ×.78↔1 over 12s</div></div></div>
     <div class="tile"><div class="fillbox"><div class="atmosphere atmosphere--ember" style="--atmos-reach:115%;--atmos-intensity:1"></div></div><div class="meta"><div class="name">Atmosphere — a card's full wash</div><div class="swift">Home's ritual card · reach 1.15 · intensity 1 · fillsScreen: false</div></div></div>
   </div>
 
@@ -62,7 +61,7 @@
     <div class="m"><div class="k">settle · .6s ease-in-out</div><div class="v">a selection, a toggle, a count, a panel.</div></div>
     <div class="m"><div class="k">reveal · 1.1s ease-out</div><div class="v">content arriving: a fade, or a focus pull (blur + fade). Nothing travels.</div></div>
     <div class="m"><div class="k">stage · 1.2s ease-in-out</div><div class="v">loading → welcome → onboarding → main: a crossfade.</div></div>
-    <div class="m"><div class="k">breath · 6s</div><div class="v">the period of every idle loop: atmospheres, the logo, a live dot.</div></div>
+    <div class="m"><div class="k">breath · 6s</div><div class="v">the period of every idle loop: the ritual card's wash, the logo, a live dot.</div></div>
     <div class="m"><div class="k">pushes</div><div class="v">the plain system push; no zoom from cards.</div></div>
   </div>
 </div></div>

@@ -17,17 +17,18 @@
 </head><body>
 <div class="stage"><div class="canvas">
   <p class="canvas-title">Components</p>
-  <h1 class="canvas-headline">PhotoBackdrop · Atmosphere</h1>
+  <h1 class="canvas-headline">PhotoBackdrop</h1>
   <div class="grid3">
     <div class="pv"><div class="img" style="filter:saturate(.9) brightness(.95)"></div><div class="vignette vignette--soft"></div><span class="lab">photo · blur 0</span></div>
     <div class="pv"><div class="img" style="filter:saturate(.9) brightness(.95) blur(6px);transform:scale(1.08)"></div><div class="vignette vignette--soft"></div><span class="lab">photo · blur 6 · darken 0.62</span></div>
-    <div class="pv"><div class="atmosphere atmosphere--moss"></div><span class="lab">Atmosphere · moss</span></div>
+    <div class="pv"><div class="img" style="background-image:url('../assets/welcome-bg.jpg');filter:saturate(.9) brightness(.6) blur(24px);transform:scale(1.1)"></div><div class="vignette vignette--deep"></div><div class="top-scrim" style="height:60%"></div><span class="lab">photo · blur 24 · darken 0.78 · top scrim</span></div>
   </div>
   <p class="swiftnote">
-    <code>PhotoBackdrop</code> is only for screens where the photograph is the content — Welcome, onboarding, the retreat stack and detail:
-    a <code>Theme.bg</code> floor → the image (saturation .9, blur ≤ 6, contained in a <code>Color.clear</code> overlay so <code>scaledToFill</code>
-    can't inflate layout) → a top→bottom vignette → the top scrim. Every other screen sits on <code>Atmosphere</code>: black, with one tone
-    falling from the top (moss · ember · dusk · slate), breathing slowly. A content photo is never blurred into a page's tint any more.
+    <code>PhotoBackdrop</code> is the ground of every tab and page: a <code>Theme.bg</code> floor → the image (saturation .9, contained in a
+    <code>Color.clear</code> overlay so <code>scaledToFill</code> can't inflate layout) → a top→bottom vignette → the top scrim, blurred and
+    darkened per screen (Welcome and onboarding nearly sharp; the tabs 3–8; Community, lists and sheets 22–28; a guide's page 48). The
+    photo stays visible: the black <code>Atmosphere</code> grounds that briefly replaced it read as a dark veil and were reverted the same
+    day; <code>Atmosphere</code> survives only as Home's ritual card wash.
   </p>
 </div></div>
 </body></html>

@@ -63,10 +63,14 @@ final class RetreatEnquiryTests: XCTestCase {
         }
     }
 
-    /// One controlled scroll step, about half the screen.
+    /// One controlled scroll step, about half the screen, dragged down the
+    /// page's right margin. Mid-screen, the drag can start on a control that
+    /// takes it: once the form's fields went square and re-spaced, the open
+    /// date-of-birth wheel sat exactly there, so every "scroll" spun the
+    /// month and the page never moved. The margin holds nothing but page.
     private func drag(_ app: XCUIApplication, up: Bool) {
-        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.78 : 0.30))
-        let to   = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.30 : 0.78))
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: up ? 0.78 : 0.30))
+        let to   = app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: up ? 0.30 : 0.78))
         from.press(forDuration: 0.05, thenDragTo: to)
     }
 

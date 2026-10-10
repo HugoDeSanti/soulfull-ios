@@ -25,7 +25,8 @@ struct PracticeListView: View {
         PracticeListScaffold(
             title: category.title,
             blurb: category.blurb,
-            systemImage: category.systemImage
+            systemImage: category.systemImage,
+            backdrop: category.imageName
         ) {
             // A reload (the tab coming back) keeps the rows it has: swapping
             // them for a spinner jumped the scroll back to the top. The
@@ -102,7 +103,7 @@ struct PracticeListView: View {
                     .lineLimit(1)
                 Text("with \(session.lead)")
                     .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
                 HStack(spacing: 6) {
                     Label(session.mediaKind.label, systemImage: session.mediaKind.systemImage)
@@ -130,6 +131,8 @@ struct PracticeListView: View {
                 PresenceLine(kind: .session, contentID: session.id, faceSize: 18)
                     .padding(.top, 4)
             }
+            // The row lies open on the category's photograph.
+            .onPhoto()
             Spacer()
             if progress(session)?.completed == true {
                 Image(systemName: "checkmark.seal.fill")
@@ -139,7 +142,7 @@ struct PracticeListView: View {
             } else {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
         }
         .padding(.vertical, 18)
@@ -154,15 +157,16 @@ struct PracticeListView: View {
         VStack(spacing: 10) {
             Image(systemName: category.systemImage)
                 .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
             Text("Nothing here yet.")
                 .font(Theme.headline(20, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("New \(category.title.lowercased()) sessions are on the way.")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
         }
+        .onPhoto()
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
     }
@@ -171,16 +175,20 @@ struct PracticeListView: View {
     /// back, rather than implying the library is empty.
     private func errorState(_ failure: PracticeLoadFailure) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: failure.systemImage)
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.muted)
-            Text(failure.title)
-                .font(Theme.headline(20, weight: .light))
-                .foregroundStyle(Theme.ink)
-            Text(failure.detail)
-                .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
+            // On the category's photograph: the type carries its own ground.
+            Group {
+                Image(systemName: failure.systemImage)
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundStyle(Theme.inkSoft)
+                Text(failure.title)
+                    .font(Theme.headline(20, weight: .light))
+                    .foregroundStyle(Theme.ink)
+                Text(failure.detail)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .multilineTextAlignment(.center)
+            }
+            .onPhoto()
             Button {
                 Haptics.tap()
                 Task { await vm.load(category: category) }

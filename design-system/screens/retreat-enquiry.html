@@ -12,21 +12,22 @@
      soulfullgatherings.com; they live in Swift as RetreatEnquiry.Question.
      Reaching it requires an account: the Email answer IS the account's
      address, so it is shown locked rather than asked for. */
-  /* On the ember atmosphere: no photo behind the copy, so no text halo.
-     Every control sits on one square surface (fieldSurface): a frost, a
+  /* On the retreat's photo, blurred (PhotoBackdrop, blur 26, darken .86, top
+     scrim .55), still visible. .on-photo goes on the copy only — the controls
+     are UIKit-backed and sit on one square surface (fieldSurface): a frost, a
      hairline that turns ink while active. Questions 40px apart. */
   .close { position: absolute; top: 50px; right: calc(var(--gutter) - 14px); z-index: 20; }
   .scr { padding: 86px var(--gutter) 56px; position: relative; z-index: 3; }
 
   .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 12px 0 0; }
-  .head p  { font-size: 14px; line-height: 1.6; color: var(--ink-soft); margin: 12px 0 0; }
+  .head p  { font-size: 14px; line-height: 1.6; color: var(--ink-on-photo); margin: 12px 0 0; }
 
   .q { margin-top: 40px; }
   /* Question title — Theme.body(15, weight: .medium) on Theme.ink */
   .q > .q-title { font-size: 15px; font-weight: 500; color: var(--ink); }
   .q > .q-title .opt { font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); margin-left: 8px; }
-  /* Helper line — Theme.body(12) on Theme.inkSoft */
-  .q > .q-help { font-size: 12px; line-height: 1.5; color: var(--ink-soft); margin-top: 5px; }
+  /* Helper line — Theme.body(12) in Theme.inkOnPhoto */
+  .q > .q-help { font-size: 12px; line-height: 1.5; color: var(--ink-on-photo); margin-top: 5px; }
   .q .control { margin-top: 12px; }
 
   /* One field surface for every control (RetreatEnquiryView.fieldSurface) */
@@ -59,14 +60,14 @@
     border: var(--hairline) solid var(--glass-border);
   }
   .choice + .choice { margin-top: 10px; }
-  .choice .dot { flex: none; width: 16px; height: 16px; border: var(--hairline) solid rgba(161,159,153,.6); margin-top: 1px; display: grid; place-items: center; }
+  .choice .dot { flex: none; width: 16px; height: 16px; border: var(--hairline) solid rgba(201,199,193,.6); margin-top: 1px; display: grid; place-items: center; }
   .choice.on { background: rgba(242,241,237,0.06); border-color: rgba(242,241,237,0.7); font-weight: 500; }
   .choice.on .dot { border-color: var(--ink); }
   .choice.on .dot::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
 
   .submit { margin-top: 44px; }
   .gaps { font-size: 12px; line-height: 1.5; color: var(--ink-soft); text-align: center; margin-top: 12px; }
-  .note { font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; margin-top: 12px; }
+  .note { font-size: 11px; line-height: 1.5; color: var(--ink-soft); text-align: center; margin-top: 12px; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -78,19 +79,20 @@
   <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
 
   <div class="screen screen--scroll">
-    <!-- Atmosphere(tone: .ember). It used to be the retreat's photo blurred
-         into a tint. -->
-    <div class="atmosphere atmosphere--ember"></div>
+    <!-- PhotoBackdrop(imageName: retreat.imageUrl, blur: 26, darken: 0.86, topScrim: 0.55) -->
+    <div class="photo photo--blur22" style="background-image:url('../assets/retreat-mallorca.jpg')"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
 
     <div class="scr">
-      <div class="head">
+      <div class="head on-photo">
         <div class="eyebrow">Join a retreat</div>
         <h1>Request a place</h1>
         <p>Our groups are kept intentionally small. This form lets us know you a little before we connect on an enrollment call.</p>
       </div>
 
       <div class="q">
-        <div class="q-title">Name</div>
+        <div class="q-title on-photo">Name</div>
         <div class="control pair">
           <span class="fld">Hugo</span>
           <span class="fld"><span class="ph">Last name</span></span>
@@ -98,8 +100,8 @@
       </div>
 
       <div class="q">
-        <div class="q-title">Date of Birth</div>
-        <div class="q-help">Guests must be above legal age to join.</div>
+        <div class="q-title on-photo">Date of Birth</div>
+        <div class="q-help on-photo">Guests must be above legal age to join.</div>
         <div class="control">
           <span class="fld"><span class="ph">Select your date of birth</span>
             <svg class="cal" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -108,23 +110,23 @@
       </div>
 
       <div class="q">
-        <div class="q-title">Where are you based?</div>
+        <div class="q-title on-photo">Where are you based?</div>
         <div class="control"><span class="fld"><span class="ph">City, country</span></span></div>
       </div>
 
       <div class="q">
-        <div class="q-title">Phone</div>
-        <div class="q-help">Please make sure you can receive WhatsApp messages.</div>
+        <div class="q-title on-photo">Phone</div>
+        <div class="q-help on-photo">Please make sure you can receive WhatsApp messages.</div>
         <div class="control"><span class="fld"><span class="ph">+34 600 000 000</span></span></div>
       </div>
 
       <div class="q">
-        <div class="q-title">Instagram <span class="opt">optional</span></div>
+        <div class="q-title on-photo">Instagram <span class="opt">optional</span></div>
         <div class="control"><span class="fld"><span class="ph">@yourhandle</span></span></div>
       </div>
 
       <div class="q">
-        <div class="q-title">What retreat are you interested in attending?</div>
+        <div class="q-title on-photo">What retreat are you interested in attending?</div>
         <!-- Options come from the live `retreats` catalog, preselected to the
              retreat the guest opened this from — not a hardcoded list. -->
         <div class="control">
@@ -136,13 +138,13 @@
       </div>
 
       <div class="q">
-        <div class="q-title">A little about you and why this retreat called you in.</div>
-        <div class="q-help">Help us get to know you, your lifestyle, personality and professional side. We'd love to know why this retreat called you in.</div>
+        <div class="q-title on-photo">A little about you and why this retreat called you in.</div>
+        <div class="q-help on-photo">Help us get to know you, your lifestyle, personality and professional side. We'd love to know why this retreat called you in.</div>
         <div class="control"><span class="fld area"><span class="ph">A few lines is plenty.</span></span></div>
       </div>
 
       <div class="q">
-        <div class="q-title">Where are you in your decision?</div>
+        <div class="q-title on-photo">Where are you in your decision?</div>
         <div class="control">
           <div class="choice"><span class="dot"></span>Definitely want to know more</div>
           <div class="choice"><span class="dot"></span>Really excited about all of it, but want to know more</div>
@@ -151,8 +153,8 @@
       </div>
 
       <div class="q">
-        <div class="q-title">Email</div>
-        <div class="q-help">The address on your Soulfull account. We'll reply here.</div>
+        <div class="q-title on-photo">Email</div>
+        <div class="q-help on-photo">The address on your Soulfull account. We'll reply here.</div>
         <div class="control">
           <span class="fld locked">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9h-2zM9 7a3 3 0 0 1 6 0v2H9V7z"/></svg>
@@ -162,7 +164,7 @@
       </div>
 
       <div class="q">
-        <div class="q-title">What's the investment you usually allocate when selecting an all-inclusive experience abroad, considering being around people just like you?</div>
+        <div class="q-title on-photo">What's the investment you usually allocate when selecting an all-inclusive experience abroad, considering being around people just like you?</div>
         <div class="control">
           <div class="choice"><span class="dot"></span>€3500+</div>
           <div class="choice on"><span class="dot"></span>€4,500+</div>
@@ -172,14 +174,14 @@
       </div>
 
       <div class="q">
-        <div class="q-title">Do you know a past member of Soulfull Gatherings? If so, who? <span class="opt">optional</span></div>
+        <div class="q-title on-photo">Do you know a past member of Soulfull Gatherings? If so, who? <span class="opt">optional</span></div>
         <div class="control"><span class="fld"><span class="ph">Their name</span></span></div>
       </div>
 
       <button class="sg-btn sg-btn--filled submit">Submit</button>
       <!-- Shown only while something required is unanswered -->
       <div class="gaps">Still to answer — Date of Birth · Where you're based · Phone</div>
-      <div class="note">Sent to info@soulfullgatherings.com, and we'll reply to your account's email.</div>
+      <div class="note on-photo">Sent to info@soulfullgatherings.com, and we'll reply to your account's email.</div>
     </div>
   </div>
 </div></div>

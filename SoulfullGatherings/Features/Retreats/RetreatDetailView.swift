@@ -152,10 +152,10 @@ struct RetreatDetailView: View {
                     startPoint: .top, endPoint: .bottom
                 )
 
-                // The story reads on near-black: the photo is the cover, not
-                // the page, so it sinks almost out of sight as the story
-                // comes up.
-                Color.black.opacity(min(reduceMotion ? 0.8 : 0.72, Double(max(0, scrollY)) / 560))
+                // Extra dim as the story scrolls up — the photo stays in
+                // view behind it (it once sank to 0.72, which read as a dark
+                // veil over the place).
+                Color.black.opacity(min(reduceMotion ? 0.62 : 0.45, Double(max(0, scrollY)) / 700))
             }
         }
         .ignoresSafeArea()

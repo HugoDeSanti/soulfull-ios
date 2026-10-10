@@ -80,7 +80,7 @@ struct InstructorProfileView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .background {
-            Atmosphere(tone: .ember)
+            PhotoBackdrop(imageName: vm.instructor?.photoUrl ?? "home-bg", blur: 48, darken: 0.86)
         }
         // Whoever is asking changes "followed by me" and "is me": re-read on
         // sign-in, which is also when a gated Follow is replayed.
@@ -120,7 +120,8 @@ struct InstructorProfileView: View {
 
     private func header(_ instructor: Instructor) -> some View {
         // The portrait alone — a face is the one round thing on the page — with
-        // nothing glowing behind it: the wash above is the page's warmth.
+        // nothing glowing behind it: the blurred photograph is the page's
+        // warmth.
         VStack(spacing: 20) {
             AvatarView(avatarUrl: instructor.photoUrl, name: instructor.name,
                        seed: instructor.id, size: 112)
@@ -142,6 +143,8 @@ struct InstructorProfileView: View {
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("instructor-name")
             }
+            // On the guide's own photograph, blurred.
+            .onPhoto()
         }
         .frame(maxWidth: .infinity)
     }
@@ -171,7 +174,7 @@ struct InstructorProfileView: View {
         VStack(spacing: 5) {
             Text(value ?? "–")
                 .font(Theme.headline(28, weight: .light))
-                .foregroundStyle(value == nil ? Theme.muted : Theme.ink)
+                .foregroundStyle(value == nil ? Theme.inkSoft : Theme.ink)
                 .kerning(-0.5)
                 .contentTransition(.numericText())
             Text(label.uppercased())
@@ -180,6 +183,7 @@ struct InstructorProfileView: View {
                 .foregroundStyle(Theme.inkSoft)
         }
         .frame(maxWidth: .infinity)
+        .onPhoto()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken ?? "\(label), not loaded")
         // The label is the exact number, which is what should be spoken; the
@@ -202,6 +206,7 @@ struct InstructorProfileView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .contentTransition(.opacity)
             }
+            .onPhoto()
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(line)
@@ -254,6 +259,7 @@ struct InstructorProfileView: View {
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.ember)
                     .multilineTextAlignment(.center)
+                    .onPhoto()
                     .transition(.opacity)
             }
         }
@@ -274,12 +280,14 @@ struct InstructorProfileView: View {
                 .font(Theme.eyebrow(11))
                 .tracking(3)
                 .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
             Text(bio)
                 .font(Theme.body(15))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(5)
                 .lineLimit(foldable && !bioExpanded ? 5 : nil)
                 .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
                 .accessibilityIdentifier("instructor-bio")
             if foldable {
                 Button {
@@ -290,6 +298,7 @@ struct InstructorProfileView: View {
                         .font(Theme.body(13, weight: .medium))
                         .underline()
                         .foregroundStyle(Theme.ink)
+                        .onPhoto()
                         // A 44pt target around a ~17pt word (gotcha #5), padded
                         // out and back so the page's spacing doesn't move.
                         .frame(minWidth: 44, alignment: .leading)
@@ -313,10 +322,12 @@ struct InstructorProfileView: View {
                     .font(Theme.eyebrow(11))
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
+                    .onPhoto()
                 Text("Practices with \(instructor.firstName)")
                     .font(Theme.headline(26, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.5)
+                    .onPhoto()
             }
 
             if let library = vm.library {
@@ -392,6 +403,7 @@ struct InstructorProfileView: View {
                 .font(Theme.eyebrow(10))
                 .tracking(2)
                 .foregroundStyle(Theme.inkSoft)
+                .onPhoto()
             if rows {
                 VStack(spacing: 0) {
                     content()
@@ -485,6 +497,8 @@ struct InstructorProfileView: View {
                         .padding(.top, 3)
                 }
             }
+            // The row lies open on the guide's photograph.
+            .onPhoto()
             Spacer(minLength: 0)
             if progress?.completed == true {
                 Image(systemName: "checkmark.seal.fill")
@@ -494,7 +508,7 @@ struct InstructorProfileView: View {
             } else {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
         }
         .padding(.vertical, 16)
@@ -535,10 +549,11 @@ struct InstructorProfileView: View {
                         .foregroundStyle(Theme.inkSoft)
                         .lineLimit(1)
                 }
+                .onPhoto()
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
@@ -561,9 +576,10 @@ struct InstructorProfileView: View {
                 .padding(.top, 4)
             Text("\(instructor.firstName)'s first practices are on their way.")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 20)
         .overlay(alignment: .top) { PracticeRule() }
@@ -578,16 +594,17 @@ struct InstructorProfileView: View {
         VStack(spacing: 10) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 34, weight: .light))
-                .foregroundStyle(Theme.muted)
+                .foregroundStyle(Theme.inkSoft)
             Text("This profile isn't available")
                 .font(Theme.headline(22, weight: .light))
                 .foregroundStyle(Theme.ink)
             Text("It may have been taken down. Anything this guide published is still in the library.")
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
         .frame(maxWidth: .infinity)
         .padding(.top, 140)
     }
@@ -595,17 +612,21 @@ struct InstructorProfileView: View {
     private func failureState(_ failure: InstructorLoadFailure,
                               retry: @escaping () -> Void) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.circle")
-                .font(.system(size: 28, weight: .light))
-                .foregroundStyle(Theme.muted)
-            Text(failure.title)
-                .font(Theme.headline(20, weight: .light))
-                .foregroundStyle(Theme.ink)
-            Text(failure.detail)
-                .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            // On the photograph: the type carries its own ground.
+            Group {
+                Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.circle")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(Theme.inkSoft)
+                Text(failure.title)
+                    .font(Theme.headline(20, weight: .light))
+                    .foregroundStyle(Theme.ink)
+                Text(failure.detail)
+                    .font(Theme.body(13))
+                    .foregroundStyle(Theme.inkOnPhoto)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .onPhoto()
             Button {
                 Haptics.tap()
                 retry()

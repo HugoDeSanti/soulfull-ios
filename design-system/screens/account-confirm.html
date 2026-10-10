@@ -11,18 +11,18 @@
   .scr { padding: 108px var(--gutter) 40px; text-align: center; }
   .mark { color: var(--ink); font-size: 34px; line-height: 1; }
   .scr h1 { font-size: 26px; font-weight: var(--w-light); letter-spacing: -0.4px; color: var(--ink); margin: 16px 0 0; }
-  .scr p.lead { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 16px auto 0; max-width: 300px; }
+  .scr p.lead { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 16px auto 0; max-width: 300px; }
   /* One wide field, not a row of boxes — iOS one-time-code autofill targets a single
      field, and the digit count is the project's mailer_otp_length (6), not hardcoded. */
   .code { display: block; width: 100%; box-sizing: border-box; margin-top: 22px; padding: 18px 0;
           text-align: center; font-family: var(--font); font-size: 28px;
           font-weight: 300; letter-spacing: 10px; color: var(--ink); outline: none;
-          background: rgba(0,0,0,.5); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+          background: rgba(255,255,255,.06); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
           border: var(--hairline) solid var(--glass-border); }
   .code.focus { border-color: rgba(242,241,237,.6); }
   .submit { margin-top: 16px; }
   .resend { display: block; margin-top: 14px; font-size: 13px; color: var(--ink); text-decoration: underline; }
-  .resend.cooling { color: var(--muted); text-decoration: none; }
+  .resend.cooling { color: var(--ink-soft); text-decoration: none; }
   .alt { display: block; margin-top: 18px; font-size: 13px; color: var(--ink); text-decoration: underline; }
 </style>
 </head><body>
@@ -36,19 +36,21 @@
 
   <div class="screen screen--scroll">
     <!-- Atmosphere(tone: .moss) — it used to be home-bg blurred into the sheet. -->
-    <div class="atmosphere atmosphere--moss"></div>
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(.9) brightness(.65) blur(8px);transform:scale(1.1)"></div>
+    <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.74))"></div>
+    <div class="top-scrim"></div>
 
     <div class="scr">
       <div class="mark">
         <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="5" width="16" height="12" /><path d="M2 7l8 5.5L18 7"/><circle cx="19" cy="6" r="3.4" fill="currentColor" stroke="none"/></svg>
       </div>
-      <h1>Almost there — confirm your email</h1>
-      <p class="lead">We sent a code to hugo@soulfullgatherings.com. Enter it below — it works wherever you read the email, phone or laptop.</p>
+      <h1 class="on-photo">Almost there — confirm your email</h1>
+      <p class="lead on-photo">We sent a code to hugo@soulfullgatherings.com. Enter it below — it works wherever you read the email, phone or laptop.</p>
 
       <input class="code focus" value="418025" />
 
       <div class="submit"><button class="sg-btn sg-btn--filled">Confirm email</button></div>
-      <span class="resend">Send a new code</span>
+      <span class="resend on-photo">Send a new code</span>
       <span class="alt">Use a different sign-in</span>
     </div>
   </div>

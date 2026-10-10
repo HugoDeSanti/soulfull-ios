@@ -86,7 +86,7 @@ struct GuideDashboardView: View {
         .refreshable { await vm.load() }
         .background {
             // The ember wash, as on their profile.
-            Atmosphere(tone: .ember)
+            PhotoBackdrop(imageName: vm.dashboard?.photoUrl ?? "home-bg", blur: 48, darken: 0.86)
         }
         // A bar of its own rather than an overlay: as an overlay the rows
         // scrolled straight through the button, and a row under it took the
@@ -164,9 +164,11 @@ struct GuideDashboardView: View {
                     .multilineTextAlignment(.center)
                 Text("Who practiced with you, and what it earned.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .multilineTextAlignment(.center)
             }
+            // On the guide's own photograph, blurred.
+            .onPhoto()
         }
         .frame(maxWidth: .infinity)
     }
@@ -218,9 +220,11 @@ struct GuideDashboardView: View {
                         .foregroundStyle(Theme.inkSoft)
                     Text("\(dashboard.totals.minutesHeard.formatted()) minutes of your sessions heard, all time")
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                         .padding(.top, 2)
                 }
+                // Open on the photo, not on glass.
+                .onPhoto()
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("guide-people-total")
 
@@ -250,6 +254,8 @@ struct GuideDashboardView: View {
                         .font(Theme.body(15, weight: .medium))
                         .foregroundStyle(Theme.ink)
                 }
+                // On the photo, not on glass.
+                .onPhoto()
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("guide-paid-to-date")
             }
@@ -309,6 +315,7 @@ struct GuideDashboardView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .onPhoto()
                     .padding(.vertical, 16)
                     .overlay(alignment: .top) { PracticeRule() }
                     .accessibilityElement(children: .combine)
@@ -328,6 +335,7 @@ struct GuideDashboardView: View {
             PracticeRule()
             Text(title)
                 .sgEyebrow(color: Theme.ink)
+                .onPhoto()
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -340,10 +348,11 @@ struct GuideDashboardView: View {
                 .kerning(-0.2)
             Text(detail)
                 .font(Theme.body(13))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
@@ -355,9 +364,10 @@ struct GuideDashboardView: View {
                 .foregroundStyle(Theme.ink)
             Text("This account isn't linked to a guide. If it should be, write to us and we'll set it up.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .multilineTextAlignment(.center)
         }
+        .onPhoto()
         .padding(.horizontal, 20)
     }
 }
@@ -475,6 +485,7 @@ private struct PeopleByMonthChart: View {
                     .font(Theme.body(13))
                     .foregroundStyle(Theme.inkSoft)
             }
+            .onPhoto()
             .animation(Theme.Motion.settle, value: focus.month)
 
             HStack(alignment: .bottom, spacing: 8) {
@@ -522,9 +533,10 @@ private struct PeopleByMonthChart: View {
                 Text(month.month.shortName().uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(1.2)
-                    .foregroundStyle(isFocus ? Theme.ink : Theme.muted)
+                    .foregroundStyle(isFocus ? Theme.ink : Theme.inkSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                    .onPhoto()
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
@@ -563,9 +575,11 @@ private struct GuideMonthRow: View {
                     .font(Theme.body(16, weight: .medium))
                     .monospacedDigit()
                     .foregroundStyle(Theme.ink)
-                StandingChip(standing: standing)
+                StandingChip(standing: standing, quiet: Theme.inkSoft)
             }
         }
+        // Open on the photo, not on glass.
+        .onPhoto()
         .padding(.vertical, 18)
         .overlay(alignment: .top) { PracticeRule() }
         .accessibilityElement(children: .combine)
@@ -619,9 +633,11 @@ private struct GuidePracticeRow: View {
                 Text(practice.people == 1 ? "PERSON" : "PEOPLE")
                     .font(Theme.eyebrow(9))
                     .tracking(1.6)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
         }
+        // Open on the photo, not on glass.
+        .onPhoto()
         .padding(.vertical, 16)
         .overlay(alignment: .top) { PracticeRule() }
         .accessibilityElement(children: .combine)
@@ -666,6 +682,9 @@ private struct GuideFigure: View {
 /// Where a month's money stands, as an icon and a word: never colour alone.
 private struct StandingChip: View {
     let standing: GuideMonth.Standing
+    /// The colour of "Pool not set". `muted` on glass; a row laid on the
+    /// photo passes `inkSoft`, since muted sinks into a photograph.
+    var quiet: Color = Theme.muted
 
     var body: some View {
         let (icon, text, color) = style
@@ -679,7 +698,7 @@ private struct StandingChip: View {
     private var style: (String, String, Color) {
         switch standing {
         case .estimate:           ("chart.line.uptrend.xyaxis", "Estimate", Theme.ember)
-        case .awaitingPool:       ("hourglass", "Pool not set", Theme.muted)
+        case .awaitingPool:       ("hourglass", "Pool not set", quiet)
         case .due:                ("clock", "To be paid", Theme.ember)
         case .paid(_, let date):  ("checkmark.seal.fill", "Paid \(GuideCopy.day(date))", Theme.accentSoft)
         }

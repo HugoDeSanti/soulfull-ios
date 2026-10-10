@@ -63,7 +63,7 @@ struct CommunityView: View {
         .scrollIndicators(.hidden)
         .statusBarScrim()
         .refreshable { await vm.load(isMember: isMember, force: true) }
-        .background { Atmosphere(tone: .dusk) }
+        .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.78) }
         .task(id: identity) { await vm.load(isMember: isMember) }
         .task(id: vm.scope) { await vm.loadActivity() }
         .task(id: identity) { await push.syncIfAuthorized(isMember: auth.hasAccount) }
@@ -149,10 +149,11 @@ struct CommunityView: View {
                     .kerning(-0.8)
                 Text("What the circle is practicing, as it happens.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .onPhoto()
             Spacer(minLength: 0)
             if isMember {
                 bell
@@ -218,6 +219,7 @@ struct CommunityView: View {
                 requireAccount { vm.scope = .friends }
                 return false
             }
+            .onPhoto()
 
             Spacer(minLength: 0)
 
@@ -242,6 +244,7 @@ struct CommunityView: View {
                     }
                 }
                 .foregroundStyle(Theme.ink)
+                .onPhoto()
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -274,12 +277,13 @@ struct CommunityView: View {
         } else if lines.isEmpty {
             emptyState
         } else {
-            // Open rows on black, a hairline between each: a list, not a stack
-            // of cards.
+            // Open rows on the photo, a hairline between each: a list, not a
+            // stack of cards.
             VStack(alignment: .leading, spacing: 44) {
                 ForEach(dayGroups(lines), id: \.title) { group in
                     VStack(alignment: .leading, spacing: 4) {
                         SectionLabel(title: group.title)
+                            .onPhoto()
                         VStack(spacing: 0) {
                             ForEach(group.lines) { line in
                                 ActivityRow(line: line, isSelf: line.member.id == vm.selfID,
@@ -358,7 +362,7 @@ struct CommunityView: View {
                 .kerning(-0.3)
             Text(detail)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
             if let action {
@@ -379,7 +383,9 @@ struct CommunityView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        // Open on black under a rule — words with air around them, not a box.
+        .onPhoto()
+        // Open on the photo under a rule — words with air around them, not a
+        // box.
         .padding(.top, 22)
         .overlay(alignment: .top) { Hairline() }
         .padding(.horizontal, Theme.gutter)
@@ -395,7 +401,7 @@ struct CommunityView: View {
                 .kerning(-0.3)
             Text(failure.detail)
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
             SGPrimaryButton(title: "Try again") {
@@ -404,6 +410,7 @@ struct CommunityView: View {
             .padding(.top, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onPhoto()
         .padding(.top, 22)
         .overlay(alignment: .top) { Hairline() }
         .padding(.horizontal, Theme.gutter)
@@ -471,7 +478,7 @@ private struct Hairline: View {
 // MARK: - Activity row
 
 /// "Hugo D. practiced Confidence Boost", a face beside it, the track and the
-/// time beneath — an open row on black, no card. Someone else's line ends in
+/// time beneath — an open row on the photo, no card. Someone else's line ends in
 /// their like button and "⋯" (Report, Block).
 private struct ActivityRow: View {
     let line: CommunityActivity
@@ -497,9 +504,10 @@ private struct ActivityRow: View {
                 Text("\(line.kindLabel) · \(Self.relative(line.completedAt))".uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(1.6)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
             }
+            .onPhoto()
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if isSelf {
@@ -512,6 +520,7 @@ private struct ActivityRow: View {
                             .font(Theme.body(12, weight: .medium))
                     }
                     .foregroundStyle(Theme.ember)
+                    .onPhoto()
                     .accessibilityHidden(true)
                 }
             } else {
@@ -586,6 +595,7 @@ private struct LikeButton: View {
                 }
             }
             .foregroundStyle(liked ? Theme.ember : Theme.inkSoft)
+            .onPhoto()
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
             .animation(Theme.Motion.settle, value: liked)

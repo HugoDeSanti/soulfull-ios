@@ -8,8 +8,8 @@
 //  again in the meantime.
 //
 //  The note field is UIKit-backed, so nothing here blurs or shades over it
-//  (rendering gotcha 1): the atmosphere sits behind, and the close bar fades
-//  with a gradient, never a blur.
+//  (rendering gotcha 1): the photo sits behind, the halo on the copy stays on
+//  the copy, and the close bar fades with a gradient, never a blur.
 //
 
 import SwiftUI
@@ -43,7 +43,7 @@ struct ReportMemberSheet: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .background { Atmosphere(tone: .dusk) }
+        .background { PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
         .presentationCornerRadius(0)
@@ -74,10 +74,11 @@ struct ReportMemberSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Reports are private. \(member.displayName) won't know who sent this.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .onPhoto()
 
             HStack(spacing: 12) {
                 AvatarView(avatarUrl: member.avatarUrl, name: member.displayName,
@@ -85,6 +86,7 @@ struct ReportMemberSheet: View {
                 Text(member.displayName)
                     .font(Theme.body(15, weight: .medium))
                     .foregroundStyle(Theme.ink)
+                    .onPhoto()
                 Spacer(minLength: 0)
             }
             // Who this is about, between two rules — not a card.
@@ -97,6 +99,7 @@ struct ReportMemberSheet: View {
                 Text("What's wrong?")
                     .font(Theme.headline(18))
                     .foregroundStyle(Theme.ink)
+                    .onPhoto()
                 ForEach(ReportReason.allCases) { option in
                     reasonRow(option)
                 }
@@ -111,8 +114,11 @@ struct ReportMemberSheet: View {
                     Text("OPTIONAL")
                         .font(Theme.eyebrow(10))
                         .tracking(1.6)
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                 }
+                // The halo stays on these two labels: the note below is a
+                // UIKit-backed TextEditor (gotcha 1).
+                .onPhoto()
                 TextEditor(text: Binding(
                     get: { details },
                     set: { details = String($0.prefix(MemberReport.maxDetails)) }
@@ -164,9 +170,10 @@ struct ReportMemberSheet: View {
                 .accessibilityIdentifier("report-send")
                 Text("\(MemberSafetyCopy.reviewPromise) Anything urgent: \(LegalLinks.supportEmail).")
                     .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
             }
         }
         .padding(.top, 4)
@@ -240,12 +247,14 @@ struct ReportMemberSheet: View {
                 .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.6)
+                .onPhoto()
             Text(MemberSafetyCopy.reviewPromise)
                 .font(Theme.body(15))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+                .onPhoto()
 
             VStack(spacing: 10) {
                 SGPrimaryButton(title: "Block \(member.displayName)") {
@@ -255,9 +264,10 @@ struct ReportMemberSheet: View {
                 .accessibilityIdentifier("report-block")
                 Text("You won't see each other in Community, and they won't be told.")
                     .font(Theme.body(12))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .onPhoto()
             }
             .padding(.top, 18)
 

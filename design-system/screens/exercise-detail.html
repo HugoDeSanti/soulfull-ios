@@ -7,17 +7,16 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* ExerciseDetailView — on the slate atmosphere: the sequence's photograph
-     as a square-cut 220 plate at the head of the page (it used to be blurred
-     into the page's tint), the header, the guide between hairlines, then the
-     steps set open under a caps label, divided by hairlines. */
+  /* ExerciseDetailView — on the sequence's photograph, blurred (PhotoBackdrop,
+     blur 24, darken .8) and still visible; type on it carries .on-photo. The
+     header, the guide between hairlines, then the steps set open under a caps
+     label, divided by hairlines. */
   .scr { padding-top: 62px; padding-bottom: 120px; }
   .pad { padding: 0 var(--gutter); }
   .pad > * + * { margin-top: 28px; }
-  .plate { height: 220px; background: url('../assets/practice-exercises.jpg') center/cover; filter: saturate(.9); }
   .eb1 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.7px; line-height: 1.15; color: var(--ink); margin: 8px 0 0; }
-  .blurb { font-size: 14px; line-height: 1.6; color: var(--ink-soft); margin: 8px 0 0; }
+  .blurb { font-size: 14px; line-height: 1.6; color: var(--ink-on-photo); margin: 8px 0 0; }
   .seq { padding-top: 20px; }
   .ebseq { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 16px; }
   .seq .num-step { padding: 16px 0; border-top: 0.5px solid var(--line); }
@@ -31,19 +30,20 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="atmosphere atmosphere--slate"></div>
+    <div class="photo" style="background-image:url('../assets/practice-exercises.jpg');filter:saturate(.9) brightness(.75) blur(24px);transform:scale(1.2)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
 
     <div class="pad">
-      <a class="practice-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Movement</a>
-      <div class="plate"></div>
-      <div>
+      <a class="practice-back on-photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12H4m0 0 6-6m-6 6 6 6"/></svg>Movement</a>
+      <div class="on-photo">
         <p class="eb1">Grounding · 8 min</p>
         <h1>Standing Release for the Shoulders</h1>
         <p class="blurb">A slow sequence to unclench the upper body after a long day at the desk. Move at the pace of your breath.</p>
       </div>
       <!-- GuideCard: after the header, before the sequence. Absent when no guide is credited. -->
       <div class="guide-card"><span class="av">T</span><div class="tx"><p class="gc-eb">Your guide</p><p class="gc-nm">Tomás Ferrer</p><p class="gc-ti">Movement · Mobility</p></div><svg width="7" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1 1 5 5-5 5"/></svg></div>
-      <div class="seq">
+      <div class="seq on-photo">
         <p class="ebseq">The Sequence</p>
         <div class="steps">
           <div class="num-step"><span class="n">01</span><div><div class="t">Stand tall, soften the knees, and let the arms hang heavy.</div><div class="d">30 seconds</div></div></div>

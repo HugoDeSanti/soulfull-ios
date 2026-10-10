@@ -33,7 +33,7 @@ struct NotificationsView: View {
         }
         .scrollIndicators(.hidden)
         .statusBarScrim()
-        .background { Atmosphere(tone: .dusk) }
+        .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8) }
         .refreshable { await vm.loadNotifications(force: true) }
         .task {
             PushRegistrar.shared.clearBadge()
@@ -72,10 +72,11 @@ struct NotificationsView: View {
                 .kerning(-0.7)
             Text("When someone likes a practice you finished, it lands here.")
                 .font(Theme.body(14))
-                .foregroundStyle(Theme.inkSoft)
+                .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onPhoto()
     }
 
     @ViewBuilder
@@ -93,7 +94,7 @@ struct NotificationsView: View {
                     .kerning(-0.3)
                 Text(failure.detail)
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
                 SGPrimaryButton(title: "Try again") {
@@ -102,6 +103,7 @@ struct NotificationsView: View {
                 .padding(.top, 14)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .onPhoto()
             .padding(.top, 22)
             .overlay(alignment: .top) { Hairline() }
         } else if vm.notifications.isEmpty {
@@ -112,17 +114,18 @@ struct NotificationsView: View {
                     .kerning(-0.3)
                 Text("Finish a practice and it joins the Community feed, where people can like it. You'll hear about it here.")
                     .font(Theme.body(14))
-                    .foregroundStyle(Theme.inkSoft)
+                    .foregroundStyle(Theme.inkOnPhoto)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .onPhoto()
             .padding(.top, 22)
             .overlay(alignment: .top) { Hairline() }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("notifications-empty")
         } else {
-            // Open rows on black, ruled above and between.
+            // Open rows on the photo, ruled above and between.
             VStack(spacing: 0) {
                 ForEach(vm.notifications) { note in
                     row(note, unread: unreadAtOpen.contains(note.id))
@@ -148,8 +151,9 @@ struct NotificationsView: View {
                 Text(relative(note.createdAt).uppercased())
                     .font(Theme.eyebrow(10))
                     .tracking(1.6)
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.inkSoft)
             }
+            .onPhoto()
             .frame(maxWidth: .infinity, alignment: .leading)
             if unread {
                 Circle()

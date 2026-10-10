@@ -7,8 +7,10 @@
 <link rel="stylesheet" href="../shared/frame.css">
 <link rel="stylesheet" href="../shared/app.css">
 <style>
-  /* HomeView — on the moss atmosphere (no photo). Sections 64px apart
-     (Theme.sectionGap); everything at the 24px gutter. */
+  /* HomeView — on its photo (PhotoBackdrop "home-bg", blur 3, darken .74),
+     which stays visible. Type on the photo carries .on-photo; sublines in
+     --ink-on-photo. Sections 64px apart (Theme.sectionGap); everything at the
+     24px gutter. */
   .scr { padding-top: 86px; padding-bottom: 130px; }
   .scr > .sec + .sec { margin-top: 64px; }
   .hdr { text-align: center; }
@@ -17,10 +19,10 @@
   .greet .eb { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .greet h1 { font-size: 42px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 0; }
   .greet .streak { margin-top: 16px; }
-  .greet p { font-size: 14px; color: var(--ink-soft); margin: 16px 0 0; }
+  .greet p { font-size: 14px; color: var(--ink-on-photo); margin: 16px 0 0; }
   .moods { margin-top: -10px; }
 
-  /* "Day N is open" — a square veil: square 64 thumb, ember eyebrow, a light arrow. */
+  /* "Day N is open" — square glass: square 64 thumb, ember eyebrow, a light arrow. */
   .day-open { margin: 0 var(--gutter); display: flex; gap: 14px; align-items: flex-start; padding: 20px; }
   .day-open .thumb { width: 64px; height: 64px; flex: none; background-size: cover; background-position: center; }
   .day-open .left { flex: 1; }
@@ -49,7 +51,7 @@
   .rcard .hero .m { position: absolute; left: 14px; bottom: 14px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); }
   .rcard .t { padding-top: 14px; }
   .rcard .t .name { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.3px; color: var(--ink); }
-  .rcard .t .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .rcard .t .sub { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
   .rcard--digital .hero { height: 200px; }
   .rcard--digital .hero .ov { background: linear-gradient(180deg, transparent, rgba(0,0,0,.62)); }
 </style>
@@ -61,10 +63,12 @@
     <span class="batt"><i></i></span></span></div>
 
   <div class="screen screen--scroll scr">
-    <div class="atmosphere atmosphere--moss"></div>
+    <div class="photo" style="background-image:url('../assets/home-bg.jpg');filter:saturate(.9) brightness(.7) blur(3px);transform:scale(1.06)"></div>
+    <div class="vignette vignette--deep"></div>
+    <div class="top-scrim"></div>
     <div class="sec">
       <div class="hdr"><img src="../assets/logo.png" alt=""></div>
-      <div class="greet">
+      <div class="greet on-photo">
         <p class="eb">Good morning,</p>
         <h1>Hugo.</h1>
         <!-- Shown only at >= 2 consecutive days (PracticeProgressStore.streakDays). -->
@@ -77,10 +81,10 @@
     </div>
 
     <div class="sec">
-      <div class="section-label"><span class="title">How do you feel?</span></div>
+      <div class="section-label on-photo"><span class="title">How do you feel?</span></div>
       <!-- A mood is a word: inkSoft until chosen, then ink with a hairline
            under it that fades in. The ritual card below follows it. -->
-      <div class="moods">
+      <div class="moods on-photo">
         <span class="mood-chip is-active">Anxious</span>
         <span class="mood-chip">Grateful</span>
         <span class="mood-chip">Tired</span>
@@ -138,27 +142,27 @@
          now, so this is a glimpse rather than the way in). Both hand off to
          their tab: ALL switches tab, a card opens that item inside it. -->
     <div class="sec">
-      <div class="section-label"><span class="title">Digital Retreats</span><span class="action">All</span></div>
+      <div class="section-label on-photo"><span class="title">Digital Retreats</span><span class="action">All</span></div>
       <div class="hscroll">
         <!-- Hidden until `programs` has a published row. -->
         <div class="rcard rcard--digital">
           <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><div class="m">7 days · Self-paced · Digital</div></div>
-          <div class="t"><div class="name">Finding Ground</div><div class="sub">with Alma Guerra</div></div>
+          <div class="t on-photo"><div class="name">Finding Ground</div><div class="sub">with Alma Guerra</div></div>
         </div>
       </div>
     </div>
 
     <div class="sec">
-      <div class="section-label"><span class="title">Upcoming gatherings</span><span class="action">All</span></div>
+      <div class="section-label on-photo"><span class="title">Upcoming gatherings</span><span class="action">All</span></div>
       <div class="hscroll">
         <!-- Only retreats that haven't started: fetchRetreats() filters start_date > today. -->
         <div class="rcard">
           <div class="hero" style="background-image:url('../assets/retreat-dolomites.jpg')"><div class="ov"></div><div class="m">Italy · Sep 2026</div></div>
-          <div class="t"><div class="name">Dolomites</div><div class="sub">5 days · 12 guests</div></div>
+          <div class="t on-photo"><div class="name">Dolomites</div><div class="sub">5 days · 12 guests</div></div>
         </div>
         <div class="rcard">
           <div class="hero" style="background-image:url('../assets/retreat-lapland.jpg')"><div class="ov"></div><div class="m">Finland · Jan 2027</div></div>
-          <div class="t"><div class="name">Lapland</div><div class="sub">5 days · 10 guests</div></div>
+          <div class="t on-photo"><div class="name">Lapland</div><div class="sub">5 days · 10 guests</div></div>
         </div>
       </div>
     </div>
