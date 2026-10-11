@@ -80,4 +80,32 @@ struct OnboardingFlowTests {
         #expect(vm.step == .state)
         #expect(!vm.isFirstStep)
     }
+
+    /// Committing the name a member was never asked for pushed
+    /// `full_name: ''` to their profile and wiped it, so Home said "Friend".
+    @Test func aMemberWhoWasntAskedHasNoNameToCommit() {
+        let vm = OnboardingViewModel(asksName: false)
+        vm.toggleIntention("rest")
+
+        vm.next()
+
+        #expect(vm.nameAnswer == nil)
+    }
+
+    @Test(arguments: ["", "   "])
+    func aSkipBeforeTypingHasNoNameToCommit(typed: String) {
+        let vm = OnboardingViewModel()
+
+        vm.name = typed
+
+        #expect(vm.nameAnswer == nil)
+    }
+
+    @Test func theNameIsCommittedWithoutItsSpaces() {
+        let vm = OnboardingViewModel()
+
+        vm.name = "  Mara "
+
+        #expect(vm.nameAnswer == "Mara")
+    }
 }

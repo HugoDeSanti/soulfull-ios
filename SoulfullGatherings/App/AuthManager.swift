@@ -148,6 +148,8 @@ final class AuthManager {
             // `hasAccount` is right without holding up launch.
             if isAnonymous {
                 Task { await self.refreshConfirmationState() }
+            } else {
+                Task { await self.syncMemberName() }
             }
         } catch {
             // Only a session that is really gone may be replaced by a guest.
@@ -401,6 +403,49 @@ final class AuthManager {
             )
         } catch {
             Log.auth.error("Profile push failed: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - The member's name
+
+    /// Brings this phone's copy of the member's name (`AppSettings.userName`:
+    /// Home's greeting, the You tab, the nav bar's face) in line with their
+    /// account, once the launch has confirmed the session. Best-effort.
+    ///
+    /// The copy used to be filled only at sign-in and on a You-tab visit, so
+    /// after a reinstall, or a reset that left the session in the Keychain,
+    /// Home greeted a signed-in member as "Friend".
+    func syncMemberName() async {
+        guard hasAccount, let id = userID else { return }
+        do {
+            guard let profile = try await SupabaseService.shared.fetchProfile(id: id) else { return }
+            await reconcileName(with: profile)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            Log.auth.info("Name check skipped: \(error.localizedDescription)")
+        }
+    }
+
+    /// Applies `MemberNameDecision` to a profile row just read. A row that
+    /// lost its name gets it back from the phone or the sign-up name, the way
+    /// 0027 filled empty names on the server: onboarding once pushed the empty
+    /// answer of a member it hadn't asked, which wiped the name. Best-effort.
+    func reconcileName(with profile: Profile) async {
+        guard hasAccount, userID == profile.id else { return }
+        let signUp = supabase.auth.currentUser?.userMetadata["full_name"]?.stringValue ?? ""
+        switch MemberNameDecision(profile: profile.fullName, device: settings.userName, signUp: signUp) {
+        case .keep:
+            return
+        case .adopt(let name):
+            settings.userName = name
+        case .restore(let name):
+            settings.userName = name
+            do {
+                try await SupabaseService.shared.setProfileName(name, userID: profile.id)
+            } catch {
+                Log.auth.error("Restoring the profile's name failed: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -734,6 +779,35 @@ enum SessionRestoreDecision: Equatable, Sendable {
             }
         }
         self = .keepSession(ConnectionFailure(error))
+    }
+}
+
+/// Which name this phone shows for a member, and whether their profile needs
+/// it back. A member's name lives on their profile (0027); the phone's copy
+/// only greets them. Members are named when they sign up (or by Apple's first
+/// sign-in), so an empty profile is a lost name rather than a choice, and the
+/// best name still known goes back onto it. Nothing is invented: with no name
+/// anywhere (an Apple account that shared none) the phone keeps what it has.
+enum MemberNameDecision: Equatable, Sendable {
+    /// Nothing to change.
+    case keep
+    /// The phone takes the profile's name.
+    case adopt(String)
+    /// The profile has no name: the phone shows this one, and it is written
+    /// back to the profile.
+    case restore(String)
+
+    init(profile: String, device: String, signUp: String) {
+        let onProfile = profile.trimmingCharacters(in: .whitespaces)
+        let onDevice = device.trimmingCharacters(in: .whitespaces)
+        if !onProfile.isEmpty {
+            self = onProfile == onDevice ? .keep : .adopt(onProfile)
+            return
+        }
+        // The phone's copy is the more recent: it came from the profile or
+        // from this member's own onboarding, after they signed up.
+        let known = onDevice.isEmpty ? signUp.trimmingCharacters(in: .whitespaces) : onDevice
+        self = known.isEmpty ? .keep : .restore(known)
     }
 }
 

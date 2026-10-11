@@ -251,7 +251,8 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
 - **`profiles`**: one row per **member**, created by `handle_new_user` at sign-up, or when a guest's upgrade is confirmed (`is_anonymous` flips off). Guests have none and can't write one (0023).
   - The guest check is `caller_has_account()`, which reads `auth.users`, not the JWT claim, because the token still says anonymous just after confirmation, exactly when `pushOnboardingAnswers` writes.
   - Before 0024 every client upsert failed (42501): the email guard read `auth.users` as the client. Members from before 2026-09-30 have no answers on their row.
-  - `upsertProfile` never writes `stripe_customer_id`, the timestamps, `avatar_url` or `share_activity`. The last two have their own targeted setters.
+  - `upsertProfile` never writes `stripe_customer_id`, the timestamps, `avatar_url` or `share_activity`. The last two have their own targeted setters. It leaves out an **empty `full_name`**, so a push never blanks a name.
+  - **The name lives here; `AppSettings.userName` is only the phone's copy** (Home's greeting, the You tab). It is reconciled at launch (`AuthManager.syncMemberName`), at sign-in and on the You tab. The profile's name wins. A row that lost its name gets it back from the phone, or else from the sign-up name (`MemberNameDecision`, written with `setProfileName`). Until 2026-10-11, onboarding committed the name it hadn't asked a member for, which pushed `full_name: ''` and greeted them as "Friend".
   - `avatar_url` is check-constrained to `avatars/<own id>/<uuid>.jpg`. Each upload is centre-cropped on the device to a 512px JPEG and gets a **fresh uuid**, because the path is every phone's cache key.
 - **`practice_plays`** and the **`practice_progress`** view: see *Practice progress*.
 - **`program_enrollments`**: `enrolled_at` is day 1's unlock and is set by the server clock.
@@ -351,7 +352,7 @@ Journal reflections and trip checklists stay on the phone. The privacy policy pr
   - `Haptics.tap()` for secondary actions, `.bump()` for primary CTAs, `.select()` for scroll and toggle changes, `.success()` for confirmations, `.prepare()` on gesture start.
   - `SoulPressableStyle` already fires `tap` on touch-down, so don't fire it twice.
 - **Navigation** is value-based (typed `Route` enums), never `NavigationLink(destination:)`.
-- **Onboarding** has 4 questions. The step machine has 5 cases because `finish` isn't a question. `canAdvance` is false whenever an answer is empty. **A member who signed in from Welcome starts at intentions (`asksName: false`)**: an account with no name is a Sign in with Apple that shared none, and asking for it after Apple is a rejection pattern.
+- **Onboarding** has 4 questions. The step machine has 5 cases because `finish` isn't a question. `canAdvance` is false whenever an answer is empty. **A member who signed in from Welcome starts at intentions (`asksName: false`)**: an account with no name is a Sign in with Apple that shared none, and asking for it after Apple is a rejection pattern. An unasked or blank name is never committed (`nameAnswer` is nil), so the phone's name is left alone.
 - **Models** are value types, `Identifiable` + `Hashable` on `id`. Durations are stored in seconds (`durationSeconds`) with a `.durationLabel`.
 - **Settings live in `AppSettings`** (UserDefaults with `didSet`, keys prefixed `sg.`), not `@AppStorage`.
   - Read and write `intentions` as the `Set`, never `intentionsRaw`.

@@ -53,6 +53,16 @@ final class OnboardingViewModel {
         }
     }
 
+    /// The name to keep, or nil when there's none to commit: a member who was
+    /// never asked (`asksName: false`), or a skip before anything was typed.
+    /// Nil leaves the phone's name alone. Committing the empty field once
+    /// pushed `full_name: ''` to a member's profile and wiped their name, so
+    /// Home greeted them as "Friend".
+    var nameAnswer: String? {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     var isFirstStep: Bool { step == firstStep }
     var isQuestionStep: Bool { step.index < Step.questionCount }
 
@@ -101,7 +111,7 @@ final class OnboardingViewModel {
 
     /// Persist into AppSettings and route to Main.
     func complete(into app: AppState) {
-        app.settings.userName   = name.trimmingCharacters(in: .whitespaces)
+        if let nameAnswer { app.settings.userName = nameAnswer }
         app.settings.intentions = intentions
         app.settings.bodyState  = bodyState ?? ""
         app.settings.frequency  = frequency ?? ""

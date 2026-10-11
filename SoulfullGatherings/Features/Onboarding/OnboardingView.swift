@@ -118,7 +118,7 @@ private struct OnboardingShell<StepBody: View>: View {
                     .foregroundStyle(Theme.inkOnPhoto)
                 Button {
                     Haptics.tap()
-                    app.finishOnboardingSkipping(name: vm.name)
+                    app.finishOnboardingSkipping(name: vm.nameAnswer)
                 } label: {
                     Text("skip")
                         .font(Theme.body(14))

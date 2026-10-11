@@ -480,10 +480,16 @@ actor SupabaseService {
     /// Inserts or updates the caller's profile. RLS enforces that `profile.id`
     /// matches the signed-in user. `stripeCustomerId` is deliberately not sent —
     /// it is owned by the Phase 2 webhook.
+    ///
+    /// An empty name is left out of the write, so the row keeps the name it
+    /// has: a phone that doesn't know the member's name has nothing to say
+    /// about it. Sending it blank wiped members' names (onboarding committed
+    /// the name it hadn't asked a member for).
     func upsertProfile(_ profile: Profile) async throws {
+        let name = profile.fullName.trimmingCharacters(in: .whitespaces)
         let payload = ProfileUpsert(
             id: profile.id,
-            fullName: profile.fullName,
+            fullName: name.isEmpty ? nil : profile.fullName,
             intentions: profile.intentions,
             bodyState: profile.bodyState,
             frequency: profile.frequency
@@ -1130,6 +1136,20 @@ actor SupabaseService {
         }
     }
 
+    /// Gives a profile that lost its name its name back
+    /// (`AuthManager.reconcileName`). Never called with an empty name.
+    func setProfileName(_ name: String, userID: UUID) async throws {
+        struct Update: Encodable {
+            let fullName: String
+            enum CodingKeys: String, CodingKey { case fullName = "full_name" }
+        }
+        try await client
+            .from("profiles")
+            .update(Update(fullName: name))
+            .eq("id", value: userID)
+            .execute()
+    }
+
     /// The feed opt-out.
     func setShareActivity(_ share: Bool, userID: UUID) async throws {
         struct Update: Encodable {
@@ -1209,7 +1229,8 @@ private struct ProfileRow: Decodable {
 /// and mirrors `auth.users.email` into it on every change.
 private struct ProfileUpsert: Encodable {
     let id: UUID
-    let fullName: String
+    /// Nil leaves the key out, so the upsert doesn't touch the column.
+    let fullName: String?
     let intentions: [String]
     let bodyState: String
     let frequency: String

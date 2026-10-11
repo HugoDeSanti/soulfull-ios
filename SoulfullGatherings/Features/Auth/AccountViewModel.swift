@@ -484,7 +484,9 @@ final class AccountViewModel {
         do {
             guard let profile = try await SupabaseService.shared.fetchProfile(id: id) else { return }
             settings.avatarUrl = profile.avatarUrl
-            if !profile.fullName.isEmpty { settings.userName = profile.fullName }
+            // Also gives a row that lost its name the sign-up name back, so
+            // Welcome's sign-in greets them instead of re-running onboarding.
+            await auth.reconcileName(with: profile)
             if !profile.bodyState.isEmpty { settings.bodyState = profile.bodyState }
             if !profile.frequency.isEmpty { settings.frequency = profile.frequency }
             if !profile.intentions.isEmpty { settings.intentions = Set(profile.intentions) }

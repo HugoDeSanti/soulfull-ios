@@ -100,8 +100,10 @@ final class AppState {
         return userName.trimmingCharacters(in: .whitespaces).isEmpty ? .onboarding : .main
     }
 
-    func finishOnboardingSkipping(name: String) {
-        settings.userName = name.trimmingCharacters(in: .whitespaces)
+    /// `name` is `OnboardingViewModel.nameAnswer`: nil keeps the name the
+    /// phone already has.
+    func finishOnboardingSkipping(name: String?) {
+        if let name { settings.userName = name }
         finishOnboarding()
     }
 
