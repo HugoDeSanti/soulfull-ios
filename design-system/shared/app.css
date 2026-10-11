@@ -238,7 +238,9 @@
    in ink; the action ("ALL") in ink-soft. The size lives in the content.
    Markup: <div class="section-label"><span class="title">…</span>
    <span class="action">All</span></div>. Set --sl-pad: 0 where the label
-   already sits inside the gutter.
+   already sits inside the gutter. .section-label--unruled is `ruled: false`:
+   the label alone, where nothing ends above it (Home's mood question, which
+   follows the greeting that asks it).
    --------------------------------------------------------------------------- */
 .section-label {
   --sl-pad: var(--gutter);
@@ -252,6 +254,8 @@
 }
 .section-label .title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: var(--w-regular); color: var(--ink); }
 .section-label .action { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
+.section-label--unruled { padding-top: 0; }
+.section-label--unruled::before { display: none; }
 
 /* ---------------------------------------------------------------------------
    BottomNav  (App/BottomNav.swift) — flat, docked, static tab bar

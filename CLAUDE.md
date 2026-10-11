@@ -135,7 +135,7 @@ The direction is **"still"** (owner's brief, 2026-10-10: the rounded, bouncy app
 - **Photography and near-white.** Every screen's photograph stays visible behind it; colour comes from photography, never from the chrome.
 - **Square.** Nothing is rounded.
 - **Still motion.** Things fade in and settle at breath pace; nothing springs, bounces, squishes or zooms.
-- **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines. The rhythm is `Theme.sectionGap` (64) between sections, ~20pt from a section's label to its content, and **12pt between cards that belong together** (Home's day / Continue / ritual cards stack under the moods as one section; spaced as sections, each floated alone, owner 2026-10-10).
+- **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines. The rhythm is `Theme.sectionGap` (64) between sections, ~20pt from a section's label to its content, and **12pt between cards that belong together** (Home's day / Continue / ritual cards stack under the moods as one section; spaced as sections, each floated alone, owner 2026-10-10). **Home's greeting and its mood question are one opening:** the question sits 40pt under "Take your time", with no rule (`SectionLabel(ruled: false)`); a section's gap and a rule there read as dead space (owner, 2026-10-11).
 
 The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows) is gone; don't bring its idioms back. All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors, font sizes or animation curves.
 

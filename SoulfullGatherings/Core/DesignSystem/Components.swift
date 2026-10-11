@@ -82,12 +82,17 @@ struct SectionLabel: View {
     /// text, so a screen with only one is unaffected.
     var actionLabel: String? = nil
     var onAction: (() -> Void)? = nil
+    /// The rule that opens a section. Off where nothing ends above the label:
+    /// Home's mood question follows the greeting that asks it.
+    var ruled = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Rectangle()
-                .fill(Theme.line)
-                .frame(height: 0.5)
+            if ruled {
+                Rectangle()
+                    .fill(Theme.line)
+                    .frame(height: 0.5)
+            }
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
                     .sgEyebrow(color: Theme.ink)

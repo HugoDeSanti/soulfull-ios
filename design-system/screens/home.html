@@ -12,9 +12,13 @@
      --ink-on-photo. Sections 64px apart (Theme.sectionGap); everything at the
      24px gutter. The day / Continue / ritual cards belong to the moods'
      section: 12px under the words' 44px targets, then 12px apart, not a
-     section's gap each (they floated alone). */
+     section's gap each (they floated alone). The greeting and its mood
+     question are one opening: the question sits 40px under the subline (the
+     logo's 40), unruled — a section's gap and a rule there set the greeting
+     adrift. */
   .scr { padding-top: 86px; padding-bottom: 130px; }
   .scr > .sec + .sec { margin-top: 64px; }
+  .scr > .sec + .sec.ask { margin-top: 40px; }
   .hdr { text-align: center; }
   .hdr img { width: 72px; }
   .greet { padding: 40px var(--gutter) 0; }
@@ -38,8 +42,9 @@
 
   /* Today's ritual — the page's one warm thing: a full ember wash falling from
      the card's top edge (Atmosphere reach 1.15, intensity 1, inside the card),
-     as Open lays its daily card. Square, hairline, padding 24. */
-  .ritual { margin: 0 var(--gutter); overflow: hidden; padding: 24px; border: var(--hairline) solid var(--glass-border); }
+     as Open lays its daily card. Square, hairline, padding 24 / 20 across —
+     the day and Continue cards' 20, so the stack shares one left edge. */
+  .ritual { margin: 0 var(--gutter); overflow: hidden; padding: 24px 20px; border: var(--hairline) solid var(--glass-border); }
   .ritual .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(242,241,237,.8); margin: 0 0 12px; }
   .ritual h3 { font-size: 28px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
   .ritual .meta { font-size: 13px; color: rgba(242,241,237,.85); margin: 6px 0 0; }
@@ -84,8 +89,8 @@
       </div>
     </div>
 
-    <div class="sec">
-      <div class="section-label on-photo"><span class="title">How do you feel?</span></div>
+    <div class="sec ask">
+      <div class="section-label section-label--unruled on-photo"><span class="title">How do you feel?</span></div>
       <!-- A mood is a word: inkSoft until chosen, then ink with a hairline
            under it that fades in. The ritual card below follows it. -->
       <div class="moods on-photo">

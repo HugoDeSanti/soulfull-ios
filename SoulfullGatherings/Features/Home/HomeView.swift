@@ -37,8 +37,15 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.sectionGap) {
-                header
-                today
+                // One opening, not two sections: the greeting asks the mood
+                // question, so the question follows it at the logo's 40, with
+                // no rule between them. A section's gap and a rule there set
+                // the greeting adrift and dropped the member's cards to
+                // mid-screen.
+                VStack(spacing: 40) {
+                    header
+                    today
+                }
                 // Hidden until the `programs` table is seeded — see HomeViewModel.
                 if !vm.programs.isEmpty {
                     section { digitalRetreats }
@@ -164,7 +171,7 @@ struct HomeView: View {
         // Label to words reads as label to photo on the shelves (20pt); the
         // words' own 13pt of target makes up the rest.
         VStack(alignment: .leading, spacing: 4) {
-            SectionLabel(title: "How do you feel?")
+            SectionLabel(title: "How do you feel?", ruled: false)
                 .onPhoto()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 26) {
@@ -293,7 +300,10 @@ struct HomeView: View {
             }
             .animation(Theme.Motion.settle, value: vm.selectedMood)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
+            // 20 across, as the day and Continue cards stacked above it, so
+            // the three start their lines on one edge.
+            .padding(.horizontal, 20)
+            .padding(.vertical, 24)
             .background {
                 // The page's one warm thing: a slow ember wash falling from
                 // the card's top edge, as Open lays its daily card.
