@@ -104,7 +104,7 @@ struct HomeView: View {
                     // Ink, not inkSoft: it sits on the brightest, haziest
                     // part of home-bg, where grey caps disappear.
                     .foregroundStyle(Theme.ink)
-                Text("\(settings.userName.isEmpty ? "Friend" : settings.userName).")
+                Text("\(HomeViewModel.greetingName(settings.userName)).")
                     .font(Theme.headline(42, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.8)

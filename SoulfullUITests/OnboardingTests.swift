@@ -57,7 +57,7 @@ final class OnboardingTests: XCTestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 10), "Begin didn't open the first question")
         XCTAssertTrue(app.staticTexts["1/4"].exists)
         name.tap()
-        name.typeText("Mara")
+        name.typeText("Mara Lopez")
         shot(app, "02-name")
         app.buttons["Next"].tap()
         XCTAssertTrue(app.staticTexts["2/4"].waitForExistence(timeout: 10), "A name didn't move on to 2/4")
@@ -70,12 +70,12 @@ final class OnboardingTests: XCTestCase {
         app.buttons["Next"].tap()
         let ready = app.buttons["I'm ready"]
         XCTAssertTrue(ready.waitForExistence(timeout: 10), "The last answer didn't reach the welcome")
-        XCTAssertTrue(app.staticTexts["WELCOME, MARA"].exists, "The welcome should use the name given")
+        XCTAssertTrue(app.staticTexts["WELCOME, MARA LOPEZ"].exists, "The welcome should use the name given")
         shot(app, "03-welcome")
         ready.tap()
 
         XCTAssertTrue(app.staticTexts["Mara."].waitForExistence(timeout: 20),
-                      "Onboarding should land on Home, greeting the new user by name")
+                      "Onboarding should land on Home, greeting the new user by their first name")
         shot(app, "04-home")
 
         // Once is enough: a relaunch goes straight to Home.

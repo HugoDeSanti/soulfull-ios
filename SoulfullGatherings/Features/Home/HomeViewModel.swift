@@ -56,6 +56,12 @@ final class HomeViewModel {
         }
     }
 
+    /// Who the greeting addresses: the first name alone ("Hugo Santi" →
+    /// "Hugo"), or "Friend" when there's no name.
+    nonisolated static func greetingName(_ fullName: String) -> String {
+        fullName.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? "Friend"
+    }
+
     /// Runs every time Home appears. The two reads go side by side: the "Day N
     /// is open" card waits on the programs, and used to wait behind the
     /// retreats as well.

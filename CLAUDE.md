@@ -425,7 +425,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
 ### UI journeys: the only ones that earn a UI test
 | File | Journey |
 |---|---|
-| `OnboardingTests` | Splash → slides → 4 questions → Home greets by name; a relaunch skips it; "I already have an account" offers sign-in and can be closed |
+| `OnboardingTests` | Splash → slides → 4 questions → Home greets by first name; a relaunch skips it; "I already have an account" offers sign-in and can be closed |
 | `AccountGateTests` | A guest opens a recipe → account sheet → the close button dismisses it |
 | `PasswordResetTests` | Sign-in → Forgot password (the address carries over) → a code is sent → a wrong code is turned away → back to sign-in. Uses an address with no account, so nothing is emailed |
 | `RetreatEnquiryTests` | Request a place → gate → form → Submit settles |
