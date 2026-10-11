@@ -11,7 +11,9 @@
      which stays visible; the header carries .on-photo. Header and cards at the
      gutter, a header's gap apart (--header-gap); cards 28px apart (12 in
      the contact sheet). */
-  .scr { padding-top: 90px; padding-bottom: 130px; }
+  /* 64 = the status bar + 10, the line Community and Digital Retreats
+     start their headers on. */
+  .scr { padding-top: 64px; padding-bottom: 130px; }
   .hdr { display: flex; justify-content: space-between; align-items: flex-start; padding: 0 calc(var(--gutter) - 12px) 0 var(--gutter); }
   .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .hdr h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 12px; }

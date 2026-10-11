@@ -59,7 +59,10 @@ struct PracticeView: View {
                 }
                 Color.clear.frame(height: 120)
             }
-            .padding(.top, 36)
+            // The tabs' header line: Community and Digital Retreats start
+            // theirs 10 under the status bar too, so a title doesn't jump
+            // between tabs.
+            .padding(.top, 10)
             .padding(.horizontal, Theme.gutter)
         }
         .scrollIndicators(.hidden)
