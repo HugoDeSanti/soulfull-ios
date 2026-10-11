@@ -59,6 +59,21 @@ final class RetreatsStackTests: XCTestCase {
         return false
     }
 
+    /// Scrolls the catalog until `element`'s centre — where `tap()` lands —
+    /// sits above the docked bar. `isHittable` alone isn't enough: a cover
+    /// under the bar still reports hittable, and on a Pro Max the last cover
+    /// sat there, so the tap opened Home instead.
+    private func scrollClearOfTheBar(_ element: XCUIElement, _ app: XCUIApplication) {
+        let floor = app.windows.firstMatch.frame.maxY - 140
+        var tries = 0
+        while (!element.isHittable || element.frame.midY > floor) && tries < 8 {
+            app.swipeUp(velocity: .slow)
+            tries += 1
+        }
+        XCTAssertTrue(element.isHittable && element.frame.midY <= floor,
+                      "The cover never scrolled clear of the tab bar")
+    }
+
     /// Scroll moves the focus, the catalog refocuses the stack, and the card
     /// opens the focused retreat — with a way back from each.
     func testBrowseRefocusAndOpen() throws {
@@ -93,6 +108,7 @@ final class RetreatsStackTests: XCTestCase {
             .firstMatch
         XCTAssertTrue(lastCover.waitForExistence(timeout: 5), "No cover for \(lastName)")
         shot(app, "03-catalog")
+        scrollClearOfTheBar(lastCover, app)
         lastCover.tap()
 
         XCTAssertTrue(waitForLabel(folio) { $0 == "Retreat \(count) of \(count)" },

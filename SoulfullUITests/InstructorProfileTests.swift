@@ -50,10 +50,26 @@ final class InstructorProfileTests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: id)
     }
 
+    /// Scrolls until `element`'s centre — where `tap()` lands — sits above the
+    /// docked bar. `isHittable` alone isn't enough: a card under the bar still
+    /// reports hittable, and the tap lands on a tab. XCUITest's own scroll to
+    /// an off-screen card can stop with it there.
+    private func scrollClearOfTheBar(_ element: XCUIElement, _ app: XCUIApplication) {
+        let floor = app.windows.firstMatch.frame.maxY - 140
+        var tries = 0
+        while (!element.isHittable || element.frame.midY > floor) && tries < 8 {
+            app.swipeUp(velocity: .slow)
+            tries += 1
+        }
+        XCTAssertTrue(element.isHittable && element.frame.midY <= floor,
+                      "The card never scrolled clear of the tab bar")
+    }
+
     /// From the Practice landing: a section card, then the row titled `title`.
     private func openPractice(_ app: XCUIApplication, section: String, title: String) {
         let card = app.buttons[section]
         XCTAssertTrue(card.waitForExistence(timeout: 20), "No '\(section)' on the Practice landing")
+        scrollClearOfTheBar(card, app)
         card.tap()
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10), "No '\(title)' in \(section)")
