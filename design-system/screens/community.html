@@ -26,6 +26,9 @@
      block from friends and notifications. Unblocking: blocked-members. */
   .scr { padding-top: 64px; padding-bottom: 130px; }
   .scr > * + * { margin-top: 36px; }
+  /* The toggles' 44px targets carry 13px of their own above the words, so
+     the words land a header's gap under the subline. */
+  .scr > .hdr + .controls { margin-top: calc(var(--header-gap) - 13px); }
   .hdr { display: flex; align-items: flex-start; gap: 16px; padding: 0 var(--gutter); }
   .hdr .tx { flex: 1; min-width: 0; }
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }

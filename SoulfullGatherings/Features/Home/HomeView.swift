@@ -38,11 +38,11 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: Theme.sectionGap) {
                 // One opening, not two sections: the greeting asks the mood
-                // question, so the question follows it at the logo's 40, with
+                // question, so the question follows it at a header's gap, with
                 // no rule between them. A section's gap and a rule there set
                 // the greeting adrift and dropped the member's cards to
                 // mid-screen.
-                VStack(spacing: 40) {
+                VStack(spacing: Theme.headerGap) {
                     header
                     today
                 }
@@ -541,9 +541,11 @@ struct HomeView: View {
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.2)
                         .fixedSize(horizontal: false, vertical: true)
+                    // inkSoft, as the Continue card's "N MIN LEFT" beneath it:
+                    // muted vanished on the frost wherever the photo is light.
                     Text(program.title)
                         .font(Theme.body(12))
-                        .foregroundStyle(Theme.muted)
+                        .foregroundStyle(Theme.inkSoft)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "arrow.right")

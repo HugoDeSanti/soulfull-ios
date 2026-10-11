@@ -50,7 +50,7 @@ struct PracticeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 36) {
+            VStack(alignment: .leading, spacing: Theme.headerGap) {
                 header
                 LazyVGrid(columns: columns, spacing: sheet ? 12 : 28) {
                     ForEach(Array(PracticeMenuItem.allCases.enumerated()), id: \.element) { idx, item in

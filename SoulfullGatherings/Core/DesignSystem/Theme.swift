@@ -140,6 +140,11 @@ enum Theme {
     /// Between the sections of a page.
     static let sectionGap: CGFloat = 64
 
+    /// From a tab's header (its title and subline) to the first thing on the
+    /// page, measured to what shows. Every tab opens the same way; they had
+    /// drifted to 36, 56 and 64.
+    static let headerGap: CGFloat = 40
+
     // MARK: - Motion
     //
     // Still motion: things fade in and settle, at breath pace. Nothing

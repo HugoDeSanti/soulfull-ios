@@ -135,7 +135,7 @@ The direction is **"still"** (owner's brief, 2026-10-10: the rounded, bouncy app
 - **Photography and near-white.** Every screen's photograph stays visible behind it; colour comes from photography, never from the chrome.
 - **Square.** Nothing is rounded.
 - **Still motion.** Things fade in and settle at breath pace; nothing springs, bounces, squishes or zooms.
-- **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines. The rhythm is `Theme.sectionGap` (64) between sections, ~20pt from a section's label to its content, and **12pt between cards that belong together** (Home's day / Continue / ritual cards stack under the moods as one section; spaced as sections, each floated alone, owner 2026-10-10). **Home's greeting and its mood question are one opening:** the question sits 40pt under "Take your time", with no rule (`SectionLabel(ruled: false)`); a section's gap and a rule there read as dead space (owner, 2026-10-11).
+- **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines. The rhythm is `Theme.sectionGap` (64) between sections, ~20pt from a section's label to its content, and **12pt between cards that belong together** (Home's day / Continue / ritual cards stack under the moods as one section; spaced as sections, each floated alone, owner 2026-10-10). **Home's greeting and its mood question are one opening:** the question sits a `headerGap` under "Take your time", with no rule (`SectionLabel(ruled: false)`); a section's gap and a rule there read as dead space (owner, 2026-10-11).
 
 The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows) is gone; don't bring its idioms back. All brand values are in `Theme.swift` (a static `enum`). **Never hardcode colors, font sizes or animation curves.
 
@@ -150,7 +150,7 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
 | `Theme.ember` | Copper, the one warm mark: small text marks, counts, an unread dot, the liked heart. **Not** for selected surfaces, which use ink (an ink hairline or a 1pt underline) |
 | `Theme.danger` | Muted brick for irreversible actions (Delete account) |
 | `Theme.line` / `glassBorder` / `glassBorderHigh` / `hairline` (0.75) | Rules / surface strokes / stroke width |
-| `Theme.gutter` (24) / `sectionGap` (64) | Page side margin / space between a page's sections |
+| `Theme.gutter` (24) / `sectionGap` (64) / `headerGap` (40) | Page side margin / space between a page's sections / a tab's header to its first content, measured to what shows (Home, Practice, Community, You, Digital Retreats) |
 | `Theme.Motion.press` / `release` / `settle` / `reveal` / `stage` / `breath` | The only animation curves: all eases. `settle` (0.6s) when a state changes, `reveal` (1.1s) when something arrives, `breath` (6s) is every idle loop's period |
 | `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
 

@@ -28,29 +28,31 @@ struct ProgramsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.sectionGap) {
+            VStack(alignment: .leading, spacing: Theme.headerGap) {
                 header
 
-                if let active, let day = store.currentDay(active) {
-                    continueCard(active, day: day)
-                }
+                VStack(alignment: .leading, spacing: Theme.sectionGap) {
+                    if let active, let day = store.currentDay(active) {
+                        continueCard(active, day: day)
+                    }
 
-                if !vm.programs.isEmpty {
-                    catalog
-                } else if let failure = vm.loadFailure {
-                    unavailable(failure)
-                } else if vm.isLoading || !vm.hasLoaded {
-                    // Including the frame before the load has even started,
-                    // which is empty but not yet the answer.
-                    ProgressView()
-                        .tint(Theme.ink)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 60)
-                } else {
-                    emptyState
-                }
+                    if !vm.programs.isEmpty {
+                        catalog
+                    } else if let failure = vm.loadFailure {
+                        unavailable(failure)
+                    } else if vm.isLoading || !vm.hasLoaded {
+                        // Including the frame before the load has even started,
+                        // which is empty but not yet the answer.
+                        ProgressView()
+                            .tint(Theme.ink)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 60)
+                    } else {
+                        emptyState
+                    }
 
-                Color.clear.frame(height: 120)
+                    Color.clear.frame(height: 120)
+                }
             }
             .padding(.top, 10)
         }

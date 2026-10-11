@@ -9,9 +9,11 @@
 <style>
   /* ProgramsView — on the blurred photo of the program in flight (onb-bg when
      there is none; blur 26, darken .8), still visible; the header carries
-     .on-photo. Sections 64px apart; everything at the gutter. */
+     .on-photo. The first section a header's gap under the header, then
+     sections 64px apart; everything at the gutter. */
   .scr { padding-top: 64px; padding-bottom: 130px; }
-  .scr > .sec + .sec, .scr > .hdr + .sec { margin-top: 64px; }
+  .scr > .sec + .sec { margin-top: 64px; }
+  .scr > .hdr + .sec { margin-top: var(--header-gap); }
   .hdr { padding: 0 var(--gutter); }
   .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   .hdr h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 6px 0 6px; }

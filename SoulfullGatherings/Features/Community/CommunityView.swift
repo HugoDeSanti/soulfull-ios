@@ -48,15 +48,20 @@ struct CommunityView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 36) {
+            VStack(alignment: .leading, spacing: 0) {
                 header
-                controls
-                if showsPushPrompt {
-                    pushPrompt
-                        .transition(.opacity)
+                VStack(alignment: .leading, spacing: 36) {
+                    controls
+                    if showsPushPrompt {
+                        pushPrompt
+                            .transition(.opacity)
+                    }
+                    feed
+                    Color.clear.frame(height: 120)
                 }
-                feed
-                Color.clear.frame(height: 120)
+                // The toggles' 44pt targets carry 13pt of their own above the
+                // words, so the words land a header's gap under the subline.
+                .padding(.top, Theme.headerGap - 13)
             }
             .padding(.top, 10)
         }

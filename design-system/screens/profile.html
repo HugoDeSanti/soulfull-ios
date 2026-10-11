@@ -12,7 +12,8 @@
      .on-photo, metadata in --ink-soft rather than --muted. Scrolls:
      header (avatar), As a guide (linked guides only), Your practice (open
      numerals, 2×2), Digital retreats, In-person retreats, Community (share
-     switch, Blocked members), account actions. Sections 64px apart. */
+     switch, Blocked members), account actions. Sections 64px apart, the
+     first a header's gap under the header. */
   .scr { padding-top: 82px; padding-bottom: 130px; }
   .hdr { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 var(--gutter); }
   .hdr img { width: 80px; }
@@ -25,7 +26,7 @@
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); margin: 16px 0 0; }
   /* Intentions — one quiet line, words and dots, no chips. */
   .intentions { font-size: 12px; letter-spacing: .3px; color: var(--ink-soft); margin: 22px 0 0; }
-  .secs { margin-top: 56px; }
+  .secs { margin-top: var(--header-gap); }
   .secs > .sec + .sec { margin-top: 64px; }
   .rows, .stats, .comm, .guide { margin-left: var(--gutter); margin-right: var(--gutter); }
 

@@ -65,6 +65,7 @@ matching constant in `Theme.swift`:
 | `--hairline` | `Theme.hairline` | `0.75` — every surface and ghost-button stroke |
 | `--gutter` | `Theme.gutter` | `24` — the page margin |
 | `--section-gap` | `Theme.sectionGap` | `64` — between a page's sections |
+| `--header-gap` | `Theme.headerGap` | `40` — a tab's header to its first content, measured to what shows |
 | `--ease-press` … `--ease-stage`, `--breath` | `Theme.Motion.*` | press .12s / release .5s / settle .6s / reveal 1.1s / stage 1.2s; breath 6s |
 | `--atmos-<tone>-top/-mid/-low`, `--atmos-reach`, `--atmos-intensity` | `Atmosphere(tone:reach:intensity:)` | moss · ember · dusk · slate; used only by Home's ritual card (ember, reach 1.15, intensity 1) |
 

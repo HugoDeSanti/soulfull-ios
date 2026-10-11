@@ -30,6 +30,7 @@
    Theme.hairline         ->  --hairline          (0.75)
    Theme.gutter           ->  --gutter            (24)
    Theme.sectionGap       ->  --section-gap       (64)
+   Theme.headerGap        ->  --header-gap        (40)
    Theme.Motion.*         ->  --ease-* / --breath
    Theme.splash           ->  --grad-splash
    Theme.photoVignette    ->  --grad-photo-vignette
@@ -101,6 +102,7 @@
   --hairline: 0.75px;     /* Theme.hairline — every surface / ghost-button stroke */
   --gutter: 24px;         /* Theme.gutter — the page's side margin */
   --section-gap: 64px;    /* Theme.sectionGap — between a page's sections */
+  --header-gap: 40px;     /* Theme.headerGap — a tab's header to its first content */
 
   /* ---- Motion (Theme.Motion) — eases only; nothing springs ---- */
   --ease-press:   .12s ease-out;     /* press: the surface dims to 0.55 */

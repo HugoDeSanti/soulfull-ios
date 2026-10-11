@@ -13,12 +13,12 @@
      24px gutter. The day / Continue / ritual cards belong to the moods'
      section: 12px under the words' 44px targets, then 12px apart, not a
      section's gap each (they floated alone). The greeting and its mood
-     question are one opening: the question sits 40px under the subline (the
-     logo's 40), unruled — a section's gap and a rule there set the greeting
+     question are one opening: the question sits a header's gap
+     (--header-gap) under the subline, unruled — a section's gap and a rule there set the greeting
      adrift. */
   .scr { padding-top: 86px; padding-bottom: 130px; }
   .scr > .sec + .sec { margin-top: 64px; }
-  .scr > .sec + .sec.ask { margin-top: 40px; }
+  .scr > .sec + .sec.ask { margin-top: var(--header-gap); }
   .hdr { text-align: center; }
   .hdr img { width: 72px; }
   .greet { padding: 40px var(--gutter) 0; }
@@ -36,7 +36,7 @@
   .day-open .left { flex: 1; }
   .day-open .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ember); margin: 0; }
   .day-open h3 { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
-  .day-open .prog-name { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  .day-open .prog-name { font-size: 12px; color: var(--ink-soft); margin: 4px 0 0; }
   .day-open .chev { color: var(--ink-soft); margin-top: 6px; }
   .continue { margin: 0 var(--gutter); }
 

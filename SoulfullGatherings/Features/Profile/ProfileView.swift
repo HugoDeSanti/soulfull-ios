@@ -71,10 +71,10 @@ struct ProfileView: View {
                         inPersonSection
                         communitySection
                     }
-                    .padding(.top, 56)
+                    .padding(.top, Theme.headerGap)
                 } else {
                     guestInvitation
-                        .padding(.top, 56)
+                        .padding(.top, Theme.headerGap)
                 }
 
                 VStack(spacing: 16) {
