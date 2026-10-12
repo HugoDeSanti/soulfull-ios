@@ -225,12 +225,6 @@ final class PracticeProgressStore {
     /// two can never disagree.
     var streakDays: Int { stats.currentStreak }
 
-    /// Practices touched in the last seven days.
-    var practicesThisWeek: Int {
-        let cutoff = AppClock.shared.now.addingTimeInterval(-7 * 24 * 3600)
-        return progress.values.filter { $0.lastPlayedAt >= cutoff }.count
-    }
-
     // MARK: - Writing
 
     /// Records consumption against the ledger and folds the result into the

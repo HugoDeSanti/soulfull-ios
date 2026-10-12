@@ -149,6 +149,8 @@ struct ExerciseDetailView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         ExerciseDetailView(exercise: Exercise.mock[0])
@@ -156,3 +158,4 @@ struct ExerciseDetailView: View {
     }
     .preferredColorScheme(.dark)
 }
+#endif

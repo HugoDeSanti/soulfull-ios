@@ -307,6 +307,8 @@ enum JournalCompletion {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         JournalDetailView(prompt: JournalPrompt.mock[0])
@@ -314,3 +316,4 @@ enum JournalCompletion {
     }
     .preferredColorScheme(.dark)
 }
+#endif

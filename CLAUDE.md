@@ -107,7 +107,9 @@ SoulfullGatherings/
 │                                  # on every tab root AND pushed destination — an inset around the tab pager or a
 │                                  # NavigationStack never reaches the screens inside — so it pushes them down, never over Back)
 ├── Core/
-│   ├── Models/Models.swift        # Every domain model. `.mock` fixtures are for previews / DEBUG screens only
+│   ├── Models/                    # Domain models, one file per area (Retreat, Program, Practice, WrittenPractice, Community…).
+│   │                              # `.mock` samples live ONLY in Fixtures.swift, inside `#if DEBUG`: previews and `-preview-*`
+│   │                              # screens, never Release (some are real people's names). A #Preview using one needs `#if DEBUG`
 │   ├── DesignSystem/              # Theme, Components, Atmosphere, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
 │   │                              # PresenceBadge, CatalogImage, AvatarView (tone from a STABLE hash: hashValue is salted per launch)
 │   ├── Services/                  # SupabaseService (actor), SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,

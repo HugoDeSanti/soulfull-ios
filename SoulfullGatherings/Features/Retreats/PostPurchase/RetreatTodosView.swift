@@ -239,6 +239,8 @@ struct RetreatTodosView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         RetreatTodosView(retreat: Retreat.mock[0])
@@ -246,3 +248,4 @@ struct RetreatTodosView: View {
     }
     .preferredColorScheme(.dark)
 }
+#endif

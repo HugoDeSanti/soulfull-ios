@@ -191,7 +191,7 @@ unavailable for two different reasons, and they need two different sentences:
 
 Collapsing the middle two into one "Locked" chip is the obvious tidy-up and it
 is wrong — "come back tomorrow" and "you're not done yet" send someone to
-completely different actions. `ProgramDayState` in `Models.swift` carries all
+completely different actions. `ProgramDayState` in `Models/Program.swift` carries all
 four cases for exactly this reason.
 
 Note also that **the day opens at local midnight but the notification fires at

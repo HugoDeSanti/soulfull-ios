@@ -125,6 +125,8 @@ struct PackingListView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         PackingListView(retreat: Retreat.mock[0])
@@ -132,3 +134,4 @@ struct PackingListView: View {
     }
     .preferredColorScheme(.dark)
 }
+#endif

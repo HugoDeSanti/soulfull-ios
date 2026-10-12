@@ -372,7 +372,10 @@ struct ProgramDayView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     ProgramDayView(program: Program.mock[0], day: Program.mock[0].authoredDays[0])
         .preferredColorScheme(.dark)
 }
+#endif

@@ -273,6 +273,8 @@ struct RetreatExperienceHubView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         RetreatExperienceHubView(retreat: Retreat.mock[0])
@@ -281,3 +283,4 @@ struct RetreatExperienceHubView: View {
     .environment(AppState().settings)
     .preferredColorScheme(.dark)
 }
+#endif

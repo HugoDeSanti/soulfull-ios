@@ -279,6 +279,8 @@ struct RecipeDetailView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     NavigationStack {
         RecipeDetailView(recipe: Recipe.mock[0])
@@ -286,3 +288,4 @@ struct RecipeDetailView: View {
     }
     .preferredColorScheme(.dark)
 }
+#endif

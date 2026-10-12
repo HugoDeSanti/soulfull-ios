@@ -447,7 +447,10 @@ struct ProgramDetailView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     ProgramDetailView(program: Program.mock[0])
         .preferredColorScheme(.dark)
 }
+#endif

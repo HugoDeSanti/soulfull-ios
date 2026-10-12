@@ -599,7 +599,10 @@ private extension View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     RetreatEnquiryView(retreat: Retreat.mock.first!, initialName: "Hugo",
                        accountEmail: "hugo@soulfullgatherings.com")
 }
+#endif

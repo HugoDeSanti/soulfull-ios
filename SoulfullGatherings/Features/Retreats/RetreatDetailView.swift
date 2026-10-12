@@ -749,6 +749,8 @@ struct RetreatDetailView: View {
     }
 }
 
+// Its sample content (`Fixtures.swift`) exists only in DEBUG.
+#if DEBUG
 #Preview {
     let app = AppState()
     return NavigationStack {
@@ -759,3 +761,4 @@ struct RetreatDetailView: View {
     .environment(app.settings)
     .preferredColorScheme(.dark)
 }
+#endif
