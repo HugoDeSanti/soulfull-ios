@@ -39,7 +39,19 @@
 -- How to apply: Management API (one transaction with its schema_migrations
 -- row) or `supabase db push`. Safe to re-run.
 --
--- NOT APPLIED YET.
+-- APPLIED to the live project 2026-10-12 through the Management API, in one
+-- transaction with its schema_migrations row (0034), after a dry run inside an
+-- aborted transaction, as the two App Review demo members (A and B, accepted
+-- friends) and the owner's test account (C): A saw B only (no run, zeros); a
+-- pending A→C request showed nothing of C; once accepted, C's run, longest
+-- run, classes and minutes matched an independent count of C's plays (days
+-- 14 Sep, 18 Sep, 12 Oct → run 12 Oct–12 Oct, longest 1, 1 class, 2
+-- minutes); C saw A; C with share_activity off → no row; A blocking B → no
+-- row; an unknown zone and a null zone answered as UTC, no error; a guest
+-- 0 rows; anon 42501. The islands were checked on sample dates (1–3, 5–6,
+-- 10–13 Oct → latest 10–13, longest 4). After applying: security definer,
+-- EXECUTE for authenticated (and postgres / service_role) only; REST with the
+-- anon key 401 / 42501; a fresh guest session 200 [].
 
 
 -- ===========================================================================

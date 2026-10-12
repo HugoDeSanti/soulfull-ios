@@ -530,6 +530,7 @@ The submission checklist and the text for App Review are in `docs/APP-REVIEW-NOT
 - Names capped at 64 and a guide's own listening judged when it happens (0030, applied 2026-10-11).
 - Play ledger and member privacy hardening (0029, applied and `report-member` v2 deployed 2026-10-11): the server says what was played, guests write no plays and see only the members their feed shows, the feed is 30 days, practice media is members-only.
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
+- Friends' numbers (0034 applied 2026-10-12): a friend's streak and classes under their name on Friends, and their page with the You tab's four figures.
 - Comments under a practice (0032 applied and `report-member` v3 deployed 2026-10-12): movement, recipes and sessions, members only, Report and Block on each. A real comment report hasn't been filed end to end yet (`docs/MODERATION.md`, steps 5–7).
 
 **Open items:**
@@ -538,7 +539,6 @@ The submission checklist and the text for App Review are in `docs/APP-REVIEW-NOT
 - **Push:** key `5224W8727Y` now has the APNs service (the owner, by 2026-10-12), so likes should reach phones; no code or secret changed. **No delivery has been seen yet:** the last send on record (`net._http_response`, 2026-09-23) predates the fix. Confirm with one real like to a member with a registered device; a `403 InvalidProviderToken` in the function's answer would mean the key still lacks APNs.
 - ⚠️ **`practice_sessions` holds three generated PLACEHOLDERS** (seeded 2026-09-30 so TestFlight testers can use the media tracks): an illustrated somatic video and two synthetic-voice audio sessions, now credited (like everything) to `alma-guerra` / "Hugo Santi". Their blurbs say "A placeholder while the real sessions are recorded". **Remove or replace them before App Review** (Guideline 2.1(a)): run `supabase/placeholder-media/remove.sql` and delete the three objects in `practice-media`. A track left with no rows goes back to "SOON" by itself. Test plays stay in `practice_plays` under that creator, so leave it out of payouts.
 - **The post-purchase screens are unreachable** while payments are off, and only Mallorca has `PostBooking` content.
-- **Friends' numbers (0034) are built but NOT APPLIED:** until `friend_practice_stats()` is live, the Friends screen shows no line under a friend's name and a friend's page offers Try again. Apply it (dry run first), then check it as a member with a friend who shares and one who doesn't.
 - **Not built yet:** a bookings history screen, refunds, and a membership (which would need StoreKit in-app purchase).
 - **App Review demo accounts** (created 2026-10-08, confirmed, not linked to a guide): `appreview@soulfullgatherings.com` ("App Review") and its accepted friend `appreview.friend@soulfullgatherings.com` ("Demo Friend"), the demo enrolled in Finding Ground. The passwords are only in App Store Connect's review details. They have no practice history: none was invented.
 
