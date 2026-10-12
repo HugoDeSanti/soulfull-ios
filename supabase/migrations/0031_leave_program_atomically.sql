@@ -23,8 +23,15 @@
 -- How to apply: Management API (one transaction with its schema_migrations
 -- row) or `supabase db push`. Safe to re-run.
 --
--- NOT YET APPLIED (written 2026-10-11). The app's leave calls this function,
--- so apply it before shipping a build that contains that change.
+-- APPLIED to the live project 2026-10-12 through the Management API, in one
+-- transaction with its schema_migrations row (0031), after a dry run inside
+-- an aborted transaction as the App Review member (enrolled in
+-- finding-ground, given a finished day 1 for the test): enrolled 1 → 0 and
+-- days 1 → 0 in one call; the owner's test account's enrolment untouched;
+-- `anon` → 42501. After applying: authenticated may execute, anon may not,
+-- SECURITY INVOKER, and PostgREST answers a guest's RPC with 42501 (not
+-- PGRST202), so the schema cache has it. Build 1.0 (19), the first to call
+-- it, was uploaded a few minutes earlier.
 --
 -- Verify after applying, as a member enrolled in a program with a completed
 -- day, inside an aborted transaction:
