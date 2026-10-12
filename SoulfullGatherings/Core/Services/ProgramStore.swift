@@ -285,8 +285,8 @@ final class ProgramStore {
     /// Leaves a program: the enrolment and its day completions. Practice
     /// history is untouched — those practices were really done.
     func leave(_ program: Program) async throws {
-        guard let userID else { throw AppError.unknown }
-        try await SupabaseService.shared.leaveProgram(id: program.id, userID: userID)
+        guard userID != nil else { throw AppError.unknown }
+        try await SupabaseService.shared.leaveProgram(id: program.id)
         enrollments[program.id] = nil
         completions[program.id] = nil
         ProgramNotifications.cancel(programID: program.id)

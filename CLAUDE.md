@@ -87,7 +87,7 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0030 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0031 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
@@ -331,7 +331,7 @@ A program is free to join (behind the account gate), self-paced, and opens a day
 - ⚠️ **An activity counts toward a day only if it was FINISHED after that day unlocked** (`lastCompletedAt >= dayUnlockedAt`, from `practice_progress.last_completed_at`, 0029). `practice_progress.completed` never resets, so without a date a member's past practice would complete days the moment they enrol. The date was once `lastPlayedAt`, which moves on any open, so two seconds of last month's session finished today's day. The same practice on day 2 and day 6 has to be done twice, on purpose.
 - **The device clock decides the date,** so winding it forward skips the wait. Accepted: this is a free program, not an exam.
 - **Day completion is latched,** even though activity completion is not.
-- **Programs record nothing of their own.** Activities open the same screens as the Practice tab and write `practice_plays` the same way, so a creator is paid identically either way. Leaving a program clears the enrolment and day rows and **touches no play history**.
+- **Programs record nothing of their own.** Activities open the same screens as the Practice tab and write `practice_plays` the same way, so a creator is paid identically either way. Leaving a program clears the enrolment and day rows **in one transaction** (`leave_program()`, 0031: as two requests, a failure between them left an enrolment with its days cleared) and **touches no play history**.
 - **Missing activities:**
   - An activity whose content doesn't exist is **dropped and logged**, because an activity that can't be opened would block the member forever.
   - A day with no activities left closes on its own.

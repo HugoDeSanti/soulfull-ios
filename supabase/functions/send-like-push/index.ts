@@ -48,16 +48,62 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  // The row, with the actor's abbreviated name and the practice's title —
-  // the same view the app reads, under the service role.
+  // The row itself, from `notifications` — NOT the `member_notifications`
+  // view the app reads. That view joins `community_members`, whose guest
+  // filter (0029) asks `caller_has_account()` about `auth.uid()`, which is
+  // empty under the service role: it filtered as it would for a guest and
+  // dropped every liker who hadn't shared a finished practice in the last 30
+  // days. Their likes reached the bell and never buzzed.
   const { data: note, error: noteErr } = await admin
-    .from("member_notifications")
-    .select("id, user_id, kind, actor_name, content_title")
+    .from("notifications")
+    .select("id, user_id, kind, actor_id, play_id")
     .eq("id", notificationId)
     .maybeSingle();
   if (noteErr || !note) {
     console.error("[send-like-push] notification not found:", notificationId, noteErr?.message);
     return json({ sent: 0, reason: "not found" });
+  }
+
+  // A block ends the like and its notification both ways (0028's trigger),
+  // but one that raced the block must not buzz.
+  if (note.actor_id) {
+    const { data: blocks } = await admin
+      .from("member_blocks")
+      .select("blocker_id")
+      .or(
+        `and(blocker_id.eq.${note.user_id},blocked_id.eq.${note.actor_id}),` +
+          `and(blocker_id.eq.${note.actor_id},blocked_id.eq.${note.user_id})`,
+      )
+      .limit(1);
+    if (blocks && blocks.length > 0) return json({ sent: 0, reason: "blocked" });
+  }
+
+  // The liker as every member sees them ("Hugo D.", or "A member" for an
+  // objectionable name): the same `community_display_name()` the views use.
+  // A deleted account (actor_id null) stays "Someone".
+  let actorName: string | null = null;
+  if (note.actor_id) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", note.actor_id)
+      .maybeSingle();
+    if (profile) {
+      const { data: shown } = await admin.rpc("community_display_name", {
+        full_name: profile.full_name,
+      });
+      if (typeof shown === "string") actorName = shown;
+    }
+  }
+
+  let contentTitle: string | null = null;
+  if (note.play_id) {
+    const { data: play } = await admin
+      .from("practice_plays")
+      .select("content_title")
+      .eq("id", note.play_id)
+      .maybeSingle();
+    contentTitle = play?.content_title ?? null;
   }
 
   const { data: tokens } = await admin
@@ -78,9 +124,9 @@ Deno.serve(async (req) => {
     .eq("user_id", note.user_id)
     .is("read_at", null);
 
-  const actor = note.actor_name ?? "Someone";
+  const actor = actorName ?? "Someone";
   const title = `${actor} liked your practice`;
-  const body = note.content_title ?? "Open Community to see it.";
+  const body = contentTitle ?? "Open Community to see it.";
 
   let sent = 0;
   const dead: string[] = [];

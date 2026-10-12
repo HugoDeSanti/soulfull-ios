@@ -380,25 +380,22 @@ actor SupabaseService {
         return enrollment
     }
 
-    /// Leaves a program: the enrolment and every day completion for it.
+    /// Leaves a program: the enrolment and every day completion for it, in
+    /// one transaction (`leave_program`, 0031).
+    ///
+    /// It was two requests, and when the second failed the server kept the
+    /// enrolment with its days cleared: still joined, Day 1 open since the
+    /// original join date, and every practice finished since completing it
+    /// again. "Begin again" then restarted on that half-cleared slate.
     ///
     /// Note what is **not** deleted — `practice_plays`. The practices were
     /// genuinely done and their creators genuinely earned from them; leaving a
     /// program is the member withdrawing from a schedule, not rewriting
     /// history. Re-joining later starts the days again from an empty slate,
-    /// which is the point.
-    func leaveProgram(id programID: String, userID: UUID) async throws {
+    /// which is the point. The member is the caller (`auth.uid()` under RLS).
+    func leaveProgram(id programID: String) async throws {
         try await client
-            .from("program_day_completions")
-            .delete()
-            .eq("user_id", value: userID)
-            .eq("program_id", value: programID)
-            .execute()
-        try await client
-            .from("program_enrollments")
-            .delete()
-            .eq("user_id", value: userID)
-            .eq("program_id", value: programID)
+            .rpc("leave_program", params: ["p_program_id": programID])
             .execute()
     }
 

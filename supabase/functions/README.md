@@ -246,8 +246,12 @@ select creator, listeners, hours_played, plays
 
 Called by the database, not the app: the `notifications_push` trigger (0017)
 posts `{ "notification_id" }` to it through pg_net whenever a like creates a
-notification. It reads the row through `member_notifications`, finds the
-recipient's `device_tokens`, and sends one APNs alert per device. Dead tokens
+notification. It reads the row from `notifications` (not the
+`member_notifications` view: that view's guest filter reads `auth.uid()`,
+which is empty under the service role, and dropped most likers), skips a
+like either side has since blocked, names the liker with
+`community_display_name()`, finds the recipient's `device_tokens`, and sends
+one APNs alert per device. Dead tokens
 (410 / BadDeviceToken / Unregistered) are deleted; everything else is logged
 and answered 200 so pg_net never retries a like into a storm. The in-app bell
 is the record; this is the buzz.
