@@ -50,7 +50,21 @@
 -- row) or `supabase db push`. Safe to re-run. Apply BEFORE deploying the
 -- `report-member` version that writes `reporter_is_guest`.
 --
--- NOT YET APPLIED (written 2026-10-11).
+-- APPLIED to the live project 2026-10-11 through the Management API, in one
+-- transaction with its schema_migrations row (0029), after a dry run inside an
+-- aborted transaction that ran the checks at the bottom as the App Review
+-- member and a guest. All held: a guest's insert → 42501; a member's insert
+-- claiming 2,000,000,000 seconds, a forged title and creator and a January
+-- date → the catalog's title, creator and 128 s length, today's dates, 120 s;
+-- unknown content → 23503; an upsert ten minutes in → past the insert's
+-- 120 s to the full 128 (so the EXCLUDED path isn't capped); a two-day-old
+-- play → seconds and completion unchanged; completed_at and last_completed_at
+-- set; community_members 1 row for a guest, 5 for a member; practice-media
+-- objects visible to anon 0, guest 0, member 3; no finished play left without
+-- completed_at after the backfill. After applying: the columns, policies,
+-- indexes and SECURITY DEFINER trigger are in place; with the anon key a
+-- practice-media sign and a direct GET answer 400 (they answered 206 before);
+-- `report-member` v2 deployed after it, JWT verification on (401 without one).
 
 
 -- ===========================================================================

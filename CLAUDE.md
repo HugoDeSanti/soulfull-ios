@@ -503,6 +503,7 @@ The submission checklist and the text for App Review are in `docs/APP-REVIEW-NOT
 - Digital Retreats: one live program, `finding-ground`.
 - Community: feed, friends, likes, notifications and push. Report, Block and the friend-request cooldown (2026-10-08; 0028 applied and `report-member` deployed the same day).
 - Presence counts, instructor profiles, and the You tab (stats and history).
+- Play ledger and member privacy hardening (0029, applied and `report-member` v2 deployed 2026-10-11): the server says what was played, guests write no plays and see only the members their feed shows, the feed is 30 days, practice media is members-only.
 - The guide dashboard (2026-10-07): people reached, past months' pool earnings and this month so far, for a member linked to a guide.
 
 **Open items:**
