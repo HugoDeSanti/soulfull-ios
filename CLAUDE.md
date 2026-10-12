@@ -166,6 +166,7 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
   - `Theme.markShape` (4): check boxes, radio marks, progress tracks, tiny badges.
   - Sheets get `.presentationCornerRadius(Theme.Corner.sheet)` (16).
   - **Anything that runs to the screen's edge stays a `Rectangle()`** (a full-bleed photo, a backdrop, the docked bar, a page-wide band): the display rounds it. So do hairline rules and `contentShape` hit areas.
+  - **Home's two shelves (Digital Retreats, Upcoming gatherings) keep square photos** (owner, 2026-10-12).
   - `Circle()` is only for faces (`AvatarView`, guide portraits), dots of 10pt or less, and the player's breath ring.
   - A number is a folio ("01"), never a numeral in a circle.
   - A check box is a hairline box with eased corners (`markShape`).

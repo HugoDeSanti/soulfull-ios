@@ -7,7 +7,7 @@
 //  and the cards beneath the moods (an open day, Continue, the ritual) stack
 //  close as one section. The ritual card holds a slow ember wash — the one
 //  warm thing on the page. The two shelves at the foot — digital retreats, then upcoming
-//  gatherings — are photographs with their names set beneath, and
+//  gatherings — are square photographs with their names set beneath, and
 //  hand off to their own tabs.
 //
 
@@ -395,8 +395,9 @@ struct HomeView: View {
         .accessibilityLabel("\(failure.title). \(failure.detail)")
     }
 
-    /// A photograph with its name set beneath on the page — no box
-    /// around it, as Open lays its shelves.
+    /// A square photograph with its name set beneath on the page — no box
+    /// around it, as Open lays its shelves. Both shelves keep the square cut
+    /// while the rest of the app's corners are eased (owner, 2026-10-12).
     private func retreatCard(_ r: Retreat) -> some View {
         PressableCard(action: { onOpenRetreat(r) }) {
             VStack(alignment: .leading, spacing: 0) {
@@ -418,7 +419,7 @@ struct HomeView: View {
                         .padding(14)
                 }
                 .frame(width: 260, height: 170)
-                .clipShape(Theme.cardShape)
+                .clipped()
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(r.name)
@@ -491,7 +492,7 @@ struct HomeView: View {
                     .padding(14)
             }
             .frame(width: 260, height: 200)
-            .clipShape(Theme.cardShape)
+            .clipped()
 
             VStack(alignment: .leading, spacing: 0) {
                 // Set beneath the photo, on the page's own photograph.
