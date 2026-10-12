@@ -9,12 +9,14 @@
 <!--
   RetreatsStackView (stack mode) — the root of the GATHERINGS TAB (2026-09-25).
   Home's "Upcoming gatherings" shelf and its ALL hand off here. Maps 1:1:
-  - .topbar   → topBar: the ONE mode toggle (grid ↔ list), a bare GlyphButton.
-                No Back as a tab root (it has "← Back" only when pushed, e.g. the
-                -preview-retreats hook). Shared by both modes; never scales or blurs.
-  - .intro    → stackIntro: eyebrow in --ink-soft, the folio, a 14px subline in
-                --ink-on-photo. The folio ("03 / 04") follows the centred name and
-                replaces the old static "07" count circle.
+  - .hdr      → header: the tab's header, as every tab opens — "In person",
+                "Gatherings", a 14px subline in --ink-on-photo — starting 10px
+                under the status bar. The ONE mode toggle (grid ↔ list, a bare
+                GlyphButton) sits at its top corner as on Practice; the folio
+                ("03 / 04") under it on the title line follows the focused
+                retreat. No Back as a tab root (it has "← Back" above the header
+                only when pushed, e.g. the -preview-retreats hook). Shared by
+                both modes; never scales or blurs.
   - .item     → row(): the NAME ONLY. The trailing guest count was removed — it
                 read as a bare footnote number. Size lives on retreat-detail.
                 In the app every name is 54px and a scroll-driven "focus lens"
@@ -29,15 +31,19 @@
                 above the docked tab bar (BottomNav.height).
 -->
 <style>
-  .topbar { position: relative; z-index: 6; display: flex; justify-content: flex-end; align-items: center; min-height: 44px; padding: 4px calc(var(--gutter) - 12px) 0 var(--gutter); }
-  .back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 13px; color: var(--ink); }
-
-  .intro { position: relative; z-index: 5; padding: 18px var(--gutter) 10px; }
-  .intro .row { display: flex; justify-content: space-between; align-items: baseline; }
-  .intro .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
-  .intro .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: pre; }
-  .intro .folio b { font-weight: 500; color: var(--ink); }
-  .intro p { font-size: 14px; line-height: 1.5; color: var(--ink-on-photo); margin: 8px 0 0; }
+  /* The tab's header, as every tab opens: 10px under the status bar, eyebrow,
+     title, subline (header, RetreatsStackView). The mode toggle sits at its
+     top corner as on Practice; the folio under it on the title line, following
+     the focused retreat in both modes. Shared chrome: it never scales or
+     blurs, and only the subline changes between stack and catalog. */
+  .hdr { position: relative; z-index: 6; padding: 10px var(--gutter) 0; }
+  .hdr .glyph-btn { position: absolute; top: 10px; right: calc(var(--gutter) - 12px); }
+  .hdr .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .hdr .title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 6px; }
+  .hdr h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 0; }
+  .hdr .folio { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: pre; }
+  .hdr .folio b { font-weight: 500; color: var(--ink); }
+  .hdr p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 6px 0 0; }
 
   .stack { position: relative; z-index: 5; padding: 64px var(--gutter) 0;
     -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%, #000 72%, transparent 100%);
@@ -64,18 +70,14 @@
     <div class="vignette" style="background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.15),rgba(0,0,0,.45),rgba(0,0,0,.78))"></div>
     <div class="top-scrim"></div>
 
-    <div class="topbar">
-      <span class="glyph-btn" aria-label="All gatherings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg></span>
-    </div>
-
-    <div class="intro on-photo">
-      <div class="row">
-        <p class="eb">Upcoming gatherings</p>
-        <span class="folio"><b>03</b>  /  04</span>
+    <div class="hdr">
+      <div class="on-photo">
+        <p class="eb">In person</p>
+        <div class="title"><h1>Gatherings</h1><span class="folio"><b>03</b>  /  04</span></div>
+        <p>Small groups, in carefully chosen places.</p>
       </div>
-      <p>Small groups, in carefully chosen places.</p>
+      <span class="glyph-btn" aria-label="Show all retreats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg></span>
     </div>
-
     <div class="stack on-photo">
       <div class="item"><div class="name">Lapland</div></div>
       <div class="item"><div class="name">Chamonix</div></div>

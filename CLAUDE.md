@@ -150,7 +150,7 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
 | `Theme.ember` | Copper, the one warm mark: small text marks, counts, an unread dot, the liked heart. **Not** for selected surfaces, which use ink (an ink hairline or a 1pt underline) |
 | `Theme.danger` | Muted brick for irreversible actions (Delete account) |
 | `Theme.line` / `glassBorder` / `glassBorderHigh` / `hairline` (0.75) | Rules / surface strokes / stroke width |
-| `Theme.gutter` (24) / `sectionGap` (64) / `headerGap` (40) | Page side margin / space between a page's sections / a tab's header to its first content, measured to what shows (Home, Practice, Community, You, Digital Retreats) |
+| `Theme.gutter` (24) / `sectionGap` (64) / `headerGap` (40) | Page side margin / space between a page's sections / a tab's header to its first content, measured to what shows (Home, Practice, Community, You, Digital Retreats, Gatherings' catalog; the Gatherings stack's own fade stands in for it). Every tab opens on the same header — eyebrow, 38pt title, subline, 10pt under the status bar — Gatherings included |
 | `Theme.Motion.press` / `release` / `settle` / `reveal` / `stage` / `breath` | The only animation curves: all eases. `settle` (0.6s) when a state changes, `reveal` (1.1s) when something arrives, `breath` (6s) is every idle loop's period |
 | `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
 

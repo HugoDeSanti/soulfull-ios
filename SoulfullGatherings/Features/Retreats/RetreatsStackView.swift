@@ -17,11 +17,11 @@
 //  The pinch is interactive: the live magnification scrubs scale/blur while
 //  the fingers are down, then the mode settles with a slow ease.
 //
-//  The chrome (Back, and the one button that toggles the two modes) sits
-//  above both and never scales, blurs or moves between them — and is there
-//  while loading or failed too, so the screen always has a way out. As the
-//  root of the Gatherings tab there is nothing to go back to, so Back goes and
-//  the tab bar is the way out.
+//  The chrome — the tab's header (eyebrow, title, subline, as every tab
+//  opens), the folio, and the one button that toggles the two modes — sits
+//  above both and never scales, blurs or moves between them, and is there
+//  while loading or failed too. As the root of the Gatherings tab there is
+//  nothing to go back to, so Back appears only when the screen is pushed.
 //
 //  A row carries the retreat's name and nothing else. It used to trail a bare
 //  number — the guest count — which read as a footnote marker, said nothing
@@ -92,7 +92,7 @@ struct RetreatsStackView: View {
                 emptyState
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) { topBar }
+        .safeAreaInset(edge: .top, spacing: 0) { chrome }
         // High priority so the two-finger pinch never doubles as a tap on
         // rows/covers underneath; single-finger interactions pass through.
         .highPriorityGesture(pinchGesture, isEnabled: hasCatalog)
@@ -126,29 +126,74 @@ struct RetreatsStackView: View {
 
     // MARK: - Chrome (shared by both modes)
 
-    /// Back on the left, the mode toggle on the right — the same anatomy as
-    /// the retreat detail's top bar, which is where this screen leads.
-    private var topBar: some View {
-        HStack {
-            if !isTabRoot { backButton }
+    private var chrome: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !isTabRoot {
+                backButton
+                    .padding(.horizontal, Theme.gutter)
+                    .padding(.top, 4)
+            }
+            header
+        }
+    }
 
-            Spacer()
-
+    /// The tab's header, set as every tab sets one — eyebrow, title, subline,
+    /// starting 10 under the status bar — with the mode toggle at its
+    /// shoulder, as on Practice. Without it the tab opened on a small caps
+    /// line under a bare toggle, and switching to it from any other tab
+    /// dropped the title the others all have.
+    ///
+    /// Both sublines are laid out and only one shows, so the header holds its
+    /// height across the modes and nothing under it jumps.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("IN PERSON")
+                .font(Theme.eyebrow(11))
+                .tracking(3)
+                .foregroundStyle(Theme.inkSoft)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Gatherings")
+                    .font(Theme.headline(38, weight: .light))
+                    .foregroundStyle(Theme.ink)
+                    .kerning(-0.8)
+                Spacer(minLength: 12)
+                if hasCatalog { folio.transition(.opacity) }
+            }
+            ZStack(alignment: .topLeading) {
+                subline("Small groups, in carefully chosen places.", shown: mode == .stack)
+                subline("Every retreat, side by side. Tap a cover to bring it into focus.",
+                        shown: mode == .catalog)
+            }
+            .animation(commit, value: mode)
+        }
+        .onPhoto()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // At the header's top corner, where Practice has its toggle; the
+        // folio sits under it on the title line.
+        .overlay(alignment: .topTrailing) {
             if hasCatalog {
                 GlyphButton(systemName: mode == .stack ? "square.grid.2x2" : "text.alignleft") {
                     withAnimation(commit) { mode = mode == .stack ? .catalog : .stack }
                 }
                 .contentTransition(.opacity)
                 .accessibilityLabel(mode == .stack ? "Show all retreats" : "Show as a list")
+                .padding(.trailing, -12)
                 .transition(.opacity)
             }
         }
-        // Holds Back's height when there is no Back, so the intro sits in the
-        // same place whether or not the toggle has arrived yet.
-        .frame(minHeight: 44)
         .padding(.horizontal, Theme.gutter)
-        .padding(.top, 4)
+        .padding(.top, 10)
         .animation(Theme.Motion.settle, value: hasCatalog)
+    }
+
+    private func subline(_ text: String, shown: Bool) -> some View {
+        Text(text)
+            .font(Theme.body(14))
+            .foregroundStyle(Theme.inkOnPhoto)
+            .lineSpacing(3)
+            .fixedSize(horizontal: false, vertical: true)
+            .opacity(shown ? 1 : 0)
+            .accessibilityHidden(!shown)
     }
 
     private var backButton: some View {
@@ -209,8 +254,11 @@ struct RetreatsStackView: View {
 
     private var stackMode: some View {
         VStack(spacing: 0) {
-            stackIntro
+            // The scroller's own fade is the gap under the header: the names
+            // come up out of nothing, so a header's gap here would only shrink
+            // the stack.
             stackScroller
+                .padding(.top, 10)
             bottomCard
                 .padding(.horizontal, Theme.gutter)
                 .padding(.bottom, 12 + navClearance)
@@ -224,29 +272,9 @@ struct RetreatsStackView: View {
         .opacity(mode == .catalog ? (reduceMotion ? 0 : 0.25) : 1)
     }
 
-    /// What this list is, and where in it you are.
-    private var stackIntro: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Upcoming gatherings")
-                    .sgEyebrow(color: Theme.inkSoft, tracking: 3)
-                Spacer()
-                folio
-            }
-            Text("Small groups, in carefully chosen places.")
-                .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .onPhoto()
-        .padding(.horizontal, Theme.gutter)
-        .padding(.top, 18)
-        .padding(.bottom, 10)
-    }
-
-    /// "01 / 04" — the magazine folio, following the centred name. Replaces a
-    /// static count in a circle that looked like a button and wasn't one.
+    /// "01 / 04" — the magazine folio, set on the title line and following the
+    /// focused retreat in both modes. Replaces a static count in a circle that
+    /// looked like a button and wasn't one.
     ///
     /// One `Text`, so VoiceOver meets one element ("Retreat 1 of 4"). As an
     /// HStack of three the digits were still exposed as bare numbers beneath
@@ -444,8 +472,6 @@ struct RetreatsStackView: View {
 
     private var catalogMode: some View {
         VStack(spacing: 0) {
-            catalogIntro
-
             ScrollView(showsIndicators: false) {
                 LazyVGrid(
                     columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
@@ -456,7 +482,7 @@ struct RetreatsStackView: View {
                     }
                 }
                 .padding(.horizontal, Theme.gutter)
-                .padding(.top, 8)
+                .padding(.top, Theme.headerGap)
                 Color.clear.frame(height: 60 + navClearance)
             }
             .mask(
@@ -467,23 +493,6 @@ struct RetreatsStackView: View {
         }
         .scaleEffect(scrub)
         .blur(radius: max(0, (scrub - 1) * 60))
-    }
-
-    private var catalogIntro: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("All gatherings")
-                .sgEyebrow(color: Theme.inkSoft, tracking: 3)
-            Text("Every retreat, side by side. Tap a cover to bring it into focus.")
-                .font(Theme.body(14))
-                .foregroundStyle(Theme.inkOnPhoto)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .onPhoto()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Theme.gutter)
-        .padding(.top, 18)
-        .padding(.bottom, 18)
     }
 
     private func coverTile(idx: Int, retreat r: Retreat) -> some View {
@@ -650,7 +659,7 @@ struct RetreatsStackView: View {
 
                 // Ground for the header — the app-wide type-over-photography
                 // rule (see `PhotoBackdrop.topScrim`). The vignette above is at
-                // its lightest exactly where Back and the intro sit.
+                // its lightest exactly where the header sits.
                 LinearGradient(
                     colors: [.black.opacity(0.45), .clear],
                     startPoint: .top, endPoint: .bottom
