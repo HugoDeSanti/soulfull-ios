@@ -22,7 +22,9 @@ What counts:
 - **Time actually heard**, as `PlaybackReporter` measures it: seeking and
   pausing add nothing. The ledger caps each play at the session's length.
 - **Not a guide's own listening.** Plays by the account linked to a guide never
-  count toward that guide.
+  count toward that guide. Judged **when the play happens** and kept with it
+  (`practice_plays.self_play`, 0030): unlinking a guide, or the guide deleting
+  their account, doesn't turn their own past listening into payable time.
 - **Plays by members who later deleted their account still count.** The row
   is anonymised, not deleted, because the guide earned it.
 - A play belongs to the guide its session named **when it was played**

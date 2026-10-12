@@ -61,7 +61,8 @@ update public.programs          set instructor_id = 'alma-guerra' where id = 'fi
 ```
 
 A trigger then keeps each row's `lead` equal to the guide's `name`. Rename the
-guide once in `instructors` and every credit follows. Hand-editing `lead` on a
+guide once in `instructors` and every credit follows. A name is at most 64
+characters (0030); a longer one is refused with 23514. Hand-editing `lead` on a
 linked row is reverted. `practice_plays.creator` is not touched: it is the
 payout snapshot, taken at play time, and history does not move.
 
