@@ -59,9 +59,9 @@ enum MainTab: String, Hashable, CaseIterable {
     var systemImage: String {
         switch self {
         case .home:       return "house"
-        case .gatherings: return "map"
-        case .programs:   return "mountain.2"
-        case .practice:   return "sparkles"
+        case .gatherings: return "mountain.2"
+        case .programs:   return "sun.horizon"
+        case .practice:   return "figure.mind.and.body"
         case .community:  return "person.2"
         case .you:        return "person.crop.circle"
         }
