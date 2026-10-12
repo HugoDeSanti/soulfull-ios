@@ -209,13 +209,16 @@ Use Stripe **test mode** keys and the test card `4242 4242 4242 4242` (any futur
 
 `practice_plays` (see `../migrations/0008_practice_progress.sql`) is written
 **directly by the client**, and it is the record content-creator payouts are
-calculated from. The DB trigger bounds what a client can claim — identity
-columns are frozen, `seconds_played` only ever increases, and it is clamped to
-the practice's own length — so a buggy or replayed client cannot inflate a
-payout beyond one full play per row.
+calculated from. The DB trigger bounds what a client can claim: only a
+permanent account may write a play; the length, title, creator and dates come
+from the catalog and the server's clock (0029); identity columns are frozen;
+`seconds_played` only ever increases, is clamped to the practice's own length,
+can't run ahead of the time since the play began, and stops moving after a
+day. So a buggy or replayed client cannot inflate a payout beyond one real
+play per row, and nobody can backdate one into a paid month.
 
-It does **not** stop a determined attacker forging plays for a creator they
-want to enrich, because the insert is theirs to make. That is an acceptable
+It does **not** stop a determined member forging plays for a creator they
+want to enrich: they can run several plays at once, each bounded as above. That is an acceptable
 trade while creators are a handful of known guides and payouts are reviewed by
 hand. It stops being acceptable the moment payouts run automatically at scale.
 

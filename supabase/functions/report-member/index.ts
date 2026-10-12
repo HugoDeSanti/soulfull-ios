@@ -17,13 +17,15 @@
 //
 // **A guest may report.** Safety isn't gated behind an account: anyone who
 // can see the feed can report what's in it. The JWT is still required (an
-// anonymous session has one), so this is never an open relay.
+// anonymous session has one), so this is never an open relay, and guests share
+// one hourly allowance (GUEST_HOURLY_LIMIT), because a guest id is free.
 //
 // **The reported member is never told who reported them**, and nothing in
 // this function writes anywhere they can read.
 //
 // Deploy:  supabase functions deploy report-member
-//          (keep JWT verification ON — the default.)
+//          (keep JWT verification ON — the default.) Apply 0029 first: this
+//          version writes `member_reports.reporter_is_guest`.
 // Secrets: RESEND_API_KEY (shared with send-retreat-enquiry), and optionally
 //          REPORTS_TO / REPORTS_FROM. SUPABASE_* are auto-injected.
 
@@ -43,6 +45,13 @@ const FROM = Deno.env.get("REPORTS_FROM") ??
 /// Reports one reporter may file in a day. Generous for a real person, and a
 /// ceiling on how much one session can put in the team's inbox.
 const DAILY_LIMIT = 20;
+
+/// Reports all guests together may file in an hour. A guest id costs nothing —
+/// a loop of anonymous sign-ins is a new reporter every time — so the limit
+/// above put no ceiling at all on what guests could send the team. Members
+/// keep their own limit only: an account can't be minted for free. Needs
+/// `member_reports.reporter_is_guest` (0029).
+const GUEST_HOURLY_LIMIT = 30;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -125,6 +134,20 @@ Deno.serve(async (req) => {
       return json({ error: "Too many reports today" }, 429);
     }
 
+    const isGuest = user.is_anonymous === true;
+    if (isGuest) {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count: guestCount, error: guestError } = await admin
+        .from("member_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("reporter_is_guest", true)
+        .gte("created_at", hourAgo);
+      if (guestError) throw guestError;
+      if ((guestCount ?? 0) >= GUEST_HOURLY_LIMIT) {
+        return json({ error: "Too many reports right now" }, 429);
+      }
+    }
+
     // What was reported, as it is right now.
     const { data: reported, error: profileError } = await admin
       .from("profiles")
@@ -149,6 +172,7 @@ Deno.serve(async (req) => {
       .from("member_reports")
       .insert({
         reporter_id: user.id,
+        reporter_is_guest: isGuest,
         reported_id: reportedID,
         play_id: contentTitle ? playID : null,
         reason,
@@ -170,7 +194,7 @@ Deno.serve(async (req) => {
         .select("full_name")
         .eq("id", user.id)
         .maybeSingle();
-      const reporterLine = user.is_anonymous
+      const reporterLine = isGuest
         ? `A guest (not signed in) — ${user.id}`
         : `${reporterProfile?.full_name ?? "A member"} <${user.email ?? "no email"}> — ${user.id}`;
       const photo = reported.avatar_url

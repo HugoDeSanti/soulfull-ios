@@ -68,7 +68,7 @@ An open report older than 24 hours is a missed promise. Check this query wheneve
   - The blocked member is never told, and can't read the block.
   - Unblocking restores none of what the block removed.
 - **Report.** A guest can report (safety isn't gated behind an account). Blocking needs an account, because a block has to outlive the session.
-  - Limit: 20 reports per reporter per day (`report-member`).
+  - Limit: 20 reports per reporter per day, and **30 an hour from all guests together** (`report-member`, `member_reports.reporter_is_guest`, 0029): a guest id is free, so a per-reporter limit alone put no ceiling on what guests could send. Over it, a guest is told to try later; members are unaffected.
   - You can't report yourself.
 - **Friend-request cooldown (0028).** When someone declines a request, the sender can't send that person another for **30 days**. They see: "You can send <name> another request 30 days after your last one was declined."
   - Withdrawing your own request starts no cooldown.
