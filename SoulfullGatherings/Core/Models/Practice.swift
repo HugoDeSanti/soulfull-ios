@@ -36,7 +36,7 @@ enum PracticeCategory: String, Identifiable, Hashable, CaseIterable {
 
     var systemImage: String {
         switch self {
-        case .somatic:    return "figure.mind.and.body"
+        case .somatic:    return "figure.cooldown"
         case .breathwork: return "wind"
         case .meditation: return "moon.stars"
         }
