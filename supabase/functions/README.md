@@ -6,7 +6,7 @@
 | `stripe-webhook` | Stripe signature (no Supabase JWT) | On `payment_intent.succeeded` / `…payment_failed`, writes a row to `bookings` with the service role. The only writer of payment state. |
 | `delete-account` | Caller's Supabase JWT | Deletes the caller's own account (App Store 5.1.1(v)): best-effort deletes their Stripe customer, **revokes their Sign in with Apple grant**, then deletes the auth user with the service role — cascading to `profiles` + `bookings` + `apple_credentials`. |
 | `send-retreat-enquiry` | Caller's Supabase JWT | Emails one retreat application to `info@soulfullgatherings.com` via Resend. The **applicant's address comes from the JWT, never the body** — it is the account's address, which is why the app shows that field locked. |
-| `report-member` | Caller's Supabase JWT (a guest's is fine) | Files a member report (Guideline 1.2): stores it in `member_reports` with the service role and emails the team via Resend. Refuses a report about yourself and more than 20 a day. Runbook: `docs/MODERATION.md`. |
+| `report-member` | Caller's Supabase JWT (a guest's is fine) | Files a report about a member or one of their comments (Guideline 1.2): stores it in `member_reports` with the service role (a comment's text snapshotted in `comment_body`) and emails the team via Resend. Refuses a report about yourself and more than 20 a day. Runbook: `docs/MODERATION.md`. |
 | `store-apple-token` | Caller's Supabase JWT | Runs after every Sign in with Apple. Exchanges Apple's single-use authorization code for a refresh token and stores it in `apple_credentials`, so `delete-account` has something to revoke. |
 
 `_shared/apple.ts` holds the Apple client-secret JWT, the token exchange and the
@@ -62,7 +62,7 @@ revoke call, used by the last two.
    supabase functions deploy delete-account                   # keep JWT verification ON (default)
    supabase functions deploy store-apple-token                # keep JWT verification ON (default)
    supabase functions deploy send-retreat-enquiry             # keep JWT verification ON (default)
-   supabase functions deploy report-member                    # keep JWT verification ON (default); needs 0028
+   supabase functions deploy report-member                    # keep JWT verification ON (default); needs 0032
    ```
 
 4. **Create the Stripe webhook endpoint** (Stripe dashboard → Developers → Webhooks):

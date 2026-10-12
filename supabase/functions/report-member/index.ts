@@ -7,7 +7,8 @@
 // (The other half, Block, is plain RLS — 0028.)
 //
 // Flow: verify the caller's JWT → refuse a report about yourself or over the
-// rate limit → snapshot what was reported (name, photo, the practice line) →
+// rate limit → snapshot what was reported (name, photo, the practice line or
+// the comment and the practice it was under) →
 // insert into `member_reports` with the service role (clients have no access
 // to that table at all) → email the team. The row is the record; the email is
 // the alarm. If the email fails the report still stands, and the function
@@ -24,8 +25,9 @@
 // this function writes anywhere they can read.
 //
 // Deploy:  supabase functions deploy report-member
-//          (keep JWT verification ON — the default.) Apply 0029 first: this
-//          version writes `member_reports.reporter_is_guest`.
+//          (keep JWT verification ON — the default.) Apply 0032 first: this
+//          version writes `member_reports.comment_id` / `comment_body` and the
+//          'offensive' reason (and 0029's `reporter_is_guest`).
 // Secrets: RESEND_API_KEY (shared with send-retreat-enquiry), and optionally
 //          REPORTS_TO / REPORTS_FROM. SUPABASE_* are auto-injected.
 
@@ -68,6 +70,7 @@ function json(body: unknown, status = 200): Response {
 /// The reasons, as the app's sheet words them (`ReportReason.title`). Kept in
 /// step by hand, like the enquiry questions.
 const REASONS = {
+  offensive: "Hateful or offensive",
   photo: "Inappropriate photo",
   name: "Offensive name",
   harassment: "Harassment or unwanted contact",
@@ -79,11 +82,19 @@ type Reason = keyof typeof REASONS;
 interface Payload {
   reported_id?: string;
   play_id?: string | null;
+  comment_id?: string | null;
   reason?: string;
   details?: string | null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/// Where a commented practice's title lives, by `practice_comments.content_kind`.
+const PRACTICE_TABLES = {
+  session: "practice_sessions",
+  exercise: "exercises",
+  recipe: "recipes",
+} as const;
 
 /// "Hugo De Santiago" → "Hugo D." — the name the reporter saw. Mirrors
 /// `community_display_name()` closely enough for an email subject; the row
@@ -112,6 +123,9 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Payload;
     const reportedID = typeof body.reported_id === "string" ? body.reported_id.trim() : "";
     const playID = typeof body.play_id === "string" && UUID.test(body.play_id) ? body.play_id : null;
+    const commentID = typeof body.comment_id === "string" && UUID.test(body.comment_id)
+      ? body.comment_id
+      : null;
     const reason = body.reason as Reason;
     const details = typeof body.details === "string" ? body.details.trim().slice(0, 1000) : "";
 
@@ -168,13 +182,38 @@ Deno.serve(async (req) => {
       if (play && play.user_id === reportedID) contentTitle = play.content_title;
     }
 
+    // A comment: what it said, and the practice it was under. Only a comment
+    // that is actually theirs; one deleted since is reported as the member.
+    let commentBody: string | null = null;
+    if (commentID) {
+      const { data: comment } = await admin
+        .from("practice_comments")
+        .select("body, user_id, content_kind, content_id")
+        .eq("id", commentID)
+        .maybeSingle();
+      if (comment && comment.user_id === reportedID) {
+        commentBody = comment.body;
+        const table = PRACTICE_TABLES[comment.content_kind as keyof typeof PRACTICE_TABLES];
+        if (table) {
+          const { data: practice } = await admin
+            .from(table)
+            .select("title")
+            .eq("id", comment.content_id)
+            .maybeSingle();
+          contentTitle = practice?.title ?? null;
+        }
+      }
+    }
+
     const { data: row, error: insertError } = await admin
       .from("member_reports")
       .insert({
         reporter_id: user.id,
         reporter_is_guest: isGuest,
         reported_id: reportedID,
-        play_id: contentTitle ? playID : null,
+        play_id: contentTitle && !commentBody ? playID : null,
+        comment_id: commentBody !== null ? commentID : null,
+        comment_body: commentBody,
         reason,
         details: details || null,
         reported_name: reported.full_name,
@@ -201,8 +240,18 @@ Deno.serve(async (req) => {
         ? `${SUPABASE_URL}/storage/v1/object/public/${reported.avatar_url}`
         : "(no photo)";
 
+      const where = commentBody !== null
+        ? [
+          `Their comment${contentTitle ? ` on ${contentTitle}` : ""}:`,
+          `  “${commentBody}”`,
+          `Comment id: ${commentID}`,
+        ]
+        : [contentTitle ? `On their practice: ${contentTitle}` : `Reported from: their profile row`];
+
       const text = [
-        `A member was reported in the Soulfull Gatherings app. Please review it within 24 hours.`,
+        commentBody !== null
+          ? `A comment was reported in the Soulfull Gatherings app. Please review it within 24 hours.`
+          : `A member was reported in the Soulfull Gatherings app. Please review it within 24 hours.`,
         ``,
         `Reason: ${REASONS[reason]}`,
         `Note from the reporter: ${details || "(none)"}`,
@@ -211,12 +260,12 @@ Deno.serve(async (req) => {
         `Member id: ${reportedID}`,
         `Email: ${reported.email ?? "(none)"}`,
         `Photo: ${photo}`,
-        contentTitle ? `On their practice: ${contentTitle}` : `Reported from: their profile row`,
+        ...where,
         ``,
         `Reported by: ${reporterLine}`,
         `Report id: ${row.id}`,
         ``,
-        `What to do next is in docs/MODERATION.md: remove a photo, clear a name, suspend or delete the account, and mark the report actioned or dismissed.`,
+        `What to do next is in docs/MODERATION.md: delete a comment, remove a photo, clear a name, suspend or delete the account, and mark the report actioned or dismissed.`,
       ].join("\n");
 
       const send = await fetch("https://api.resend.com/emails", {
@@ -228,7 +277,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: FROM,
           to: [TO],
-          subject: `Member report — ${REASONS[reason]} — ${shortName(reported.full_name)}`,
+          subject: `${commentBody !== null ? "Comment" : "Member"} report — ${REASONS[reason]} — ${shortName(reported.full_name)}`,
           text,
         }),
       });
@@ -237,7 +286,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Report ${row.id} filed by ${user.id} about ${reportedID} (${reason})`);
+    console.log(
+      `Report ${row.id} filed by ${user.id} about ${reportedID} (${reason}${commentBody !== null ? ", a comment" : ""})`,
+    );
     return json({ reported: true, id: row.id });
   } catch (error) {
     console.error("report-member failed:", error);
