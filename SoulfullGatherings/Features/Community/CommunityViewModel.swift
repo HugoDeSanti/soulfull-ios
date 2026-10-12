@@ -661,27 +661,46 @@ final class CommunityViewModel {
         // Once. A request accepted on the Friends screen must survive the next
         // appear of the tab, or the test can't watch it move.
         guard !friendshipsLoaded else { return }
-        func ago(_ hours: Double) -> Date { Date.now.addingTimeInterval(-hours * 3600) }
+        let calendar = Calendar.current
+        let now = Date.now
+        let startOfToday = calendar.startOfDay(for: now)
+        func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
+        // The feed groups by day, and the tests read its headings, so each
+        // line is pinned to the day it stands for. Plain "hours ago" put the
+        // whole of "today" on yesterday between midnight and 5am, and failed
+        // CommunityTests and MemberSafetyTests on any run in the small hours.
+        /// `hours` ago, or in the small hours the same share of today so far:
+        /// still today, still in this order.
+        func today(_ hours: Double) -> Date {
+            let elapsed = now.timeIntervalSince(startOfToday)
+            return now.addingTimeInterval(-(elapsed > 6 * 3600 ? hours * 3600 : elapsed * hours / 6))
+        }
+        /// `hour` o'clock, `days` days ago.
+        func day(_ days: Int, at hour: Int) -> Date {
+            calendar.date(byAdding: .hour, value: hour,
+                          to: calendar.date(byAdding: .day, value: -days, to: startOfToday)!)!
+        }
         func line(_ m: CommunityMember, _ kind: PracticeContentKind, _ id: Int, _ title: String,
-                  _ category: PracticeCategory?, _ hours: Double,
+                  _ category: PracticeCategory?, _ completedAt: Date,
                   likes: Int = 0, liked: Bool = false) -> CommunityActivity {
             CommunityActivity(id: UUID(), member: m, kind: kind, contentID: id, title: title,
-                              category: category, completedAt: ago(hours),
+                              category: category, completedAt: completedAt,
                               likeCount: likes, likedByMe: liked)
         }
         allActivity = [
-            line(Self.alma,  .session,  11, "Confidence Boost",     .breathwork, 0.2, likes: 3, liked: true),
-            line(Self.me,    .exercise, 2,  "Morning Mobility",     nil,         1.5, likes: 1),
-            line(Self.theo,  .session,  12, "Body Scan for Sleep",  .meditation, 5,   likes: 1),
-            line(Self.nia,   .recipe,   1,  "Golden Turmeric Broth", nil,        27),
-            line(Self.mateo, .session,  13, "Shaking It Out",       .somatic,    30),
-            line(Self.alma,  .exercise, 3,  "Core & Ground",        nil,         26 * 6, likes: 2),
+            line(Self.alma,  .session,  11, "Confidence Boost",     .breathwork, today(0.2), likes: 3, liked: true),
+            line(Self.me,    .exercise, 2,  "Morning Mobility",     nil,         today(1.5), likes: 1),
+            line(Self.theo,  .session,  12, "Body Scan for Sleep",  .meditation, today(5),   likes: 1),
+            line(Self.nia,   .recipe,   1,  "Golden Turmeric Broth", nil,        day(1, at: 21)),
+            line(Self.mateo, .session,  13, "Shaking It Out",       .somatic,    day(1, at: 18)),
+            line(Self.alma,  .exercise, 3,  "Core & Ground",        nil,         day(6, at: 12), likes: 2),
         ]
         notifications = [
             LikeNotification(id: UUID(), actor: Self.alma, playID: allActivity[1].id,
-                             practiceTitle: "Morning Mobility", createdAt: ago(0.7), readAt: nil),
+                             practiceTitle: "Morning Mobility", createdAt: today(0.7), readAt: nil),
             LikeNotification(id: UUID(), actor: Self.theo, playID: nil,
-                             practiceTitle: "Core & Ground", createdAt: ago(50), readAt: ago(49)),
+                             practiceTitle: "Core & Ground", createdAt: day(2, at: 10),
+                             readAt: day(2, at: 11)),
         ]
         notificationsLoaded = true
         friendships = [
