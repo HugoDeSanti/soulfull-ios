@@ -4,7 +4,7 @@
 //
 //  A member's face in a circle — their photo when they've set one, their
 //  initial on a quiet tone when they haven't. A face is the one surface the
-//  app keeps round; everything else is square. The tone is picked from the
+//  app keeps round; everything else has eased corners. The tone is picked from the
 //  member's id, so the same person always gets the same colour and a feed of
 //  people without photos still reads as a feed of different people.
 //

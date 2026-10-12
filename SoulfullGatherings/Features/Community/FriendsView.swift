@@ -128,7 +128,7 @@ struct FriendsView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 50)
-        .soulGlassCard(stroke: searchFocused ? Theme.glassBorderHigh : Theme.glassBorder)
+        .soulGlass(in: Theme.controlShape, stroke: searchFocused ? Theme.glassBorderHigh : Theme.glassBorder)
         .animation(Theme.Motion.settle, value: searchFocused)
     }
 
@@ -171,7 +171,7 @@ struct FriendsView: View {
                 .foregroundStyle(Theme.inkSoft)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 4)
-                .soulGlassCard()
+                .soulGlass(in: Theme.controlShape)
                 .padding(.top, 10)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("search-failure")
@@ -263,7 +263,7 @@ struct FriendsView: View {
                 .foregroundStyle(Theme.inkSoft)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 4)
-                .soulGlassCard()
+                .soulGlass(in: Theme.controlShape)
                 .padding(.top, 10)
             } else if vm.friends.isEmpty {
                 Text(vm.friendshipsLoaded
@@ -299,7 +299,7 @@ struct FriendsView: View {
             .padding(.trailing, -10)
     }
 
-    /// A square button: filled ink for the action a row is waiting on (Add,
+    /// A small button: filled ink for the action a row is waiting on (Add,
     /// Accept), an ink hairline for the rest.
     private func pill(_ title: String, filled: Bool = false, busy: Bool = false,
                       action: @escaping () -> Void) -> some View {
@@ -311,7 +311,7 @@ struct FriendsView: View {
                 .font(Theme.body(13, weight: .medium))
                 .foregroundStyle(filled ? Color.black : Theme.ink)
                 // Its own width, always: beside a name that takes the rest
-                // of the row, two square buttons were squeezed until
+                // of the row, two buttons were squeezed until
                 // "Accept" broke in half.
                 .lineLimit(1)
                 .fixedSize()
@@ -322,9 +322,9 @@ struct FriendsView: View {
                 .frame(height: 34)
                 .background {
                     if filled {
-                        Rectangle().fill(Theme.ink)
+                        Theme.controlShape.fill(Theme.ink)
                     } else {
-                        Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
+                        Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
                     }
                 }
                 // A 44pt target around the 34pt block.
@@ -365,7 +365,7 @@ struct FriendsView: View {
         .foregroundStyle(Theme.inkSoft)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .soulGlassCard(stroke: Theme.ember.opacity(0.35))
+        .soulGlass(in: Theme.controlShape, stroke: Theme.ember.opacity(0.35))
         .transition(.opacity)
     }
 }

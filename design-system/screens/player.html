@@ -9,7 +9,7 @@
 <style>
   /* PracticePlayerView (audio) — the room the session happens in: the
      artwork's own tones drifting at breath pace (the aurora; no grain, no
-     glow). A square-cut 220 cover inside a hairline breath circle, the one
+     glow). A 220 cover (the card radius) inside a hairline breath circle, the one
      guide that moves: it widens and fades at breath pace. */
   .close { position: absolute; top: 50px; right: calc(var(--gutter) - 13px); z-index: 20; }
   .stagewrap { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 0 var(--gutter) 54px; }
@@ -17,7 +17,7 @@
   .breath { position: relative; width: 312px; height: 312px; display: grid; place-items: center; margin-bottom: 48px; }
   .breath .ring { position: absolute; inset: 0; border-radius: 50%; border: var(--hairline) solid rgba(242,241,237,0.22); animation: ring-breathe var(--breath) ease-in-out infinite alternate; }
   @keyframes ring-breathe { 0% { transform: scale(.94); opacity: .25; } 100% { transform: scale(1.06); opacity: .6; } }
-  .art { position: relative; width: 220px; height: 220px; border: var(--hairline) solid rgba(242,241,237,0.18);
+  .art { position: relative; width: 220px; height: 220px; border: var(--hairline) solid rgba(242,241,237,0.18); border-radius: var(--r-card);
     background: url('../assets/practice-meditation.jpg') center/cover; }
   .meta { text-align: center; padding: 0 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .meta .eb { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
@@ -33,19 +33,20 @@
      the margin. A journal prompt has none. */
   .meta .comments-link { margin-top: 4px; }
   /* SoulScrubber — a 1px track (3px while dragging), an ink run, and an
-     upright 2px tick for the playhead (14px tall; 22 while dragging). */
+     upright 2px tick for the playhead (14px tall; 22 while dragging). The
+     track and run take the mark radius, which at that height is round ends. */
   .scrub { width: 100%; }
   .scrub .track { height: 26px; position: relative; }
-  .scrub .track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(242,241,237,0.18); }
-  .scrub .track .fill { position: absolute; left: 0; top: 50%; height: 1px; width: 32%; background: var(--ink); }
+  .scrub .track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(242,241,237,0.18); border-radius: var(--r-mark); }
+  .scrub .track .fill { position: absolute; left: 0; top: 50%; height: 1px; width: 32%; background: var(--ink); border-radius: var(--r-mark); }
   .scrub .track .thumb { position: absolute; left: 32%; top: 50%; width: 2px; height: 14px; background: var(--ink); transform: translate(-50%,-50%); }
   .scrub .times { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
   .controls { display: flex; align-items: center; gap: 44px; margin-top: 26px; }
   .controls .skip { width: 52px; height: 52px; display: grid; place-items: center; color: var(--ink); }
   .controls .skip svg { width: 22px; height: 22px; }
-  /* Play/pause — a 72 square drawn in an ink hairline; the glyph crossfades
+  /* Play/pause — a 72 box drawn in an ink hairline at the control radius; the glyph crossfades
      between play and pause. No disc, no morph. */
-  .controls .play { width: 72px; height: 72px; border: var(--hairline) solid rgba(242,241,237,0.7); display: grid; place-items: center; color: var(--ink); }
+  .controls .play { width: 72px; height: 72px; border: var(--hairline) solid rgba(242,241,237,0.7); border-radius: var(--r-control); display: grid; place-items: center; color: var(--ink); }
 </style>
 </head><body>
 <div class="stage"><div class="device">

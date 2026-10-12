@@ -106,7 +106,7 @@ struct CommunityView: View {
                             .foregroundStyle(Color.black)
                             .padding(.horizontal, 16)
                             .frame(height: 36)
-                            .background(Theme.ink, in: Rectangle())
+                            .background(Theme.ink, in: Theme.controlShape)
                             // A 44pt target around the 36pt block.
                             .padding(.vertical, 4)
                             .contentShape(Rectangle())
@@ -200,7 +200,7 @@ struct CommunityView: View {
                         .monospacedDigit()
                         .padding(.horizontal, 4)
                         .frame(minWidth: 16, minHeight: 16)
-                        .background(Theme.ember, in: Rectangle())
+                        .background(Theme.ember, in: Theme.markShape)
                         .offset(x: -4, y: 6)
                         .transition(.opacity)
                 }
@@ -244,7 +244,7 @@ struct CommunityView: View {
                             .monospacedDigit()
                             .padding(.horizontal, 4)
                             .frame(minWidth: 16, minHeight: 16)
-                            .background(Theme.ember, in: Rectangle())
+                            .background(Theme.ember, in: Theme.markShape)
                             .transition(.opacity)
                     }
                 }

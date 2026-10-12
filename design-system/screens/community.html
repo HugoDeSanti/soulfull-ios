@@ -47,10 +47,10 @@
   .av.t4 { background-image: linear-gradient(135deg, #544533, #30261a); }
   .hdr .av { margin-top: 4px; }
   .hdr .right { display: flex; gap: 6px; align-items: flex-start; }
-  /* Bell — a bare light glyph (no circle), the unread count in a small square
-     ember block at its shoulder. Opens notifications.html. */
+  /* Bell — a bare light glyph (no circle), the unread count in a small ember
+     block (the mark radius) at its shoulder. Opens notifications.html. */
   .bell { position: relative; width: 44px; height: 46px; display: flex; align-items: center; justify-content: center; color: var(--ink); margin-top: 4px; }
-  .bell .badge { position: absolute; top: 6px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); color: #000; font-size: 10px; font-weight: var(--w-medium); display: flex; align-items: center; justify-content: center; }
+  .bell .badge { position: absolute; top: 6px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); border-radius: var(--r-mark); color: #000; font-size: 10px; font-weight: var(--w-medium); display: flex; align-items: center; justify-content: center; }
   /* LikeButton — a bare heart and its count in a 44pt target: ember when
      yours, inkSoft otherwise; changes crossfade. Your own line shows the
      count only (no button — you can't like your own practice). */
@@ -66,12 +66,13 @@
   .scope button { height: 44px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: .3px; color: var(--ink-soft); cursor: pointer; position: relative; }
   .scope button.is-active { color: var(--ink); }
   .scope button.is-active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 10px; height: 1px; background: var(--ink); }
-  /* Friends — a bare glyph and the word; requests waiting = a square ember count. */
+  /* Friends — a bare glyph and the word; requests waiting = an ember count (the mark radius). */
   .friends-btn { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0; border: 0; background: none; font-family: var(--font); font-size: 14px; letter-spacing: .3px; color: var(--ink); }
-  .friends-btn .badge { min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); color: #000; font-size: 10px; font-weight: var(--w-medium); display: inline-flex; align-items: center; justify-content: center; }
+  .friends-btn .badge { min-width: 16px; height: 16px; padding: 0 4px; background: var(--ember); border-radius: var(--r-mark); color: #000; font-size: 10px; font-weight: var(--w-medium); display: inline-flex; align-items: center; justify-content: center; }
 
-  /* Push prompt — shown ONCE to a member who has never been asked: square
-     glass with an ember bell, "Turn on" (a square ink block, black text) and
+  /* Push prompt — shown ONCE to a member who has never been asked: glass
+     (the card radius) with an ember bell, "Turn on" (an ink block at the
+     control radius, black text) and
      "Not now" (remembered). Never at launch; here, where a like is worth
      something. It fades in. */
   .push { display: flex; align-items: flex-start; gap: 14px; margin-left: var(--gutter); margin-right: var(--gutter); padding: 20px; }
@@ -79,7 +80,7 @@
   .push h3 { font-size: 16px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .push p { font-size: 12px; color: var(--ink-soft); margin: 4px 0 0; }
   .push .ctl { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-  .push .on { height: 36px; padding: 0 16px; background: var(--ink); color: #000; font-size: 13px; font-weight: var(--w-medium); display: inline-flex; align-items: center; }
+  .push .on { height: 36px; padding: 0 16px; background: var(--ink); border-radius: var(--r-control); color: #000; font-size: 13px; font-weight: var(--w-medium); display: inline-flex; align-items: center; }
   .push .later { font-size: 13px; font-weight: var(--w-medium); color: var(--ink-soft); padding: 0 6px; }
   .feed > .sec + .sec { margin-top: 44px; }
   .feed .section-label { margin-bottom: 4px; }

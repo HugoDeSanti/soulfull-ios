@@ -7,7 +7,7 @@
 //  and the cards beneath the moods (an open day, Continue, the ritual) stack
 //  close as one section. The ritual card holds a slow ember wash — the one
 //  warm thing on the page. The two shelves at the foot — digital retreats, then upcoming
-//  gatherings — are square photographs with their names set beneath, and
+//  gatherings — are photographs with their names set beneath, and
 //  hand off to their own tabs.
 //
 
@@ -246,12 +246,12 @@ struct HomeView: View {
                     .padding(.top, 2)
                 }
                 Spacer(minLength: 8)
-                // A square play mark in a hairline, not a filled disc.
+                // A play mark in a hairline, not a filled disc.
                 Image(systemName: "play.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 40, height: 40)
-                    .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                    .overlay(Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
             }
             .padding(20)
             .frame(maxWidth: .infinity)
@@ -296,7 +296,7 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .overlay(
-                    Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
+                    Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline)
                 )
                 .padding(.top, 28)
             }
@@ -311,9 +311,9 @@ struct HomeView: View {
                 // the card's top edge, as Open lays its daily card.
                 Atmosphere(tone: .ember, reach: 1.15, intensity: 1, fillsScreen: false)
             }
-            .clipped()
+            .clipShape(Theme.cardShape)
             .overlay(
-                Rectangle().strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
+                Theme.cardShape.strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
         }
         .padding(.horizontal, Theme.gutter)
@@ -395,7 +395,7 @@ struct HomeView: View {
         .accessibilityLabel("\(failure.title). \(failure.detail)")
     }
 
-    /// A square photograph with its name set beneath on the page — no box
+    /// A photograph with its name set beneath on the page — no box
     /// around it, as Open lays its shelves.
     private func retreatCard(_ r: Retreat) -> some View {
         PressableCard(action: { onOpenRetreat(r) }) {
@@ -418,7 +418,7 @@ struct HomeView: View {
                         .padding(14)
                 }
                 .frame(width: 260, height: 170)
-                .clipped()
+                .clipShape(Theme.cardShape)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(r.name)
@@ -491,7 +491,7 @@ struct HomeView: View {
                     .padding(14)
             }
             .frame(width: 260, height: 200)
-            .clipped()
+            .clipShape(Theme.cardShape)
 
             VStack(alignment: .leading, spacing: 0) {
                 // Set beneath the photo, on the page's own photograph.
@@ -531,7 +531,7 @@ struct HomeView: View {
             HStack(alignment: .top, spacing: 14) {
                 CatalogImage(day.imageUrl ?? program.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 64, height: 64)
-                    .clipped()
+                    .clipShape(Theme.controlShape)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("DAY \(day.day) IS OPEN")

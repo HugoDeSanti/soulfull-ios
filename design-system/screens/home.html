@@ -30,9 +30,10 @@
   .moods { margin-top: -10px; }
   .scr > .sec + .sec.today { margin-top: 12px; }
 
-  /* "Day N is open" — square glass: square 64 thumb, ember eyebrow, a light arrow. */
+  /* "Day N is open" — glass (the card radius): a 64 thumb at the control
+     radius, ember eyebrow, a light arrow. */
   .day-open { margin: 0 var(--gutter); display: flex; gap: 14px; align-items: flex-start; padding: 20px; }
-  .day-open .thumb { width: 64px; height: 64px; flex: none; background-size: cover; background-position: center; }
+  .day-open .thumb { width: 64px; height: 64px; flex: none; background-size: cover; background-position: center; border-radius: var(--r-control); }
   .day-open .left { flex: 1; }
   .day-open .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ember); margin: 0; }
   .day-open h3 { font-size: 20px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 4px 0 0; }
@@ -42,20 +43,20 @@
 
   /* Today's ritual — the page's one warm thing: a full ember wash falling from
      the card's top edge (Atmosphere reach 1.15, intensity 1, inside the card),
-     as Open lays its daily card. Square, hairline, padding 24 / 20 across —
+     as Open lays its daily card. The card radius, hairline, padding 24 / 20 across —
      the day and Continue cards' 20, so the stack shares one left edge. */
-  .ritual { margin: 0 var(--gutter); overflow: hidden; padding: 24px 20px; border: var(--hairline) solid var(--glass-border); }
+  .ritual { margin: 0 var(--gutter); overflow: hidden; padding: 24px 20px; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-card); }
   .ritual .eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(242,241,237,.8); margin: 0 0 12px; }
   .ritual h3 { font-size: 28px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
   .ritual .meta { font-size: 13px; color: rgba(242,241,237,.85); margin: 6px 0 0; }
   .ritual .begin { display: inline-flex; align-items: center; gap: 8px; margin-top: 34px; padding: 10px 16px;
-    border: var(--hairline) solid rgba(242,241,237,.7); font-size: 12px; font-weight: var(--w-medium); letter-spacing: .4px; color: var(--ink); }
+    border: var(--hairline) solid rgba(242,241,237,.7); border-radius: var(--r-control); font-size: 12px; font-weight: var(--w-medium); letter-spacing: .4px; color: var(--ink); }
 
-  /* Shelves: a square photograph with its name set beneath on the page — no
+  /* Shelves: a photograph (the card radius) with its name set beneath on the page — no
      box around it, as Open lays its shelves. 260 wide; 170 tall for
      gatherings, 200 for digital retreats. */
   .rcard { width: 260px; flex: none; }
-  .rcard .hero { height: 170px; position: relative; background-size: cover; background-position: center; }
+  .rcard .hero { height: 170px; position: relative; background-size: cover; background-position: center; border-radius: var(--r-card); overflow: hidden; }
   .rcard .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.55)); }
   .rcard .hero .m { position: absolute; left: 14px; bottom: 14px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); }
   .rcard .t { padding-top: 14px; }

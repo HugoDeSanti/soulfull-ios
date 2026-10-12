@@ -424,7 +424,7 @@ struct RetreatsStackView: View {
                     .foregroundStyle(Color.black)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
-                    .background(Rectangle().fill(Theme.ink))
+                    .background(Theme.ink, in: Theme.controlShape)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity)
@@ -555,10 +555,10 @@ struct RetreatsStackView: View {
                 .padding(12)
             }
             .frame(height: 224)
-            .clipped()
+            .clipShape(Theme.cardShape)
             // The focused retreat is marked by an ink hairline, nothing more.
             .overlay(
-                Rectangle()
+                Theme.cardShape
                     .strokeBorder(
                         idx == vm.activeIndex ? Theme.ink.opacity(0.7) : Theme.glassBorder,
                         lineWidth: Theme.hairline
@@ -603,7 +603,7 @@ struct RetreatsStackView: View {
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .overlay(Rectangle().strokeBorder(Theme.glassBorderHigh, lineWidth: Theme.hairline))
+                    .overlay(Theme.controlShape.strokeBorder(Theme.glassBorderHigh, lineWidth: Theme.hairline))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.soulPressable)

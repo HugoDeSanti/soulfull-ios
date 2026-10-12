@@ -287,14 +287,14 @@ struct ProfileView: View {
                             ProgressView().tint(Theme.ink)
                         }
                     }
-                // A small square of ink at the face's shoulder: the photo
+                // A small block of ink at the face's shoulder: the photo
                 // can be changed.
                 Image(systemName: "camera")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(Color.black)
                     .frame(width: 24, height: 24)
-                    .background(Theme.ink, in: Rectangle())
-                    .overlay(Rectangle().strokeBorder(Theme.bg, lineWidth: 2))
+                    .background(Theme.ink, in: Theme.markShape)
+                    .overlay(Theme.markShape.strokeBorder(Theme.bg, lineWidth: 2))
                     .offset(x: 2, y: 2)
             }
             .contentShape(Circle())
@@ -919,7 +919,7 @@ private struct StatTile: View {
 
 // MARK: - History row
 
-/// A square thumbnail and two lines, open on the page — one program or retreat
+/// A small thumbnail and two lines, open on the page — one program or retreat
 /// in the member's history. `opens` adds the chevron that says it goes
 /// somewhere. The list draws the rules between rows.
 private struct HistoryRow<Lines: View>: View {
@@ -931,7 +931,7 @@ private struct HistoryRow<Lines: View>: View {
         HStack(spacing: 16) {
             CatalogImage(imageUrl) { $0.resizable().scaledToFill() }
                 .frame(width: 60, height: 60)
-                .clipped()
+                .clipShape(Theme.controlShape)
 
             VStack(alignment: .leading, spacing: 6) {
                 lines

@@ -19,8 +19,8 @@
   .hdr h1 { font-size: 38px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 8px 0 12px; }
   .hdr p { font-size: 14px; line-height: 1.6; color: var(--ink-on-photo); margin: 0; max-width: 260px; }
   .cards { padding: var(--header-gap) var(--gutter) 0; display: flex; flex-direction: column; gap: 28px; }
-  /* Square glassed card, the photograph inside it. */
-  .pcard { position: relative; height: 210px; overflow: hidden; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
+  /* A glassed card at the card radius, the photograph inside it. */
+  .pcard { position: relative; height: 210px; overflow: hidden; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-card); background-size: cover; background-position: center; }
   .pcard .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.35) 55%, rgba(0,0,0,.72)); }
   .pcard .folio { position: absolute; top: 14px; right: 14px; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; color: rgba(242,241,237,0.8); }
   .pcard .body { position: absolute; left: 20px; right: 20px; bottom: 20px; }
@@ -35,6 +35,7 @@
     font-size: 9px; letter-spacing: 1.4px; color: rgba(242,241,237,.9);
     padding: 4px 8px;
     background: rgba(0,0,0,.45); border: var(--hairline) solid rgba(242,241,237,.25);
+    border-radius: var(--r-mark);
   }
   .pcard .ex--soon { color: rgba(242,241,237,.6); }
   .pcard .ex { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; letter-spacing: .4px; color: var(--ink); margin-top: 10px; }

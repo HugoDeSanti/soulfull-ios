@@ -4,8 +4,8 @@
 //
 //  Resolves a session's media URL and plays it. Audio gets the full
 //  now-playing room: an aurora graded from the artwork, a breathing ring
-//  around a square-cut cover, a hairline scrubber with haptic ends, ±15s,
-//  and a square play/pause. Video keeps AVKit's transport inside branded
+//  around the cover, a hairline scrubber with haptic ends, ±15s, and a
+//  play/pause framed in a hairline. Video keeps AVKit's transport inside branded
 //  chrome.
 //
 //  URL resolution: absolute http(s) paths play directly; bucket-relative
@@ -110,7 +110,7 @@ struct PracticePlayerView: View {
             .padding(.top, 14)
         }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         .task(id: attempt) { await resolveAndPlay() }
         .onAppear { tones = ArtworkTones.extract(from: media.imageUrl) }
         .onDisappear { tearDown() }
@@ -149,7 +149,7 @@ struct PracticePlayerView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // The breath circle around a square-cut cover. The ring is the
+                // The breath circle around the cover. The ring is the
                 // one guide that moves: it widens and fades at breath pace.
                 ZStack {
                     Circle()
@@ -159,9 +159,9 @@ struct PracticePlayerView: View {
 
                     CatalogImage(media.imageUrl) { $0.resizable().scaledToFill() }
                         .frame(width: 220, height: 220)
-                        .clipped()
+                        .clipShape(Theme.cardShape)
                         .overlay(
-                            Rectangle()
+                            Theme.cardShape
                                 .strokeBorder(Theme.ink.opacity(0.18), lineWidth: Theme.hairline)
                         )
                 }
@@ -219,7 +219,7 @@ struct PracticePlayerView: View {
         HStack(spacing: 44) {
             skipButton(icon: "gobackward.15", by: -AudioTransport.skipInterval, transport: transport)
 
-            // A square drawn in a hairline, the glyph crossfading between
+            // A frame drawn in a hairline, the glyph crossfading between
             // play and pause — no disc, no morph.
             Button {
                 Haptics.bump()
@@ -230,7 +230,7 @@ struct PracticePlayerView: View {
                     .contentTransition(.opacity)
                     .foregroundStyle(Theme.ink)
                     .frame(width: 72, height: 72)
-                    .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                    .overlay(Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
                     .contentShape(Rectangle())
             }
             .buttonStyle(SoulPressableStyle(hapticOnPress: false))
@@ -329,7 +329,7 @@ struct PracticePlayerView: View {
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 12)
-                    .soulGlassCard()
+                    .soulGlass(in: Theme.controlShape)
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)
@@ -519,16 +519,16 @@ private struct SoulScrubber: View {
                     : 0
 
                 ZStack(alignment: .leading) {
-                    Rectangle()
+                    Theme.markShape
                         .fill(Theme.ink.opacity(0.18))
                         .frame(height: dragging ? 3 : 1)
 
-                    Rectangle()
+                    Theme.markShape
                         .fill(Theme.ink)
                         .frame(width: max(0, width * fraction), height: dragging ? 3 : 1)
 
                     // The playhead: an upright tick, taller under the finger.
-                    Rectangle()
+                    Theme.markShape
                         .fill(Theme.ink)
                         .frame(width: 2, height: dragging ? 22 : 14)
                         .offset(x: width * fraction - 1)

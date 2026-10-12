@@ -48,14 +48,14 @@
 
   /* featured to-do card */
   .feature { display:block; text-decoration:none; color:inherit; position:relative; overflow:hidden;
-    padding:20px; margin-bottom:14px; border:var(--hairline) solid var(--glass-line); }
+    padding:20px; margin-bottom:14px; border:var(--hairline) solid var(--glass-line); border-radius:var(--r-card); }
   .feature .ph { position:absolute; inset:0; background:url('../assets/mb-todos.jpg') center 42%/cover; filter:brightness(.7) saturate(.95); }
   .feature .ph::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,14,8,0.42) 0%, rgba(20,14,8,0.6) 48%, rgba(16,11,6,0.9) 100%); }
   .feature .k { position:relative; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terracotta); }
   .feature h3 { position:relative; font-family:var(--serif); font-weight:300; font-size:24px; line-height:1.1; letter-spacing:-0.4px; color:var(--cream); margin:11px 0 0; }
   .feature p { position:relative; font-size:13px; line-height:1.55; color:rgba(243,234,217,0.85); margin:11px 0 16px; max-width:260px; }
-  /* A 2px solid terracotta run on a cream track, eased. */
-  .feature .pbar { position:relative; height:2px; background:rgba(243,234,217,0.2); overflow:hidden; }
+  /* A 2px solid terracotta run on a cream track (the mark radius), eased. */
+  .feature .pbar { position:relative; height:2px; background:rgba(243,234,217,0.2); overflow:hidden; border-radius:var(--r-mark); }
   .feature .pbar i { display:block; height:100%; width:0; background:var(--terracotta); transition:width var(--ease-settle); }
   .feature .pmeta { position:relative; display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
   .feature .pmeta span { font-size:11px; color:rgba(243,234,217,0.82); }
@@ -65,7 +65,7 @@
   /* experience grid */
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .tile { display:flex; flex-direction:column; justify-content:flex-end; text-decoration:none; color:inherit;
-    background:var(--glass); border:var(--hairline) solid var(--glass-line); padding:20px; min-height:128px; position:relative; overflow:hidden;
+    background:var(--glass); border:var(--hairline) solid var(--glass-line); border-radius:var(--r-card); padding:20px; min-height:128px; position:relative; overflow:hidden;
     backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:opacity var(--ease-release); }
   .tile:active { opacity:.55; transition:opacity var(--ease-press); }
   /* A bare terracotta glyph — no disc. */

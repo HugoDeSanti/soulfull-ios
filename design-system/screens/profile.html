@@ -17,10 +17,10 @@
   .scr { padding-top: 82px; padding-bottom: 130px; }
   .hdr { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 var(--gutter); }
   .hdr img { width: 80px; }
-  /* A face — round. The camera badge is a small square of ink at its shoulder. */
+  /* A face — round. The camera badge is a small block of ink (the mark radius) at its shoulder. */
   .avatar { position: relative; width: 92px; height: 92px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 39px; font-weight: var(--w-medium); color: var(--ink); letter-spacing: -0.3px; border: var(--hairline) solid var(--glass-border); }
   .avatar.t3 { background-image: linear-gradient(135deg, #334054, #1a2130); }
-  .avatar .cam { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; background: var(--ink); color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
+  .avatar .cam { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; background: var(--ink); border-radius: var(--r-mark); color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
   .eb { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink); margin: 18px 0 0; }
   /* A member's name is a button (44pt to the touch, laid out as the line):
      a small pencil in --ink-soft says it can be changed, as the camera does
@@ -48,13 +48,13 @@
   .stat .cap { font-size: 12px; line-height: 1.4; color: var(--ink-soft); margin-top: 8px; min-height: 2.8em; }
   .stat.accent .cap { color: var(--ink-soft); }
 
-  /* HistoryRow — open rows, a hairline between them: a square 60 thumbnail +
+  /* HistoryRow — open rows, a hairline between them: a 60 thumbnail (the control radius) +
      two lines; a chevron only when the row opens something (programs do; past
      retreats don't). */
   .rows { display: flex; flex-direction: column; margin-top: -10px; }
   .row { display: flex; align-items: center; gap: 16px; padding: 16px 0; }
   .row + .row { border-top: 0.5px solid var(--line); }
-  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; flex: none; }
+  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; flex: none; border-radius: var(--r-control); }
   .row .tx { flex: 1; min-width: 0; }
   .row h3 { font-size: 18px; font-weight: var(--w-light); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .row .line { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
@@ -65,7 +65,7 @@
 
   /* GuideSummaryCard (GuideDashboardView.swift) — "As a guide", ONLY for a
      member the team has linked to a guide (instructors.user_id, 0026); no one
-     else ever sees this section. Plain square glass: eyebrow, "<Month> so
+     else ever sees this section. Plain glass (the card radius): eyebrow, "<Month> so
      far", and three figures — people, minutes heard, and the estimate
      ("Pending" / POOL NOT SET until the month's pool is set). Opens the
      dashboard sheet (guide-dashboard). */

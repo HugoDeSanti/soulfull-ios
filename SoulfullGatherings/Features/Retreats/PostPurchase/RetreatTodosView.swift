@@ -120,12 +120,12 @@ struct RetreatTodosView: View {
         .padding(.bottom, 150)
     }
 
-    /// A hairline track with a solid run across it — no rounded ends.
+    /// A hairline track with a solid run across it.
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Rectangle().fill(RetreatPalette.coffee)
-                Rectangle()
+                Theme.markShape.fill(RetreatPalette.coffee)
+                Theme.markShape
                     .fill(RetreatPalette.terracotta)
                     .frame(width: todos.isEmpty ? 0 : geo.size.width * CGFloat(doneCount) / CGFloat(todos.count))
             }
@@ -158,9 +158,9 @@ struct RetreatTodosView: View {
                             .foregroundStyle(todo.isMust ? RetreatPalette.espresso : RetreatPalette.terracotta)
                             .padding(.horizontal, 9).padding(.vertical, 4)
                             .background(
-                                Rectangle().fill(todo.isMust ? RetreatPalette.terracotta : Color.clear)
-                                    .overlay(Rectangle().strokeBorder(RetreatPalette.glassLine,
-                                                                      lineWidth: todo.isMust ? 0 : Theme.hairline))
+                                Theme.markShape.fill(todo.isMust ? RetreatPalette.terracotta : Color.clear)
+                                    .overlay(Theme.markShape.strokeBorder(RetreatPalette.glassLine,
+                                                                          lineWidth: todo.isMust ? 0 : Theme.hairline))
                             )
                             .opacity(done ? 0.55 : 1)
                             .padding(.top, 5)
@@ -179,13 +179,13 @@ struct RetreatTodosView: View {
         .buttonStyle(.soulPressableQuiet)
     }
 
-    /// A square box, filled when ticked.
+    /// A box, filled when ticked.
     private func checkBox(done: Bool) -> some View {
         ZStack {
-            Rectangle()
+            Theme.markShape
                 .fill(done ? RetreatPalette.olive : Color.clear)
-                .overlay(Rectangle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
-                                                  lineWidth: Theme.hairline))
+                .overlay(Theme.markShape.strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
+                                                      lineWidth: Theme.hairline))
             if done {
                 Image(systemName: "checkmark").font(.system(size: 10, weight: .medium))
                     .foregroundStyle(RetreatPalette.cream)
@@ -206,7 +206,7 @@ struct RetreatTodosView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(24)
-        .overlay(Rectangle()
+        .overlay(Theme.cardShape
             .strokeBorder(RetreatPalette.glassLine, style: StrokeStyle(lineWidth: Theme.hairline, dash: [4, 4])))
         .padding(.top, 20)
     }
@@ -230,7 +230,7 @@ struct RetreatTodosView: View {
                     .font(Theme.body(16, weight: .medium)).tracking(0.4)
                     .foregroundStyle(RetreatPalette.espresso)
                     .frame(maxWidth: .infinity).padding(.vertical, 18)
-                    .background(Rectangle().fill(RetreatPalette.terracotta))
+                    .background(RetreatPalette.terracotta, in: Theme.controlShape)
             }
             .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         }

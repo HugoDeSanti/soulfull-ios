@@ -33,21 +33,34 @@
     <div class="tile"><div class="fillbox"><div class="atmosphere atmosphere--ember" style="--atmos-reach:115%;--atmos-intensity:1"></div></div><div class="meta"><div class="name">Atmosphere — a card's full wash</div><div class="swift">Home's ritual card · reach 1.15 · intensity 1 · fillsScreen: false</div></div></div>
   </div>
 
-  <div class="group-h">Shape — every corner is square</div>
+  <div class="group-h">Shape — corners eased, never bubbly (Theme.Corner)</div>
   <div class="shapes">
     <div>
-      <div class="s" style="width:160px;height:96px"></div>
-      <div class="label">a card · square · hairline 0.75</div>
+      <div class="s" style="width:18px;height:18px;border-radius:var(--r-mark);border-color:rgba(201,199,193,.6);background:none;margin:0 auto"></div>
+      <div class="label">mark · 4<br>check box, radio, track</div>
     </div>
     <div>
-      <div class="s" style="width:200px;height:52px;border-color:rgba(242,241,237,.7);background:none"></div>
-      <div class="label">a button · square · ink hairline</div>
+      <div class="s" style="width:200px;height:52px;border-radius:var(--r-control);border-color:rgba(242,241,237,.7);background:none"></div>
+      <div class="label">control · 8<br>button, chip, field, banner</div>
     </div>
     <div>
-      <div class="s" style="width:56px;height:56px;border-radius:50%"></div>
-      <div class="label">round only for a face, a dot, the breath ring</div>
+      <div class="s" style="width:160px;height:96px;border-radius:var(--r-card)"></div>
+      <div class="label">card · 12<br>photo, card, panel</div>
+    </div>
+    <div>
+      <div class="s" style="width:160px;height:56px;border-radius:var(--r-sheet) var(--r-sheet) 0 0;border-bottom:0"></div>
+      <div class="label">sheet · 16<br>a sheet's top corners</div>
+    </div>
+    <div>
+      <div class="s" style="width:56px;height:56px;border-radius:50%;margin:0 auto"></div>
+      <div class="label">round only for a face,<br>a dot, the breath ring</div>
     </div>
   </div>
+  <p class="label" style="font-size:11px;color:var(--muted);margin:14px 0 0;line-height:1.6;max-width:640px">
+    Continuous (squircle) corners in Swift — <code>Theme.markShape</code> / <code>controlShape</code> / <code>cardShape</code>; CSS draws a
+    circular arc, a touch tighter. Anything that runs to the screen's edge (a backdrop, a full-bleed hero, the docked bar) stays
+    square: the display rounds it.
+  </p>
 
   <div class="group-h">Space</div>
   <div class="shapes">

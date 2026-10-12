@@ -48,7 +48,7 @@ struct ReportMemberSheet: View {
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         // A half-written report is worth the extra tap.
         .interactiveDismissDisabled(isSending)
         .toolbar {
@@ -144,7 +144,7 @@ struct ReportMemberSheet: View {
                 .frame(minHeight: 110)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .soulGlassCard(stroke: noteFocused ? Theme.glassBorderHigh : Theme.glassBorder)
+                .soulGlass(in: Theme.controlShape, stroke: noteFocused ? Theme.glassBorderHigh : Theme.glassBorder)
                 .overlay(alignment: .topLeading) {
                     if details.isEmpty {
                         Text("A few words help us act faster.")
@@ -173,7 +173,7 @@ struct ReportMemberSheet: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .soulGlassCard(stroke: Theme.ember.opacity(0.35))
+                    .soulGlass(in: Theme.controlShape, stroke: Theme.ember.opacity(0.35))
                     .accessibilityIdentifier("report-failure")
                 }
                 SGPrimaryButton(title: isSending ? "Sending…" : "Send report", enabled: report != nil && !isSending,
@@ -199,13 +199,14 @@ struct ReportMemberSheet: View {
             reason = option
         } label: {
             HStack(spacing: 14) {
-                // A square mark, filled when chosen — no radio circle.
-                Rectangle()
+                // A boxed mark, filled when chosen — no radio circle.
+                Theme.markShape
                     .strokeBorder(selected ? Theme.ink : Theme.inkSoft.opacity(0.6), lineWidth: Theme.hairline)
                     .frame(width: 16, height: 16)
                     .overlay {
                         if selected {
-                            Rectangle().fill(Theme.ink).frame(width: 8, height: 8)
+                            RoundedRectangle(cornerRadius: Theme.Corner.mark / 2, style: .continuous)
+                                .fill(Theme.ink).frame(width: 8, height: 8)
                         }
                     }
                     .accessibilityHidden(true)
@@ -219,7 +220,7 @@ struct ReportMemberSheet: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .soulGlassCard(stroke: selected ? Theme.ink.opacity(0.7) : Theme.glassBorder)
+            .soulGlass(in: Theme.controlShape, stroke: selected ? Theme.ink.opacity(0.7) : Theme.glassBorder)
             .contentShape(Rectangle())
             .animation(Theme.Motion.settle, value: selected)
         }

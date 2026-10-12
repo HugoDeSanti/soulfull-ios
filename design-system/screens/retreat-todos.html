@@ -46,26 +46,27 @@
   .lead-head .count { font-size:13px; color:var(--cream-soft); }
   .intro-line { font-size:13px; line-height:1.6; color:var(--cream-soft); margin:0 0 16px; }
 
-  /* A hairline track with a solid terracotta run — no rounded ends. */
-  .prog { height:2px; background:var(--coffee); overflow:hidden; margin-bottom:14px; }
+  /* A hairline track with a solid terracotta run, its ends at the mark radius. */
+  .prog { height:2px; background:var(--coffee); overflow:hidden; margin-bottom:14px; border-radius:var(--r-mark); }
   .prog i { display:block; height:100%; width:0; background:var(--terracotta); transition:width var(--ease-reveal); }
 
-  /* Rows ruled by hairlines, not boxed. A square 18px box, filled olive when
-     ticked; the tag a small square block (terracotta for "must"). */
+  /* Rows ruled by hairlines, not boxed. An 18px box at the mark radius,
+     filled olive when ticked; the tag a small block, also the mark radius
+     (terracotta for "must"). */
   .todos { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; }
   .todo { display:flex; gap:14px; align-items:flex-start; padding:18px 0;
     border-top:0.5px solid var(--glass-line);
     cursor:pointer; transition:opacity var(--ease-release); }
   .todo:active { opacity:.55; transition:opacity var(--ease-press); }
   .box { width:18px; height:18px; flex:none; margin-top:2px;
-    border:var(--hairline) solid var(--muted); display:grid; place-items:center;
+    border:var(--hairline) solid var(--muted); border-radius:var(--r-mark); display:grid; place-items:center;
     transition:background var(--ease-settle), border-color var(--ease-settle); }
   .box svg { width:10px; height:10px; color:var(--cream); opacity:0; transition:opacity var(--ease-settle); }
   .todo .tx { flex:1; }
   .todo .ti { font-size:15px; color:var(--cream); line-height:1.3; }
   .todo .ds { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.45; }
   .todo .tag { display:inline-block; margin-top:5px; font-size:9px; letter-spacing:1px; text-transform:uppercase;
-    color:var(--espresso); background:var(--terracotta); border:var(--hairline) solid var(--glass-line); padding:4px 9px; }
+    color:var(--espresso); background:var(--terracotta); border:var(--hairline) solid var(--glass-line); border-radius:var(--r-mark); padding:4px 9px; }
 
   .todo.done .box { background:var(--olive); border-color:var(--olive); }
   .todo.done .box svg { opacity:1; }
@@ -74,7 +75,7 @@
   .todo.done .tag { opacity:.55; }
 
   .alldone { text-align:center; margin-top:20px; padding:24px; display:none;
-    border:var(--hairline) solid var(--glass-line); }
+    border:var(--hairline) solid var(--glass-line); border-radius:var(--r-card); }
   .alldone.show { display:block; }
   .alldone .sig { font-family:var(--serif); font-weight:var(--w-light); font-style:italic;
     font-size:26px; letter-spacing:-0.3px; color:var(--gold); }
@@ -83,7 +84,7 @@
   .botbar { position:absolute; left:0; right:0; bottom:0; z-index:30; padding:16px var(--gutter) 28px;
     background:linear-gradient(180deg, rgba(26,19,12,0) 0%, var(--espresso) 30%); }
   .home-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px;
-    border:0; background:var(--terracotta); color:var(--espresso);
+    border:0; border-radius:var(--r-control); background:var(--terracotta); color:var(--espresso);
     font-family:var(--serif); font-weight:var(--w-medium); font-size:16px; letter-spacing:0.4px;
     cursor:pointer; text-decoration:none; transition:opacity var(--ease-release); }
   .home-btn:active { opacity:.55; }

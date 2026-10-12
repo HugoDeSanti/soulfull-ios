@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="../shared/app.css">
 <style>
   /* ProgramDayView — a 340 hero under the clock, then on black at the gutter:
-     the progress line, the activities as a ruled list (square thumbnails, no
-     boxes), and — once the day closes — the next day, open under a hairline. */
+     the progress line, the activities as a ruled list (thumbnails at the
+     control radius, no boxes), and — once the day closes — the next day, open under a hairline. */
   .scr { padding-bottom: 120px; }
   .hero { height: 340px; position: relative; background-size: cover; background-position: center; }
   .hero .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.2) 45%, rgba(0,0,0,.95) 100%); }
@@ -23,7 +23,7 @@
   .prog { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: var(--w-medium); color: var(--ink); }
   .acts { margin-top: 32px; display: flex; flex-direction: column; }
   .act { display: flex; align-items: flex-start; gap: 16px; padding: 20px 0; border-top: 0.5px solid var(--line); }
-  .act .thumb { width: 68px; height: 68px; flex: none; position: relative; overflow: hidden; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); }
+  .act .thumb { width: 68px; height: 68px; flex: none; position: relative; overflow: hidden; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-control); }
   .act.done .thumb { border-color: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
   .act .thumb .gl { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink); filter: drop-shadow(0 0 4px rgba(0,0,0,.5)); }
   .act.done .thumb .gl { background: rgba(0,0,0,.5); color: var(--accent-soft); }
@@ -89,7 +89,7 @@
       </div>
 
       <!-- Shown once the day closes (when the progress line above reads a
-           moss "✓ Day complete"; the moment it closes, square glass reading
+           moss "✓ Day complete"; the moment it closes, glass (the card radius) reading
            "Day 3 complete" fades in over the page and out again). The next day is ALREADY open at local
            midnight; the notification announcing it fires at 08:00, which is a
            separate decision — see ProgramNotifications. -->

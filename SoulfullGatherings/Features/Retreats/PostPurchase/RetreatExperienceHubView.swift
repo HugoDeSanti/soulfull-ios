@@ -159,19 +159,19 @@ struct RetreatExperienceHubView: View {
                 .padding(20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .clipped()
-            .overlay(Rectangle().strokeBorder(RetreatPalette.glassLine, lineWidth: Theme.hairline))
+            .clipShape(Theme.cardShape)
+            .overlay(Theme.cardShape.strokeBorder(RetreatPalette.glassLine, lineWidth: Theme.hairline))
             .contentShape(Rectangle())
         }
         .buttonStyle(.soulPressable)
     }
 
-    /// A hairline track with a solid run across it — no rounded ends.
+    /// A hairline track with a solid run across it.
     private func progressBar(done: Int, total: Int) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Rectangle().fill(RetreatPalette.cream.opacity(0.2))
-                Rectangle()
+                Theme.markShape.fill(RetreatPalette.cream.opacity(0.2))
+                Theme.markShape
                     .fill(RetreatPalette.terracotta)
                     .frame(width: total == 0 ? 0 : geo.size.width * CGFloat(done) / CGFloat(total))
             }

@@ -87,7 +87,7 @@ struct AccountView: View {
         .preferredColorScheme(.dark)
         // Square, like every other surface: the system sheet's rounded top
         // was the one curve left on screen.
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         // Swiping the sheet away mid-request used to strand the result on a
         // view model nobody was showing: a sign-up that needed confirming
         // never reached the panel, or the watch below.
@@ -208,7 +208,7 @@ struct AccountView: View {
             .tint(Theme.ink)
             .padding(.vertical, 18)
             .frame(maxWidth: .infinity)
-            .soulGlass(in: Rectangle(),
+            .soulGlass(in: Theme.controlShape,
                        stroke: focus == .code ? Theme.ink.opacity(0.6) : Theme.glassBorder)
             .accessibilityLabel(label)
             .accessibilityIdentifier(identifier)
@@ -526,7 +526,7 @@ struct AccountView: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 17)
-            .soulGlass(in: Rectangle(),
+            .soulGlass(in: Theme.controlShape,
                        stroke: showDateWheel ? Theme.ink.opacity(0.6) : Theme.glassBorder)
         }
         .buttonStyle(.soulPressable)
@@ -547,7 +547,7 @@ struct AccountView: View {
             .labelsHidden()
             .tint(Theme.ink)
             .frame(maxWidth: .infinity)
-            .soulGlass(in: Rectangle())
+            .soulGlass(in: Theme.cardShape)
             .transition(.opacity)
             .accessibilityIdentifier("account-dob-wheel")
     }
@@ -605,7 +605,7 @@ struct AccountView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 17)
-        .soulGlass(in: Rectangle(),
+        .soulGlass(in: Theme.controlShape,
                    stroke: focus == field ? Theme.ink.opacity(0.6) : Theme.glassBorder)
     }
 
@@ -623,7 +623,7 @@ struct AccountView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
-            .soulGlassCard(stroke: Theme.ember.opacity(0.5))
+            .soulGlass(in: Theme.controlShape, stroke: Theme.ember.opacity(0.5))
     }
 
     // MARK: - Actions

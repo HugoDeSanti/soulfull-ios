@@ -29,7 +29,7 @@ struct BlockedMembersView: View {
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         .task { await vm.load() }
     }
 
@@ -122,7 +122,7 @@ struct BlockedMembersView: View {
                     .onPhoto()
                     .padding(.horizontal, 14)
                     .frame(height: 34)
-                    .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                    .overlay(Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
                     // A 44pt target around the 34pt block.
                     .padding(.vertical, 5)
                     .contentShape(Rectangle())
@@ -150,7 +150,7 @@ struct BlockedMembersView: View {
         .foregroundStyle(Theme.inkSoft)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .soulGlassCard(stroke: Theme.ember.opacity(0.35))
+        .soulGlass(in: Theme.controlShape, stroke: Theme.ember.opacity(0.35))
     }
 
     private var closeBar: some View {

@@ -36,9 +36,9 @@
 
   .body { padding:28px var(--gutter) 64px; }
 
-  /* A guide: a square warm glass surface (padding 20), 16 apart. The initials sit in a
+  /* A guide: a warm glass surface at the card radius (padding 20), 16 apart. The initials sit in a
      glass circle — a portrait stand-in, so round. */
-  .guide { background:var(--glass); border:var(--hairline) solid var(--glass-line); padding:20px; margin-bottom:16px;
+  .guide { background:var(--glass); border:var(--hairline) solid var(--glass-line); border-radius:var(--r-card); padding:20px; margin-bottom:16px;
     backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
   .guide .top { display:flex; align-items:center; gap:14px; }
   .guide .av { width:46px; height:46px; border-radius:50%; flex:none; display:grid; place-items:center;
@@ -52,20 +52,20 @@
   .offer .ot { flex:1; }
   .offer .os { font-family:var(--serif); font-size:14px; font-weight:400; color:var(--cream); }
   .offer .od { font-size:11px; color:var(--muted); margin-top:2px; }
-  /* Book — a square cream hairline; booked = a terracotta block. */
-  .book-btn { flex:none; padding:9px 16px; border:var(--hairline) solid rgba(243,234,217,0.7); background:transparent;
+  /* Book — a cream hairline at the control radius; booked = a terracotta block. */
+  .book-btn { flex:none; padding:9px 16px; border:var(--hairline) solid rgba(243,234,217,0.7); border-radius:var(--r-control); background:transparent;
     color:var(--cream); font-family:var(--font); font-weight:400; font-size:11px; letter-spacing:1.2px; text-transform:uppercase; cursor:pointer; transition:opacity var(--ease-release); }
   .book-btn:active { opacity:.55; }
 
   .slots { display:none; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .slots.open { display:flex; }
   .slots .lbl { width:100%; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--terracotta); margin-bottom:1px; }
-  .slot { font-size:12px; padding:10px 12px; border:var(--hairline) solid var(--glass-line); background:var(--glass); color:var(--cream); cursor:pointer; transition:opacity var(--ease-release); }
+  .slot { font-size:12px; padding:10px 12px; border:var(--hairline) solid var(--glass-line); border-radius:var(--r-control); background:var(--glass); color:var(--cream); cursor:pointer; transition:opacity var(--ease-release); }
   .slot:active { opacity:.55; }
 
   .confirmed { display:none; align-items:center; gap:10px; margin-top:14px; }
   .confirmed.show { display:flex; }
-  .confirmed .ck { width:20px; height:20px; flex:none; display:grid; place-items:center; background:var(--olive); }
+  .confirmed .ck { width:20px; height:20px; flex:none; display:grid; place-items:center; background:var(--olive); border-radius:var(--r-mark); }
   .confirmed .ck svg { width:10px; height:10px; color:var(--cream); }
   .confirmed .ct { flex:1; font-size:13px; color:var(--cream-soft); }
   .confirmed .ct b { font-weight:500; color:var(--cream); }

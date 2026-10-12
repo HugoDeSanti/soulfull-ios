@@ -154,8 +154,8 @@ struct PracticeView: View {
                                 .foregroundStyle(Theme.ink.opacity(0.9))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Rectangle().fill(.black.opacity(0.45)))
-                                .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.25), lineWidth: Theme.hairline))
+                                .background(Theme.markShape.fill(.black.opacity(0.45)))
+                                .overlay(Theme.markShape.strokeBorder(Theme.ink.opacity(0.25), lineWidth: Theme.hairline))
                         }
                         Spacer()
                         Text(String(format: "%02d", folio))
@@ -210,7 +210,7 @@ struct PracticeView: View {
             .frame(height: height)
             .frame(maxWidth: .infinity)
             .soulGlassCard()
-            .clipped()
+            .clipShape(Theme.cardShape)
             // Clip the hit-test region to the card bounds — `scaledToFill`
             // overflow would otherwise steal taps from neighbors.
             .contentShape(Rectangle())

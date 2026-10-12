@@ -10,8 +10,8 @@
   /* RecipeDetailView — a full-bleed 320 hero, then the page on black: the
      header with time · servings as a line of type (no pills), the guide
      between hairlines, and two open sections (a hairline, a caps label, the
-     content — no box). Ingredient checks are square 18px hairline boxes with
-     an ember check that fades in. A section's gap below the method, the
+     content — no box). Ingredient checks are 18px hairline boxes (the mark
+     radius) with an ember check that fades in. A section's gap below the method, the
      comments (PracticeCommentsSection — classes in app.css). */
   .hero { position: relative; height: 320px; }
   .hero .img { position: absolute; inset: 0; background: url('../assets/practice-recipes.jpg') center/cover; filter: saturate(.9); }
@@ -28,7 +28,7 @@
   .card { border-top: 0.5px solid var(--line); padding-top: 16px; }
   .card .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 16px; }
   .ing { display: flex; align-items: flex-start; gap: 14px; padding: 8px 0; }
-  .ing .box { width: 18px; height: 18px; border: var(--hairline) solid rgba(201,199,193,0.5); display: grid; place-items: center; color: var(--ember); flex: none; margin-top: 2px; }
+  .ing .box { width: 18px; height: 18px; border: var(--hairline) solid rgba(201,199,193,0.5); border-radius: var(--r-mark); display: grid; place-items: center; color: var(--ember); flex: none; margin-top: 2px; }
   .ing .box.on { border-color: var(--ember); }
   .ing .lab { font-size: 15px; color: var(--ink); }
   .ing.done .lab { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(125,123,118,.6); }

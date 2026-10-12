@@ -30,10 +30,10 @@
   .head p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 10px 0 0; }
   /* The account sheet's two rows, 14 apart: "First name" with the person
      glyph, "Last name" with its slot kept empty so both start on one line.
-     Square glass, hairline turning ink on the focused one; each part capped
+     Glass at the control radius, hairline turning ink on the focused one; each part capped
      at 64 as it is typed, and 64 together as stored (MemberName). */
   .fields { display: flex; flex-direction: column; gap: 14px; }
-  .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; }
+  .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; border-radius: var(--r-control); }
   .field.focus { border-color: rgba(242,241,237,.6); }
   .field svg { color: var(--muted); flex: none; }
   .field .slot { width: 18px; flex: none; }

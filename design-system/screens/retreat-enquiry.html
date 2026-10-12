@@ -14,7 +14,8 @@
      address, so it is shown locked rather than asked for. */
   /* On the retreat's photo, blurred (PhotoBackdrop, blur 26, darken .86, top
      scrim .55), still visible. .on-photo goes on the copy only — the controls
-     are UIKit-backed and sit on one square surface (fieldSurface): a frost, a
+     are UIKit-backed and sit on one surface at the control radius
+     (fieldSurface): a frost, a
      hairline that turns ink while active. Questions 40px apart. */
   .close { position: absolute; top: 50px; right: calc(var(--gutter) - 14px); z-index: 20; }
   .scr { padding: 86px var(--gutter) 56px; position: relative; z-index: 3; }
@@ -35,7 +36,7 @@
     display: flex; align-items: center; gap: 10px;
     padding: 16px 18px;
     background: rgba(255,255,255,0.03); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: var(--hairline) solid var(--glass-border);
+    border: var(--hairline) solid var(--glass-border); border-radius: var(--r-control);
     font-size: 16px; color: var(--ink);
   }
   .fld.focus { border-color: rgba(242,241,237,0.6); }
@@ -50,20 +51,21 @@
   .pair .fld { flex: 1; }
   .area { min-height: 136px; align-items: flex-start; }
 
-  /* Choice row — a square mark instead of a radio circle; chosen = an ink
-     hairline around the row, a filled ink square in the mark, Medium text. */
+  /* Choice row (the control radius) — a mark (the mark radius) instead of a
+     radio circle; chosen = an ink hairline around the row, a filled ink
+     square in the mark, Medium text. */
   .choice {
     display: flex; align-items: flex-start; gap: 12px;
     padding: 16px 18px;
     font-size: 14px; line-height: 1.4; color: var(--ink);
     background: rgba(242,241,237,0.02); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: var(--hairline) solid var(--glass-border);
+    border: var(--hairline) solid var(--glass-border); border-radius: var(--r-control);
   }
   .choice + .choice { margin-top: 10px; }
-  .choice .dot { flex: none; width: 16px; height: 16px; border: var(--hairline) solid rgba(201,199,193,.6); margin-top: 1px; display: grid; place-items: center; }
+  .choice .dot { flex: none; width: 16px; height: 16px; border: var(--hairline) solid rgba(201,199,193,.6); border-radius: var(--r-mark); margin-top: 1px; display: grid; place-items: center; }
   .choice.on { background: rgba(242,241,237,0.06); border-color: rgba(242,241,237,0.7); font-weight: 500; }
   .choice.on .dot { border-color: var(--ink); }
-  .choice.on .dot::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
+  .choice.on .dot::after { content: ""; width: 8px; height: 8px; background: var(--ink); border-radius: 2px; }
 
   .submit { margin-top: 44px; }
   .gaps { font-size: 12px; line-height: 1.5; color: var(--ink-soft); text-align: center; margin-top: 12px; }

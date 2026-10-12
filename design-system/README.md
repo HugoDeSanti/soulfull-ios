@@ -36,8 +36,11 @@ ships from `SoulfullGatherings/` and never imports anything here.
 
 Since 2026-10-10 the app is still: near-white type over **each screen's own
 photograph, which stays visible** (no black ground, no dark wash over it or
-over the cards); **every corner square** (only a face, a dot and the player's
-breath ring are round);
+over the cards); **corners eased, never bubbly** (since 2026-10-12: a small
+continuous curve, as Open cuts its photos and buttons — `--r-card` on photos,
+cards and panels, `--r-control` on buttons, chips and fields, `--r-mark` on
+check boxes and tracks; anything full-bleed stays square, and only a face, a
+dot and the player's breath ring are round);
 **hairlines and space instead of boxes** wherever a box only grouped text;
 **still motion** — a press dims, things fade in and settle at breath pace,
 nothing springs, squishes, bounces or zooms. Keep new cards inside that.
@@ -63,13 +66,22 @@ matching constant in `Theme.swift`:
 | `--danger` | `Theme.danger` | `#D95C54` (irreversible actions: Delete account) |
 | `--line` / `--glass-border` / `--glass-border-high` | `Theme.line` / `.glassBorder` / `.glassBorderHigh` | white @ 0.10 / 0.12 / 0.22 |
 | `--hairline` | `Theme.hairline` | `0.75` — every surface and ghost-button stroke |
+| `--r-mark` | `Theme.Corner.mark` (`Theme.markShape`) | `4` — check boxes, radio marks, progress tracks, tiny badges |
+| `--r-control` | `Theme.Corner.control` (`Theme.controlShape`) | `8` — buttons, chips, fields, banners, small tiles |
+| `--r-card` | `Theme.Corner.card` (`Theme.cardShape`, `.soulGlassCard()`) | `12` — photographs, cards, panels |
+| `--r-sheet` | `Theme.Corner.sheet` (`.presentationCornerRadius`) | `16` — a sheet's top corners (the mirror draws sheets full-frame, so no card uses it yet) |
 | `--gutter` | `Theme.gutter` | `24` — the page margin |
 | `--section-gap` | `Theme.sectionGap` | `64` — between a page's sections |
 | `--header-gap` | `Theme.headerGap` | `40` — a tab's header to its first content, measured to what shows |
 | `--ease-press` … `--ease-stage`, `--breath` | `Theme.Motion.*` | press .12s / release .5s / settle .6s / reveal 1.1s / stage 1.2s; breath 6s |
 | `--atmos-<tone>-top/-mid/-low`, `--atmos-reach`, `--atmos-intensity` | `Atmosphere(tone:reach:intensity:)` | moss · ember · dusk · slate; used only by Home's ritual card (ember, reach 1.15, intensity 1) |
 
-There are no radius tokens: `Theme.cardRadius` and `Theme.pillRadius` are gone.
+The radius grows with the surface, so a check box, a button and a card look cut
+by the same hand. Swift draws them as continuous (squircle) `RoundedRectangle`s;
+CSS can only draw a circular arc, so the mirror's corners read a touch tighter.
+Anything that runs to the screen's edge (a backdrop, a full-bleed hero, the
+docked bar) stays square: the display rounds it. The old `Theme.cardRadius` (22)
+and `Theme.pillRadius` (999) are gone for good — don't bring back capsules.
 
 > Theme.swift stores colors as RGB 0–1. To go from a new hex back to Swift:
 > `R/255, G/255, B/255`. e.g. `#D08C5E` → `Color(red: 0.816, green: 0.549, blue: 0.369)`.
@@ -158,7 +170,7 @@ guest opens an actual practice, then replays the tap they were making.
 
 | Change | Mirror effect |
 |---|---|
-| **Sign in with Apple first** | `account` leads with a single `.social-btn`, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled; white behind it fills Apple's rounded corners in, so it reads square. |
+| **Sign in with Apple first** | `account` leads with a single `.social-btn`, then an `.or-rule`, then the email form. It sits at the native Sign in with Apple metrics (54px, 19px **system** font) — deliberately not the Geist `sg-btn` scale, because Apple's control can't be restyled; white behind it fills Apple's own corners in, and the button is clipped to the control radius (`--r-control`), so it reads like the app's other buttons. |
 | **Confirmation is a code, not just a link** | A second card, `account-confirm`, is the state after "Create account" when Supabase email confirmation is on. It leads with a **code field** (one wide field, not a row of boxes — iOS one-time-code autofill targets a single field, and the digit count is the project's `mailer_otp_length`, currently 6) because the emailed *link* can only complete on the iPhone that signed up. Below it: Confirm email · Send a new code (60s cooldown = `smtp_max_frequency`) · Use a different sign-in. |
 | **Forgot password is a code too** | In sign-in mode a "Forgot password?" link (13px ink, underlined, trailing under the password field) opens two more states of the same sheet: `account-reset` (the address, carried over from the form → Send code, plus a line pointing Apple members back to Apple) and `account-reset-code` (the code field from `account-confirm` **and** a new-password field in one step → Set new password · Send a new code · Back to sign in). The copy never says whether the address has an account. The email has a code and no link (`supabase/templates/README.md`). |
 | **What continuing agrees to** | Under the mode toggle, in both modes, a centered 12px `--muted` line: what other members see (first name, last initial, photo) and that continuing agrees to the Terms (which carry the community standards Guideline 1.2 asks for) and acknowledges the Privacy Policy. The two links are `--ink-soft`, not underlined. |
@@ -218,7 +230,7 @@ Reaching it requires an account — `retreat-detail`'s CTA raises `account`
 first for a guest and opens the form once they are in. That is a gate on an
 *action*, not on browsing, so the 5.1.1(i) argument above is unchanged. It is
 there because the **Email question is shown, not asked**: the card renders it
-on the same square surface as every other answer, at `--ink-soft` with a lock,
+on the same surface (the control radius) as every other answer, at `--ink-soft` with a lock,
 because it is an answer already given rather than a field that has stopped
 working. Don't restyle it into an editable field — the server takes the address
 from the caller's token regardless of anything the app sends.
@@ -234,7 +246,7 @@ Two other things on the card are **not** free text to restyle:
 
 Submit posts to the `send-retreat-enquiry` Edge Function, which emails the
 answers to the team — so the button does have a **"Sending…"** state, and a
-failure shows square glass with an ember hairline under it (same anatomy as
+failure shows glass (the control radius) with an ember hairline under it (same anatomy as
 `account`'s error banner) with every answer left in place. The confirmation afterwards is the
 website's own thank-you message.
 
@@ -243,9 +255,9 @@ website's own thank-you message.
 `Screens · Retreats` includes the reserved-retreat flow: `mallorca-welcome`
 (hub), `retreat-todos`, `packing` and `mallorca-guides`. These use the UX team's
 **warm-espresso** dark direction —
-terracotta / olive / gold on an espresso canvas, all-Geist, square and still like
-the rest of the app (bare ← glyphs, hairline-ruled rows, square checkboxes, 2px
-progress runs) — defined inline as a
+terracotta / olive / gold on an espresso canvas, all-Geist, eased corners and
+still like the rest of the app (bare ← glyphs, hairline-ruled rows, checkboxes at
+the mark radius, 2px progress runs) — defined inline as a
 per-card `.mb` palette (NOT in `tokens.css`, since it's retreat-specific). The
 Swift app mirrors it in `Features/Retreats/PostPurchase/RetreatPalette.swift`.
 When porting back to Swift, map the `.mb` tokens to `RetreatPalette`, and don't

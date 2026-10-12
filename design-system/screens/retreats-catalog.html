@@ -10,7 +10,7 @@
   RetreatsStackView (catalog mode), inside the Gatherings tab. The .hdr is the
   SAME chrome as retreats-stack — the tab's header, with the mode toggle now
   showing the list glyph exactly where the grid glyph was; only the subline
-  changes. The covers start a header's gap (--header-gap) under it. Covers are square:
+  changes. The covers start a header's gap (--header-gap) under it. Covers take the card radius:
   country eyebrow, name (22 Regular), then the dates; the focused retreat is
   marked by an ink hairline, nothing more (no shadow, no glow). The backdrop
   photo blurs (16) and dims behind the sheet.
@@ -32,7 +32,7 @@
   .hdr p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 6px 0 0; }
 
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: var(--header-gap) var(--gutter) 0; position: relative; z-index: 2; }
-  .cover { position: relative; height: 224px; overflow: hidden; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
+  .cover { position: relative; height: 224px; overflow: hidden; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-card); background-size: cover; background-position: center; }
   .cover.active { border-color: rgba(242,241,237,0.7); }
   .cover .ov { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05), transparent 40%, rgba(0,0,0,.7)); }
   .cover .folio { position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; color: rgba(242,241,237,0.85); }

@@ -242,7 +242,7 @@ struct InstructorProfileView: View {
                     .foregroundStyle(Theme.inkSoft)
                     .padding(.horizontal, 18)
                     .frame(height: 40)
-                    .soulGlassCard()
+                    .soulGlass(in: Theme.controlShape)
             } else {
                 // Quieted until the numbers land: "Follow" may not be true
                 // yet. Still tappable — the model reads them first and never
@@ -447,7 +447,7 @@ struct InstructorProfileView: View {
             }
             .frame(height: 176)
             .soulGlassCard()
-            .clipped()
+            .clipShape(Theme.cardShape)
             .contentShape(Rectangle())
         }
         .accessibilityElement(children: .ignore)
@@ -462,14 +462,14 @@ struct InstructorProfileView: View {
             ZStack {
                 CatalogImage(session.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 60, height: 60)
-                    .clipped()
+                    .clipShape(Theme.controlShape)
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")
                     .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(Theme.ink)
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                Rectangle()
+                Theme.controlShape
                     .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
 
@@ -527,14 +527,14 @@ struct InstructorProfileView: View {
                 ZStack {
                     CatalogImage(image) { $0.resizable().scaledToFill() }
                         .frame(width: 60, height: 60)
-                        .clipped()
+                        .clipShape(Theme.controlShape)
                     Image(systemName: glyph)
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(Theme.ink)
                         .shadow(color: .black.opacity(0.5), radius: 4)
                 }
                 .overlay(
-                    Rectangle()
+                    Theme.controlShape
                         .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
                 )
                 VStack(alignment: .leading, spacing: 5) {
@@ -636,7 +636,7 @@ struct InstructorProfileView: View {
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 12)
-                    .soulGlassCard()
+                    .soulGlass(in: Theme.controlShape)
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)
@@ -648,7 +648,7 @@ struct InstructorProfileView: View {
 // MARK: - Follow button
 
 /// Filled ink to ask; a quiet veil with a hairline and a check once it's
-/// done — square either way, and the change between them is a fade.
+/// done — the same shape either way, and the change between them is a fade.
 private struct FollowButton: View {
     let following: Bool
     let busy: Bool
@@ -673,7 +673,7 @@ private struct FollowButton: View {
             .frame(width: 196, height: 50)
             .background {
                 if !following {
-                    Rectangle().fill(Theme.ink)
+                    Theme.controlShape.fill(Theme.ink)
                         .transition(.opacity)
                 }
             }
@@ -695,7 +695,7 @@ private struct GlassWhenFollowing: ViewModifier {
     let enabled: Bool
     func body(content: Content) -> some View {
         if enabled {
-            content.soulGlassCard(stroke: Theme.glassBorderHigh)
+            content.soulGlass(in: Theme.controlShape, stroke: Theme.glassBorderHigh)
         } else {
             content
         }

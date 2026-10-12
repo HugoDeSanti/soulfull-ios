@@ -163,7 +163,7 @@ struct EditNameSheet: View {
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 28, darken: 0.86, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         .interactiveDismissDisabled(vm.isSaving)
         .onAppear { focus = .first }
         .onChange(of: focus) { _, field in
@@ -238,7 +238,7 @@ struct EditNameSheet: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 17)
-            .soulGlass(in: Rectangle(),
+            .soulGlass(in: Theme.controlShape,
                        stroke: showDateWheel ? Theme.ink.opacity(0.6) : Theme.glassBorder)
         }
         .buttonStyle(.soulPressable)
@@ -257,7 +257,7 @@ struct EditNameSheet: View {
             .labelsHidden()
             .tint(Theme.ink)
             .frame(maxWidth: .infinity)
-            .soulGlass(in: Rectangle())
+            .soulGlass(in: Theme.cardShape)
             .transition(.opacity)
     }
 
@@ -284,7 +284,7 @@ struct EditNameSheet: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 17)
-        .soulGlass(in: Rectangle(),
+        .soulGlass(in: Theme.controlShape,
                    stroke: focus == field ? Theme.ink.opacity(0.6) : Theme.glassBorder)
     }
 

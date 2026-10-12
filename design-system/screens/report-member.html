@@ -43,22 +43,23 @@
   .qh .opt { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
   /* Reason rows (ReportReason — the titles are what the team's email says,
      and the Edge Function holds the same strings: change both together).
-     Square glass, 14 × 16 padding, a 16px square mark. Selected: an ink
-     hairline around the row, a filled ink square in the mark, Medium. */
-  .reason { display: flex; align-items: center; gap: 14px; padding: 14px 16px; font-size: 14px; color: var(--ink); }
-  .reason .radio { width: 16px; height: 16px; border: var(--hairline) solid rgba(201,199,193,.6); flex: none; display: grid; place-items: center; }
+     Glass at the control radius, 14 × 16 padding, a 16px mark (the mark
+     radius). Selected: an ink hairline around the row, a filled ink square
+     in the mark, Medium. */
+  .reason { display: flex; align-items: center; gap: 14px; padding: 14px 16px; font-size: 14px; color: var(--ink); border-radius: var(--r-control); }
+  .reason .radio { width: 16px; height: 16px; border: var(--hairline) solid rgba(201,199,193,.6); border-radius: var(--r-mark); flex: none; display: grid; place-items: center; }
   .reason.is-selected { border-color: rgba(242,241,237,.7); font-weight: var(--w-medium); }
   .reason.is-selected .radio { border-color: var(--ink); }
-  .reason.is-selected .radio::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
-  /* TextEditor on square glass, 110pt min; the hairline lifts to
+  .reason.is-selected .radio::after { content: ""; width: 8px; height: 8px; background: var(--ink); border-radius: 2px; }
+  /* TextEditor on glass at the control radius, 110pt min; the hairline lifts to
      glassBorderHigh on focus. Placeholder 15 --muted. Capped at
      MemberReport.maxDetails. */
-  .note { min-height: 126px; padding: 16px 17px; font-size: 15px; color: var(--muted); }
+  .note { min-height: 126px; padding: 16px 17px; font-size: 15px; color: var(--muted); border-radius: var(--r-control); }
   .send { display: flex; flex-direction: column; gap: 12px; }
   .fine { font-size: 12px; line-height: 1.5; color: var(--ink-soft); margin: 0; }
   /* Send report is disabled (40%) until a reason is chosen; reads "Sending…"
      while it posts, with the close button dimmed and swipe-to-dismiss off.
-     FAILURE: a banner above the button — square glass with an ember
+     FAILURE: a banner above the button — glass (the control radius) with an ember
      hairline, exclamationmark.circle, 13 --ink-soft — and everything written
      stays: offline → "You're offline, so this hasn't been sent. Reconnect and
      try again — what you wrote is still here." / our end → "This didn't send

@@ -42,8 +42,8 @@ struct ExerciseListView: View {
         HStack(spacing: 16) {
             CatalogImage(exercise.imageUrl) { $0.resizable().scaledToFill() }
                 .frame(width: 56, height: 56)
-                .clipped()
-                .overlay(Rectangle().strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline))
+                .clipShape(Theme.controlShape)
+                .overlay(Theme.controlShape.strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(exercise.title)

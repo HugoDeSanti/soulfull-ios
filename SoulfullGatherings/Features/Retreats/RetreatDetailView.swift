@@ -2,8 +2,8 @@
 //  RetreatDetailView.swift
 //  Soulfull Gatherings
 //
-//  Editorial spread. At rest it's the full-bleed cover — centered title, a
-//  square ink reserve button, the particulars in one line. Scrolling reveals
+//  Editorial spread. At rest it's the full-bleed cover — centered title, an
+//  ink reserve button, the particulars in one line. Scrolling reveals
 //  the story, laid like a printed page: sections opened by a hairline and a
 //  small caps label, with air between them and no boxes. A retreat carrying
 //  a `RetreatExperience` (e.g. Mallorca) gets the full spread — invitation,
@@ -252,7 +252,7 @@ struct RetreatDetailView: View {
             .foregroundStyle(.black)
             .padding(.horizontal, 40)
             .padding(.vertical, 16)
-            .background(Rectangle().fill(Theme.ink))
+            .background(Theme.ink, in: Theme.controlShape)
         }
         .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         .padding(.top, 4)
@@ -700,7 +700,7 @@ struct RetreatDetailView: View {
                     .foregroundStyle(.black)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
-                    .background(Rectangle().fill(Theme.ink))
+                    .background(Theme.ink, in: Theme.controlShape)
             }
             .buttonStyle(SoulPressableStyle(hapticOnPress: false))
         }

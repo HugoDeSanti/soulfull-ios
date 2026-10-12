@@ -91,7 +91,7 @@ struct RetreatEnquiryView: View {
             closeButton
         }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         // The phone's number pad has no Return key and the About box spends
         // Return on new lines, so neither had a way on or a way out of the
         // keyboard. One bar over every field gives both.
@@ -548,13 +548,14 @@ struct RetreatEnquiryView: View {
             action()
         } label: {
             HStack(alignment: .top, spacing: 14) {
-                // A square mark, filled when chosen — no radio circle.
-                Rectangle()
+                // A mark, filled when chosen — no radio circle.
+                Theme.markShape
                     .strokeBorder(selected ? Theme.ink : Theme.inkSoft.opacity(0.6), lineWidth: Theme.hairline)
                     .frame(width: 16, height: 16)
                     .overlay {
                         if selected {
-                            Rectangle().fill(Theme.ink).frame(width: 8, height: 8)
+                            RoundedRectangle(cornerRadius: Theme.Corner.mark / 2, style: .continuous)
+                                .fill(Theme.ink).frame(width: 8, height: 8)
                         }
                     }
                     .padding(.top, 1)
@@ -569,12 +570,12 @@ struct RetreatEnquiryView: View {
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Rectangle()
+                Theme.controlShape
                     .fill(Theme.ink.opacity(selected ? 0.06 : 0.02))
-                    .background(.ultraThinMaterial, in: Rectangle())
+                    .background(.ultraThinMaterial, in: Theme.controlShape)
             )
             .overlay(
-                Rectangle()
+                Theme.controlShape
                     .strokeBorder(selected ? Theme.ink.opacity(0.7) : Theme.glassBorder, lineWidth: Theme.hairline)
             )
             .contentShape(Rectangle())
@@ -588,14 +589,14 @@ struct RetreatEnquiryView: View {
 // MARK: - Field surface
 
 private extension View {
-    /// The one square surface every control on this form sits on. No shadow
+    /// The one surface every control on this form sits on. No shadow
     /// and no blur over the field itself — these wrap UIKit-backed views; the
     /// material is a background behind them.
     func fieldSurface(active: Bool) -> some View {
         self
-            .background(.ultraThinMaterial, in: Rectangle())
+            .background(.ultraThinMaterial, in: Theme.controlShape)
             .overlay(
-                Rectangle()
+                Theme.controlShape
                     .strokeBorder(active ? Theme.ink.opacity(0.6) : Theme.glassBorder, lineWidth: Theme.hairline)
             )
     }

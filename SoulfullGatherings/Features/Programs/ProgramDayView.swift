@@ -172,10 +172,10 @@ struct ProgramDayView: View {
             ZStack {
                 CatalogImage(item.content.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 68, height: 68)
-                    .clipped()
+                    .clipShape(Theme.controlShape)
                     .overlay {
                         if done {
-                            Rectangle().fill(Color.black.opacity(0.5))
+                            Theme.controlShape.fill(Color.black.opacity(0.5))
                         }
                     }
                 Image(systemName: done ? "checkmark" : item.content.systemImage)
@@ -184,7 +184,7 @@ struct ProgramDayView: View {
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                Rectangle()
+                Theme.controlShape
                     .strokeBorder(done ? Theme.accentSoft.opacity(0.45) : Theme.glassBorder, lineWidth: Theme.hairline)
             )
 

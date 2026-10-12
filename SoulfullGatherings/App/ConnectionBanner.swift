@@ -86,7 +86,7 @@ struct ConnectionBanner: View {
                 .frame(minWidth: 44)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
+                .overlay(Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: Theme.hairline))
                 // The hairline draws no fill to hit-test (gotcha #5).
                 .contentShape(Rectangle())
             }
@@ -95,7 +95,7 @@ struct ConnectionBanner: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .soulGlassCard()
+        .soulGlass(in: Theme.controlShape)
         .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(message)")

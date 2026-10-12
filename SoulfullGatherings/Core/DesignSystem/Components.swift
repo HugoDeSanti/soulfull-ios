@@ -3,13 +3,13 @@
 //  Soulfull Gatherings
 //
 //  Reusable building blocks — buttons, veiled cards, image backdrops,
-//  section labels. Anything used by 2+ screens lives here. Every shape is
-//  square (see `Theme` → Shape) and every motion an ease (→ Motion).
+//  section labels. Anything used by 2+ screens lives here. Every corner is
+//  eased (see `Theme` → Shape) and every motion an ease (→ Motion).
 //
 
 import SwiftUI
 
-// MARK: - Primary button (square: a hairline in ink, or filled ink)
+// MARK: - Primary button (a hairline in ink, or filled ink)
 
 struct SGPrimaryButton: View {
     let title: String
@@ -34,10 +34,10 @@ struct SGPrimaryButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(
-                Rectangle()
+                Theme.controlShape
                     .fill(filled ? Theme.ink : Color.clear)
                     .overlay(
-                        Rectangle().strokeBorder(Theme.ink.opacity(0.7), lineWidth: filled ? 0 : Theme.hairline)
+                        Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7), lineWidth: filled ? 0 : Theme.hairline)
                     )
             )
             .opacity(enabled ? 1 : 0.4)
@@ -52,7 +52,7 @@ struct SGPrimaryButton: View {
     }
 }
 
-// MARK: - Glass card (a veiled square surface)
+// MARK: - Glass card (a frosted surface)
 
 struct GlassCard<Content: View>: View {
     var padding: CGFloat = 20

@@ -29,7 +29,7 @@
   .head h1 { font-size: 32px; font-weight: var(--w-light); letter-spacing: -0.7px; color: var(--ink); margin: 10px 0 0; }
   .head p { font-size: 14px; color: var(--ink-on-photo); margin: 10px 0 0; }
 
-  /* This month: square glass, padding 24. The hero is the estimate — or,
+  /* This month: glass at the card radius, padding 24. The hero is the estimate — or,
      while the month's pool isn't set, the share ("12.4%") with no amount at
      all. Status chip: icon + word, never colour alone. Ember only for the
      small "Estimate" / "To be paid" marks. */
@@ -55,14 +55,14 @@
   .l2 { font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
 
   /* People by month: six columns, oldest left. Only the selected month (this
-     one to start with) is ink; the rest inkSoft at 25%. 18pt square bars on
-     a hairline baseline. Tap a column to read it in the line above. Bars grow
+     one to start with) is ink; the rest inkSoft at 25%. 18pt bars (the mark
+     radius) on a hairline baseline. Tap a column to read it in the line above. Bars grow
      from the baseline on appear (Theme.Motion.reveal). */
   .read { display: flex; align-items: baseline; gap: 8px; margin-top: 24px; }
   .read b { font-size: 26px; font-weight: var(--w-light); letter-spacing: -0.6px; color: var(--ink); }
   .read span { font-size: 13px; color: var(--ink-soft); }
   .plot { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; height: 120px; align-items: end; border-bottom: 0.5px solid var(--line); margin-top: 16px; }
-  .plot i { justify-self: center; width: 18px; background: color-mix(in srgb, var(--ink-soft) 25%, transparent); }
+  .plot i { justify-self: center; width: 18px; border-radius: var(--r-mark) var(--r-mark) 0 0; background: color-mix(in srgb, var(--ink-soft) 25%, transparent); }
   .plot i.on { background: var(--ink); }
   .ticks { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
   .ticks span { text-align: center; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-soft); }

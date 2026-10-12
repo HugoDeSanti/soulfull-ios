@@ -122,10 +122,32 @@ enum Theme {
 
     // MARK: - Shape
     //
-    // There are no rounded corners. Rounding read as playful; a surface here
-    // is cut square like a printed page — photographs, cards, buttons and
-    // sheets alike. Only a face (`AvatarView`), a dot and the player's breath
-    // circle are round.
+    // Corners are eased, not rounded off: a small continuous (squircle) curve,
+    // as Open cuts its photographs and buttons. Square read as severe; the
+    // old 22pt cards and capsule pills read as playful (owner, 2026-10-12).
+    // The radius grows with the surface, so a check box, a button and a card
+    // look cut by the same hand. Only a face (`AvatarView`), a dot and the
+    // player's breath circle are round. Anything that runs to the screen's
+    // edge (a full-bleed photo, the docked bar, a backdrop) stays square: the
+    // display rounds it.
+
+    enum Corner {
+        /// Check boxes, radio marks, progress tracks, tiny badges.
+        static let mark: CGFloat = 4
+        /// Buttons, chips, fields, banners, small tiles.
+        static let control: CGFloat = 8
+        /// Photographs, cards, panels.
+        static let card: CGFloat = 12
+        /// The top corners of a sheet.
+        static let sheet: CGFloat = 16
+    }
+
+    /// Photographs, cards and panels.
+    static let cardShape = RoundedRectangle(cornerRadius: Corner.card, style: .continuous)
+    /// Buttons, chips, fields and banners.
+    static let controlShape = RoundedRectangle(cornerRadius: Corner.control, style: .continuous)
+    /// Check boxes, radio marks, progress tracks and tiny badges.
+    static let markShape = RoundedRectangle(cornerRadius: Corner.mark, style: .continuous)
 
     /// The stroke around a surface or a ghost button.
     static let hairline: CGFloat = 0.75

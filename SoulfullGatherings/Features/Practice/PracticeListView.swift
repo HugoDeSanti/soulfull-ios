@@ -84,14 +84,14 @@ struct PracticeListView: View {
             ZStack {
                 CatalogImage(session.imageUrl) { $0.resizable().scaledToFill() }
                     .frame(width: 68, height: 68)
-                    .clipped()
+                    .clipShape(Theme.controlShape)
                 Image(systemName: session.mediaKind == .video ? "play.fill" : "waveform")
                     .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(Theme.ink)
                     .shadow(color: .black.opacity(0.5), radius: 4)
             }
             .overlay(
-                Rectangle()
+                Theme.controlShape
                     .strokeBorder(Theme.glassBorder, lineWidth: Theme.hairline)
             )
 
@@ -198,7 +198,7 @@ struct PracticeListView: View {
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 12)
-                    .soulGlassCard()
+                    .soulGlass(in: Theme.controlShape)
             }
             .buttonStyle(.soulPressableQuiet)
             .padding(.top, 4)

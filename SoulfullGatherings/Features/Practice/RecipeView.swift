@@ -74,7 +74,7 @@ struct RecipeListView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .soulGlassCard()
-        .clipped()
+        .clipShape(Theme.cardShape)
         // Clip the hit-test region: `scaledToFill` + `.clipped()` only clip
         // visually, so the hero image's tap area overflows up into the back
         // bar and the first card swallows the "Practices" tap.
@@ -224,7 +224,7 @@ struct RecipeDetailView: View {
     }
 
     /// Tappable pantry row: ticking an ingredient fades a check into its
-    /// square and softens the label — a tiny mise-en-place ritual.
+    /// box and softens the label — a tiny mise-en-place ritual.
     private func ingredientRow(_ item: String) -> some View {
         let checked = gathered.contains(item)
         return Button {
@@ -235,7 +235,7 @@ struct RecipeDetailView: View {
         } label: {
             HStack(alignment: .top, spacing: 14) {
                 ZStack {
-                    Rectangle()
+                    Theme.markShape
                         .strokeBorder(checked ? Theme.ember : Theme.inkSoft.opacity(0.5), lineWidth: Theme.hairline)
                         .frame(width: 18, height: 18)
                     if checked {

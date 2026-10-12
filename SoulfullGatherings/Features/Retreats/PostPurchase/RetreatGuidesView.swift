@@ -145,9 +145,9 @@ struct RetreatGuidesView: View {
                 .foregroundStyle(booked ? RetreatPalette.espresso : RetreatPalette.cream)
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(
-                    Rectangle().fill(booked ? RetreatPalette.terracotta : Color.clear)
-                        .overlay(Rectangle().strokeBorder(booked ? Color.clear : RetreatPalette.cream.opacity(0.7),
-                                                          lineWidth: Theme.hairline))
+                    Theme.controlShape.fill(booked ? RetreatPalette.terracotta : Color.clear)
+                        .overlay(Theme.controlShape.strokeBorder(booked ? Color.clear : RetreatPalette.cream.opacity(0.7),
+                                                                 lineWidth: Theme.hairline))
                 )
                 .contentShape(Rectangle())
         }
@@ -169,7 +169,7 @@ struct RetreatGuidesView: View {
                             .font(Theme.body(12)).foregroundStyle(RetreatPalette.cream)
                             .lineLimit(1)
                             .padding(.horizontal, 12).padding(.vertical, 10)
-                            .soulGlassCard(tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
+                            .soulGlass(in: Theme.controlShape, tint: RetreatPalette.glassTint, stroke: RetreatPalette.glassLine)
                     }
                     .buttonStyle(.soulPressable)
                 }
@@ -181,7 +181,7 @@ struct RetreatGuidesView: View {
     private func confirmationRow(guide: RetreatExperience.Guide, time: String) -> some View {
         HStack(spacing: 10) {
             ZStack {
-                Rectangle().fill(RetreatPalette.olive)
+                Theme.markShape.fill(RetreatPalette.olive)
                 Image(systemName: "checkmark").font(.system(size: 10, weight: .medium)).foregroundStyle(RetreatPalette.cream)
             }
             .frame(width: 20, height: 20)

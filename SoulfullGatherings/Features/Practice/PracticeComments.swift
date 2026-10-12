@@ -189,7 +189,7 @@ struct PracticeCommentsSheet: View {
         .background { PhotoBackdrop(imageName: vm.thread.imageUrl, blur: 28, darken: 0.84, topScrim: 0) }
         .safeAreaInset(edge: .top, spacing: 0) { closeBar }
         .preferredColorScheme(.dark)
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         // Words on their way are worth the extra tap.
         .interactiveDismissDisabled(vm.isPosting)
         .animation(Theme.Motion.settle, value: vm.comments.map(\.id))
@@ -241,7 +241,7 @@ struct PracticeCommentsSheet: View {
                 .focused($writing)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .soulGlassCard(stroke: writing ? Theme.glassBorderHigh : Theme.glassBorder)
+                .soulGlass(in: Theme.controlShape, stroke: writing ? Theme.glassBorderHigh : Theme.glassBorder)
                 .accessibilityLabel("Your comment")
                 .accessibilityIdentifier("comment-field")
 
@@ -286,10 +286,10 @@ struct PracticeCommentsSheet: View {
                 .padding(.horizontal, 24)
                 .frame(minHeight: 44)
                 .background(
-                    Rectangle()
+                    Theme.controlShape
                         .fill(ready ? Theme.ink : Color.clear)
-                        .overlay(Rectangle().strokeBorder(Theme.ink.opacity(0.7),
-                                                          lineWidth: ready ? 0 : Theme.hairline))
+                        .overlay(Theme.controlShape.strokeBorder(Theme.ink.opacity(0.7),
+                                                                 lineWidth: ready ? 0 : Theme.hairline))
                 )
                 .opacity(ready || vm.isPosting ? 1 : 0.4)
                 .contentShape(Rectangle())
@@ -556,6 +556,6 @@ private struct CommentsNote: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .soulGlassCard(stroke: Theme.ember.opacity(0.35))
+        .soulGlass(in: Theme.controlShape, stroke: Theme.ember.opacity(0.35))
     }
 }

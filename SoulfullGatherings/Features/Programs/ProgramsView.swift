@@ -196,7 +196,7 @@ struct ProgramsView: View {
                 .padding(20)
             }
             .soulGlassCard(stroke: Theme.glassBorderHigh)
-            .clipped()
+            .clipShape(Theme.cardShape)
         }
         .padding(.horizontal, Theme.gutter)
         .accessibilityElement(children: .combine)
@@ -315,7 +315,7 @@ struct ProgramsView: View {
                         .foregroundStyle(chip.1)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .soulGlassCard()
+                        .soulGlass(in: Theme.controlShape)
                         .padding(12)
                 }
             }
@@ -345,7 +345,7 @@ struct ProgramsView: View {
             .padding(20)
         }
         .soulGlassCard()
-        .clipped()
+        .clipShape(Theme.cardShape)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(program.title). \(program.metaLine), with \(program.lead)\(presenceSuffix(program.id))")
         .accessibilityHint("Opens the digital retreat")

@@ -86,12 +86,12 @@ struct PackingListView: View {
             trip.toggleTodo(id(index), retreatID: retreat.id)
         } label: {
             HStack(spacing: 16) {
-                // A square box, filled when ticked.
+                // A box, filled when ticked.
                 ZStack {
-                    Rectangle()
+                    Theme.markShape
                         .fill(done ? RetreatPalette.olive : Color.clear)
-                        .overlay(Rectangle().strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
-                                                          lineWidth: Theme.hairline))
+                        .overlay(Theme.markShape.strokeBorder(done ? RetreatPalette.olive : RetreatPalette.muted,
+                                                              lineWidth: Theme.hairline))
                     if done {
                         Image(systemName: "checkmark").font(.system(size: 10, weight: .medium))
                             .foregroundStyle(RetreatPalette.cream)

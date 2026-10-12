@@ -137,7 +137,7 @@ SoulfullGatherings/
 
 The direction is **"still"** (owner's brief, 2026-10-10: the rounded, bouncy app read as playful; it should feel serious, with colours like the **Open** meditation app). It has four parts:
 - **Photography and near-white.** Every screen's photograph stays visible behind it; colour comes from photography, never from the chrome.
-- **Square.** Nothing is rounded.
+- **Eased corners.** Corners carry a small continuous curve, as Open cuts its photos and buttons: neither square nor bubbly (owner, 2026-10-12; square read as severe, the old 22pt cards and pills as playful).
 - **Still motion.** Things fade in and settle at breath pace; nothing springs, bounces, squishes or zooms.
 - **Space.** Empty space is part of the layout: hairline-ruled open sections rather than stacks of boxed cards, small tracked caps labels, and lighter headlines. The rhythm is `Theme.sectionGap` (64) between sections, ~20pt from a section's label to its content, and **12pt between cards that belong together** (Home's day / Continue / ritual cards stack under the moods as one section; spaced as sections, each floated alone, owner 2026-10-10). **Home's greeting and its mood question are one opening:** the question sits a `headerGap` under "Take your time", with no rule (`SectionLabel(ruled: false)`); a section's gap and a rule there read as dead space (owner, 2026-10-11).
 
@@ -155,21 +155,27 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
 | `Theme.danger` | Muted brick for irreversible actions (Delete account) |
 | `Theme.line` / `glassBorder` / `glassBorderHigh` / `hairline` (0.75) | Rules / surface strokes / stroke width |
 | `Theme.gutter` (24) / `sectionGap` (64) / `headerGap` (40) | Page side margin / space between a page's sections / a tab's header to its first content, measured to what shows (Home, Practice, Community, You, Digital Retreats, Gatherings' catalog; the Gatherings stack's own fade stands in for it). Every tab opens on the same header — eyebrow, 38pt title, subline, 10pt under the status bar — Gatherings included |
+| `Theme.Corner.mark` (4) / `control` (8) / `card` (12) / `sheet` (16) + `Theme.markShape` / `controlShape` / `cardShape` | Every corner in the app (see *Shape* below) |
 | `Theme.Motion.press` / `release` / `settle` / `reveal` / `stage` / `breath` | The only animation curves: all eases. `settle` (0.6s) when a state changes, `reveal` (1.1s) when something arrives, `breath` (6s) is every idle loop's period |
 | `Theme.headline(_:weight:)` / `body(_:weight:)` / `eyebrow(_:)` | Geist fonts. `Text.sgEyebrow()` applies font + tracking + uppercase + color |
 
 - **Everything is Geist** (Thin to Bold). There is no serif and no SF Pro. Display headlines are Light or Regular with negative `kerning`; nothing larger than a button label is heavier than Medium. Body text and eyebrows use positive `tracking` (2–3).
-- **Shape: no rounded corners.** Use `Rectangle()` for photos, cards, buttons, chips, bars and progress tracks. Sheets get `.presentationCornerRadius(0)`.
+- **Shape: eased corners, from `Theme.Corner` only** (continuous `RoundedRectangle`s; the radius grows with the surface). Never write a radius by hand, and never a `Capsule()`.
+  - `Theme.cardShape` (12): inset photos, cards, panels, thumbnails. Clip a photo card with `.clipShape(Theme.cardShape)` and stroke it with the same shape.
+  - `Theme.controlShape` (8): buttons, chips, fields, banners, small tiles. Sign in with Apple is clipped to it, with white behind to fill Apple's own corners.
+  - `Theme.markShape` (4): check boxes, radio marks, progress tracks, tiny badges.
+  - Sheets get `.presentationCornerRadius(Theme.Corner.sheet)` (16).
+  - **Anything that runs to the screen's edge stays a `Rectangle()`** (a full-bleed photo, a backdrop, the docked bar, a page-wide band): the display rounds it. So do hairline rules and `contentShape` hit areas.
   - `Circle()` is only for faces (`AvatarView`, guide portraits), dots of 10pt or less, and the player's breath ring.
   - A number is a folio ("01"), never a numeral in a circle.
-  - A check box is a square hairline box.
+  - A check box is a hairline box with eased corners (`markShape`).
   - Surface strokes are `Theme.hairline`.
 - **Grounds:** every tab and page sits on its own `PhotoBackdrop`, blurred and darkened, as before the still pass. **The photo must stay visible** (owner, 2026-10-10).
   - The redesign briefly replaced the photos with black `Atmosphere` washes and put a black wash over every card. Both read as a dark veil and were reverted the same day.
   - Don't add a deeper dim, a black layer or an opaque ground over a backdrop.
   - `Atmosphere` (`Core/DesignSystem/Atmosphere.swift`) survives only as Home's ritual card wash (ember, `intensity: 1, fillsScreen: false`).
   - The practice player keeps `AuroraBackground`.
-- **Surfaces** always go through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCard()`): a light frost (`ultraThinMaterial`) with a hairline, square, the same on every OS. The photo shows through it; there is no black wash over the frost.
+- **Surfaces** always go through `SoulGlass` (`.soulGlass(in:)` / `.soulGlassCard()`): a light frost (`ultraThinMaterial`) with a hairline, in a `Theme` shape (`soulGlassCard()` is `cardShape`), the same on every OS. The photo shows through it; there is no black wash over the frost.
   - Liquid Glass (`glassEffect`) was dropped on purpose: its lensing and touch-bounce read as playful.
   - Prefer no surface at all: a hairline and space separate sections and rows (`SectionLabel` is a rule plus a caps label).
 - **Touch:** every tappable surface is a `Button` styled with `SoulPressableStyle` (or wrapped in a `PressableCard`), which **dims** to 0.55 on touch-down with a soft haptic and fades back on release. It never scales. Don't put `onTapGesture` on cards. Back, close and view toggles are `GlyphButton`: a bare glyph in a 44pt square, with `arrow.left` for back and `xmark` for close.

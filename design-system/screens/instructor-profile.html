@@ -43,11 +43,11 @@
   .followed .faces i:nth-child(1) { background: linear-gradient(135deg, #6b3d38, #40211f); z-index: 3; }
   .followed .faces i:nth-child(2) { background: linear-gradient(135deg, #334054, #1a2130); z-index: 2; }
   .followed .faces i:nth-child(3) { background: linear-gradient(135deg, #544533, #30261a); z-index: 1; }
-  /* Follow: a 196×50 square ink block, black type, "+". Once following it
-     becomes square glass with a hairline, ink type, "✓ Following" — eased,
+  /* Follow: a 196×50 ink block at the control radius, black type, "+". Once
+     following it becomes glass (the same radius) with a hairline, ink type, "✓ Following" — eased,
      no bounce. On your own page (a guide signed in to their linked account) it
      is a static "This is your profile" glass instead. */
-  .follow { display: flex; align-items: center; justify-content: center; gap: 8px; width: 196px; height: 50px; margin: 28px auto 0; background: var(--ink); color: #000; font-size: 15px; font-weight: var(--w-medium); letter-spacing: .3px; }
+  .follow { display: flex; align-items: center; justify-content: center; gap: 8px; width: 196px; height: 50px; margin: 28px auto 0; background: var(--ink); border-radius: var(--r-control); color: #000; font-size: 15px; font-weight: var(--w-medium); letter-spacing: .3px; }
   /* Sections open under a hairline with a tracked caps label. */
   .sec-eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; padding-top: 14px; border-top: 0.5px solid var(--line); }
   .about { margin-top: 56px; }
@@ -55,20 +55,20 @@
   .lib { margin-top: 64px; }
   h2 { font-size: 26px; font-weight: var(--w-light); letter-spacing: -0.5px; color: var(--ink); margin: 0; }
   .sub-eb { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin: 32px 0 12px; }
-  /* A digital retreat: a full-width 176pt square photo card on glass → opens
+  /* A digital retreat: a full-width 176pt photo card (the card radius) on glass → opens
      on the Digital Retreats tab. */
-  .prog { position: relative; height: 176px; overflow: hidden; border: var(--hairline) solid var(--glass-border); background-size: cover; background-position: center; }
+  .prog { position: relative; height: 176px; overflow: hidden; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-card); background-size: cover; background-position: center; }
   .prog .ov { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, rgba(0,0,0,.35) 55%, rgba(0,0,0,.78)); }
   .prog .body { position: absolute; left: 20px; right: 20px; bottom: 20px; }
   .prog .meta { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-on-photo); }
   .prog h3 { font-size: 24px; font-weight: var(--w-light); letter-spacing: -0.3px; color: var(--ink); margin: 6px 0 0; }
   .prog p { font-size: 12px; line-height: 1.4; color: var(--ink-on-photo); margin: 6px 0 0; }
   /* A session or written practice: the Practice list's row — open, a
-     hairline above each and one closing the run; a square 60pt thumb with the
+     hairline above each and one closing the run; a 60pt thumb (the control radius) with the
      media glyph, title, TRACK · LENGTH; a resume rule or a seal as there. */
   .rows { display: flex; flex-direction: column; border-bottom: 0.5px solid var(--line); }
   .row { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-top: 0.5px solid var(--line); }
-  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); flex: none; }
+  .row .th { width: 60px; height: 60px; background-size: cover; background-position: center; border: var(--hairline) solid var(--glass-border); border-radius: var(--r-control); flex: none; }
   .row .tx { flex: 1; min-width: 0; }
   .row h4 { font-size: 16px; font-weight: var(--w-regular); letter-spacing: -0.2px; color: var(--ink); margin: 0; }
   .row .m { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin-top: 5px; }

@@ -387,7 +387,7 @@ private struct FinishStepView: View {
     }
 }
 
-// MARK: - Option card (square veiled tile: index + label; chosen = ink hairline)
+// MARK: - Option card (veiled tile: index + label; chosen = ink hairline)
 
 private struct OptionCard: View {
     let index: Int?

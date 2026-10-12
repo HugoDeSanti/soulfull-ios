@@ -176,7 +176,7 @@ struct WrittenLibraryPlaceholder: View {
                         .foregroundStyle(Theme.ink)
                         .padding(.horizontal, 22)
                         .padding(.vertical, 12)
-                        .soulGlassCard()
+                        .soulGlass(in: Theme.controlShape)
                 }
                 .buttonStyle(.soulPressableQuiet)
                 .padding(.top, 4)
@@ -238,10 +238,10 @@ struct ProgressRule: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            Rectangle()
+            Theme.markShape
                 .fill(Theme.ink.opacity(0.18))
                 .frame(width: width, height: 1)
-            Rectangle()
+            Theme.markShape
                 .fill(Theme.ember.opacity(0.85))
                 .frame(width: max(3, width * min(1, max(0, fraction))), height: 1)
         }

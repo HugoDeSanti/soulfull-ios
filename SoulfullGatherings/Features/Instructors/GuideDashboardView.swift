@@ -115,7 +115,7 @@ struct GuideDashboardView: View {
                     .allowsHitTesting(false)
             }
         }
-        .presentationCornerRadius(0)
+        .presentationCornerRadius(Theme.Corner.sheet)
         // Re-read on open: the card's read may be from the morning. The
         // figures on screen stay up while it runs.
         .task { await vm.load() }
@@ -200,7 +200,7 @@ struct GuideDashboardView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .soulGlassCard()
+        .soulGlass(in: Theme.controlShape)
     }
 
     // MARK: People
@@ -525,7 +525,10 @@ private struct PeopleByMonthChart: View {
                 Color.clear
                     .frame(height: plotHeight)
                     .overlay(alignment: .bottom) {
-                        Rectangle()
+                        // Eased at the top only: the bar stands on the baseline.
+                        UnevenRoundedRectangle(topLeadingRadius: Theme.Corner.mark,
+                                               topTrailingRadius: Theme.Corner.mark,
+                                               style: .continuous)
                             .fill(isFocus ? Theme.ink : Theme.inkSoft.opacity(0.25))
                             .frame(width: 18, height: grown ? height : 0)
                             .animation(Theme.Motion.settle, value: isFocus)

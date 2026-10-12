@@ -22,9 +22,9 @@
   .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
   h1 { font-size: 34px; font-weight: var(--w-light); letter-spacing: -0.8px; color: var(--ink); margin: 6px 0 0; }
   .sub { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 6px 0 0; }
-  /* A square glass field, 50pt; its hairline lifts while focused. UIKit-backed
+  /* A glass field at the control radius, 50pt; its hairline lifts while focused. UIKit-backed
      in Swift — no text halo on it. The clear button is a bare ×. */
-  .search { display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 16px; font-size: 15px; color: var(--muted); }
+  .search { display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 16px; font-size: 15px; color: var(--muted); border-radius: var(--r-control); }
   .search svg { color: var(--ink-soft); flex: none; }
   .sec .section-label { --sl-pad: 0; margin-bottom: 4px; }
   .rows { display: flex; flex-direction: column; }
@@ -38,11 +38,11 @@
   .av.t2 { background-image: linear-gradient(135deg, #6b3d38, #40211f); }
   .av.t3 { background-image: linear-gradient(135deg, #334054, #1a2130); }
   .av.t4 { background-image: linear-gradient(135deg, #544533, #30261a); }
-  /* Square buttons, 34 tall in a 44pt target: an ink block for the primary
+  /* Buttons at the control radius, 34 tall in a 44pt target: an ink block for the primary
      verb (Add / Accept), an ink hairline for the rest (Decline / Withdraw /
      Remove). A standing (Requested / Friends) is small caps text with no box.
      Remove asks for confirmation. */
-  .pill { height: 34px; padding: 0 14px; border: var(--hairline) solid rgba(242,241,237,.7); font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); background: none; cursor: pointer; display: inline-flex; align-items: center; }
+  .pill { height: 34px; padding: 0 14px; border: var(--hairline) solid rgba(242,241,237,.7); border-radius: var(--r-control); font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); background: none; cursor: pointer; display: inline-flex; align-items: center; }
   .pill.fill { background: var(--ink); border-color: var(--ink); color: #000; position: static; }  /* not app.css's .fill overlay helper */
   .chip-state { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
   .ctl { display: flex; gap: 8px; }

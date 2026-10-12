@@ -18,9 +18,9 @@
      Community."
      FAILED LOAD: open, headline 20 light "You're offline" / "Couldn't load
      this list", body 14 "Reconnect to see who you've blocked." / "Something
-     went wrong at our end. Please try again in a moment.", a square hairline
-     "Try again". A failed Unblock shows square glass with an ember hairline
-     under the header. */
+     went wrong at our end. Please try again in a moment.", a hairline
+     "Try again" (the control radius). A failed Unblock shows glass (the
+     control radius) with an ember hairline under the header. */
   .scr { padding: 118px var(--gutter) 60px; }
   .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
     background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent); }
@@ -38,8 +38,8 @@
   .av { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: var(--w-medium); color: var(--ink); border: var(--hairline) solid var(--glass-border); }
   .av.t0 { background-image: linear-gradient(135deg, #454d1c, #262b0d); }
   .av.t4 { background-image: linear-gradient(135deg, #544533, #30261a); }
-  /* Unblock — a square ink hairline, 34pt in a 44pt target; 50% while it works. */
-  .pill { height: 34px; padding: 0 14px; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; background: none; border: var(--hairline) solid rgba(242,241,237,.7); }
+  /* Unblock — an ink hairline at the control radius, 34pt in a 44pt target; 50% while it works. */
+  .pill { height: 34px; padding: 0 14px; font-family: var(--font); font-size: 13px; font-weight: var(--w-medium); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; background: none; border: var(--hairline) solid rgba(242,241,237,.7); border-radius: var(--r-control); }
 </style>
 </head><body>
 <div class="stage"><div class="device">

@@ -8,8 +8,10 @@
    conversions (round to nearest 8-bit channel).
 
    The direction ("still", 2026-10-10): near-white type over each screen's own
-   photograph, which stays visible (no black ground, no dark wash); no rounded
-   corners; motion fades and settles, never bounces; space is part of the page.
+   photograph, which stays visible (no black ground, no dark wash); corners
+   eased, not rounded off (a small continuous curve, as Open cuts its photos
+   and buttons; 2026-10-12); motion fades and settles, never bounces; space is
+   part of the page.
 
    Theme.swift            ->  CSS variable
    --------------------------------------------------------------------------
@@ -28,6 +30,10 @@
    Theme.ember            ->  --ember             (was Theme.honey / --honey)
    Theme.danger           ->  --danger
    Theme.hairline         ->  --hairline          (0.75)
+   Theme.Corner.mark      ->  --r-mark            (4: check boxes, radio marks, tracks)
+   Theme.Corner.control   ->  --r-control         (8: buttons, chips, fields, banners)
+   Theme.Corner.card      ->  --r-card            (12: photos, cards, panels)
+   Theme.Corner.sheet     ->  --r-sheet           (16: a sheet's top corners)
    Theme.gutter           ->  --gutter            (24)
    Theme.sectionGap       ->  --section-gap       (64)
    Theme.headerGap        ->  --header-gap        (40)
@@ -36,7 +42,12 @@
    Theme.photoVignette    ->  --grad-photo-vignette
    Atmosphere(tone:)      ->  --atmos-<tone>-top/-mid/-low, --atmos-reach,
                               --atmos-intensity (laid by .atmosphere in app.css)
-   (Theme.cardRadius and Theme.pillRadius are gone: every corner is square.)
+   Theme.cardShape / controlShape / markShape are continuous (squircle)
+   RoundedRectangles at those radii; CSS can only draw a circular arc, so the
+   mirror's corners read a touch tighter than the app's. Anything full-bleed
+   (a backdrop, a hero photo to the frame's edges, the docked bar) stays
+   square, and only faces, dots and the breath ring are round. (The old
+   Theme.cardRadius 22 and Theme.pillRadius 999 are gone for good.)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;500;600;700&display=swap');
@@ -98,7 +109,13 @@
   --atmos-slate-mid: #151b26;  /* rgb(0.082, 0.106, 0.149) */
   --atmos-slate-low: #090b10;  /* rgb(0.035, 0.043, 0.063) */
 
-  /* ---- Shape & space ---- */
+  /* ---- Shape (Theme.Corner) — the radius grows with the surface ---- */
+  --r-mark: 4px;          /* Theme.Corner.mark — check boxes, radio marks, progress tracks, tiny badges */
+  --r-control: 8px;       /* Theme.Corner.control — buttons, chips, fields, banners, small tiles */
+  --r-card: 12px;         /* Theme.Corner.card — photographs, cards, panels */
+  --r-sheet: 16px;        /* Theme.Corner.sheet — a sheet's top corners */
+
+  /* ---- Space ---- */
   --hairline: 0.75px;     /* Theme.hairline — every surface / ghost-button stroke */
   --gutter: 24px;         /* Theme.gutter — the page's side margin */
   --section-gap: 64px;    /* Theme.sectionGap — between a page's sections */
