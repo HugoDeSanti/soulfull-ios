@@ -22,7 +22,18 @@
 -- How to apply: Management API (one transaction with its schema_migrations
 -- row) or `supabase db push`. Safe to re-run.
 --
--- NOT YET APPLIED (written 2026-10-11).
+-- APPLIED to the live project 2026-10-11 through the Management API, in one
+-- transaction with its schema_migrations row (0030), after a dry run inside an
+-- aborted transaction as the owner's test account (linked to `alma-guerra`),
+-- the App Review member and a guest. All held: no name over 64 existed; a new
+-- profile and a member's update of 70 characters → stored as 64; a team-named
+-- guide of 70 → 23514; 6 earlier plays backfilled as self_play (the test
+-- account's own plays of `alma-guerra`); its new play of her session →
+-- self_play true, still true after a PATCH to false; the App Review member's
+-- → false; guide_dashboard() → its row; unlinking `alma-guerra` left her
+-- creator_pool_shares seconds at 39 before and after. After applying: both
+-- constraints, the trigger, the column and the three rewritten objects in
+-- place; no client grant on creator_pool_shares.
 
 
 -- ===========================================================================
