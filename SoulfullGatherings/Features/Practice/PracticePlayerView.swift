@@ -648,16 +648,25 @@ final class AudioTransport {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
+    /// Five times a second. Each property is written only when it changes:
+    /// `@Observable` tells every reader of a property it was SET, equal or
+    /// not, so writing `isPlaying` and `duration` on every tick re-ran the
+    /// player's whole body five times a second for a whole session, when only
+    /// the scrubber (the one reader of `currentTime`) moves.
     private func tick(_ time: CMTime) {
         let wasPlaying = isPlaying
         let knownDuration = duration
         // Prefer the asset's true duration once it's known; fall back to metadata.
         if let itemDuration = player.currentItem?.duration, itemDuration.isNumeric {
             let secs = CMTimeGetSeconds(itemDuration)
-            if secs.isFinite, secs > 0 { duration = secs }
+            if secs.isFinite, secs > 0, secs != duration { duration = secs }
         }
-        if !isScrubbing { currentTime = CMTimeGetSeconds(time) }
-        isPlaying = player.timeControlStatus != .paused
+        if !isScrubbing {
+            let seconds = CMTimeGetSeconds(time)
+            if seconds != currentTime { currentTime = seconds }
+        }
+        let playing = player.timeControlStatus != .paused
+        if playing != isPlaying { isPlaying = playing }
         // The lock screen runs its own clock from the last position and rate
         // it was given, so it needs telling only when one of those changes —
         // a pause from a phone call, say — not five times a second.

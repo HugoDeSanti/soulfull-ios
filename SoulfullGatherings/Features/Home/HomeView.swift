@@ -105,6 +105,8 @@ struct HomeView: View {
                 .frame(width: 72, height: 72)
 
             VStack(alignment: .leading, spacing: 8) {
+                // Once per body: it walks the whole practice ledger.
+                let streak = history.streakDays
                 Text(vm.greeting.uppercased())
                     .font(Theme.eyebrow(12))
                     .tracking(2)
@@ -118,17 +120,17 @@ struct HomeView: View {
                 // A streak is only worth naming once it is one; a single day
                 // is just today, and calling that a run is exactly the
                 // manufactured momentum this screen had removed from it.
-                if history.streakDays >= 2 {
+                if streak >= 2 {
                     HStack(spacing: 7) {
                         Image(systemName: "flame.fill")
                             .font(.system(size: 10))
-                        Text("\(history.streakDays) days in a row")
+                        Text("\(streak) days in a row")
                             .font(Theme.eyebrow(11))
                             .tracking(1.5)
                     }
                     .foregroundStyle(Theme.ember)
                     .padding(.top, 8)
-                    .accessibilityLabel("\(history.streakDays) day practice streak")
+                    .accessibilityLabel("\(streak) day practice streak")
                 }
 
                 Text("Take your time. We're here with you.")

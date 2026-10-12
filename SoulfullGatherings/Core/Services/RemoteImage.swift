@@ -18,6 +18,7 @@
 
 import SwiftUI
 import UIKit
+import ImageIO
 
 /// Where one catalog photograph lives.
 ///
@@ -91,9 +92,12 @@ actor RemoteImageCache {
     /// owns the coalescing of downloads.
     nonisolated(unsafe) private let memory: NSCache<NSURL, UIImage> = {
         let cache = NSCache<NSURL, UIImage>()
-        // ~40MB of decoded pixels. Retreat photography is full-bleed, so this
-        // is a handful of images — enough for a catalog, not enough to matter.
-        cache.totalCostLimit = 40 * 1024 * 1024
+        // Decoded pixels, counted exactly (`cost(of:)`). A catalog photo
+        // (~2,000px, per the retreat runbook) is ~11MB decoded, so this holds
+        // the whole catalog plus faces. It was 40MB — three photos — and the
+        // retreats stack, crossfading through all of them, evicted and decoded
+        // them again as it went. NSCache gives memory back under pressure.
+        cache.totalCostLimit = 120 * 1024 * 1024
         return cache
     }()
     private var inFlight: [URL: Task<UIImage, Error>] = [:]
@@ -102,34 +106,68 @@ actor RemoteImageCache {
         let errorDescription: String?
     }
 
+    /// The longest side, in pixels, a photograph is decoded at. Nothing on
+    /// an iPhone needs more (the tallest screen is 2,868), and a camera
+    /// original uploaded as it came (6,000 × 4,000) would otherwise decode
+    /// to 96MB.
+    static let maxPixelSize = 3_000
+
     func image(for url: URL) async throws -> UIImage {
         if let hit = memory.object(forKey: url as NSURL) { return hit }
         if let running = inFlight[url] { return try await running.value }
 
-        let task = Task<UIImage, Error> {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                throw LoadError(errorDescription: "Image request failed (\(http.statusCode)).")
-            }
-            guard let image = UIImage(data: data) else {
-                throw LoadError(errorDescription: "That file isn't a readable image.")
-            }
-            return image
-        }
+        let task = Task<UIImage, Error> { try await Self.download(url) }
         inFlight[url] = task
 
         do {
             let image = try await task.value
             inFlight[url] = nil
-            // Approximate decoded footprint; exact byte counts would mean
-            // re-encoding, which costs more than the accuracy is worth.
-            let cost = Int(image.size.width * image.size.height * image.scale * image.scale * 4)
-            memory.setObject(image, forKey: url as NSURL, cost: cost)
+            memory.setObject(image, forKey: url as NSURL, cost: Self.cost(of: image))
             return image
         } catch {
             inFlight[url] = nil
             throw error
         }
+    }
+
+    /// Fetches and decodes, off the actor (a `nonisolated` async function runs
+    /// on the global executor) so photos decode side by side, and off the main
+    /// thread, which is the point: `UIImage(data:)` only decoded when the
+    /// image was first DRAWN, on the main thread, mid-crossfade.
+    private nonisolated static func download(_ url: URL) async throws -> UIImage {
+        let (data, response) = try await URLSession.shared.data(from: url)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw LoadError(errorDescription: "Image request failed (\(http.statusCode)).")
+        }
+        guard let image = decoded(data) else {
+            throw LoadError(errorDescription: "That file isn't a readable image.")
+        }
+        return image
+    }
+
+    /// Decodes `data` now, on the calling thread, no larger than
+    /// `maxPixelSize` on its longest side (never enlarged), upright whatever
+    /// its EXIF orientation. Nil for something that isn't an image.
+    nonisolated static func decoded(_ data: Data, maxPixelSize: Int = maxPixelSize) -> UIImage? {
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            // Decoded here, not lazily on first draw.
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        return UIImage(cgImage: image)
+    }
+
+    /// What an image holds in memory, decoded.
+    nonisolated static func cost(of image: UIImage) -> Int {
+        if let pixels = image.cgImage { return pixels.bytesPerRow * pixels.height }
+        return Int(image.size.width * image.size.height * image.scale * image.scale * 4)
     }
 
     /// Already-decoded hit, if any. Synchronous so a view can paint a cached
@@ -144,7 +182,6 @@ actor RemoteImageCache {
     /// profile photo — so it shows at once under its new URL instead of being
     /// downloaded straight back.
     nonisolated func insert(_ image: UIImage, for url: URL) {
-        let cost = Int(image.size.width * image.size.height * image.scale * image.scale * 4)
-        memory.setObject(image, forKey: url as NSURL, cost: cost)
+        memory.setObject(image, forKey: url as NSURL, cost: Self.cost(of: image))
     }
 }

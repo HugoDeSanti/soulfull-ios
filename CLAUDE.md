@@ -291,7 +291,7 @@ Runbook: `docs/ADDING-A-RETREAT.md`.
   - `bucket/path.jpg` is a public Storage object (the first segment is the bucket).
   - A bare name is a bundled asset.
 - **Retreat photos** live in the public `retreat-images` bucket, named `<place>-<yyyy>-<mm>.jpg`. Catalog photography is public on purpose. Private member media (`practice-media`) is served through signed URLs (`signedMediaURL`, valid for 1h), and **only members can read or sign it** (0029; its policy once covered `anon`, so the key in the IPA downloaded the library).
-- **Image caching:** Supabase serves public objects with `cache-control: no-cache` no matter what you upload them with, so `RemoteImageCache` caches **decoded** images instead of relying on `URLCache`.
+- **Image caching:** Supabase serves public objects with `cache-control: no-cache` no matter what you upload them with, so `RemoteImageCache` caches **decoded** images instead of relying on `URLCache`. It decodes each photo **when it arrives, off the main thread, at most 3,000px on its longest side** (`RemoteImageCache.decoded`; `UIImage(data:)` decoded on first draw, on the main thread, and a camera original would be ~96MB), and counts its real bytes against a 120MB limit.
 - **The brochure** is the `retreats.experience` jsonb column.
   - ⚠️ **A malformed `experience` fails soft:** the error is logged and the retreat shows the short layout. When "the brochure isn't showing", check the log for a decode error first. `programs.curriculum` fails soft the same way.
   - A `date_range` field inside it is optional and normally left out. If present, it overrides the row's dates.
