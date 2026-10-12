@@ -17,20 +17,20 @@ import Testing
 struct WelcomeSignInTests {
 
     @Test func closingTheSheetWithoutSigningInStaysOnWelcome() {
-        let next = AppState.stageAfterWelcomeSignIn(hasAccount: false, userName: "Mara")
+        let next = AppState.stageAfterWelcomeSignIn(hasAccount: false, name: MemberName(first: "Mara"))
 
         #expect(next == nil)
     }
 
     @Test func aMemberWhoseProfileHasANameGoesStraightHome() {
-        let next = AppState.stageAfterWelcomeSignIn(hasAccount: true, userName: "Mara")
+        let next = AppState.stageAfterWelcomeSignIn(hasAccount: true, name: MemberName(first: "Mara"))
 
         #expect(next == .main)
     }
 
     @Test(arguments: ["", "   "])
     func aMemberWithNoNameOnTheirProfileIsAsked(name: String) {
-        let next = AppState.stageAfterWelcomeSignIn(hasAccount: true, userName: name)
+        let next = AppState.stageAfterWelcomeSignIn(hasAccount: true, name: MemberName(first: name, last: name))
 
         #expect(next == .onboarding)
     }

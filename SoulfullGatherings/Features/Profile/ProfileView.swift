@@ -112,11 +112,12 @@ struct ProfileView: View {
             BlockedMembersView()
         }
         .sheet(isPresented: $showEditName) {
-            EditNameSheet(vm: EditNameViewModel(current: settings.userName, write: saveName),
+            EditNameSheet(vm: EditNameViewModel(current: settings.name, birthDate: settings.birthDate,
+                                                write: saveDetails),
                           isGuide: guide.dashboard != nil)
         }
         .sheet(isPresented: $showAccount) {
-            AccountView(mode: accountMode, initialName: settings.userName)
+            AccountView(mode: accountMode, initialName: settings.name)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
@@ -187,14 +188,15 @@ struct ProfileView: View {
         await auth.signOut()
     }
 
-    /// The profile first, then this phone's copy (`AppSettings.userName`,
+    /// The profile first, then this phone's copy (`AppSettings.name`,
     /// which greets them on Home): the profile is where the name lives, and
     /// the next sync would put the old one back on the phone otherwise.
-    private func saveName(_ name: String) async throws {
+    private func saveDetails(_ name: MemberName, _ birthDate: BirthDate?) async throws {
         guard let id = auth.userID, auth.hasAccount else { throw AppError.unknown }
-        try await SupabaseService.shared.setProfileName(name, userID: id)
+        try await SupabaseService.shared.setProfileName(name, birthDate: birthDate, userID: id)
         guard auth.userID == id else { return }
-        settings.userName = name
+        settings.name = name
+        if let birthDate { settings.birthDate = birthDate }
     }
 
     // MARK: - Header
@@ -233,7 +235,7 @@ struct ProfileView: View {
     }
 
     private var nameLine: some View {
-        Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
+        Text((settings.name.isEmpty ? "You" : settings.name.full).uppercased())
             .font(Theme.eyebrow(12))
             .tracking(3)
             .foregroundStyle(Theme.ink)
@@ -262,7 +264,7 @@ struct ProfileView: View {
             .padding(.horizontal, -12)
         }
         .buttonStyle(.soulPressable)
-        .accessibilityLabel(settings.userName.isEmpty ? "Add your name" : "Your name, \(settings.userName)")
+        .accessibilityLabel(settings.name.isEmpty ? "Add your name" : "Your name, \(settings.name.full)")
         .accessibilityHint("Change the name other members see")
         .accessibilityIdentifier("profile-edit-name")
     }
@@ -276,7 +278,7 @@ struct ProfileView: View {
         } label: {
             ZStack(alignment: .bottomTrailing) {
                 AvatarView(avatarUrl: settings.avatarUrl,
-                           name: settings.userName,
+                           name: settings.name.full,
                            seed: auth.userID?.uuidString ?? "preview",
                            size: 92)
                     .overlay {
@@ -570,7 +572,7 @@ struct ProfileView: View {
                         .font(Theme.headline(17))
                         .foregroundStyle(Theme.ink)
                         .kerning(-0.2)
-                    Text("Your finished practices appear in the Community feed as \u{201C}\(settings.userName.isEmpty ? "You" : Self.abbreviated(settings.userName)) practiced …\u{201D}, and your face among the followers of guides you follow. Journal prompts never appear.")
+                    Text("Your finished practices appear in the Community feed as \u{201C}\(settings.name.shownInCommunity ?? "You") practiced …\u{201D}, and your face among the followers of guides you follow. Journal prompts never appear.")
                         .font(Theme.body(12))
                         .foregroundStyle(Theme.inkOnPhoto)
                         .lineSpacing(2)
@@ -623,11 +625,6 @@ struct ProfileView: View {
             .accessibilityHint("People you've blocked, and Unblock")
             .accessibilityIdentifier("open-blocked-members")
         }
-    }
-
-    /// "Hugo De Santiago" → "Hugo D.", the way the server abbreviates it.
-    private static func abbreviated(_ name: String) -> String {
-        MemberName.shownInCommunity(name) ?? "You"
     }
 
     // MARK: - Shared section states

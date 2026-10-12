@@ -63,19 +63,29 @@ final class RetreatEnquiryViewModel {
     var sendFailure: String?
 
     private let retreat: Retreat
-    /// What the name field was seeded with, so `hasContent` can tell a
-    /// prefilled field from an answered one.
-    private let seededName: String
+    /// What the name fields and the date of birth were seeded with, so
+    /// `hasContent` can tell a prefilled answer from a given one.
+    private let seededName: MemberName
+    private let seededDateOfBirth: Date?
 
-    init(retreat: Retreat, name: String = "", accountEmail: String = "") {
+    init(retreat: Retreat, name: MemberName = MemberName(), birthDate: BirthDate? = nil,
+         accountEmail: String = "") {
         self.retreat = retreat
         self.selectedRetreat = retreat.enquiryLabel
         self.retreatOptions = [retreat.enquiryLabel]
         self.accountEmail = accountEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Onboarding already asked for a name, and it is one word.
-        let seededName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        // The account's name, or the first name onboarding asked for.
+        let seededName = name.limited
         self.seededName = seededName
-        self.firstName = seededName
+        self.firstName = seededName.first
+        self.lastName = seededName.last
+        // The account's date of birth, when it meets the form's own rule:
+        // a member of 13 to 17 answers for themselves, and meets the wheel's
+        // limit there.
+        let seededDateOfBirth = birthDate.map { $0.date() }
+            .flatMap { $0 <= Self.latestDateOfBirth ? $0 : nil }
+        self.seededDateOfBirth = seededDateOfBirth
+        self.dateOfBirth = seededDateOfBirth
     }
 
     /// Widen the retreat question to the whole upcoming catalog.
@@ -158,8 +168,8 @@ final class RetreatEnquiryViewModel {
     /// touched is just friction, which is why the seeded name is compared
     /// rather than merely checked for emptiness.
     var hasContent: Bool {
-        firstName.trimmed != seededName
-            || !lastName.trimmed.isEmpty || dateOfBirth != nil
+        firstName.trimmed != seededName.first
+            || lastName.trimmed != seededName.last || dateOfBirth != seededDateOfBirth
             || !basedIn.trimmed.isEmpty || !phone.trimmed.isEmpty || !instagram.trimmed.isEmpty
             || !about.trimmed.isEmpty || decision != nil || investment != nil
             || !referral.trimmed.isEmpty

@@ -2,9 +2,10 @@
 //  EditNameTests.swift
 //  SoulfullTests
 //
-//  A member changing their name from the You tab. What can be saved (a name,
-//  and a different one; trimmed and cut to 64 as stored), what a failure says,
-//  and the shortened form other members will see, shown as it is typed.
+//  A member changing their name from the You tab. What can be saved (both
+//  parts, and a different name; trimmed and cut to 64 together as stored),
+//  what a failure says, and the shortened form other members will see, shown
+//  as it is typed.
 //
 
 import Foundation
@@ -16,29 +17,46 @@ import Testing
 struct EditNameTests {
 
     @MainActor final class FakeProfile {
-        var saved: [String] = []
+        var saved: [MemberName] = []
         var error: (any Error)?
 
-        func viewModel(current: String = "Mara Lopez") -> EditNameViewModel {
-            EditNameViewModel(current: current) { name in
+        func viewModel(current: MemberName = MemberName(first: "Mara", last: "Lopez")) -> EditNameViewModel {
+            EditNameViewModel(current: current) { name, _ in
                 if let error = self.error { throw error }
                 self.saved.append(name)
             }
         }
     }
 
+    @Test func theFieldsOpenOnTheCurrentName() {
+        let vm = FakeProfile().viewModel()
+
+        #expect(vm.first == "Mara")
+        #expect(vm.last == "Lopez")
+    }
+
     @Test func theSameNameCantBeSaved() {
         let vm = FakeProfile().viewModel()
 
-        vm.draft = "  Mara Lopez "
+        vm.first = "  Mara "
+        vm.last = "Lopez  "
 
         #expect(!vm.canSave)
     }
 
-    @Test func aBlankNameCantBeSaved() {
+    @Test func aBlankFirstNameCantBeSaved() {
         let vm = FakeProfile().viewModel()
 
-        vm.draft = "   "
+        vm.first = "   "
+
+        #expect(!vm.canSave)
+    }
+
+    /// As at sign-up, a name has both parts.
+    @Test func aBlankLastNameCantBeSaved() {
+        let vm = FakeProfile().viewModel()
+
+        vm.last = "  "
 
         #expect(!vm.canSave)
     }
@@ -46,30 +64,46 @@ struct EditNameTests {
     @Test func aNewNameIsSavedTrimmed() async {
         let profile = FakeProfile()
         let vm = profile.viewModel()
-        vm.draft = "  Mara López  "
+        vm.first = "  Mara "
+        vm.last = " López  "
 
         let saved = await vm.save()
 
         #expect(saved)
-        #expect(profile.saved == ["Mara López"])
+        #expect(profile.saved == [MemberName(first: "Mara", last: "López")])
     }
 
-    @Test func aNameIsCutToTheLimitAsItIsTyped() {
+    @Test func eachPartIsCutToTheLimitAsItIsTyped() {
         let vm = FakeProfile().viewModel()
 
-        vm.draft = String(repeating: "a", count: MemberName.maxLength + 10)
+        vm.first = String(repeating: "a", count: MemberName.maxLength + 10)
+        vm.last = String(repeating: "b", count: MemberName.maxLength + 10)
 
-        #expect(vm.draft.count == MemberName.maxLength)
+        #expect(vm.first.count == MemberName.maxLength)
+        #expect(vm.last.count == MemberName.maxLength)
     }
 
     /// A name Sign in with Apple never shared can be added.
     @Test func aMemberWithNoNameCanAddOne() async {
         let profile = FakeProfile()
-        let vm = profile.viewModel(current: "")
-        vm.draft = "Mara"
+        let vm = profile.viewModel(current: MemberName())
+        vm.first = "Mara"
+        vm.last = "Lopez"
 
         #expect(await vm.save())
-        #expect(profile.saved == ["Mara"])
+        #expect(profile.saved == [MemberName(first: "Mara", last: "Lopez")])
+    }
+
+    /// A name from before the parts was one word: the editor completes it.
+    @Test func aOneWordNameIsCompletedWithALastName() async {
+        let profile = FakeProfile()
+        let vm = profile.viewModel(current: MemberName(first: "Mara"))
+        #expect(!vm.canSave)
+
+        vm.last = "Lopez"
+
+        #expect(await vm.save())
+        #expect(profile.saved == [MemberName(first: "Mara", last: "Lopez")])
     }
 
     @Test(arguments: [
@@ -80,13 +114,13 @@ struct EditNameTests {
         let profile = FakeProfile()
         profile.error = error
         let vm = profile.viewModel()
-        vm.draft = "Mara L"
+        vm.last = "Lo"
 
         let saved = await vm.save()
 
         #expect(!saved)
         #expect(vm.failure == failure)
-        #expect(vm.draft == "Mara L")
+        #expect(vm.last == "Lo")
         #expect(vm.canSave)
     }
 
@@ -94,10 +128,10 @@ struct EditNameTests {
         let profile = FakeProfile()
         profile.error = URLError(.notConnectedToInternet)
         let vm = profile.viewModel()
-        vm.draft = "Mara L"
+        vm.last = "Lo"
         _ = await vm.save()
 
-        vm.draft = "Mara Lo"
+        vm.first = "Marina"
 
         #expect(vm.failure == nil)
     }
@@ -105,16 +139,17 @@ struct EditNameTests {
     // MARK: - How Community shows it
 
     @Test(arguments: [
-        ("Hugo De Santiago", "Hugo D."),
-        ("Mara Lopez", "Mara L."),
-        ("Mara", "Mara"),
-        ("  Mara   Lopez ", "Mara L."),
+        (MemberName(first: "Hugo", last: "De Santiago"), "Hugo D."),
+        (MemberName(first: "Mary Ann", last: "Smith"), "Mary Ann S."),
+        (MemberName(first: "Hugo", last: "de Santiago"), "Hugo D."),
+        (MemberName(first: "Mara"), "Mara"),
+        (MemberName(first: "  Mara ", last: "  Lopez "), "Mara L."),
     ])
-    func communityShowsTheFirstNameAndTheSecondWordsInitial(_ name: String, _ shown: String) {
-        #expect(MemberName.shownInCommunity(name) == shown)
+    func communityShowsTheFirstNameAndTheLastInitial(_ name: MemberName, _ shown: String) {
+        #expect(name.shownInCommunity == shown)
     }
 
     @Test func noNameShowsNothing() {
-        #expect(MemberName.shownInCommunity("  ") == nil)
+        #expect(MemberName(first: "  ", last: "").shownInCommunity == nil)
     }
 }

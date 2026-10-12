@@ -232,10 +232,10 @@ final class AuthManager {
     /// emailed link on this device (`handleDeepLink`), by typing the emailed
     /// code (`confirmEmail`), or by opening the link anywhere else and
     /// letting `refreshConfirmationState` notice.
-    func createAccount(email: String, password: String, fullName: String) async throws {
+    func createAccount(email: String, password: String, name: MemberName,
+                       birthDate: BirthDate? = nil) async throws {
         await settleSessionCheck()
-        let trimmed = MemberName.limited(fullName)
-        let metadata: [String: AnyJSON]? = trimmed.isEmpty ? nil : ["full_name": .string(trimmed)]
+        let metadata = Self.signUpMetadata(name: name, birthDate: birthDate)
         // Upgrade in place only when there's a live anonymous session to upgrade.
         // If there's no session (e.g. anonymous sign-in is unavailable), fall back
         // to a fresh signUp rather than calling `update` with no session — which
@@ -424,7 +424,7 @@ final class AuthManager {
         // device of a member who signs in from Welcome before onboarding has
         // asked anything, and `mergeProfile` treats a row with a name but no
         // answers as new and pushes.
-        let hasAnswers = !settings.userName.isEmpty || !settings.intentions.isEmpty
+        let hasAnswers = !settings.name.isEmpty || settings.birthDate != nil || !settings.intentions.isEmpty
             || !settings.bodyState.isEmpty || !settings.frequency.isEmpty
         guard hasAnswers else { return }
         do {
@@ -432,7 +432,8 @@ final class AuthManager {
                 Profile(
                     id: id,
                     email: email ?? "",
-                    fullName: settings.userName,
+                    name: settings.name,
+                    birthDate: settings.birthDate,
                     intentions: settings.intentions.sorted(),
                     bodyState: settings.bodyState,
                     frequency: settings.frequency,
@@ -446,7 +447,7 @@ final class AuthManager {
 
     // MARK: - The member's name
 
-    /// Brings this phone's copy of the member's name (`AppSettings.userName`:
+    /// Brings this phone's copy of the member's name (`AppSettings.name`:
     /// Home's greeting, the You tab, the nav bar's face) in line with their
     /// account, once the launch has confirmed the session. Best-effort.
     ///
@@ -471,20 +472,44 @@ final class AuthManager {
     /// answer of a member it hadn't asked, which wiped the name. Best-effort.
     func reconcileName(with profile: Profile) async {
         guard hasAccount, userID == profile.id else { return }
-        let signUp = supabase.auth.currentUser?.userMetadata["full_name"]?.stringValue ?? ""
-        switch MemberNameDecision(profile: profile.fullName, device: settings.userName, signUp: signUp) {
+        let signUp = Self.signUpName(supabase.auth.currentUser?.userMetadata ?? [:])
+        switch MemberNameDecision(profile: profile.name, device: settings.name, signUp: signUp) {
         case .keep:
             return
         case .adopt(let name):
-            settings.userName = name
+            settings.name = name
         case .restore(let name):
-            settings.userName = name
+            settings.name = name
             do {
                 try await SupabaseService.shared.setProfileName(name, userID: profile.id)
             } catch {
                 Log.auth.error("Restoring the profile's name failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// What the auth user's metadata carries from sign-up, and
+    /// `handle_new_user` copies onto the profile (0033): the name's parts, its
+    /// line (which builds up to 1.0 (19) read), and the date of birth as
+    /// `yyyy-MM-dd`. Nil when there's nothing to say.
+    nonisolated static func signUpMetadata(name: MemberName, birthDate: BirthDate? = nil) -> [String: AnyJSON]? {
+        var metadata: [String: AnyJSON] = [:]
+        let name = name.limited
+        if !name.isEmpty {
+            metadata["first_name"] = .string(name.first)
+            metadata["last_name"] = .string(name.last)
+            metadata["full_name"] = .string(name.full)
+        }
+        if let birthDate { metadata["date_of_birth"] = .string(birthDate.dayString) }
+        return metadata.isEmpty ? nil : metadata
+    }
+
+    /// The name given at sign-up: its parts, or the line an older build sent.
+    nonisolated static func signUpName(_ metadata: [String: AnyJSON]) -> MemberName {
+        if let first = metadata["first_name"]?.stringValue, !first.isEmpty {
+            return MemberName(first: first, last: metadata["last_name"]?.stringValue ?? "")
+        }
+        return MemberName(line: metadata["full_name"]?.stringValue ?? "")
     }
 
     // MARK: - Sign in with Apple
@@ -511,9 +536,9 @@ final class AuthManager {
         )
         // Apple returns the user's name only on the *first* authorization ever
         // granted to this app, so persist it the one time we see it.
-        if let fullName = credential.fullName, !fullName.isEmpty,
+        if let name = credential.name, let metadata = Self.signUpMetadata(name: name),
            session.user.userMetadata["full_name"] == nil {
-            _ = try? await supabase.auth.update(user: UserAttributes(data: ["full_name": .string(fullName)]))
+            _ = try? await supabase.auth.update(user: UserAttributes(data: metadata))
         }
         apply(supabase.auth.currentUser)
         // Detached from the sign-in on purpose — see `storeAppleRefreshToken`.
@@ -865,21 +890,21 @@ enum MemberNameDecision: Equatable, Sendable {
     /// Nothing to change.
     case keep
     /// The phone takes the profile's name.
-    case adopt(String)
+    case adopt(MemberName)
     /// The profile has no name: the phone shows this one, and it is written
     /// back to the profile.
-    case restore(String)
+    case restore(MemberName)
 
-    init(profile: String, device: String, signUp: String) {
-        let onProfile = profile.trimmingCharacters(in: .whitespaces)
-        let onDevice = device.trimmingCharacters(in: .whitespaces)
+    init(profile: MemberName, device: MemberName, signUp: MemberName) {
+        let onProfile = profile.limited
+        let onDevice = device.limited
         if !onProfile.isEmpty {
             self = onProfile == onDevice ? .keep : .adopt(onProfile)
             return
         }
         // The phone's copy is the more recent: it came from the profile or
         // from this member's own onboarding, after they signed up.
-        let known = onDevice.isEmpty ? signUp.trimmingCharacters(in: .whitespaces) : onDevice
+        let known = onDevice.isEmpty ? signUp.limited : onDevice
         self = known.isEmpty ? .keep : .restore(known)
     }
 }

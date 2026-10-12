@@ -18,7 +18,7 @@ import Testing
 struct RetreatEnquiryDateOfBirthTests {
 
     func form() -> RetreatEnquiryViewModel {
-        RetreatEnquiryViewModel(retreat: Fixtures.retreat(), name: "Mara", accountEmail: "mara@example.com")
+        RetreatEnquiryViewModel(retreat: Fixtures.retreat(), name: MemberName(first: "Mara"), accountEmail: "mara@example.com")
     }
 
     @Test func theWheelOpensOnItsStartingDateWithoutAnsweringTheQuestion() {

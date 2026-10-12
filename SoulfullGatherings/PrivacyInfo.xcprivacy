@@ -216,7 +216,9 @@
 
 		<!--
 		  Onboarding answers: intentions, body state, practice frequency
-		  (`profiles.intentions` / `body_state` / `frequency`). Also the
+		  (`profiles.intentions` / `body_state` / `frequency`), and the
+		  member's date of birth (`profiles.date_of_birth`, asked at email
+		  sign-up, private to them). Also the
 		  retreat application's date of birth, city ("Where are you based?"),
 		  chosen retreat, decision stage and investment band, which go to the
 		  team by email. The city is typed, never read from the device, so it

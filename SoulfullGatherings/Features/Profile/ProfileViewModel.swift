@@ -121,8 +121,11 @@ final class ProfileViewModel {
                   store.currentUserID == userID else { return }
             shareActivity = profile.shareActivity
             settings?.avatarUrl = profile.avatarUrl
-            if let settings, let name = Self.adoptedName(server: profile.fullName, device: settings.userName) {
-                settings.userName = name
+            if let settings, let name = Self.adoptedName(server: profile.name, device: settings.name) {
+                settings.name = name
+            }
+            if let settings, let birthDate = profile.birthDate, birthDate != settings.birthDate {
+                settings.birthDate = birthDate
             }
         } catch where error.isCancellation {
             return
@@ -133,15 +136,15 @@ final class ProfileViewModel {
 
     /// The name this phone should show, given the account's. A member's name
     /// lives on their profile (0027: a guide linked to the account is named
-    /// from it too), and `AppSettings.userName` is only this phone's copy for
+    /// from it too), and `AppSettings.name` is only this phone's copy for
     /// the greeting and this tab. It used to be refreshed at sign-in alone, so
     /// a rename made anywhere else, or a name the server filled in, never
     /// reached a phone already signed in, and the member read one name on the
     /// You tab while their guide page showed another. Nil when there is
     /// nothing to change. An empty server name never blanks the phone's.
-    nonisolated static func adoptedName(server: String, device: String) -> String? {
-        let name = server.trimmingCharacters(in: .whitespaces)
-        return name.isEmpty || name == device ? nil : name
+    nonisolated static func adoptedName(server: MemberName, device: MemberName) -> MemberName? {
+        let name = server.limited
+        return name.isEmpty || name == device.limited ? nil : name
     }
 
     // MARK: - Profile photo

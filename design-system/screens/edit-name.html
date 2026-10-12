@@ -9,11 +9,12 @@
 <style>
   /* Features/Profile/EditNameSheet.swift. A sheet from the name on the You
      tab (members only; never asked for, only offered). The name lives on the
-     profile: Home greets by its first word, Community shows it shortened,
-     and a guide linked to the account is named by it everywhere.
+     profile, in two parts: Home greets by the first name, Community shows it
+     with the last initial, and a guide linked to the account is named by both
+     everywhere.
      Ground: welcome-bg (as the Report sheet; home-bg's sky was too bright under
      the eyebrow), blur 28, darken .86, no top scrim, still visible. The
-     field is UIKit-backed, so nothing blurs or shades over it (rendering
+     fields are UIKit-backed, so nothing blurs or shades over them (rendering
      gotcha 1): the close button sits in a pinned bar with a bg GRADIENT
      (92% → 60% → clear), never a blur, and .on-photo goes on the copy only. */
   .scr { padding: 122px var(--gutter) 48px; }
@@ -27,12 +28,23 @@
      place a member sees what everyone else will. A linked guide's line adds
      "Your guide pages use it too." */
   .head p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 10px 0 0; }
-  /* Square glass field, hairline turning ink while focused; capped at 64
-     characters as it is typed (MemberName). */
-  .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; border-color: rgba(242,241,237,.6); }
+  /* The account sheet's two rows, 14 apart: "First name" with the person
+     glyph, "Last name" with its slot kept empty so both start on one line.
+     Square glass, hairline turning ink on the focused one; each part capped
+     at 64 as it is typed, and 64 together as stored (MemberName). */
+  .fields { display: flex; flex-direction: column; gap: 14px; }
+  .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; }
+  .field.focus { border-color: rgba(242,241,237,.6); }
   .field svg { color: var(--muted); flex: none; }
+  .field .slot { width: 18px; flex: none; }
+  /* Date of birth under the name (optional here; the only place an Apple
+     member can give one): the account sheet's row and wheel. Can be changed,
+     not removed. The eyebrow reads "Your details", and the explanation ends
+     "Your date of birth stays private." */
+  .field .value { flex: 1; font-size: 16px; color: var(--muted); }
   .field input { flex: 1; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
-  /* Save (filled) is disabled at 40% while the name is blank or unchanged,
+  /* Save (filled) is disabled at 40% while either part is blank or the name
+     is unchanged (a one-word name from before the parts is completed here),
      and reads "Saving…" while it writes, with the close dimmed and
      swipe-to-dismiss off. FAILURE: one line above the button, 13 --ink, and
      the name stays: offline → "You're offline, so your name hasn't changed.
@@ -55,14 +67,24 @@
 
     <div class="form">
       <div class="head on-photo">
-        <p class="eb">Your name</p>
+        <p class="eb">Your details</p>
         <h1>What should we call you?</h1>
-        <p>Other members see “Mara L.” in Community, and Home greets you by your first name.</p>
+        <p>Other members see “Mara L.” in Community, and Home greets you by your first name. Your date of birth stays private.</p>
       </div>
 
-      <div class="field glass">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-        <input value="Mara Lopez" />
+      <div class="fields">
+        <div class="field glass focus">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <input value="Mara" placeholder="First name" />
+        </div>
+        <div class="field glass">
+          <span class="slot"></span>
+          <input value="Lopez" placeholder="Last name" />
+        </div>
+        <div class="field glass">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="5" width="17" height="15"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+          <span class="value">Date of birth</span>
+        </div>
       </div>
 
       <button class="sg-btn sg-btn--filled">Save</button>

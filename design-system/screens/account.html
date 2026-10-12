@@ -21,6 +21,17 @@
   .field { display: flex; align-items: center; gap: 12px; padding: 17px 18px; }
   .field.focus { border-color: rgba(242,241,237,.6); }
   .field svg { color: var(--ink-soft); flex: none; }
+  /* The name is two rows (profiles.first_name / last_name): the person glyph
+     on the first, its 22pt slot kept empty on the second so every field's
+     text starts on one line. Create mode only; both are needed to submit. */
+  .field .slot { width: 18px; flex: none; }
+  /* Date of birth (create mode, required): a row like the fields, calendar
+     glyph in the slot, the date in ink or "Date of birth" in --muted. Tapping
+     opens a wheel under it (square glass), bounded at 13 years ago, so a
+     younger date can't be picked; only turning the wheel answers. The hint
+     under it: "Private, never shown to other members. You need to be 13 or
+     older." Never asked after Sign in with Apple. */
+  .field .value { flex: 1; font-size: 16px; color: var(--ink); }
   .field input { flex: 1; background: transparent; border: 0; outline: none; font-family: var(--font); font-size: 16px; color: var(--ink); }
   .field input::placeholder { color: var(--muted); }
   .submit { margin-top: 18px; }
@@ -65,8 +76,17 @@
       <div class="fields">
         <div class="field glass">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-          <input value="Hugo" />
+          <input value="Hugo" placeholder="First name" />
         </div>
+        <div class="field glass">
+          <span class="slot"></span>
+          <input value="De Santiago" placeholder="Last name" />
+        </div>
+        <div class="field glass">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="5" width="17" height="15"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+          <span class="value">12 March 1990</span>
+        </div>
+        <p class="field-hint on-photo">Private, never shown to other members. You need to be 13 or older.</p>
         <div class="field glass focus">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="5" width="18" height="14" /><path d="M3 7l9 6 9-6"/></svg>
           <input value="hugo@soulfullgatherings.com" />

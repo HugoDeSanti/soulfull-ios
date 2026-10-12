@@ -23,13 +23,17 @@ struct AccountView: View {
 
     @State private var vm: AccountViewModel
     @FocusState private var focus: Field?
+    /// The date-of-birth wheel, open under its row.
+    @State private var showDateWheel = false
 
-    private enum Field { case name, email, password, code, newPassword }
+    private enum Field { case firstName, lastName, email, password, code, newPassword }
 
-    /// - Parameter initialName: seeds the name field — onboarding already asked.
-    init(mode: AccountViewModel.Mode = .createAccount, initialName: String = "") {
+    /// - Parameter initialName: seeds the name fields. Onboarding already
+    ///   asked for the first name.
+    init(mode: AccountViewModel.Mode = .createAccount, initialName: MemberName = MemberName()) {
         let model = AccountViewModel(mode: mode)
-        model.fullName = initialName
+        model.firstName = initialName.first
+        model.lastName = initialName.last
         _vm = State(initialValue: model)
     }
 
@@ -112,6 +116,12 @@ struct AccountView: View {
             // Nor when a reset code signed them in: the new password is still
             // to come, and the sheet closes once it's set.
             if hasAccount, !vm.isWorking, !vm.resetCodeAccepted { dismiss() }
+        }
+        .onChange(of: focus) { _, field in
+            // Typing elsewhere puts the wheel away; the date stays.
+            if field != nil, showDateWheel {
+                withAnimation(Theme.Motion.settle) { showDateWheel = false }
+            }
         }
         .onChange(of: vm.passwordReset) { _, step in
             switch step {
@@ -430,11 +440,26 @@ struct AccountView: View {
         let creating = vm.mode == .createAccount
         return VStack(spacing: 14) {
             if creating {
-                inputRow(icon: "person", placeholder: "Your name", text: $vm.fullName, field: .name,
-                         contentType: .name)
+                // Two rows, the second with no glyph of its own: one name,
+                // the profile's two parts (0033).
+                inputRow(icon: "person", placeholder: "First name", text: $vm.firstName, field: .firstName,
+                         contentType: .givenName, identifier: "account-first-name")
                     .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
                     .submitLabel(.next)
-                    .onSubmit { focus = .email }
+                    .onSubmit { focus = .lastName }
+                inputRow(icon: nil, placeholder: "Last name", text: $vm.lastName, field: .lastName,
+                         contentType: .familyName, identifier: "account-last-name")
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .submitLabel(.next)
+                    .onSubmit {
+                        focus = nil
+                        showDateWheel = true
+                    }
+                dateOfBirthRow
+                if showDateWheel { dateOfBirthWheel }
+                fieldHint("Private, never shown to other members. You need to be 13 or older.")
             }
             // `.username` on the address, not `.emailAddress`: it's what Password
             // AutoFill pairs a saved (or newly suggested) password with.
@@ -466,15 +491,65 @@ struct AccountView: View {
     /// The rule `canSubmit` enforces. Without it the button simply stayed dim
     /// at seven characters, with nothing saying why.
     private var passwordRule: some View {
-        Text("At least 8 characters")
+        fieldHint("At least 8 characters")
+            // Spoken as the password field's hint instead.
+            .accessibilityHidden(true)
+    }
+
+    private func fieldHint(_ text: String) -> some View {
+        Text(text)
             .font(Theme.body(12))
             .foregroundStyle(Theme.inkOnPhoto)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 18)
             .padding(.top, -6)
             .onPhoto()
-            // Spoken as the password field's hint instead.
-            .accessibilityHidden(true)
+    }
+
+    /// A row like the fields around it, opening a wheel rather than a
+    /// keyboard. Turning the wheel is what answers (`dateOfBirthWheel`).
+    private var dateOfBirthRow: some View {
+        Button {
+            focus = nil
+            withAnimation(Theme.Motion.settle) { showDateWheel.toggle() }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 22)
+                    .accessibilityHidden(true)
+                Text(vm.dateOfBirth.map { BirthDate($0).formatted } ?? "Date of birth")
+                    .font(Theme.body(16))
+                    .foregroundStyle(vm.dateOfBirth == nil ? Theme.muted : Theme.ink)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 17)
+            .soulGlass(in: Rectangle(),
+                       stroke: showDateWheel ? Theme.ink.opacity(0.6) : Theme.glassBorder)
+        }
+        .buttonStyle(.soulPressable)
+        .accessibilityLabel("Date of birth")
+        .accessibilityValue(vm.dateOfBirth.map { BirthDate($0).formatted } ?? "Not set")
+        .accessibilityHint("Private, never shown to other members. You need to be 13 or older.")
+        .accessibilityIdentifier("account-dob")
+    }
+
+    /// Bounded at 13 years ago, so a younger date can't be picked rather than
+    /// being refused after the fact.
+    private var dateOfBirthWheel: some View {
+        DatePicker("Date of birth",
+                   selection: $vm.dateOfBirthWheel,
+                   in: BirthDate.earliest()...BirthDate.latest(now: AppClock.shared.now),
+                   displayedComponents: .date)
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .tint(Theme.ink)
+            .frame(maxWidth: .infinity)
+            .soulGlass(in: Rectangle())
+            .transition(.opacity)
+            .accessibilityIdentifier("account-dob-wheel")
     }
 
     private var forgotPasswordButton: some View {
@@ -497,15 +572,18 @@ struct AccountView: View {
     }
 
     @ViewBuilder
-    private func inputRow(icon: String, placeholder: String, text: Binding<String>,
+    private func inputRow(icon: String?, placeholder: String, text: Binding<String>,
                           field: Field, contentType: UITextContentType,
                           hint: String = "", secure: Bool = false,
                           identifier: String = "") -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
+            // Without a glyph the slot stays, so every field's text starts
+            // on the same line.
+            Image(systemName: icon ?? "person")
                 .font(.system(size: 15, weight: .light))
                 .foregroundStyle(Theme.muted)
                 .frame(width: 22)
+                .opacity(icon == nil ? 0 : 1)
                 .accessibilityHidden(true)
             Group {
                 if secure {

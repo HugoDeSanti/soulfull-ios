@@ -116,7 +116,9 @@ final class OnboardingViewModel {
 
     /// Persist into AppSettings and route to Main.
     func complete(into app: AppState) {
-        if let nameAnswer { app.settings.userName = nameAnswer }
+        // One line, so split like any: "Mara Lopez" is greeted as "Mara".
+        // The account form asks for the two parts and opens on these.
+        if let nameAnswer { app.settings.name = MemberName(line: nameAnswer) }
         app.settings.intentions = intentions
         app.settings.bodyState  = bodyState ?? ""
         app.settings.frequency  = frequency ?? ""

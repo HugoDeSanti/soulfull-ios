@@ -64,15 +64,17 @@ struct RetreatEnquiryView: View {
     }
 
     /// - Parameters:
-    ///   - initialName: onboarding already asked for a name; it is one word, so
-    ///     it seeds the first-name field only.
+    ///   - initialName: the name the phone knows (the account's, or just the
+    ///     first name onboarding asked for), seeding the two name fields.
+    ///   - initialBirthDate: the account's date of birth, if it has one.
     ///   - accountEmail: the signed-in account's address. Displayed on the
     ///     Email question and never editable — the server stamps the real one
     ///     from the caller's JWT regardless.
-    init(retreat: Retreat, initialName: String = "", accountEmail: String = "") {
+    init(retreat: Retreat, initialName: MemberName = MemberName(), initialBirthDate: BirthDate? = nil,
+         accountEmail: String = "") {
         self.retreat = retreat
         _vm = State(initialValue: RetreatEnquiryViewModel(
-            retreat: retreat, name: initialName, accountEmail: accountEmail
+            retreat: retreat, name: initialName, birthDate: initialBirthDate, accountEmail: accountEmail
         ))
     }
 
@@ -602,7 +604,7 @@ private extension View {
 // Its sample content (`Fixtures.swift`) exists only in DEBUG.
 #if DEBUG
 #Preview {
-    RetreatEnquiryView(retreat: Retreat.mock.first!, initialName: "Hugo",
+    RetreatEnquiryView(retreat: Retreat.mock.first!, initialName: MemberName(first: "Hugo"),
                        accountEmail: "hugo@soulfullgatherings.com")
 }
 #endif

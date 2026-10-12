@@ -167,7 +167,7 @@ struct CommunityView: View {
                     onOpenProfile()
                 } label: {
                     AvatarView(avatarUrl: settings.avatarUrl,
-                               name: settings.userName,
+                               name: settings.name.full,
                                seed: auth.userID?.uuidString ?? "",
                                size: 46)
                         .contentShape(Circle())

@@ -56,10 +56,10 @@ final class HomeViewModel {
         }
     }
 
-    /// Who the greeting addresses: the first name alone ("Hugo Santi" →
-    /// "Hugo"), or "Friend" when there's no name.
-    nonisolated static func greetingName(_ fullName: String) -> String {
-        fullName.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? "Friend"
+    /// Who the greeting addresses: the first name, all of it ("Mary Ann"),
+    /// or "Friend" when there's no name.
+    nonisolated static func greetingName(_ name: MemberName) -> String {
+        name.isEmpty ? "Friend" : name.limited.first
     }
 
     /// Runs every time Home appears. The two reads go side by side: the "Day N

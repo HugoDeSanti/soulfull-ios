@@ -7,6 +7,7 @@
 //  and are not exercised here.
 //
 
+import Foundation
 import Testing
 @testable import SoulfullGatherings
 
@@ -15,19 +16,24 @@ import Testing
 struct AccountFormTests {
 
     @Test(arguments: [
-        (AccountViewModel.Mode.createAccount, "Mara", "mara@example.com", "long-enough", true),
-        (.createAccount, "  ", "mara@example.com", "long-enough", false),    // a name is asked for
-        (.signIn, "", "mara@example.com", "long-enough", true),              // …but not to sign in
-        (.signIn, "", " mara@example.com ", "long-enough", true),
-        (.signIn, "", "mara@example", "long-enough", false),
-        (.signIn, "", "mara.example.com", "long-enough", false),
-        (.signIn, "", "mara@example.com", "seven77", false),
+        (AccountViewModel.Mode.createAccount, MemberName(first: "Mara", last: "Lopez"),
+         "mara@example.com", "long-enough", true),
+        (.createAccount, MemberName(first: "  ", last: " "), "mara@example.com", "long-enough", false),  // a name is asked for
+        (.createAccount, MemberName(first: "Mara"), "mara@example.com", "long-enough", false),           // both parts of it
+        (.createAccount, MemberName(last: "Lopez"), "mara@example.com", "long-enough", false),
+        (.signIn, MemberName(), "mara@example.com", "long-enough", true),                                // …but not to sign in
+        (.signIn, MemberName(), " mara@example.com ", "long-enough", true),
+        (.signIn, MemberName(), "mara@example", "long-enough", false),
+        (.signIn, MemberName(), "mara.example.com", "long-enough", false),
+        (.signIn, MemberName(), "mara@example.com", "seven77", false),
     ])
-    func submitWaitsForAPlausibleAddressAnd8CharacterPassword(
-        mode: AccountViewModel.Mode, name: String, email: String, password: String, allowed: Bool
+    func submitWaitsForANamePlausibleAddressAnd8CharacterPassword(
+        mode: AccountViewModel.Mode, name: MemberName, email: String, password: String, allowed: Bool
     ) {
         let vm = AccountViewModel(mode: mode)
-        vm.fullName = name
+        vm.firstName = name.first
+        vm.lastName = name.last
+        vm.dateOfBirth = mode == .createAccount ? Date(timeIntervalSince1970: 641_563_200) : nil  // 1990-05-01
         vm.email = email
         vm.password = password
 

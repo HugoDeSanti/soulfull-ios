@@ -113,7 +113,7 @@ struct HomeView: View {
                     // Ink, not inkSoft: it sits on the brightest, haziest
                     // part of home-bg, where grey caps disappear.
                     .foregroundStyle(Theme.ink)
-                Text("\(HomeViewModel.greetingName(settings.userName)).")
+                Text("\(HomeViewModel.greetingName(settings.name)).")
                     .font(Theme.headline(42, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.8)
@@ -569,7 +569,7 @@ struct HomeView: View {
 
 #Preview {
     let a = AppState()
-    a.settings.userName = "Mara"
+    a.settings.name = MemberName(first: "Mara")
     return HomeView(onOpenRetreats: {}, onOpenRetreat: { _ in })
         .environment(a)
         .environment(a.settings)

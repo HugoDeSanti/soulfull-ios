@@ -32,7 +32,7 @@ struct RetreatExperienceHubView: View {
 
     /// Prefer the signed-in member's name; fall back to the curated mock name.
     private var memberName: String {
-        let name = settings.userName.trimmingCharacters(in: .whitespaces)
+        let name = settings.name.full
         if !name.isEmpty { return name }
         return post?.memberName ?? "traveler"
     }

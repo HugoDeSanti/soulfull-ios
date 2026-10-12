@@ -35,11 +35,30 @@ final class AccountViewModel {
     enum Outcome { case signedIn, confirmationRequired, cancelled, failed }
 
     var mode: Mode
-    var fullName = "" {
+    /// The name, in the two parts the profile keeps (0033). Each is cut to
+    /// the limit as it is typed; together they are cut as stored (`name`).
+    var firstName = "" {
         didSet {
-            let capped = MemberName.capped(fullName)
-            if capped != fullName { fullName = capped }
+            let capped = MemberName.capped(firstName)
+            if capped != firstName { firstName = capped }
         }
+    }
+    var lastName = "" {
+        didSet {
+            let capped = MemberName.capped(lastName)
+            if capped != lastName { lastName = capped }
+        }
+    }
+    /// Asked with an email account (never after Apple). Nil until the wheel
+    /// is turned.
+    var dateOfBirth: Date?
+
+    /// What the date-of-birth wheel shows and sets. It opens on
+    /// `BirthDate.wheelStart`, but only turning it answers: a glance at the
+    /// wheel must not count as a birthday (the retreat form learned this).
+    var dateOfBirthWheel: Date {
+        get { dateOfBirth ?? BirthDate.wheelStart(now: AppClock.shared.now) }
+        set { dateOfBirth = newValue }
     }
     var email = ""
     var password = ""
@@ -92,13 +111,13 @@ final class AccountViewModel {
     }
 
     private var trimmedEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
-    private var trimmedName: String { MemberName.limited(fullName) }
+    private var typedName: MemberName { MemberName(first: firstName, last: lastName) }
 
     var canSubmit: Bool {
         guard !isWorking else { return false }
         let emailLooksValid = trimmedEmail.contains("@") && trimmedEmail.contains(".")
         guard emailLooksValid, password.count >= 8 else { return false }
-        return mode == .signIn || !trimmedName.isEmpty
+        return mode == .signIn || (typedName.isComplete && dateOfBirth != nil)
     }
 
     func toggleMode() {
@@ -140,8 +159,16 @@ final class AccountViewModel {
         do {
             switch mode {
             case .createAccount:
-                try await auth.createAccount(email: trimmedEmail, password: password, fullName: trimmedName)
-                if settings.userName.isEmpty { settings.userName = trimmedName }
+                let name = typedName.limited
+                let birthDate = dateOfBirth.map { BirthDate($0) }
+                try await auth.createAccount(email: trimmedEmail, password: password,
+                                             name: name, birthDate: birthDate)
+                // What they just typed, over onboarding's first name: the
+                // form opened with it, so anything different is a correction.
+                // This used to be taken only when the phone had no name, so
+                // the push below wrote onboarding's answer over what was typed.
+                settings.name = name
+                settings.birthDate = birthDate
                 await auth.pushOnboardingAnswers()
                 // With "Confirm email" on, the upgrade stays a guest session until
                 // the emailed link is tapped, so hasAccount is still false here.
@@ -421,9 +448,9 @@ final class AccountViewModel {
 
         do {
             try await auth.signInWithApple(credential)
-            // Apple hands the name over exactly once; take it if we have nothing better.
-            if let fullName = credential.fullName, !fullName.isEmpty,
-               settings.userName.isEmpty { settings.userName = fullName }
+            // Apple hands the name over exactly once: it fills whatever part
+            // the phone doesn't know (onboarding asked only for a first name).
+            if let name = credential.name { settings.name = settings.name.filled(from: name) }
             await mergeProfile(auth: auth, settings: settings)
             Haptics.success()
             return .signedIn
@@ -462,15 +489,16 @@ final class AccountViewModel {
             let hasSavedAnswers = existing.map { !$0.intentions.isEmpty || !$0.bodyState.isEmpty } ?? false
             settings.avatarUrl = existing?.avatarUrl
             // A row can hold a name and no answers (members from before 0024).
-            // Take the name first if the device has none, or the push below
-            // writes the device's empty one over it. Apple hands a name over
-            // only on the first authorization, so a returning member signing
-            // in from Welcome arrives with nothing.
-            if let existing, settings.userName.isEmpty, !existing.fullName.isEmpty {
-                settings.userName = existing.fullName
+            // Its name wins, and is taken first, or the push below writes the
+            // device's over it: onboarding's first name alone would clear
+            // nothing (an empty part is left out) but would rename them.
+            // Apple hands a name over only on the first authorization, so a
+            // returning member signing in from Welcome arrives with nothing.
+            if let existing, !existing.name.isEmpty {
+                settings.name = existing.name
             }
+            if let birthDate = existing?.birthDate { settings.birthDate = birthDate }
             if let existing, hasSavedAnswers {
-                if !existing.fullName.isEmpty  { settings.userName  = existing.fullName }
                 if !existing.bodyState.isEmpty { settings.bodyState = existing.bodyState }
                 if !existing.frequency.isEmpty { settings.frequency = existing.frequency }
                 if !existing.intentions.isEmpty { settings.intentions = Set(existing.intentions) }
@@ -489,6 +517,7 @@ final class AccountViewModel {
         do {
             guard let profile = try await SupabaseService.shared.fetchProfile(id: id) else { return }
             settings.avatarUrl = profile.avatarUrl
+            if let birthDate = profile.birthDate { settings.birthDate = birthDate }
             // Also gives a row that lost its name the sign-up name back, so
             // Welcome's sign-in greets them instead of re-running onboarding.
             await auth.reconcileName(with: profile)

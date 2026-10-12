@@ -152,7 +152,7 @@ struct MainTabView: View {
         .sheet(isPresented: $router.showAccount, onDismiss: {
             router.resumeAfterAccountSheet(signedIn: Self.hasAccount(auth))
         }) {
-            AccountView(initialName: settings.userName)
+            AccountView(initialName: settings.name)
         }
     }
 

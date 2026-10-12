@@ -31,8 +31,8 @@ struct AppleCredential {
     /// Raw (un-hashed) nonce — Supabase needs it to verify the `nonce` claim
     /// Apple embedded in the signed token.
     let nonce: String
-    /// Apple sends the name on the very first authorization only.
-    let fullName: String?
+    /// Apple sends the name on the very first authorization only, in parts.
+    let name: MemberName?
     /// Single-use code, valid about five minutes, which the server exchanges
     /// for Apple's refresh token.
     ///
@@ -89,15 +89,17 @@ struct AppleSignInButton: View {
                 return
             }
             // Apple only sends the name on the very first authorization; it's nil
-            // (and `formatted()` empty) every time after that.
-            let name = credential.fullName.map { MemberName.limited($0.formatted()) }
+            // (or its parts empty) every time after that.
+            let name = credential.fullName.map {
+                MemberName(first: $0.givenName ?? "", last: $0.familyName ?? "").limited
+            }
             // The code is opaque ASCII. Absent is survivable (see
             // `AppleCredential.authorizationCode`), so don't fail the sign-in.
             let code = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
             onCredential(
                 AppleCredential(idToken: token,
                                 nonce: nonce,
-                                fullName: (name?.isEmpty ?? true) ? nil : name,
+                                name: (name?.isEmpty ?? true) ? nil : name,
                                 authorizationCode: (code?.isEmpty ?? true) ? nil : code)
             )
         case .failure(let error):

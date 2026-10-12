@@ -14,7 +14,12 @@ final class AppSettings {
 
     enum Keys {
         static let hasOnboarded = "sg.hasOnboarded"
-        static let userName     = "sg.userName"
+        static let firstName    = "sg.firstName"
+        static let lastName     = "sg.lastName"
+        static let birthDate    = "sg.birthDate"
+        /// The name on one line, as builds up to 1.0 (19) kept it. Read once,
+        /// split into the two keys above, and removed.
+        static let legacyUserName = "sg.userName"
         static let intentions   = "sg.intentions"
         static let bodyState    = "sg.bodyState"
         static let frequency    = "sg.frequency"
@@ -22,7 +27,21 @@ final class AppSettings {
     }
 
     var hasOnboarded: Bool { didSet { UserDefaults.standard.set(hasOnboarded, forKey: Keys.hasOnboarded) } }
-    var userName: String   { didSet { UserDefaults.standard.set(userName,     forKey: Keys.userName) } }
+    /// This phone's copy of the member's name (`profiles.first_name` /
+    /// `last_name`): Home's greeting, the You tab, the nav bar's face. The
+    /// profile is where it lives (`AuthManager.reconcileName`).
+    var name: MemberName {
+        didSet {
+            UserDefaults.standard.set(name.first, forKey: Keys.firstName)
+            UserDefaults.standard.set(name.last,  forKey: Keys.lastName)
+        }
+    }
+    /// This phone's copy of the member's `profiles.date_of_birth`, so the You
+    /// tab's editor and the retreat form open on it. Like the name, the row
+    /// is where it lives.
+    var birthDate: BirthDate? {
+        didSet { UserDefaults.standard.set(birthDate?.dayString, forKey: Keys.birthDate) }
+    }
     var bodyState: String  { didSet { UserDefaults.standard.set(bodyState,    forKey: Keys.bodyState) } }
     var frequency: String  { didSet { UserDefaults.standard.set(frequency,    forKey: Keys.frequency) } }
     /// This member's `profiles.avatar_url`, mirrored so the You tab and the
@@ -41,7 +60,18 @@ final class AppSettings {
     init() {
         let ud = UserDefaults.standard
         hasOnboarded  = ud.bool(forKey: Keys.hasOnboarded)
-        userName      = ud.string(forKey: Keys.userName)    ?? ""
+        if let first = ud.string(forKey: Keys.firstName) {
+            name = MemberName(first: first, last: ud.string(forKey: Keys.lastName) ?? "")
+        } else {
+            // Split as 0033 split the server's copy; the launch's name sync
+            // then brings the profile's own parts down.
+            let carried = MemberName(line: ud.string(forKey: Keys.legacyUserName) ?? "")
+            ud.set(carried.first, forKey: Keys.firstName)
+            ud.set(carried.last,  forKey: Keys.lastName)
+            ud.removeObject(forKey: Keys.legacyUserName)
+            name = carried
+        }
+        birthDate     = ud.string(forKey: Keys.birthDate).flatMap(BirthDate.init(dayString:))
         bodyState     = ud.string(forKey: Keys.bodyState)   ?? ""
         frequency     = ud.string(forKey: Keys.frequency)   ?? ""
         intentionsRaw = ud.string(forKey: Keys.intentions)  ?? ""
@@ -67,7 +97,8 @@ final class AppSettings {
     /// `hasOnboarded` deliberately survives — it describes the install, and
     /// clearing it would throw a returning user back through onboarding.
     func clearPersonalAnswers() {
-        userName      = ""
+        name          = MemberName()
+        birthDate     = nil
         intentionsRaw = ""
         bodyState     = ""
         frequency     = ""

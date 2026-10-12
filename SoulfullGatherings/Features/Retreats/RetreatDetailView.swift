@@ -114,7 +114,7 @@ struct RetreatDetailView: View {
             if auth.hasAccount { showEnquiry = true }
         }) {
             // Onboarding already asked their name — same as the shared gate.
-            AccountView(initialName: settings.userName)
+            AccountView(initialName: settings.name)
         }
         .sheet(isPresented: $showEnquiry) {
             // Seeded with what we already know so the form asks for as little
@@ -122,7 +122,8 @@ struct RetreatDetailView: View {
             // the server takes the real one from the JWT either way.
             RetreatEnquiryView(
                 retreat: retreat,
-                initialName: settings.userName,
+                initialName: settings.name,
+                initialBirthDate: settings.birthDate,
                 accountEmail: auth.email ?? ""
             )
         }

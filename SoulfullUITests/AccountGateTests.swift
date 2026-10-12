@@ -40,6 +40,20 @@ final class AccountGateTests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 10), "Account sheet never appeared")
         shot(app, "02-account-sheet-up")
 
+        // The name in its two parts, the first carried over from onboarding
+        // and the last still to give, then the date of birth.
+        let firstName = app.textFields["account-first-name"]
+        let lastName = app.textFields["account-last-name"]
+        XCTAssertTrue(firstName.exists, "No first-name field on the sign-up form")
+        XCTAssertTrue(lastName.exists, "No last-name field on the sign-up form")
+        XCTAssertEqual(firstName.value as? String, "Mara", "Onboarding's name didn't seed the first name")
+        let birthDate = app.buttons["account-dob"]
+        XCTAssertTrue(birthDate.exists, "No date of birth on the sign-up form")
+        birthDate.tap()
+        XCTAssertTrue(app.datePickers["account-dob-wheel"].waitForExistence(timeout: 5),
+                      "The date of birth didn't open its wheel")
+        shot(app, "02b-date-of-birth-wheel")
+
         close.tap()
 
         // Regression guard: CircleIconButton once hit-tested only its glyph, so

@@ -179,15 +179,18 @@ extension SupabaseService {
     /// matches the signed-in user. `stripeCustomerId` is deliberately not sent —
     /// it is owned by the Phase 2 webhook.
     ///
-    /// An empty name is left out of the write, so the row keeps the name it
-    /// has: a phone that doesn't know the member's name has nothing to say
-    /// about it. Sending it blank wiped members' names (onboarding committed
-    /// the name it hadn't asked a member for).
+    /// An empty part is left out of the write, so the row keeps the part it
+    /// has: a phone that doesn't know the member's name, or knows only the
+    /// first name onboarding asked for, has nothing to say about the rest.
+    /// Sending it blank wiped members' names (onboarding committed the name it
+    /// hadn't asked a member for). A name is cleared only by `setProfileName`.
     func upsertProfile(_ profile: Profile) async throws {
-        let name = MemberName.limited(profile.fullName)
+        let name = profile.name.limited
         let payload = ProfileUpsert(
             id: profile.id,
-            fullName: name.isEmpty ? nil : name,
+            firstName: name.first.isEmpty ? nil : name.first,
+            lastName: name.last.isEmpty ? nil : name.last,
+            dateOfBirth: profile.birthDate?.dayString,
             intentions: profile.intentions,
             bodyState: profile.bodyState,
             frequency: profile.frequency
@@ -403,16 +406,27 @@ extension SupabaseService {
         }
     }
 
-    /// Gives a profile that lost its name its name back
-    /// (`AuthManager.reconcileName`). Never called with an empty name.
-    func setProfileName(_ name: String, userID: UUID) async throws {
+    /// The member's name, both parts, and their date of birth when one is
+    /// given (the You tab's `EditNameSheet`), or a profile that lost its name
+    /// given it back (`AuthManager.reconcileName`). Never called with an
+    /// empty name; a nil date leaves the column alone. The server writes
+    /// `full_name` from the parts and refuses a date under 13 (0033).
+    func setProfileName(_ name: MemberName, birthDate: BirthDate? = nil, userID: UUID) async throws {
         struct Update: Encodable {
-            let fullName: String
-            enum CodingKeys: String, CodingKey { case fullName = "full_name" }
+            let firstName: String
+            let lastName: String
+            /// Nil leaves the key out.
+            let dateOfBirth: String?
+            enum CodingKeys: String, CodingKey {
+                case firstName   = "first_name"
+                case lastName    = "last_name"
+                case dateOfBirth = "date_of_birth"
+            }
         }
+        let name = name.limited
         try await client
             .from("profiles")
-            .update(Update(fullName: MemberName.limited(name)))
+            .update(Update(firstName: name.first, lastName: name.last, dateOfBirth: birthDate?.dayString))
             .eq("id", value: userID)
             .execute()
     }
@@ -438,7 +452,10 @@ extension SupabaseService {
 private struct ProfileRow: Decodable {
     let id: UUID
     let email: String?
+    let firstName: String?
+    let lastName: String?
     let fullName: String?
+    let dateOfBirth: String?
     let intentions: [String]?
     let bodyState: String?
     let frequency: String?
@@ -448,18 +465,31 @@ private struct ProfileRow: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id, email, intentions, frequency
+        case firstName        = "first_name"
+        case lastName         = "last_name"
         case fullName         = "full_name"
+        case dateOfBirth      = "date_of_birth"
         case bodyState        = "body_state"
         case stripeCustomerId = "stripe_customer_id"
         case avatarUrl        = "avatar_url"
         case shareActivity    = "share_activity"
     }
 
+    /// The parts (0033). A row read without them is split from the line, as
+    /// the server split the names it already had.
+    private var name: MemberName {
+        if let firstName, !firstName.isEmpty {
+            return MemberName(first: firstName, last: lastName ?? "")
+        }
+        return MemberName(line: fullName ?? "")
+    }
+
     var profile: Profile {
         Profile(
             id: id,
             email: email ?? "",
-            fullName: fullName ?? "",
+            name: name,
+            birthDate: dateOfBirth.flatMap(BirthDate.init(dayString:)),
             intentions: intentions ?? [],
             bodyState: bodyState ?? "",
             frequency: frequency ?? "",
@@ -481,16 +511,23 @@ private struct ProfileRow: Decodable {
 /// and mirrors `auth.users.email` into it on every change.
 private struct ProfileUpsert: Encodable {
     let id: UUID
-    /// Nil leaves the key out, so the upsert doesn't touch the column.
-    let fullName: String?
+    /// Nil leaves the key out, so the upsert doesn't touch the column. Never
+    /// `full_name`: the server writes it from these (0033).
+    let firstName: String?
+    let lastName: String?
+    /// `yyyy-MM-dd`; nil leaves it out, so a phone that doesn't know it never
+    /// clears it.
+    let dateOfBirth: String?
     let intentions: [String]
     let bodyState: String
     let frequency: String
 
     enum CodingKeys: String, CodingKey {
         case id, intentions, frequency
-        case fullName  = "full_name"
-        case bodyState = "body_state"
+        case firstName   = "first_name"
+        case lastName    = "last_name"
+        case dateOfBirth = "date_of_birth"
+        case bodyState   = "body_state"
     }
 }
 

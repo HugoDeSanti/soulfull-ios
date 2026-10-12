@@ -217,7 +217,7 @@ struct InstructorProfileView: View {
 
     private func faceStack(_ social: InstructorSocial) -> some View {
         let me = CommunityMember(id: auth.userID ?? InstructorDirectory.previewSelf,
-                                 displayName: settings.userName.isEmpty ? "You" : settings.userName,
+                                 displayName: settings.name.isEmpty ? "You" : settings.name.full,
                                  avatarUrl: settings.avatarUrl)
         let faces = Array(((social.followedByMe ? [me] : []) + social.faces).prefix(3))
         return HStack(spacing: -8) {

@@ -16,14 +16,14 @@ import Testing
 @Suite("Retreat application")
 struct RetreatEnquiryFormTests {
 
-    func form(name: String = "") -> RetreatEnquiryViewModel {
+    func form(name: MemberName = MemberName()) -> RetreatEnquiryViewModel {
         RetreatEnquiryViewModel(retreat: Fixtures.retreat(), name: name,
                                 accountEmail: "mara@example.com")
     }
 
     /// Every required question answered, with the padding people type.
     func completedForm() -> RetreatEnquiryViewModel {
-        let vm = form(name: "Mara")
+        let vm = form(name: MemberName(first: "Mara"))
         vm.lastName = "  Ortega "
         vm.dateOfBirth = Calendar.current.date(from: DateComponents(year: 1990, month: 5, day: 1, hour: 12))
         vm.basedIn = " Barcelona, Spain"
@@ -86,18 +86,28 @@ struct RetreatEnquiryFormTests {
     }
 
     /// Drives the discard guard: a form nobody touched closes without asking,
-    /// even though onboarding's name was filled in for them.
-    @Test func theNamePrefilledFromOnboardingIsNotSomethingToLose() {
-        let untouched = form(name: "Mara")
-        let renamed = form(name: "Mara")
-        renamed.firstName = "Marina"
-        let answered = form(name: "Mara")
+    /// even though the account's name was filled in for them.
+    @Test func theNamePrefilledFromTheAccountIsNotSomethingToLose() {
+        let untouched = form(name: MemberName(first: "Mara", last: "Ortega"))
+        let renamed = form(name: MemberName(first: "Mara", last: "Ortega"))
+        renamed.lastName = "Ortega Ruiz"
+        let answered = form(name: MemberName(first: "Mara", last: "Ortega"))
         answered.basedIn = "Lisbon"
 
         #expect(untouched.firstName == "Mara")
+        #expect(untouched.lastName == "Ortega")
         #expect(!untouched.hasContent)
         #expect(renamed.hasContent)
         #expect(answered.hasContent)
+    }
+
+    /// Onboarding asked only for the first name, so the last is theirs to give.
+    @Test func onboardingsFirstNameAloneLeavesTheLastNameToAnswer() {
+        let vm = form(name: MemberName(first: "Mara"))
+
+        #expect(vm.firstName == "Mara")
+        #expect(vm.lastName.isEmpty)
+        #expect(!vm.hasContent)
     }
 
     // MARK: - Wire format

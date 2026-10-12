@@ -2,8 +2,8 @@
 //  HomeGreetingTests.swift
 //  SoulfullTests
 //
-//  Home greets a member by their first name alone, and says "Friend" when
-//  there is no name (an Apple account that shared none).
+//  Home greets a member by their first name, all of it, and says "Friend"
+//  when there is no name (an Apple account that shared none).
 //
 
 import Testing
@@ -13,17 +13,17 @@ import Testing
 struct HomeGreetingTests {
 
     @Test(arguments: [
-        ("Hugo Santi", "Hugo"),
-        ("María José García", "María"),
-        ("  Mara   Lopez ", "Mara"),
-        ("Mara", "Mara"),
+        (MemberName(first: "Hugo", last: "Santi"), "Hugo"),
+        (MemberName(first: "María José", last: "García"), "María José"),
+        (MemberName(first: "  Mara ", last: " Lopez"), "Mara"),
+        (MemberName(first: "Mara"), "Mara"),
     ])
-    func greetsByTheFirstNameAlone(fullName: String, greeted: String) {
-        #expect(HomeViewModel.greetingName(fullName) == greeted)
+    func greetsByTheFirstName(name: MemberName, greeted: String) {
+        #expect(HomeViewModel.greetingName(name) == greeted)
     }
 
-    @Test(arguments: ["", "   "])
-    func withNoNameItSaysFriend(fullName: String) {
-        #expect(HomeViewModel.greetingName(fullName) == "Friend")
+    @Test(arguments: [MemberName(), MemberName(first: "   ", last: " ")])
+    func withNoNameItSaysFriend(name: MemberName) {
+        #expect(HomeViewModel.greetingName(name) == "Friend")
     }
 }

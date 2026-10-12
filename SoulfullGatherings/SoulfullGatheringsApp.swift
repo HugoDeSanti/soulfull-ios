@@ -24,7 +24,7 @@ struct SoulfullGatheringsApp: App {
             appState.settings.reset()
         }
         if CommandLine.arguments.contains("-uitest-onboarded") {
-            appState.settings.userName = "Mara"
+            appState.settings.name = MemberName(first: "Mara")
             appState.settings.hasOnboarded = true
         }
         #endif
@@ -123,7 +123,7 @@ struct SoulfullGatheringsApp: App {
             }
         } else if CommandLine.arguments.contains("-preview-enquiry") {
             PreviewRetreat {
-                RetreatEnquiryView(retreat: $0, initialName: "Hugo",
+                RetreatEnquiryView(retreat: $0, initialName: MemberName(first: "Hugo"),
                                    accountEmail: "hugo@soulfullgatherings.com")
             }
         } else if CommandLine.arguments.contains("-preview-confirm-email") {

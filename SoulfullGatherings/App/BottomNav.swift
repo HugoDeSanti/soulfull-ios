@@ -130,7 +130,7 @@ private struct YouNavIcon: View {
     var body: some View {
         if auth.hasAccount {
             AvatarView(avatarUrl: settings.avatarUrl,
-                       name: settings.userName,
+                       name: settings.name.full,
                        seed: auth.userID?.uuidString ?? "",
                        size: 22)
                 .padding(2)

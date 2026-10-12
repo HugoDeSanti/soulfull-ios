@@ -75,7 +75,7 @@ final class AppState {
     /// That button used to call `beginOnboarding()`, exactly like Begin, so a
     /// returning member answered four questions and landed as a guest.
     func returnFromWelcomeSignIn() {
-        switch Self.stageAfterWelcomeSignIn(hasAccount: auth.hasAccount, userName: settings.userName) {
+        switch Self.stageAfterWelcomeSignIn(hasAccount: auth.hasAccount, name: settings.name) {
         case .main?:
             // Not `finishOnboarding()`: the sign-in has just given its own
             // success haptic, and there are no new answers to push.
@@ -95,15 +95,15 @@ final class AppState {
     ///   so Home can greet them straight away.
     /// - `.onboarding`: signed in, but the profile had no name to greet them
     ///   by (rows from before 0024 can be empty), so ask.
-    static func stageAfterWelcomeSignIn(hasAccount: Bool, userName: String) -> Stage? {
+    static func stageAfterWelcomeSignIn(hasAccount: Bool, name: MemberName) -> Stage? {
         guard hasAccount else { return nil }
-        return userName.trimmingCharacters(in: .whitespaces).isEmpty ? .onboarding : .main
+        return name.isEmpty ? .onboarding : .main
     }
 
-    /// `name` is `OnboardingViewModel.nameAnswer`: nil keeps the name the
-    /// phone already has.
+    /// `name` is `OnboardingViewModel.nameAnswer`, one line: nil keeps the
+    /// name the phone already has.
     func finishOnboardingSkipping(name: String?) {
-        if let name { settings.userName = name }
+        if let name { settings.name = MemberName(line: name) }
         finishOnboarding()
     }
 
