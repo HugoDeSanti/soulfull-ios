@@ -31,6 +31,34 @@ struct Profile: Identifiable, Hashable {
     var shareActivity: Bool = true
 }
 
+/// How long a name may be: 64 characters, the limit `profiles.full_name` and
+/// `instructors.name` hold (0030). Names reach every member through the feed,
+/// and a guide's through every page they made, so they need a ceiling.
+///
+/// Counted the way Postgres's `char_length` counts, in Unicode code points,
+/// but cut only between characters: an accent or an emoji is never split, and
+/// a name that fits here is never refused there.
+enum MemberName {
+    static let maxLength = 64
+
+    /// For a text field: cut to the limit as it is typed, spaces kept (one
+    /// between two words is part of the name).
+    static func capped(_ text: String) -> String {
+        var scalars = 0
+        for index in text.indices {
+            scalars += text[index].unicodeScalars.count
+            if scalars > maxLength { return String(text[..<index]) }
+        }
+        return text
+    }
+
+    /// What is stored: trimmed, then cut to the limit.
+    static func limited(_ name: String) -> String {
+        capped(name.trimmingCharacters(in: .whitespacesAndNewlines))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 // MARK: - Bookings (retreat reservations / payments)
 
 /// A retreat reservation paid through Stripe. Written server-side by the

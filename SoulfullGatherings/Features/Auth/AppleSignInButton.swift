@@ -90,7 +90,7 @@ struct AppleSignInButton: View {
             }
             // Apple only sends the name on the very first authorization; it's nil
             // (and `formatted()` empty) every time after that.
-            let name = credential.fullName?.formatted()
+            let name = credential.fullName.map { MemberName.limited($0.formatted()) }
             // The code is opaque ASCII. Absent is survivable (see
             // `AppleCredential.authorizationCode`), so don't fail the sign-in.
             let code = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }

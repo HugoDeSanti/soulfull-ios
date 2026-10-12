@@ -35,7 +35,12 @@ final class AccountViewModel {
     enum Outcome { case signedIn, confirmationRequired, cancelled, failed }
 
     var mode: Mode
-    var fullName = ""
+    var fullName = "" {
+        didSet {
+            let capped = MemberName.capped(fullName)
+            if capped != fullName { fullName = capped }
+        }
+    }
     var email = ""
     var password = ""
     var isWorking = false
@@ -87,7 +92,7 @@ final class AccountViewModel {
     }
 
     private var trimmedEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
-    private var trimmedName: String { fullName.trimmingCharacters(in: .whitespaces) }
+    private var trimmedName: String { MemberName.limited(fullName) }
 
     var canSubmit: Bool {
         guard !isWorking else { return false }

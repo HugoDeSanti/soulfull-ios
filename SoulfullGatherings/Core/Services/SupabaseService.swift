@@ -486,10 +486,10 @@ actor SupabaseService {
     /// about it. Sending it blank wiped members' names (onboarding committed
     /// the name it hadn't asked a member for).
     func upsertProfile(_ profile: Profile) async throws {
-        let name = profile.fullName.trimmingCharacters(in: .whitespaces)
+        let name = MemberName.limited(profile.fullName)
         let payload = ProfileUpsert(
             id: profile.id,
-            fullName: name.isEmpty ? nil : profile.fullName,
+            fullName: name.isEmpty ? nil : name,
             intentions: profile.intentions,
             bodyState: profile.bodyState,
             frequency: profile.frequency
@@ -1145,7 +1145,7 @@ actor SupabaseService {
         }
         try await client
             .from("profiles")
-            .update(Update(fullName: name))
+            .update(Update(fullName: MemberName.limited(name)))
             .eq("id", value: userID)
             .execute()
     }

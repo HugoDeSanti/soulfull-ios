@@ -38,7 +38,12 @@ final class OnboardingViewModel {
     }
 
     // Working answers — committed to AppState on `complete()`.
-    var name: String = ""
+    var name: String = "" {
+        didSet {
+            let capped = MemberName.capped(name)
+            if capped != name { name = capped }
+        }
+    }
     var intentions: Set<String> = []
     var bodyState: String? = nil
     var frequency: String? = nil
@@ -59,7 +64,7 @@ final class OnboardingViewModel {
     /// pushed `full_name: ''` to a member's profile and wiped their name, so
     /// Home greeted them as "Friend".
     var nameAnswer: String? {
-        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let trimmed = MemberName.limited(name)
         return trimmed.isEmpty ? nil : trimmed
     }
 

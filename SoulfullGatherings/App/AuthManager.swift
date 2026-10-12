@@ -175,7 +175,13 @@ final class AuthManager {
             case .openGuest:
                 // First launch, a purged guest, a refresh token the server
                 // refused: there is nothing to keep.
-                forgetMember()
+                if forgetMember() {
+                    // A member's session ended from elsewhere (their account
+                    // deleted, the session revoked): the same as signing out
+                    // here, so the answers that describe them go too, or the
+                    // guest after them is greeted by their name.
+                    settings.clearPersonalAnswers()
+                }
                 await signInAnonymously()
             case .keepSession(let failure):
                 Log.auth.error("Session restore failed, keeping the stored session: \(error.localizedDescription)")
@@ -228,7 +234,7 @@ final class AuthManager {
     /// letting `refreshConfirmationState` notice.
     func createAccount(email: String, password: String, fullName: String) async throws {
         await settleSessionCheck()
-        let trimmed = fullName.trimmingCharacters(in: .whitespaces)
+        let trimmed = MemberName.limited(fullName)
         let metadata: [String: AnyJSON]? = trimmed.isEmpty ? nil : ["full_name": .string(trimmed)]
         // Upgrade in place only when there's a live anonymous session to upgrade.
         // If there's no session (e.g. anonymous sign-in is unavailable), fall back
@@ -624,7 +630,11 @@ final class AuthManager {
         // While the session is still valid: this phone stops being theirs.
         await PushRegistrar.shared.forgetDevice()
         do {
-            try await supabase.auth.signOut()
+            // This device only. The SDK's default, `.global`, revoked the
+            // member's sessions everywhere: signing out of the phone also
+            // signed them out of the iPad, which came back next launch as a
+            // stranger.
+            try await supabase.auth.signOut(scope: .local)
         } catch {
             Log.auth.error("Sign-out failed: \(error.localizedDescription)")
         }
@@ -677,9 +687,12 @@ final class AuthManager {
     /// for `signInAnonymously`, and when it failed (offline, or its rate
     /// limit) the member stayed: still not anonymous, their private data still
     /// in scope, their journal entry still open in a tab nobody rebuilt.
-    private func forgetMember() {
-        guard !isAnonymous else { return }
+    /// Returns whether there was a member to forget.
+    @discardableResult
+    private func forgetMember() -> Bool {
+        guard !isAnonymous else { return false }
         apply(nil)
+        return true
     }
 
     private func signInAnonymously() async {
