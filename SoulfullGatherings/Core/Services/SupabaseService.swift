@@ -609,11 +609,11 @@ actor SupabaseService {
             .limit(limit)
             .execute()
             .value
-        return rows.map(\.progress)
+        return rows.compactMap(\.progress)
     }
 
     /// Every sitting this member has recorded — the raw ledger rows rather than
-    /// the per-practice aggregate — reduced to the four columns the You tab's
+    /// the per-practice aggregate — reduced to the columns the You tab's
     /// numbers need.
     ///
     /// The aggregate can't answer these questions. `practice_progress` keeps
@@ -633,7 +633,7 @@ actor SupabaseService {
             let from = page * pageSize
             let rows: [PracticePlayRecordRow] = try await client
                 .from("practice_plays")
-                .select("client_event_id, content_kind, seconds_played, completed, started_at")
+                .select("client_event_id, content_kind, seconds_played, completed, started_at, completed_at")
                 .eq("user_id", value: userID)
                 // A total order, so a row can't straddle two pages and be
                 // counted twice or not at all.
@@ -1598,9 +1598,16 @@ private struct PracticeProgressRow: Decodable {
         case lastCompletedAt    = "last_completed_at"
     }
 
-    var progress: PracticeProgress {
-        PracticeProgress(
-            kind: PracticeContentKind(rawValue: contentKind) ?? .session,
+    /// Nil for a kind this build doesn't know. It used to fall back to
+    /// `.session`, so once a newer library shipped, an older build read that
+    /// library's #4 and Breathwork's #4 as the same practice — two rows with
+    /// one key, which `PracticeProgressStore` built its map from and trapped
+    /// on, every launch, until the member updated. A resume card for a
+    /// practice this build can't open has nowhere to go anyway.
+    var progress: PracticeProgress? {
+        guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
+        return PracticeProgress(
+            kind: kind,
             contentID: contentId,
             title: contentTitle,
             creator: creator,
@@ -1619,14 +1626,14 @@ private struct PracticeProgressRow: Decodable {
     }
 }
 
-/// Read model for the four `practice_plays` columns `fetchPracticeLedger`
-/// selects.
+/// Read model for the `practice_plays` columns `fetchPracticeLedger` selects.
 private struct PracticePlayRecordRow: Decodable {
     let clientEventId: UUID
     let contentKind: String
     let secondsPlayed: Int
     let completed: Bool
     let startedAt: Date
+    let completedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case completed
@@ -1634,18 +1641,17 @@ private struct PracticePlayRecordRow: Decodable {
         case contentKind   = "content_kind"
         case secondsPlayed = "seconds_played"
         case startedAt     = "started_at"
+        case completedAt   = "completed_at"
     }
 
-    /// Nil for a kind this build doesn't know. Unlike `PracticeProgressRow`,
-    /// which falls back to `.session` so a resume card still has somewhere to
-    /// go, a stat must not guess: counting an unknown kind as a class would
-    /// inflate the number, and the check constraint means it can't happen
-    /// today anyway.
+    /// Nil for a kind this build doesn't know, as in `PracticeProgressRow`: a
+    /// stat must not guess, and counting an unknown kind as a class would
+    /// inflate the number.
     var record: PracticePlayRecord? {
         guard let kind = PracticeContentKind(rawValue: contentKind) else { return nil }
         return PracticePlayRecord(eventID: clientEventId, kind: kind,
                                   secondsPlayed: secondsPlayed, completed: completed,
-                                  startedAt: startedAt)
+                                  startedAt: startedAt, completedAt: completedAt)
     }
 }
 
@@ -2001,5 +2007,15 @@ extension Error {
     /// `enforce_friend_request_cooldown`, which raises exactly this message).
     var isFriendRequestCooldown: Bool {
         (self as? PostgrestError)?.message == "friend_request_cooldown"
+    }
+
+    /// The database itself refused the request, with a SQLSTATE (23503 not a
+    /// practice, 42501 row-level security, …): asked again, it says the same.
+    /// Not offline, a timeout or the gateway, and not PostgREST's own `PGRST…`
+    /// codes, which include failing to reach the database and an expired
+    /// token — those can pass next time.
+    var isDatabaseRefusal: Bool {
+        guard let code = (self as? PostgrestError)?.code else { return false }
+        return !code.hasPrefix("PGRST")
     }
 }

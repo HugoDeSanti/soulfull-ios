@@ -110,6 +110,23 @@ final class LocalUserStore {
         }
     }
 
+    /// A value in one named member's namespace, whoever is in scope now. For
+    /// what must stay with the member who made it across a session change: a
+    /// practice write that couldn't land is retried for that member only, and
+    /// one that fails just after sign-out still belongs to them.
+    func string(forKey suffix: String, member: UUID) -> String? {
+        defaults.string(forKey: key(suffix, scope: member.uuidString))
+    }
+
+    func set(_ value: String?, forKey suffix: String, member: UUID) {
+        let stored = key(suffix, scope: member.uuidString)
+        if let value, !value.isEmpty {
+            defaults.set(value, forKey: stored)
+        } else {
+            defaults.removeObject(forKey: stored)
+        }
+    }
+
     func dictionary(forKey suffix: String) -> [String: Any]? {
         guard !scope.isEmpty else { return nil }
         return defaults.dictionary(forKey: key(suffix))
@@ -203,7 +220,9 @@ final class LocalUserStore {
     // MARK: - Private
 
     /// `sg.u.<scope>.<suffix>`
-    private func key(_ suffix: String) -> String { "\(Self.root)\(scope).\(suffix)" }
+    private func key(_ suffix: String) -> String { key(suffix, scope: scope) }
+
+    private func key(_ suffix: String, scope: String) -> String { "\(Self.root)\(scope).\(suffix)" }
 
     private func setScope(_ id: String, isAnonymous: Bool) {
         scope = id

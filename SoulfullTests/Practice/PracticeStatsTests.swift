@@ -130,6 +130,22 @@ struct PracticeStatsTests {
         #expect(stats([justAfterMidnight]).keptToday)
     }
 
+    /// A practice day is a day something was FINISHED: a sleep meditation
+    /// begun at 23:50 and finished at 00:20 keeps today, not yesterday. It
+    /// used to be bucketed by when it started.
+    @Test func aSittingBegunLastNightAndFinishedTodayKeepsToday() {
+        let overMidnight = PracticePlayRecord(
+            eventID: UUID(), kind: .session, secondsPlayed: 1_800, completed: true,
+            startedAt: calendar.at(2026, 9, 15, 23, 50),
+            completedAt: calendar.at(2026, 9, 16, 0, 20))
+
+        let result = stats([overMidnight])
+
+        #expect(result.keptToday)
+        #expect(result.practicedToday)
+        #expect(result.currentStreak == 1)
+    }
+
     /// São Paulo skipped midnight on 4 November 2018 (00:00 → 01:00), so that
     /// day starts at 01:00. A run across it must not split — stepping back
     /// 86,400 seconds from 5 November lands on 3 November at 23:00.

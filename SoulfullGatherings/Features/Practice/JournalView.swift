@@ -223,9 +223,12 @@ struct JournalDetailView: View {
         }
         // Records that this prompt was opened, and for how long — never the
         // reflection itself, which stays on the device. A prompt counts as done
-        // once something has been written in this visit.
+        // once something has been written in this sitting: coming back to it
+        // on a later day starts a new one, measured from what is there now.
         .practiceActivity(.journal(prompt), completedWhen: {
             JournalCompletion.isDone(entry: entry, foundEntry: foundEntry ?? "")
+        }, onNewSitting: {
+            foundEntry = entry
         })
         .toolbar {
             if writing {

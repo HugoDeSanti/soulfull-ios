@@ -67,6 +67,9 @@ struct SoulfullGatheringsApp: App {
                         if appState.auth.needsRetry {
                             Task { await appState.auth.retry() }
                         }
+                        // Practice that couldn't reach the server (on a
+                        // plane, say) is sent as soon as the app is back.
+                        Task { await PracticeProgressStore.shared.retryPending() }
                     }
                     .onReceive(NotificationCenter.default.publisher(
                         for: UIApplication.significantTimeChangeNotification)) { _ in

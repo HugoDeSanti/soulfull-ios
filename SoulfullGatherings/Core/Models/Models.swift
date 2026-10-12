@@ -901,9 +901,13 @@ struct PracticePlayRecord: Hashable, Sendable {
     let kind: PracticeContentKind
     let secondsPlayed: Int
     let completed: Bool
-    /// Server-stamped. Which local calendar day it falls on is what a streak
-    /// counts.
+    /// Server-stamped.
     let startedAt: Date
+    /// Server-stamped, the moment `completed` latched (0029). Which local
+    /// calendar day it falls on is what a streak counts: a practice day is a
+    /// day something was *finished*, and a sleep meditation begun at 23:50
+    /// and finished at 00:20 was finished today. Nil while unfinished.
+    var completedAt: Date? = nil
 }
 
 /// One playback / reading session, addressed by a client-generated `eventID` so

@@ -37,6 +37,10 @@ struct PracticeProgressBackend {
     var recordPlay: @MainActor (_ play: PracticePlay, _ userID: UUID, _ secondsPlayed: Int,
                                 _ positionSeconds: Int, _ completed: Bool) async throws -> Void
     var now: @MainActor () -> Date
+    /// Where a member's writes that didn't land wait between launches
+    /// (`PendingPlayWrites`, as JSON). Nothing is kept by default.
+    var loadPending: @MainActor (_ member: UUID) -> String? = { _ in nil }
+    var savePending: @MainActor (_ member: UUID, _ json: String?) -> Void = { _, _ in }
 
     /// Computed rather than stored, so there is no shared global to make
     /// `Sendable`.
@@ -51,7 +55,9 @@ struct PracticeProgressBackend {
                                                                     positionSeconds: position,
                                                                     completed: completed)
             },
-            now: { Date.now }
+            now: { Date.now },
+            loadPending: { LocalUserStore.shared.string(forKey: PendingPlayWrites.storageKey, member: $0) },
+            savePending: { LocalUserStore.shared.set($1, forKey: PendingPlayWrites.storageKey, member: $0) }
         )
     }
 }
@@ -99,6 +105,8 @@ final class PracticeProgressStore {
     /// deliberate refresh.
     func refresh(force: Bool = false) async {
         guard let userID else { clear(); return }
+        // First, so what reaches the server now is in what is read back.
+        await retryPending()
         async let progressLoad: Void = refreshProgress(for: userID, force: force)
         async let ledgerLoad: Void = refreshLedger(for: userID, force: false)
         _ = await (progressLoad, ledgerLoad)
@@ -109,6 +117,7 @@ final class PracticeProgressStore {
     /// invisible until the next launch.
     func reloadAll() async {
         guard let userID else { clear(); return }
+        await retryPending()
         async let progressLoad: Void = refreshProgress(for: userID, force: true)
         async let ledgerLoad: Void = refreshLedger(for: userID, force: true)
         _ = await (progressLoad, ledgerLoad)
@@ -124,7 +133,11 @@ final class PracticeProgressStore {
             // one member's Continue card must not land on the next person's
             // Home.
             guard self.userID == userID else { return }
-            progress = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+            // Never `uniqueKeysWithValues`, which traps on a repeated key: a
+            // read that ever answered with one would crash every launch.
+            progress = Dictionary(rows.map { ($0.id, $0) }) { first, second in
+                first.lastPlayedAt >= second.lastPlayedAt ? first : second
+            }
             loadedFor = userID
         } catch where error.isCancellation {
         } catch {
@@ -223,8 +236,11 @@ final class PracticeProgressStore {
     /// Records consumption against the ledger and folds the result into the
     /// local map so the UI updates without a round trip.
     ///
-    /// Never throws: a lost heartbeat costs a few seconds of attribution, and
-    /// nothing about playback should stall or fail because a write did.
+    /// Never throws: nothing about playback should stall or fail because a
+    /// write did. A write that can't land now waits on the phone and is sent
+    /// again (`PendingPlayWrites`): it used to be logged and dropped, so a
+    /// journal written on a plane showed as done, then left the streak and
+    /// history at the next launch and never credited its guide.
     /// - Parameter owner: the member this play belongs to, captured when the
     ///   practice was opened. Reading `userID` here instead meant a sign-out
     ///   mid-playback attributed the final heartbeat to whoever the session
@@ -237,11 +253,75 @@ final class PracticeProgressStore {
         guard let userID, let owner, owner == userID else { return }
         applyLocally(play, secondsPlayed: secondsPlayed, positionSeconds: positionSeconds, completed: completed)
         applyToLedger(play, secondsPlayed: secondsPlayed, completed: completed)
-        do {
-            try await backend.recordPlay(play, userID, secondsPlayed, positionSeconds, completed)
-        } catch {
-            Log.data.error("Couldn't record practice play: \(error.localizedDescription)")
+        // Anything of this play's still waiting rides along: a finish that
+        // failed to land is carried by the next heartbeat.
+        let write = pending(for: owner).merged(
+            PendingPlayWrites.Write(play, owner: owner, secondsPlayed: secondsPlayed,
+                                    positionSeconds: positionSeconds, completed: completed,
+                                    since: backend.now()))
+        // A write that landed means the connection is back for the rest too.
+        if await send(write) { await retryPending() }
+    }
+
+    /// Sends what is waiting for this member, oldest first, stopping at the
+    /// first that still can't land. Called on every `refresh`, after a write
+    /// lands, and when the app comes back to the foreground.
+    func retryPending() async {
+        guard let userID, !isRetryingPending else { return }
+        isRetryingPending = true
+        defer { isRetryingPending = false }
+        var queue = pending(for: userID)
+        let due = queue.due(for: userID, now: backend.now())
+        savePending(queue, for: userID)
+        for write in due {
+            guard self.userID == userID, await send(write) else { return }
         }
+    }
+
+    /// Hands one write to the ledger. False when it couldn't land and is
+    /// waiting — the rest won't land either, so a retry stops there.
+    private func send(_ write: PendingPlayWrites.Write) async -> Bool {
+        guard let play = write.play else {
+            updatePending(for: write.owner) { $0.remove(write.eventID) }
+            return true
+        }
+        do {
+            try await backend.recordPlay(play, write.owner, write.secondsPlayed,
+                                         write.positionSeconds, write.completed)
+            updatePending(for: write.owner) { $0.settle(write) }
+            return true
+        } catch where PendingPlayWrites.isWorthRetrying(error) {
+            Log.data.error("Couldn't record practice play, will retry: \(error.localizedDescription)")
+            updatePending(for: write.owner) { $0.hold(write) }
+            return false
+        } catch {
+            // The database itself said no (not a practice, a closed row), and
+            // it will say so again.
+            Log.data.error("Practice play refused: \(error.localizedDescription)")
+            updatePending(for: write.owner) { $0.remove(write.eventID) }
+            return true
+        }
+    }
+
+    @ObservationIgnored private var isRetryingPending = false
+
+    private func pending(for member: UUID) -> PendingPlayWrites {
+        guard let json = backend.loadPending(member),
+              let queue = try? JSONDecoder().decode(PendingPlayWrites.self, from: Data(json.utf8))
+        else { return PendingPlayWrites() }
+        return queue
+    }
+
+    private func savePending(_ queue: PendingPlayWrites, for member: UUID) {
+        let json = queue.isEmpty ? nil
+            : (try? JSONEncoder().encode(queue)).flatMap { String(data: $0, encoding: .utf8) }
+        backend.savePending(member, json)
+    }
+
+    private func updatePending(for member: UUID, _ change: (inout PendingPlayWrites) -> Void) {
+        var queue = pending(for: member)
+        change(&queue)
+        savePending(queue, for: member)
     }
 
     /// Optimistic local mirror of what the server will compute. Deliberately
@@ -305,13 +385,126 @@ final class PracticeProgressStore {
         let existing = ledger[play.eventID]
         var seconds = max(secondsPlayed, existing?.secondsPlayed ?? 0)
         if let duration = play.durationSeconds { seconds = min(seconds, duration) }
+        let now = backend.now()
         ledger[play.eventID] = PracticePlayRecord(
             eventID: play.eventID,
             kind: play.kind,
             secondsPlayed: seconds,
             completed: completed || (existing?.completed ?? false),
-            startedAt: existing?.startedAt ?? backend.now()
+            startedAt: existing?.startedAt ?? now,
+            // Stamped once, when it first finishes — as the server stamps it.
+            completedAt: existing?.completedAt ?? (completed ? now : nil)
         )
+    }
+}
+
+// MARK: - Writes waiting to land
+
+/// Ledger writes that didn't reach the server, kept on the phone until they
+/// do — one per play, the latest of its heartbeats with anything earlier
+/// folded in. Stored in the member's own namespace (`LocalUserStore`), so
+/// deleting the account deletes them and another member never sends them.
+///
+/// A write waits a day at most. The server closes a play a day after it
+/// begins (0029), and dates a play it has never seen by when it arrives: past
+/// a day, a practice would land on the wrong day, or in a month already paid.
+struct PendingPlayWrites: Codable, Equatable {
+
+    static let storageKey = "practice.pendingPlays"
+    static let lifetime: TimeInterval = 24 * 3600
+    /// Bounded, so a phone offline for a long time can't grow it without end.
+    static let capacity = 100
+
+    struct Write: Codable, Equatable {
+        let eventID: UUID
+        let owner: UUID
+        /// Raw, so a write keeps decoding whatever the next build calls things.
+        let kind: String
+        let contentID: Int
+        let title: String
+        let creator: String?
+        let category: String?
+        let durationSeconds: Int?
+        var secondsPlayed: Int
+        var positionSeconds: Int
+        var completed: Bool
+        /// When this play first failed to land.
+        var since: Date
+
+        init(_ play: PracticePlay, owner: UUID, secondsPlayed: Int,
+             positionSeconds: Int, completed: Bool, since: Date) {
+            eventID = play.eventID
+            self.owner = owner
+            kind = play.kind.rawValue
+            contentID = play.contentID
+            title = play.title
+            creator = play.creator
+            category = play.category?.rawValue
+            durationSeconds = play.durationSeconds
+            self.secondsPlayed = secondsPlayed
+            self.positionSeconds = positionSeconds
+            self.completed = completed
+            self.since = since
+        }
+
+        var play: PracticePlay? {
+            PracticeContentKind(rawValue: kind).map { kind in
+                PracticePlay(kind: kind, contentID: contentID, title: title, creator: creator,
+                             category: category.flatMap(PracticeCategory.init(rawValue:)),
+                             durationSeconds: durationSeconds, eventID: eventID)
+            }
+        }
+    }
+
+    private(set) var writes: [UUID: Write] = [:]
+
+    var isEmpty: Bool { writes.isEmpty }
+
+    /// `write`, with what is still waiting for the same play folded in: the
+    /// most seconds, and a finish that never un-finishes — as the server keeps
+    /// them. The position is the newest.
+    func merged(_ write: Write) -> Write {
+        guard let waiting = writes[write.eventID] else { return write }
+        var next = write
+        next.secondsPlayed = max(write.secondsPlayed, waiting.secondsPlayed)
+        next.completed = write.completed || waiting.completed
+        next.since = min(write.since, waiting.since)
+        return next
+    }
+
+    /// Keeps a write that couldn't land, dropping the oldest past `capacity`.
+    mutating func hold(_ write: Write) {
+        writes[write.eventID] = merged(write)
+        while writes.count > Self.capacity,
+              let oldest = writes.values.min(by: { $0.since < $1.since }) {
+            writes[oldest.eventID] = nil
+        }
+    }
+
+    /// The server has `sent`. What was waiting for that play goes, unless it
+    /// carried more than `sent` did.
+    mutating func settle(_ sent: Write) {
+        guard let waiting = writes[sent.eventID] else { return }
+        if waiting.secondsPlayed <= sent.secondsPlayed, sent.completed || !waiting.completed {
+            writes[sent.eventID] = nil
+        }
+    }
+
+    mutating func remove(_ eventID: UUID) {
+        writes[eventID] = nil
+    }
+
+    /// What is waiting for `owner`, oldest first. Anything past `lifetime` is
+    /// dropped on the way.
+    mutating func due(for owner: UUID, now: Date) -> [Write] {
+        writes = writes.filter { now.timeIntervalSince($0.value.since) < Self.lifetime }
+        return writes.values.filter { $0.owner == owner }.sorted { $0.since < $1.since }
+    }
+
+    /// Whether a write that failed this way can still land: anything but the
+    /// database refusing it, which it would do again (`isDatabaseRefusal`).
+    static func isWorthRetrying(_ error: any Error) -> Bool {
+        !error.isDatabaseRefusal
     }
 }
 
@@ -356,9 +549,13 @@ struct PracticeStats: Equatable {
         var classes = 0
         var seconds = 0
         for play in plays {
-            let day = calendar.startOfDay(for: play.startedAt)
-            if day == today { touchedToday = true }
-            if play.completed { days.insert(day) }
+            // A practice day is the day it was FINISHED: a sitting begun before
+            // midnight and finished after it keeps today, not yesterday. Rows
+            // from before 0029 have no finish time, and their start stands in.
+            let started = calendar.startOfDay(for: play.startedAt)
+            let finished = play.completedAt.map(calendar.startOfDay(for:)) ?? started
+            if started == today || (play.completed && finished == today) { touchedToday = true }
+            if play.completed { days.insert(finished) }
             guard play.kind.countsAsClass else { continue }
             if play.completed { classes += 1 }
             seconds += max(0, play.secondsPlayed)

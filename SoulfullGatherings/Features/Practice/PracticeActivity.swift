@@ -204,7 +204,7 @@ private struct PracticeActivityModifier: ViewModifier {
     /// `PracticePlay` — and a fresh event id — is minted on every re-render.
     /// Journal detail re-renders on every keystroke, so using it would scatter
     /// one sitting across many ledger rows and bill a creator for the sum of
-    /// them. `eventID` below is the stable one.
+    /// them. `WrittenSitting.eventID` is the stable one.
     let play: PracticePlay
     /// Off when something else is already measuring this content — a written
     /// practice that also carries media reports through `PlaybackReporter`, and
@@ -214,20 +214,18 @@ private struct PracticeActivityModifier: ViewModifier {
     /// can answer from its own state — a journal reflection with words in it,
     /// say. When `nil`, dwell alone decides.
     let completedWhen: (() -> Bool)?
+    /// A new sitting began on this same screen (see `WrittenSitting`): what
+    /// "done in this sitting" is measured from starts again.
+    let onNewSitting: (() -> Void)?
 
-    /// Long enough to mean the screen was read rather than glanced at.
-    private static let dwellForCompletion: TimeInterval = 45
     private static let heartbeat: Duration = .seconds(30)
 
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Foreground, on-screen time for this visit — see `DwellClock`.
-    @State private var clock = DwellClock()
-    @State private var reported: TimeInterval = 0
-    /// One id for this screen's whole visit, so every heartbeat upserts the
-    /// same ledger row instead of adding another. Created once per view
-    /// identity, which is exactly what `@State` guarantees.
-    @State private var eventID = UUID()
+    /// This visit's sitting: its ledger row, its clock, and what has been
+    /// written there. Created once per view identity, which is exactly what
+    /// `@State` guarantees.
+    @State private var sitting = WrittenSitting()
     /// Whose sitting this is, fixed on appear — see `PlaybackReporter.owner`.
     @State private var owner: UUID?
 
@@ -238,7 +236,9 @@ private struct PracticeActivityModifier: ViewModifier {
                 // ("Your guide", say). The visit carries on from where it was:
                 // restarting the clock here meant a recipe left for its guide's
                 // page and returned to could never reach its 45 seconds.
-                clock.appeared(at: .now, foreground: scenePhase == .active)
+                if sitting.appeared(at: .now, foreground: scenePhase == .active, calendar: .current) {
+                    onNewSitting?()
+                }
                 if owner == nil { owner = PracticeProgressStore.shared.currentUserID }
             }
             .task {
@@ -253,7 +253,7 @@ private struct PracticeActivityModifier: ViewModifier {
             // Bank the sitting and stop the clock: time spent on a screen
             // pushed over this one isn't time on this one.
             .onDisappear {
-                clock.disappeared(at: .now)
+                sitting.disappeared(at: .now)
                 write()
             }
             // `onDisappear` does NOT fire when the app is backgrounded, so
@@ -265,30 +265,113 @@ private struct PracticeActivityModifier: ViewModifier {
             // monotonic server-side, so a restart would silently discard the
             // shorter sitting).
             .onChange(of: scenePhase) { _, phase in
-                clock.sceneChanged(active: phase == .active, at: .now)
+                if sitting.sceneChanged(active: phase == .active, at: .now, calendar: .current) {
+                    onNewSitting?()
+                }
                 if phase != .active { write() }
             }
     }
 
     private func write() {
-        guard enabled, clock.hasStarted else { return }
-        let dwell = clock.dwell(at: .now)
-        guard dwell >= 5, dwell > reported else { return }
-        reported = dwell
-        let completed = completedWhen?() ?? (dwell >= Self.dwellForCompletion)
-        let seconds = Int(dwell.rounded())
-        let sitting = PracticePlay(kind: play.kind, contentID: play.contentID,
-                                   title: play.title, creator: play.creator,
-                                   category: play.category,
-                                   durationSeconds: play.durationSeconds,
-                                   eventID: eventID)
+        guard enabled,
+              let report = sitting.report(at: .now, isComplete: { dwell in
+                  completedWhen?() ?? (dwell >= WrittenSitting.dwellForCompletion)
+              })
+        else { return }
+        let entry = PracticePlay(kind: play.kind, contentID: play.contentID,
+                                 title: play.title, creator: play.creator,
+                                 category: play.category,
+                                 durationSeconds: play.durationSeconds,
+                                 eventID: sitting.eventID)
         Task { [owner] in
-            await PracticeProgressStore.shared.record(sitting,
+            await PracticeProgressStore.shared.record(entry,
                                                       owner: owner,
-                                                      secondsPlayed: seconds,
-                                                      positionSeconds: seconds,
-                                                      completed: completed)
+                                                      secondsPlayed: report.seconds,
+                                                      positionSeconds: report.seconds,
+                                                      completed: report.completed)
         }
+    }
+}
+
+/// One visit's record of a written practice, as the ledger sees it: the play
+/// row its heartbeats land on, its `DwellClock`, and what has already been
+/// written there. Kept apart from SwiftUI so it can be tested
+/// (`SoulfullTests/WrittenSittingTests`).
+///
+/// **A sitting belongs to the day it began.** Tabs keep their screens, so a
+/// prompt left open on one can be come back to the next morning, and writing
+/// there landed on yesterday's row: past a day the server had closed it and
+/// kept nothing (0029), and inside a day it counted yesterday. Coming back to
+/// the screen on a later local day now starts a new sitting — a new row and a
+/// fresh clock — and says so, so the screen can reset what it measures "done"
+/// from. A sitting that simply runs on past midnight stays one sitting.
+struct WrittenSitting {
+
+    /// Long enough to mean the screen was read rather than glanced at.
+    static let dwellForCompletion: TimeInterval = 45
+    /// Below this nothing is written: a glance is not a sitting.
+    static let minimumDwell: TimeInterval = 5
+
+    private(set) var eventID = UUID()
+    private(set) var clock = DwellClock()
+    /// The local day this sitting's clock first ran on.
+    private var day: Date?
+    private var reportedSeconds: TimeInterval = 0
+    private var reportedComplete = false
+
+    /// The screen is on top. True when this begins a new sitting.
+    mutating func appeared(at now: Date, foreground: Bool, calendar: Calendar) -> Bool {
+        let wasRunning = clock.isRunning
+        clock.appeared(at: now, foreground: foreground)
+        return clockStarted(wasRunning: wasRunning, at: now, calendar: calendar)
+    }
+
+    /// Another screen was pushed over this one, or it was popped.
+    mutating func disappeared(at now: Date) {
+        clock.disappeared(at: now)
+    }
+
+    /// The scene went to or from the foreground. True when this begins a new
+    /// sitting.
+    mutating func sceneChanged(active: Bool, at now: Date, calendar: Calendar) -> Bool {
+        let wasRunning = clock.isRunning
+        clock.sceneChanged(active: active, at: now)
+        return clockStarted(wasRunning: wasRunning, at: now, calendar: calendar)
+    }
+
+    /// What to write now, or nil when the ledger already has it all.
+    ///
+    /// More time, or a finish not yet written. Time alone stops growing at the
+    /// cap (`DwellClock.maxDwell`), and gating on it meant a reflection first
+    /// written after half an hour with the prompt open never counted as done.
+    mutating func report(at now: Date,
+                         isComplete: (TimeInterval) -> Bool) -> (seconds: Int, completed: Bool)? {
+        guard clock.hasStarted else { return nil }
+        let dwell = clock.dwell(at: now)
+        guard dwell >= Self.minimumDwell else { return nil }
+        let completed = isComplete(dwell)
+        guard dwell > reportedSeconds || (completed && !reportedComplete) else { return nil }
+        reportedSeconds = dwell
+        reportedComplete = reportedComplete || completed
+        return (Int(dwell.rounded()), completed)
+    }
+
+    /// The clock may just have started running again. On a later local day
+    /// than this sitting began, that begins a new one.
+    private mutating func clockStarted(wasRunning: Bool, at now: Date, calendar: Calendar) -> Bool {
+        guard !wasRunning, clock.isRunning else { return false }
+        let today = calendar.startOfDay(for: now)
+        guard let day else {
+            day = today
+            return false
+        }
+        guard day != today else { return false }
+        clock.restart(at: now)
+        eventID = UUID()
+        reportedSeconds = 0
+        reportedComplete = false
+        self.day = today
+        return true
     }
 }
 
@@ -321,6 +404,9 @@ struct DwellClock {
     /// write.
     var hasStarted: Bool { runningSince != nil || banked > 0 }
 
+    /// On top, in the foreground, and counting.
+    var isRunning: Bool { runningSince != nil }
+
     /// The screen is on top. Picks up where the visit left off; a second
     /// `appeared` without a `disappeared` between them changes nothing.
     mutating func appeared(at now: Date, foreground: Bool) {
@@ -341,6 +427,13 @@ struct DwellClock {
     mutating func sceneChanged(active: Bool, at now: Date) {
         foreground = active
         settle(at: now)
+    }
+
+    /// Starts the count again from `now`, as a new visit: nothing banked, and
+    /// running only if the screen is on top in the foreground.
+    mutating func restart(at now: Date) {
+        banked = 0
+        runningSince = onScreen && foreground ? now : nil
     }
 
     /// Foreground time on screen across every sitting of this visit, capped.
@@ -366,7 +459,10 @@ extension View {
     /// through `PlaybackReporter`.
     func practiceActivity(_ play: PracticePlay,
                           enabled: Bool = true,
-                          completedWhen: (() -> Bool)? = nil) -> some View {
-        modifier(PracticeActivityModifier(play: play, enabled: enabled, completedWhen: completedWhen))
+                          completedWhen: (() -> Bool)? = nil,
+                          onNewSitting: (() -> Void)? = nil) -> some View {
+        modifier(PracticeActivityModifier(play: play, enabled: enabled,
+                                          completedWhen: completedWhen,
+                                          onNewSitting: onNewSitting))
     }
 }
