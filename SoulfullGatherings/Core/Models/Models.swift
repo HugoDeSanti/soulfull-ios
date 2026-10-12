@@ -474,8 +474,10 @@ struct Program: Identifiable, Hashable {
     /// A program with no authored days cannot be enrolled in.
     var isStartable: Bool { !authoredDays.isEmpty }
 
+    /// Hashed by id, but EQUAL only when everything is: `==` used to compare
+    /// ids alone, so a program re-authored under a member read as unchanged
+    /// and a page handed the new copy could keep drawing the old one.
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: Program, rhs: Program) -> Bool { lhs.id == rhs.id }
 }
 
 /// The hand-authored `programs.curriculum` document.

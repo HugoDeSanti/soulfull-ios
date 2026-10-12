@@ -107,4 +107,43 @@ struct ProgramCatalogLoadTests {
         #expect(!vm.hasLoaded)
         #expect(vm.loadFailure == nil)
     }
+
+    // MARK: - Pages draw the catalog's copy
+
+    func authored(_ title: String) -> Program {
+        Program(id: "finding-ground", title: "Finding Ground", lead: "Alma Guerra", days: 1,
+                imageUrl: "",
+                curriculum: ProgramCurriculum(days: [
+                    ProgramDay(day: 1, title: title,
+                               activities: [ProgramActivity(kind: .journal, contentID: 1)])
+                ]))
+    }
+
+    /// The bug: a day page drew the copy it was pushed with, and judged the
+    /// day against it, after the curriculum had been re-authored.
+    @Test func aPushedProgramIsDrawnFromTheCatalogsCurrentCopy() async {
+        let pushed = authored("Arriving")
+        let reauthored = authored("Landing")
+        let vm = viewModel(.success([reauthored]))
+        await vm.load()
+
+        let drawn = vm.current(pushed)
+
+        #expect(drawn.authoredDays.first?.title == "Landing")
+    }
+
+    @Test func aProgramTheCatalogNoLongerListsIsDrawnAsPushed() async {
+        let pushed = authored("Arriving")
+        let vm = viewModel(.success([]))
+        await vm.load()
+
+        #expect(vm.current(pushed) == pushed)
+    }
+
+    /// `==` compared ids alone, so the re-authored copy read as unchanged and
+    /// SwiftUI could keep a page drawn from the old one.
+    @Test func aReauthoredProgramIsNotEqualToTheOldCopy() {
+        #expect(authored("Arriving") != authored("Landing"))
+        #expect(authored("Arriving").hashValue == authored("Landing").hashValue)
+    }
 }

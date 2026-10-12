@@ -322,9 +322,18 @@ final class AuthManager {
     @discardableResult
     func refreshConfirmationState() async -> Bool {
         do {
+            let asked = supabase.auth.currentUser?.id
             // GET /user is a fresh read and doesn't rotate the refresh token,
             // so it's cheap enough to poll.
             let user = try await supabase.auth.user()
+            // A sign-in can land while this reads (the launch check on a slow
+            // connection, the watch below), and applying the guest it answered
+            // for put the guest back over the member who had just signed in.
+            guard ConfirmationReadDecision.applies(answeredFor: user.id, askedAs: asked,
+                                                   now: supabase.auth.currentUser?.id) else {
+                Log.auth.info("Confirmation read answered for a session that has since changed; ignored")
+                return hasAccount
+            }
             let confirmed = !(user.email?.isEmpty ?? true) && user.emailConfirmedAt != nil
             if confirmed, supabase.auth.currentUser?.isAnonymous == true {
                 // The access token still claims `is_anonymous` — rotate it so
@@ -356,10 +365,22 @@ final class AuthManager {
     /// `AuthManager` is app-lifetime, so the watch now survives that, and the
     /// sheet's `onChange(of: auth.hasAccount)` closes itself when it fires.
     private var confirmationWatch: Task<Void, Never>?
+    /// Which watch is current, so one that ends by itself clears only itself.
+    private var confirmationWatchGeneration = 0
 
     func beginConfirmationWatch() {
         guard confirmationWatch == nil, !hasAccount else { return }
+        confirmationWatchGeneration += 1
+        let generation = confirmationWatchGeneration
         confirmationWatch = Task { [weak self] in
+            // A watch that has done its job lets the next one start: it used
+            // to stay set, so a guest who signed up again in the same launch
+            // (after signing out, say) was never watched.
+            defer {
+                if let self, self.confirmationWatchGeneration == generation {
+                    self.confirmationWatch = nil
+                }
+            }
             // Backoff rather than a fixed 5s: this used to hammer the auth
             // endpoint 60 times per sign-up. Roughly 5s → 60s over ~10 minutes.
             var delay = Duration.seconds(5)
@@ -385,6 +406,7 @@ final class AuthManager {
     func endConfirmationWatch() {
         confirmationWatch?.cancel()
         confirmationWatch = nil
+        confirmationWatchGeneration += 1
     }
 
     /// Writes the device's onboarding answers onto the signed-in profile.
@@ -691,6 +713,7 @@ final class AuthManager {
     @discardableResult
     private func forgetMember() -> Bool {
         guard !isAnonymous else { return false }
+        endConfirmationWatch()
         apply(nil)
         return true
     }
@@ -760,6 +783,20 @@ enum ConnectionFailure: Equatable, Sendable {
 
     init(_ error: any Error) {
         self = error.isOffline ? .offline : .unreachable
+    }
+}
+
+/// Whether a re-read of the signed-in user (`GET /user`) may be applied.
+///
+/// The read answers for the session it was asked with. If the session changed
+/// while it was out — a member signed in over the guest — the answer describes
+/// someone who is no longer here, and applying it put the guest back over the
+/// member: their history cleared and the tabs rebuilt as a guest's, while the
+/// Keychain held the member. A guest upgraded in place keeps their id, so the
+/// ordinary confirmation still applies.
+enum ConfirmationReadDecision {
+    static func applies(answeredFor answer: UUID, askedAs asked: UUID?, now current: UUID?) -> Bool {
+        asked == current && answer == current
     }
 }
 

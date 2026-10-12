@@ -339,9 +339,11 @@ private struct GatheringsRoot: View {
 private struct ProgramsRoot: View {
     enum Route: Hashable {
         case detail(Program)
-        /// The day by NUMBER rather than by value: `ProgramDay` is content that
+        /// The day by NUMBER rather than by value, and both pages draw the
+        /// catalog's current copy of the program (`LiveProgram`): a curriculum
         /// can be re-authored under a live member, and a stale copy sitting in
-        /// the navigation path would keep rendering the old one.
+        /// the navigation path would keep rendering the old one. The `Program`
+        /// carried here is only the fallback.
         case day(Program, Int)
         case journalDetail(JournalPrompt)
         case exerciseDetail(Exercise)
@@ -355,6 +357,7 @@ private struct ProgramsRoot: View {
     @Binding var pending: String?
     var requireAccount: (@escaping () -> Void) -> Void = { $0() }
     @State private var path: [Route] = []
+    @State private var catalog = ProgramsViewModel()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -363,7 +366,8 @@ private struct ProgramsRoot: View {
             ProgramsView(
                 onOpenProgram: { path = [.detail($0)] },
                 onOpenDay: { program, day in path = [.day(program, day.day)] },
-                pending: $pending
+                pending: $pending,
+                vm: catalog
             )
             .connectionBannerInset()
             .navigationDestination(for: Route.self) { route in
@@ -396,16 +400,20 @@ private struct ProgramsRoot: View {
     @ViewBuilder
     private func destination(_ route: Route) -> some View {
         switch route {
-        case .detail(let program):
-            ProgramDetailView(
-                program: program,
-                onOpenDay: { path.append(.day(program, $0.day)) },
-                requireAccount: requireAccount
-            )
+        case .detail(let pushed):
+            LiveProgram(pushed: pushed, catalog: catalog) { program in
+                ProgramDetailView(
+                    program: program,
+                    onOpenDay: { path.append(.day(program, $0.day)) },
+                    requireAccount: requireAccount
+                )
+            }
 
-        case .day(let program, let number):
-            if let day = program.authoredDays.first(where: { $0.day == number }) {
-                ProgramDayView(program: program, day: day, onOpen: open)
+        case .day(let pushed, let number):
+            LiveProgram(pushed: pushed, catalog: catalog) { program in
+                if let day = program.authoredDays.first(where: { $0.day == number }) {
+                    ProgramDayView(program: program, day: day, onOpen: open)
+                }
             }
 
         case .journalDetail(let prompt):  JournalDetailView(prompt: prompt)
@@ -430,6 +438,26 @@ private struct ProgramsRoot: View {
         case .recipe(let recipe):     path.append(.recipeDetail(recipe))
         case .session:                break   // handled as a sheet by the day view
         }
+    }
+}
+
+/// A digital retreat's page, drawn from the catalog's current copy of the
+/// program rather than the one it was pushed with.
+///
+/// The route carries the whole `Program`, curriculum included, and drawing
+/// that kept a day or detail page on the curriculum as it was when pushed —
+/// and `ProgramStore.syncCompletion` judged the day against it — however it
+/// had been re-authored since. Each page re-reads the catalog as it appears
+/// (from the five-minute cache), which is how an edit reaches a page someone
+/// comes back to.
+private struct LiveProgram<Page: View>: View {
+    let pushed: Program
+    let catalog: ProgramsViewModel
+    @ViewBuilder let page: (Program) -> Page
+
+    var body: some View {
+        page(catalog.current(pushed))
+            .task { await catalog.load() }
     }
 }
 

@@ -21,8 +21,9 @@ struct ProgramsView: View {
     /// A program another tab asked to open (Home's "Day N is open" card).
     /// Consumed once the catalog has actually loaded, then cleared.
     var pending: Binding<String?> = .constant(nil)
-
-    @State private var vm = ProgramsViewModel()
+    /// The catalog, owned by `ProgramsRoot` so the pages it pushes draw from
+    /// the same copy.
+    let vm: ProgramsViewModel
     /// Shared membership state. Read inside `body` so the observation registers.
     private let store = ProgramStore.shared
 
@@ -416,6 +417,6 @@ struct ProgramsView: View {
 }
 
 #Preview {
-    ProgramsView()
+    ProgramsView(vm: ProgramsViewModel())
         .preferredColorScheme(.dark)
 }

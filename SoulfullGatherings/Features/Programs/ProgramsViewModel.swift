@@ -60,6 +60,13 @@ final class ProgramsViewModel {
         self.fetchPrograms = fetchPrograms
     }
 
+    /// The catalog's copy of `program`, curriculum as it is authored now — or
+    /// `program` itself when the catalog doesn't list it (taken down while it
+    /// was open). Pages pushed with a program draw this, not what was pushed.
+    func current(_ program: Program) -> Program {
+        programs.first { $0.id == program.id } ?? program
+    }
+
     /// No mock fallback, deliberately — see `RetreatsLoadFailure`. An invented
     /// catalogue of programs nobody can actually be enrolled in is filler, and
     /// filler shown as the real thing is a Guideline 2.1(a) rejection.
