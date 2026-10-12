@@ -16,14 +16,13 @@
 //  The gate holds the interrupted action and replays it once the account
 //  exists, so signing in never costs the user the tap they were making.
 //
-//  It owns only the pending action; the presentation flag is a plain `@State`
-//  Bool in `MainTabView`, matching every other sheet in the app. (An earlier
-//  version stored `isPresenting` here and bound the sheet to
+//  It owns only the pending action; the presentation flag is `showAccount` on
+//  `TabRouter`, which holds this gate and is what the tabs ask through. (An
+//  earlier version stored `isPresenting` here and bound the sheet to
 //  `$gate.isPresenting`. That was *suspected* of making the sheet
 //  undismissable and restructured on that theory — wrongly: the real cause was
 //  the close button's hit-testing (then a `CircleIconButton`), see gotcha #5.
-//  This shape is kept because it's the more conventional one, not because the
-//  binding was broken.)
+//  So binding the sheet to an @Observable property is fine.)
 //
 
 import SwiftUI

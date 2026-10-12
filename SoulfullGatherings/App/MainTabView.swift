@@ -18,15 +18,18 @@
 //  into a "More" navigation controller, which put a stray back button (and,
 //  behind it, a system list of tabs) on Community and You.
 //
-//  Cross-tab jumps go through `pendingPractice`: Home's ritual card names a
-//  Practice section, MainTabView switches tabs, and PracticeRoot consumes the
-//  request on appear. `pendingProgram` and `pendingRetreat` work the same way
-//  (Home and the You tab open a digital retreat; Home's gatherings shelf opens
-//  a retreat).
+//  The shell's state — the tab, what is pushed where, cross-tab hand-offs,
+//  the account sheet — is a `TabRouter`, built once, because each page is too
+//  (see `TabRouter` for why that matters). Cross-tab jumps go through its
+//  `pendingPractice`: Home's ritual card names a Practice section, the router
+//  switches tabs, and PracticeRoot consumes the request on appear.
+//  `pendingProgram` and `pendingRetreat` work the same way (Home and the You
+//  tab open a digital retreat; Home's gatherings shelf opens a retreat).
 //
-//  Browsing needs no account. `AccountGate` lives here (one sheet for the whole
-//  shell) and is handed to PracticeRoot, which asks for an account only when a
-//  guest opens an actual practice — not when they browse the lists.
+//  Browsing needs no account. The gate lives on the router (one sheet for the
+//  whole shell) and is handed to the stack roots, which ask for an account
+//  only when a guest opens an actual practice — not when they browse the
+//  lists.
 //
 
 import SwiftUI
@@ -69,18 +72,11 @@ struct MainTabView: View {
     @Environment(AppState.self) private var app
     @Environment(AuthManager.self) private var auth
     @Environment(AppSettings.self) private var settings
-    /// Forwarded into each tab (see `page(_:)`): written practices time
-    /// themselves by it, and a hosting controller of our own doesn't inherit
-    /// it from the scene the way a SwiftUI child would.
+    /// Forwarded into each tab through the router (`TabPage`): written
+    /// practices time themselves by it, and a hosting controller of our own
+    /// doesn't inherit it from the scene the way a SwiftUI child would.
     @Environment(\.scenePhase) private var scenePhase
-    @State private var tab: MainTab = Self.initialTab
-    /// Holds an interrupted action while the account sheet is up, then replays
-    /// it. Scoped to the tab shell because that's the only place that gates.
-    @State private var gate = AccountGate()
-    /// Presentation is a plain Bool, not a property of `gate` — see the note in
-    /// `AccountGate.swift` for why binding a sheet to an @Observable class's
-    /// property left it undismissable.
-    @State private var showAccount = false
+    @State private var router = TabRouter(tab: Self.initialTab)
 
     /// DEBUG launch hook matching the `-preview-*` family in
     /// `SoulfullGatheringsApp`: `-tab practice` opens straight to a tab for a
@@ -97,12 +93,6 @@ struct MainTabView: View {
         #endif
         return .home
     }
-    /// The tabs whose stack has something pushed — on the showing one, the
-    /// nav bows out so detail screens own the full canvas. Per tab because
-    /// every tab keeps its stack: a hand-off can leave one tab with a screen
-    /// pushed and push onto another in the same update, and a single shared
-    /// flag ended up with whichever wrote last.
-    @State private var pushed: Set<MainTab> = []
     /// Bumped when a member signs out or deletes their account, which rebuilds
     /// every tab from scratch. Tabs keep their screens and view models while
     /// another is showing; without this, a guest inherited the last member's
@@ -110,154 +100,133 @@ struct MainTabView: View {
     /// half-filled screens. Not bumped on sign-in: the account gate replays
     /// the interrupted tap into the tab it came from, which must still exist.
     @State private var shell = 0
-    /// Set when another tab asks to open a Practice section (Home's ritual
-    /// card). `PracticeRoot` consumes and clears it, which is what makes the
-    /// jump land on the right screen rather than just the Practice landing.
-    @State private var pendingPractice: PracticeMenuItem?
-    /// Set when Home's "Day N is open" card asks to open a program. Consumed by
-    /// `ProgramsRoot` on appear, the same handshake `pendingPractice` uses.
-    @State private var pendingProgram: String?
-    /// Set when a card on Home's gatherings shelf asks to open a retreat.
-    /// Consumed by `GatheringsRoot` on appear — the same handshake again.
-    @State private var pendingRetreat: Retreat?
-    /// A like push was tapped. Consumed by `CommunityRoot`, which pushes the
-    /// Notifications screen — the same handshake as the others.
-    @State private var pendingNotifications = false
     private let push = PushRegistrar.shared
 
     /// Whether the account gate lets a tap straight through. `-preview-
     /// instructors` browses its fixture as a member (DEBUG only — the flag is
     /// always false in Release), so a fixture practice page can be opened.
-    private var hasAccount: Bool { auth.hasAccount || InstructorDirectory.isPreviewMember }
+    private static func hasAccount(_ auth: AuthManager) -> Bool {
+        auth.hasAccount || InstructorDirectory.isPreviewMember
+    }
 
     var body: some View {
+        @Bindable var router = router
         ZStack(alignment: .bottom) {
-            TabPager(selection: tab, pages: Dictionary(uniqueKeysWithValues:
-                MainTab.allCases.map { ($0, page($0)) }))
+            TabPager(selection: router.tab, makePage: page)
                 // Edge to edge: each tab's hosting controller takes its safe
                 // area (and keyboard avoidance) from the window itself.
                 .ignoresSafeArea()
                 .id(shell)
 
             // Docked nav. Static: it hides on detail pushes without moving.
-            BottomNav(current: $tab)
-                .opacity(navHidden ? 0 : 1)
-                .allowsHitTesting(!navHidden)
+            BottomNav(current: $router.tab)
+                .opacity(router.isNavHidden ? 0 : 1)
+                .allowsHitTesting(!router.isNavHidden)
                 .transaction { $0.animation = nil }
+        }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            router.scenePhase = phase
         }
         // Member → guest: sign-out, deletion, or a session lost for good. Keyed
         // on `isAnonymous`, the identity itself: a member whose session is
         // merely being retried is still that member.
         .onChange(of: auth.isAnonymous) { wasGuest, isGuest in
             guard !wasGuest, isGuest else { return }
-            pushed = []
+            router.pushed = []
             shell += 1
         }
         .onChange(of: push.openNotificationsRequested, initial: true) { _, requested in
             guard requested else { return }
             push.openNotificationsRequested = false
-            pendingNotifications = true
-            tab = .community
+            router.openNotifications()
         }
         // A program's morning nudge was tapped: the same hand-off as Home's
         // "Day N is open" card, which lands on the open day.
         .onChange(of: push.openProgramRequested, initial: true) { _, programID in
             guard let programID else { return }
             push.openProgramRequested = nil
-            pendingProgram = programID
-            tab = .programs
+            router.openProgram(programID)
         }
         // One sheet for the whole shell, so a gated tap works from any tab and
         // survives the tab switch Home's ritual card performs.
-        .sheet(isPresented: $showAccount, onDismiss: {
-            gate.resume(signedIn: hasAccount)
+        .sheet(isPresented: $router.showAccount, onDismiss: {
+            router.resumeAfterAccountSheet(signedIn: Self.hasAccount(auth))
         }) {
             AccountView(initialName: settings.userName)
         }
     }
 
-    /// The showing tab has a screen pushed.
-    private var navHidden: Bool { pushed.contains(tab) }
-
-    /// One tab's entry in `pushed`, for its stack root to report through.
-    private func navHidden(_ item: MainTab) -> Binding<Bool> {
-        Binding(get: { pushed.contains(item) },
-                set: { if $0 { pushed.insert(item) } else { pushed.remove(item) } })
-    }
-
-    /// One tab, ready for its own hosting controller. Everything a SwiftUI
-    /// child would inherit from above is handed over explicitly — the app's
-    /// observable objects, dark mode, the tint and the scene phase — because a
-    /// `UIHostingController` starts a fresh environment.
+    /// One tab, ready for its own hosting controller, built once — when the
+    /// tab is first selected — and never again (see `TabRouter`). Everything a
+    /// SwiftUI child would inherit from above is handed over explicitly — the
+    /// app's observable objects, dark mode, the tint and, through the router,
+    /// the scene phase — because a `UIHostingController` starts a fresh
+    /// environment.
     ///
     /// The offline / failed-session banner is an inset on each tab root and
     /// pushed screen (`connectionBannerInset`), not an overlay here, so it
     /// never covers a Back link.
     private func page(_ item: MainTab) -> AnyView {
         AnyView(
-            content(item)
+            TabPage(router: router) { content(item) }
                 .ignoresSafeArea(.keyboard)
                 .environment(app)
                 .environment(settings)
                 .environment(auth)
-                .environment(\.scenePhase, scenePhase)
                 .environment(\.colorScheme, .dark)
                 .tint(Theme.ink)
         )
     }
 
+    /// Closures over the router and the app's objects only — references that
+    /// outlive this view value — never over this view's own state, which a
+    /// page built once would hold a stale copy of.
     @ViewBuilder
     private func content(_ item: MainTab) -> some View {
+        @Bindable var router = router
+        let auth = auth
+        let requireAccount: (@escaping () -> Void) -> Void = { [router] action in
+            router.requireAccount(signedIn: Self.hasAccount(auth), action)
+        }
         switch item {
         case .home:
-            HomeView(onOpenRetreats: { tab = .gatherings },
-                     onOpenRetreat: { retreat in
-                pendingRetreat = retreat
-                tab = .gatherings
-            }, onOpenPractice: { item in
-                pendingPractice = item
-                tab = .practice
-            }, onOpenProgram: { programID in
-                pendingProgram = programID
-                tab = .programs
-            })
+            HomeView(onOpenRetreats: { router.tab = .gatherings },
+                     onOpenRetreat: { router.openRetreat($0) },
+                     onOpenPractice: { router.openPractice($0) },
+                     onOpenProgram: { router.openProgram($0) })
             .connectionBannerInset()
         case .gatherings:
-            GatheringsRoot(navHidden: navHidden(.gatherings), pending: $pendingRetreat,
-                           onGoHome: { tab = .home })
+            GatheringsRoot(navHidden: router.navHidden(.gatherings), pending: $router.pendingRetreat,
+                           onGoHome: { router.tab = .home })
         case .programs:
-            ProgramsRoot(navHidden: navHidden(.programs), pending: $pendingProgram,
-                         requireAccount: { action in
-                             if gate.require(signedIn: hasAccount, action) {
-                                 showAccount = true
-                             }
-                         })
+            ProgramsRoot(navHidden: router.navHidden(.programs), pending: $router.pendingProgram,
+                         requireAccount: requireAccount)
         case .practice:
-            PracticeRoot(navHidden: navHidden(.practice), pending: $pendingPractice,
-                         requireAccount: { action in
-                             if gate.require(signedIn: hasAccount, action) {
-                                 showAccount = true
-                             }
-                         },
-                         onOpenProgram: { programID in
-                             pendingProgram = programID
-                             tab = .programs
-                         })
+            PracticeRoot(navHidden: router.navHidden(.practice), pending: $router.pendingPractice,
+                         requireAccount: requireAccount,
+                         onOpenProgram: { router.openProgram($0) })
         case .community:
-            CommunityRoot(navHidden: navHidden(.community), openNotifications: $pendingNotifications,
-                          requireAccount: { action in
-                              if gate.require(signedIn: hasAccount, action) {
-                                  showAccount = true
-                              }
-                          },
-                          onOpenProfile: { tab = .you })
+            CommunityRoot(navHidden: router.navHidden(.community),
+                          openNotifications: $router.pendingNotifications,
+                          requireAccount: requireAccount,
+                          onOpenProfile: { router.tab = .you })
         case .you:
-            ProfileView(onOpenProgram: { programID in
-                pendingProgram = programID
-                tab = .programs
-            }, onOpenRetreats: { tab = .gatherings })
+            ProfileView(onOpenProgram: { router.openProgram($0) },
+                        onOpenRetreats: { router.tab = .gatherings })
             .connectionBannerInset()
         }
+    }
+}
+
+/// A tab's page under the scene phase the router carries. The one thing from
+/// above a page needs that changes while the app runs; read here, a change
+/// re-renders this wrapper and whoever reads the phase, not the whole page.
+private struct TabPage<Content: View>: View {
+    let router: TabRouter
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        content.environment(\.scenePhase, router.scenePhase)
     }
 }
 
@@ -646,14 +615,15 @@ private struct PracticeRoot: View {
 /// what pauses it and runs its `.task`s again when it comes back.
 private struct TabPager: UIViewControllerRepresentable {
     let selection: MainTab
-    let pages: [MainTab: AnyView]
+    /// Builds a tab's page. Called once per tab, when it is first selected.
+    let makePage: (MainTab) -> AnyView
 
     func makeUIViewController(context: Context) -> TabPagerController {
         TabPagerController()
     }
 
     func updateUIViewController(_ controller: TabPagerController, context: Context) {
-        controller.show(selection, pages: pages)
+        controller.show(selection, makePage: makePage)
     }
 }
 
@@ -666,14 +636,14 @@ final class TabPagerController: UIViewController {
         view.backgroundColor = .clear
     }
 
-    func show(_ selection: MainTab, pages: [MainTab: AnyView]) {
-        // Tabs already made get this update's view (fresh closures and
-        // environment); a tab is only made once it is first selected.
-        for (tab, host) in hosts {
-            if let page = pages[tab] { host.rootView = page }
-        }
-        if hosts[selection] == nil, let page = pages[selection] {
-            let host = UIHostingController(rootView: page)
+    func show(_ selection: MainTab, makePage: (MainTab) -> AnyView) {
+        // A tab is made once, when it is first selected, and its page is
+        // never handed over again. Every update used to give each made tab a
+        // freshly built page, which re-ran every open tab's body for a push
+        // on any one of them. What a page shows that can change reaches it
+        // through `TabRouter`.
+        if hosts[selection] == nil {
+            let host = UIHostingController(rootView: makePage(selection))
             host.view.backgroundColor = .clear
             host.overrideUserInterfaceStyle = .dark
             addChild(host)
