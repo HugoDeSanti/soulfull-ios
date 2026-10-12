@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Other members: the feed, friends, Report and Block, likes and the bell,
-//  presence, and push tokens.
+//  comments under a practice, presence, and push tokens.
 //
 
 import Foundation
@@ -237,6 +237,64 @@ extension SupabaseService {
             .execute()
     }
 
+    // MARK: - Comments (0032)
+
+    /// One practice's comments, newest first, through `practice_comment_thread`
+    /// — members only, each author as the Community tab names them, anyone
+    /// either side has blocked left out. Uncached: a conversation moves.
+    func fetchComments(on thread: CommentThread, limit: Int = 200) async throws -> [PracticeComment] {
+        let rows: [PracticeCommentRow] = try await client
+            .from("practice_comment_thread")
+            .select()
+            .eq("content_kind", value: thread.kind.rawValue)
+            .eq("content_id", value: thread.contentID)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+        return rows.map(\.comment)
+    }
+
+    /// Posts a comment under `thread`. The id is the app's, so a retry after a
+    /// timeout that had in fact landed is a duplicate key — already posted.
+    /// The server trims the text, stamps the time and refuses a guest, a
+    /// practice that doesn't exist, a link, objectionable language and a
+    /// twenty-first comment in an hour (`Error.commentRefusal`).
+    func postComment(id: UUID, on thread: CommentThread, body: String, userID: UUID) async throws {
+        struct Insert: Encodable {
+            let id: UUID
+            let userId: UUID
+            let contentKind: String
+            let contentId: Int
+            let body: String
+            enum CodingKeys: String, CodingKey {
+                case id, body
+                case userId      = "user_id"
+                case contentKind = "content_kind"
+                case contentId   = "content_id"
+            }
+        }
+        do {
+            try await client
+                .from("practice_comments")
+                .insert(Insert(id: id, userId: userID, contentKind: thread.kind.rawValue,
+                               contentId: thread.contentID, body: body))
+                .execute()
+        } catch let error as PostgrestError where error.code == "23505" {
+            return
+        }
+    }
+
+    /// Deletes one of this member's comments. RLS lets a member delete only
+    /// their own; anyone else's id matches no row.
+    func deleteComment(id: UUID) async throws {
+        try await client
+            .from("practice_comments")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+
     // MARK: - Presence
 
     /// Every practice with at least 3 people present in the last 24 hours,
@@ -387,6 +445,34 @@ private struct CommunityActivityRow: Decodable {
             likeCount: likeCount ?? 0,
             likedByMe: likedByMe ?? false
         )
+    }
+}
+
+/// Read model for the `practice_comment_thread` view (0032).
+private struct PracticeCommentRow: Decodable {
+    let id: UUID
+    let userId: UUID
+    let displayName: String
+    let avatarUrl: String?
+    let body: String
+    let createdAt: Date
+    let isMine: Bool
+    let isGuide: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, body
+        case userId      = "user_id"
+        case displayName = "display_name"
+        case avatarUrl   = "avatar_url"
+        case createdAt   = "created_at"
+        case isMine      = "is_mine"
+        case isGuide     = "is_guide"
+    }
+
+    var comment: PracticeComment {
+        PracticeComment(id: id,
+                        author: CommunityMember(id: userId, displayName: displayName, avatarUrl: avatarUrl),
+                        body: body, createdAt: createdAt, isMine: isMine, isGuide: isGuide)
     }
 }
 

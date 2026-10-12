@@ -129,16 +129,25 @@ struct LikeNotification: Identifiable, Hashable, Sendable {
     var isUnread: Bool { readAt == nil }
 }
 
-/// Why a member is being reported (0028, `report-member`). The raw values are
-/// `member_reports.reason`, and the titles are what the team's email says —
-/// the Edge Function holds the same strings, so change both together.
+/// Why a member or a comment is being reported (0028, 0032, `report-member`).
+/// The raw values are `member_reports.reason`, and the titles are what the
+/// team's email says — the Edge Function holds the same strings, so change
+/// both together.
 enum ReportReason: String, CaseIterable, Identifiable, Hashable, Sendable, Encodable {
     case photo, name, harassment, spam, other
+    /// For a comment (0032).
+    case offensive
 
     var id: String { rawValue }
 
+    /// What the sheet offers when the report is about the member themselves.
+    static let aboutAMember: [ReportReason] = [.photo, .name, .harassment, .spam, .other]
+    /// …and when it is about something they wrote.
+    static let aboutAComment: [ReportReason] = [.offensive, .harassment, .spam, .other]
+
     var title: String {
         switch self {
+        case .offensive:  "Hateful or offensive"
         case .photo:      "Inappropriate photo"
         case .name:       "Offensive name"
         case .harassment: "Harassment or unwanted contact"
@@ -154,6 +163,8 @@ struct MemberReport: Encodable, Hashable, Sendable {
     let reportedID: UUID
     /// The feed line it was reported from, if any.
     let playID: UUID?
+    /// The comment it is about, if any (0032).
+    let commentID: UUID?
     let reason: ReportReason
     /// The reporter's note, trimmed; nil when they wrote nothing.
     let details: String?
@@ -162,16 +173,17 @@ struct MemberReport: Encodable, Hashable, Sendable {
     static let maxDetails = 500
 
     /// Nil until a reason is chosen — the one thing a report can't do without.
-    init?(reportedID: UUID, playID: UUID?, reason: ReportReason?, details: String) {
+    init?(reportedID: UUID, playID: UUID?, commentID: UUID? = nil, reason: ReportReason?, details: String) {
         guard let reason else { return nil }
         self.reportedID = reportedID
         self.playID = playID
+        self.commentID = commentID
         self.reason = reason
         let note = String(details.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxDetails))
         self.details = note.isEmpty ? nil : note
     }
 
     enum CodingKeys: String, CodingKey {
-        case reportedID = "reported_id", playID = "play_id", reason, details
+        case reportedID = "reported_id", playID = "play_id", commentID = "comment_id", reason, details
     }
 }

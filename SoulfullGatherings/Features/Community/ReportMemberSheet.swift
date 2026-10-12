@@ -2,7 +2,8 @@
 //  ReportMemberSheet.swift
 //  Soulfull Gatherings
 //
-//  Tell the team about a member: a reason, an optional note, sent through
+//  Tell the team about a member, or about a comment they wrote under a
+//  practice: a reason, an optional note, sent through
 //  `report-member` (stored, and emailed to the monitored inbox). Then the
 //  promise — reviewed within 24 hours — and Block, for not having to see them
 //  again in the meantime.
@@ -30,7 +31,8 @@ struct ReportMemberSheet: View {
 
     private var member: CommunityMember { target.member }
     private var report: MemberReport? {
-        MemberReport(reportedID: member.id, playID: target.playID, reason: reason, details: details)
+        MemberReport(reportedID: member.id, playID: target.playID, commentID: target.comment?.id,
+                     reason: reason, details: details)
     }
 
     var body: some View {
@@ -67,7 +69,7 @@ struct ReportMemberSheet: View {
                     .font(Theme.eyebrow(11))
                     .tracking(3)
                     .foregroundStyle(Theme.inkSoft)
-                Text("Report \(member.displayName)")
+                Text(target.comment == nil ? "Report \(member.displayName)" : "Report this comment")
                     .font(Theme.headline(30, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.6)
@@ -80,13 +82,24 @@ struct ReportMemberSheet: View {
             }
             .onPhoto()
 
-            HStack(spacing: 12) {
+            HStack(alignment: target.comment == nil ? .center : .top, spacing: 12) {
                 AvatarView(avatarUrl: member.avatarUrl, name: member.displayName,
                            seed: member.id.uuidString, size: 44)
-                Text(member.displayName)
-                    .font(Theme.body(15, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .onPhoto()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(member.displayName)
+                        .font(Theme.body(15, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                    // What they wrote, as the team will read it.
+                    if let comment = target.comment {
+                        Text(comment.body)
+                            .font(Theme.body(14))
+                            .foregroundStyle(Theme.inkOnPhoto)
+                            .lineSpacing(3)
+                            .lineLimit(6)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .onPhoto()
                 Spacer(minLength: 0)
             }
             // Who this is about, between two rules — not a card.
@@ -100,7 +113,7 @@ struct ReportMemberSheet: View {
                     .font(Theme.headline(18))
                     .foregroundStyle(Theme.ink)
                     .onPhoto()
-                ForEach(ReportReason.allCases) { option in
+                ForEach(target.reasons) { option in
                     reasonRow(option)
                 }
             }
@@ -262,7 +275,7 @@ struct ReportMemberSheet: View {
                     dismiss()
                 }
                 .accessibilityIdentifier("report-block")
-                Text("You won't see each other in Community, and they won't be told.")
+                Text("You won't see each other in Community or in comments, and they won't be told.")
                     .font(Theme.body(12))
                     .foregroundStyle(Theme.inkSoft)
                     .multilineTextAlignment(.center)

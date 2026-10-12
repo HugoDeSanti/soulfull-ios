@@ -561,16 +561,7 @@ private struct ActivityRow: View {
 
     /// "just now", "12 min ago", "3 hr ago", "yesterday", "Monday", "12 Sep".
     static func relative(_ date: Date) -> String {
-        let seconds = max(0, Date.now.timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
-        if seconds < 3600 { return "\(Int(seconds / 60)) min ago" }
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "\(Int(seconds / 3600)) hr ago" }
-        if calendar.isDateInYesterday(date) { return "yesterday" }
-        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date),
-                                           to: calendar.startOfDay(for: .now)).day ?? 0
-        if days < 7 { return date.formatted(.dateTime.weekday(.wide)) }
-        return date.formatted(.dateTime.day().month(.abbreviated))
+        RelativeTime.label(date, now: .now)
     }
 }
 

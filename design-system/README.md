@@ -26,7 +26,7 @@ ships from `SoulfullGatherings/` and never imports anything here.
 | Design System file        | Swift source                          | What lives there |
 |---------------------------|---------------------------------------|------------------|
 | `shared/tokens.css`       | `Core/DesignSystem/Theme.swift`, `Atmosphere.swift` | Colors, gradients, the atmosphere tones, hairline / space / motion, type — one CSS var per `Theme.*` constant |
-| `shared/app.css`          | `Core/DesignSystem/Components.swift` (SGPrimaryButton, GlassCard, SectionLabel, GlyphButton, PhotoBackdrop), `SoulGlass.swift`, `Pressable.swift`, `Atmosphere.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift` | Buttons, glass, the photo backdrop, the ritual card's atmosphere, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu |
+| `shared/app.css`          | `Core/DesignSystem/Components.swift` (SGPrimaryButton, GlassCard, SectionLabel, GlyphButton, PhotoBackdrop), `SoulGlass.swift`, `Pressable.swift`, `Atmosphere.swift`, `BottomNav.swift`, `OnboardingView.swift`, `PracticeShared.swift`, `Features/Auth/AppleSignInButton.swift`, `Features/Community/MemberSafety.swift`, `Features/Practice/PracticeComments.swift` | Buttons, glass, the photo backdrop, the ritual card's atmosphere, chips, option cards, nav, steps, the Apple button, progress rule / continue card / streak / safety note, the member "⋯" menu, a practice's comments (section, row, writing box, the player's link) |
 | `shared/frame.css`        | (presentation only)                   | iPhone shell + iOS status bar — not part of the app |
 | `foundations/*.html`      | `Theme.swift`                         | Swatch / type / gradient reference sheets |
 | `components/*.html`       | `Components.swift` et al.             | One card per reusable view |
@@ -136,6 +136,11 @@ that still bite when a card is edited:
   confirmation is a system sheet with no card; its copy is in `community`'s
   header comment. The report reasons in `report-member` are the team's email
   labels and `report-member`'s strings, so change them together.
+- **Comments** (`.comments-section`, `.comment-row`) end `exercise-detail` and
+  `recipe-detail`; the player has `.comments-link`; all open
+  `practice-comments`. Each comment carries a `.member-menu` (Report comment ·
+  Block for someone else's, Delete for yours). Never on `journal-detail`: a
+  prompt's comments would say what someone is working through.
 - **Presence** (`.presence`) is absent below 3 people, and journal prompts show
   a count with no faces. Journal prompts never appear in the feed.
 - **Practice media tracks** with no rows are dimmed with a `SOON` badge

@@ -11,7 +11,8 @@
      header with time · servings as a line of type (no pills), the guide
      between hairlines, and two open sections (a hairline, a caps label, the
      content — no box). Ingredient checks are square 18px hairline boxes with
-     an ember check that fades in. */
+     an ember check that fades in. A section's gap below the method, the
+     comments (PracticeCommentsSection — classes in app.css). */
   .hero { position: relative; height: 320px; }
   .hero .img { position: absolute; inset: 0; background: url('../assets/practice-recipes.jpg') center/cover; filter: saturate(.9); }
   .hero .v { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.45), transparent 40%, rgba(0,0,0,.35)); }
@@ -79,6 +80,12 @@
           <div class="num-step"><span class="n">03</span><div class="t">Stir through coconut milk and wilt in the spinach.</div></div>
           <div class="num-step"><span class="n">04</span><div class="t">Finish with lime and serve warm.</div></div>
         </div>
+      </div>
+      <div class="comments-section" style="margin-top:64px">
+        <p class="comments-heading">Comments <span class="n">3</span></p>
+        <div class="comment-row"><span class="av">T</span><div class="tx"><p class="who"><span class="nm">Theo R.</span><span class="when">2 hr ago</span></p><p class="bd">Did this before work and my shoulders came down for the first time all week.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <div class="comment-row"><span class="av" style="background-image:linear-gradient(135deg,#3f4a22,#1f2511)">A</span><div class="tx"><p class="who"><span class="nm">Alma G.</span><span class="guide">Guide</span><span class="when">Yesterday</span></p><p class="bd">Take the last hold slower than feels necessary. That's where it lands.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <a class="comments-open">Read all 3 comments<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></a>
       </div>
     </div>
   </div>

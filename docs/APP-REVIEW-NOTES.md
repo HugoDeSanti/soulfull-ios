@@ -16,10 +16,12 @@ Paste the **Review notes** block below into App Store Connect → the 1.0 versio
   - liking
   - following a guide
   - Block
+  - reading and writing comments (they live on practice pages)
   - "Request a place" (the application's email is the account's)
 - **The account sheet opens on "Create your account".** A reviewer with the demo credentials has to tap **"Already have an account? Sign in"** at the bottom. If they type the credentials into the create form instead, the error now ends "Already have an account? Sign in below." The notes say it as well.
-- **User-generated content (Guideline 1.2).** Members see each other's names (first name + initial) and profile photos, finished practices and likes.
-  - **"⋯" beside any other member** offers **Report** (reason + note, sent to the team, reviewed within 24 hours) and **Block** (they disappear from each other's Community, and any friendship ends).
+- **User-generated content (Guideline 1.2).** Members see each other's names (first name + initial) and profile photos, finished practices, likes, and comments under a practice.
+  - **"⋯" beside any other member** offers **Report** (reason + note, sent to the team, reviewed within 24 hours) and **Block** (they disappear from each other's Community and comments, and any friendship ends).
+  - **"⋯" on every comment** offers **Report comment** and **Block**; on your own, **Delete**. A comment with a link or objectionable language is refused before it posts.
   - **You tab → Blocked members** lists blocks and unblocks.
   - **Names** with objectionable words show as "A member".
   - **The Terms** carry zero-tolerance community standards, which members agree to on the account sheet.
@@ -100,13 +102,15 @@ digital-retreat progress, and it is how we pay the guide who recorded it.
 Journal reflections stay on the device. Sign in with Apple is offered first;
 email and password is the alternative.
 
-COMMUNITY: REPORT AND BLOCK (GUIDELINE 1.2)
+COMMUNITY AND COMMENTS: REPORT AND BLOCK (GUIDELINE 1.2)
 Members appear as first name and initial, with an optional photo, beside the
-practices they finish. The "..." beside any other member offers Report (a
-reason and an optional note, sent to our team, reviewed within 24 hours) and
-Block (they disappear from each other's Community and any friendship ends).
+practices they finish and the comments they leave under a practice (movement,
+recipes, sessions). The "..." beside any other member, and on every comment,
+offers Report (a reason and an optional note, sent to our team, reviewed
+within 24 hours) and Block (they disappear from each other's Community and
+comments, and any friendship ends). Your own comment's "..." offers Delete.
 You -> Blocked members lists and unblocks. Names containing objectionable words
-are not shown. Members agree to our Terms, which include zero-tolerance
+are not shown, and comments with links or objectionable language are refused. Members agree to our Terms, which include zero-tolerance
 community standards, when they create an account. You -> "Share my practice"
 turns sharing off.
 

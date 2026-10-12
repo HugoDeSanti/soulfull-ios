@@ -92,7 +92,7 @@ struct CommunityBackend {
 }
 
 @Observable @MainActor
-final class CommunityViewModel {
+final class CommunityViewModel: MemberSafetyActions {
 
     /// How long a read stays current. Coming back to the tab inside it shows
     /// what is already there; after it, the tab reads again — quietly, over the

@@ -10,7 +10,9 @@
   /* ExerciseDetailView — on the sequence's photograph, blurred (PhotoBackdrop,
      blur 24, darken .8) and still visible; type on it carries .on-photo. The
      header, the guide between hairlines, then the steps set open under a caps
-     label, divided by hairlines. */
+     label, divided by hairlines, and a section's gap below them the comments
+     (PracticeCommentsSection — classes in app.css; the sheet is
+     practice-comments). */
   .scr { padding-top: 62px; padding-bottom: 120px; }
   .pad { padding: 0 var(--gutter); }
   .pad > * + * { margin-top: 28px; }
@@ -52,6 +54,13 @@
           <div class="num-step"><span class="n">04</span><div><div class="t">Interlace hands behind you, lift gently, open the heart.</div><div class="d">3 breaths</div></div></div>
           <div class="num-step"><span class="n">05</span><div><div class="t">Return to center, eyes closed, notice the difference.</div><div class="d">1 minute</div></div></div>
         </div>
+      </div>
+      <!-- PracticeCommentsSection: a section's gap (64) below the sequence. -->
+      <div class="comments-section on-photo" style="margin-top:64px">
+        <p class="comments-heading">Comments <span class="n">3</span></p>
+        <div class="comment-row"><span class="av">T</span><div class="tx"><p class="who"><span class="nm">Theo R.</span><span class="when">2 hr ago</span></p><p class="bd">Did this before work and my shoulders came down for the first time all week.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <div class="comment-row"><span class="av" style="background-image:linear-gradient(135deg,#3f4a22,#1f2511)">A</span><div class="tx"><p class="who"><span class="nm">Alma G.</span><span class="guide">Guide</span><span class="when">Yesterday</span></p><p class="bd">Take the last hold slower than feels necessary. That's where it lands.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <a class="comments-open">Read all 3 comments<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12h16m0 0-6-6m6 6-6 6"/></svg></a>
       </div>
     </div>
   </div>

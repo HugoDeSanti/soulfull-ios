@@ -120,6 +120,12 @@ extension Error {
         (self as? PostgrestError)?.message == "friend_request_cooldown"
     }
 
+    /// The server turned a comment down for what it says — a link, the
+    /// language, the hourly allowance (0032) — rather than failing to take it.
+    var commentRefusal: CommentRefusal? {
+        (self as? CommentRefusal) ?? CommentRefusal(message: (self as? PostgrestError)?.message)
+    }
+
     /// The database itself refused the request, with a SQLSTATE (23503 not a
     /// practice, 42501 row-level security, …): asked again, it says the same.
     /// Not offline, a timeout or the gateway, and not PostgREST's own `PGRST…`

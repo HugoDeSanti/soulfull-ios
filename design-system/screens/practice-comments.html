@@ -1,0 +1,74 @@
+<!-- @dsCard group="Screens · Practice" name="Comments — sheet" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comments — sheet</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/frame.css">
+<link rel="stylesheet" href="../shared/app.css">
+<style>
+  /* PracticeCommentsSheet (Features/Practice/PracticeComments.swift). Opened
+     from the foot of a movement or recipe page ("Read all 3 comments") or the
+     player's "COMMENTS · 3". The practice's own photograph, blurred 28 and
+     darkened .84, no top scrim; the close × in a pinned bar with a bg
+     GRADIENT, never a blur (the writing box is UIKit-backed, gotcha 1).
+     Order: "COMMENTS", the practice's title (30 light), one line saying every
+     member can read it; the writing box, the standard and Post; then every
+     comment, newest first, open between rules (classes in app.css). Your own
+     reads "You" and its ⋯ offers Delete (asks first: "Delete your comment?"
+     · "It's removed for everyone. This can't be undone."). Someone else's ⋯
+     offers Report comment (report-member, comment form) and Block (the
+     community card's confirmation). Empty: "Nobody has shared yet. Yours
+     could be the first." Members only: practice pages are behind the account
+     gate. */
+  .scr { padding: 122px var(--gutter) 48px; }
+  .bar { position: absolute; top: 0; left: 0; right: 0; height: 118px; z-index: 20; pointer-events: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent), color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent); }
+  .close { position: absolute; top: 62px; right: calc(var(--gutter) - 14px); z-index: 21; }
+  .wrap { position: relative; z-index: 3; }
+  .head .eb { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-soft); margin: 0; }
+  .head h1 { font-size: 30px; font-weight: var(--w-light); letter-spacing: -0.6px; line-height: 1.15; color: var(--ink); margin: 10px 0 0; }
+  .head p { font-size: 14px; line-height: 1.55; color: var(--ink-on-photo); margin: 10px 0 0; }
+  .compose { margin: 28px 0 36px; }
+  .list .comment-row:last-child { border-bottom: 0.5px solid var(--line); }
+</style>
+</head><body>
+<div class="stage"><div class="device">
+  <div class="island"></div>
+  <div class="statusbar"><span class="clock">9:41</span><span class="glyphs">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" width="3" height="11" rx="1"/></svg>
+    <span class="batt"><i></i></span></span></div>
+
+  <div class="bar"></div>
+  <span class="close glyph-btn" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+
+  <div class="screen screen--scroll scr">
+    <div class="photo" style="background-image:url('../assets/practice-exercises.jpg');filter:saturate(.9) brightness(.7) blur(28px);transform:scale(1.2)"></div>
+    <div class="vignette vignette--deep"></div>
+
+    <div class="wrap">
+      <div class="head on-photo">
+        <p class="eb">Comments</p>
+        <h1>Morning Mobility Flow</h1>
+        <p>What members noticed, in their own words. Every member can read what you post here.</p>
+      </div>
+
+      <div class="compose">
+        <div class="comment-box">How did it go?</div>
+        <div class="comment-compose">
+          <p class="std on-photo">Kind words only. Links can't be posted.</p>
+          <span class="comment-post comment-post--off">Post</span>
+        </div>
+      </div>
+
+      <div class="list on-photo">
+        <div class="comment-row"><span class="av" style="background-image:linear-gradient(135deg,#6a3a1c,#33200f)">H</span><div class="tx"><p class="who"><span class="nm">You</span><span class="when">Just now</span></p><p class="bd">Shoulders came down for the first time this week.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <div class="comment-row"><span class="av">T</span><div class="tx"><p class="who"><span class="nm">Theo R.</span><span class="when">2 hr ago</span></p><p class="bd">Did this before work and my shoulders came down for the first time all week.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <div class="comment-row"><span class="av" style="background-image:linear-gradient(135deg,#3f4a22,#1f2511)">A</span><div class="tx"><p class="who"><span class="nm">Alma G.</span><span class="guide">Guide</span><span class="when">Yesterday</span></p><p class="bd">Take the last hold slower than feels necessary. That's where it lands.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+        <div class="comment-row"><span class="av" style="background-image:linear-gradient(135deg,#2c3550,#161b2a)">N</span><div class="tx"><p class="who"><span class="nm">Nia K.</span><span class="when">Thursday</span></p><p class="bd">Third morning in a row. It gets easier to arrive.</p></div><span class="member-menu"><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/><circle cx="13" cy="2" r="1.5"/></svg></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="home-indicator"></div>
+</div></div>
+</body></html>

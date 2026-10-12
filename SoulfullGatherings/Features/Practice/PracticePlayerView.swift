@@ -194,6 +194,11 @@ struct PracticePlayerView: View {
                             .padding(.top, 8)
                             .accessibilityIdentifier("player-safety")
                     }
+                    // What others said about it, over the session itself.
+                    if let thread = CommentThread(media) {
+                        PracticeCommentsLink(thread: thread)
+                            .padding(.top, 4)
+                    }
                 }
                 .padding(.horizontal, Theme.gutter + 8)
 
@@ -258,11 +263,13 @@ struct PracticePlayerView: View {
             VideoPlayer(player: player)
                 .ignoresSafeArea()
 
-            // Title chrome over a soft top gradient; AVKit owns the rest.
+            // Title chrome over a soft top gradient; AVKit owns the rest, and
+            // takes every touch but the comments link's.
             VStack {
                 LinearGradient(colors: [.black.opacity(0.55), .clear],
                                startPoint: .top, endPoint: .bottom)
                     .frame(height: 130)
+                    .allowsHitTesting(false)
                     .overlay(alignment: .bottomLeading) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("with \(media.lead)".uppercased())
@@ -280,10 +287,17 @@ struct PracticePlayerView: View {
                                     .padding(.top, 2)
                             }
                         }
+                        .allowsHitTesting(false)
                         .padding(.horizontal, Theme.gutter)
                         .padding(.bottom, 8)
                     }
-                    .allowsHitTesting(false)
+                if let thread = CommentThread(media) {
+                    // Pulled in so the caps line sits on the title's margin;
+                    // its 44pt target reaches past it.
+                    PracticeCommentsLink(thread: thread)
+                        .padding(.leading, Theme.gutter - 14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 Spacer()
             }
             .ignoresSafeArea(edges: .top)

@@ -3,7 +3,7 @@
 //  Soulfull Gatherings
 //
 //  Report and Block, wherever another member appears: a line of the feed, a
-//  search result, a request, a friend, a like. App Store Guideline 1.2 asks an
+//  search result, a request, a friend, a like, a comment. App Store Guideline 1.2 asks an
 //  app whose members can see each other's names and photos for both, and for
 //  a timely response — the server half is 0028 and `report-member`; the
 //  runbook is docs/MODERATION.md.
@@ -17,11 +17,29 @@
 
 import SwiftUI
 
-/// Who is being reported, and the feed line it came from, if any.
+/// Who is being reported, and the feed line or the comment it came from, if
+/// any.
 struct ReportTarget: Identifiable, Hashable {
     let member: CommunityMember
     var playID: UUID? = nil
-    var id: UUID { member.id }
+    /// A comment is reported as what it says, with its own reasons.
+    var comment: PracticeComment? = nil
+    var id: UUID { comment?.id ?? member.id }
+
+    var reasons: [ReportReason] {
+        comment == nil ? ReportReason.aboutAMember : ReportReason.aboutAComment
+    }
+}
+
+/// What a screen's Report and Block act through — the Community tab's view
+/// model, or a practice's comments.
+@MainActor
+protocol MemberSafetyActions: AnyObject {
+    /// True once the block holds. A refusal puts everything back and says so
+    /// on the screen.
+    @discardableResult
+    func block(_ member: CommunityMember) async -> Bool
+    func report(_ report: MemberReport) async throws
 }
 
 /// "⋯" beside another member: Report, and Block. Never beside yourself.
@@ -62,7 +80,7 @@ extension View {
     /// Hosts the Block confirmation and the Report sheet that `MemberSafetyMenu`
     /// raises on this screen. Set `blocking` to ask, `reporting` to open the
     /// sheet; both clear themselves.
-    func memberSafety(vm: CommunityViewModel,
+    func memberSafety(vm: some MemberSafetyActions,
                       reporting: Binding<ReportTarget?>,
                       blocking: Binding<CommunityMember?>,
                       isMember: Bool,
@@ -72,8 +90,8 @@ extension View {
     }
 }
 
-private struct MemberSafetyHost: ViewModifier {
-    @Bindable var vm: CommunityViewModel
+private struct MemberSafetyHost<Actions: MemberSafetyActions>: ViewModifier {
+    let vm: Actions
     @Binding var reporting: ReportTarget?
     @Binding var blocking: CommunityMember?
     let isMember: Bool
@@ -122,7 +140,7 @@ private struct MemberSafetyHost: ViewModifier {
 /// the sheet never disagree about what happens.
 enum MemberSafetyCopy {
     static let blockExplanation =
-        "You won't see each other anywhere in Community — practices, likes, requests or search — and any friendship between you ends. They won't be told. You can unblock them from the You tab."
+        "You won't see each other anywhere in Community or in comments — practices, likes, requests or search — and any friendship between you ends. They won't be told. You can unblock them from the You tab."
 
     static let reviewPromise =
         "Our team reviews every report within 24 hours and removes anything that breaks our community standards."

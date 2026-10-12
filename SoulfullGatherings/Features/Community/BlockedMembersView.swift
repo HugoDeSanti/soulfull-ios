@@ -43,7 +43,7 @@ struct BlockedMembersView: View {
                 .font(Theme.headline(30, weight: .light))
                 .foregroundStyle(Theme.ink)
                 .kerning(-0.6)
-            Text("You and the people you block don't see each other anywhere in Community. Unblocking doesn't bring back a friendship or likes the block ended.")
+            Text("You and the people you block don't see each other anywhere in Community or in comments. Unblocking doesn't bring back a friendship or likes the block ended.")
                 .font(Theme.body(14))
                 .foregroundStyle(Theme.inkOnPhoto)
                 .lineSpacing(3)

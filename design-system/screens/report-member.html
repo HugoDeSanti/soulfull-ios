@@ -12,6 +12,13 @@
      guest. A reason, an optional note, sent through `report-member` (stored
      and emailed to the team); a report from a feed line or a like carries
      that practice too. The sent state is report-member-sent.
+     FROM A COMMENT (a practice's comments, PracticeComments.swift) the same
+     sheet reads "Report this comment", quotes the comment under the name
+     (14px, --ink-on-photo, up to 6 lines, top-aligned with the face), and
+     offers a comment's reasons: Hateful or offensive · Harassment or unwanted
+     contact · Spam or a fake account · Something else (`aboutAComment`; a
+     member's are Inappropriate photo · Offensive name · Harassment · Spam ·
+     Something else).
      Ground: the page's photo (welcome-bg, blur 28, darken .86, no top
      scrim), still visible. The note field is UIKit-backed, so nothing blurs
      or shades over it (rendering gotcha 1): the close button sits in a pinned

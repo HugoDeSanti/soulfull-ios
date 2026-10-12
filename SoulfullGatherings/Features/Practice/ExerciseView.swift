@@ -3,7 +3,8 @@
 //  Soulfull Gatherings
 //
 //  Movement section: guided exercise sequences. The list shows each routine;
-//  the detail screen lays out its numbered steps with sets/reps.
+//  the detail screen lays out its numbered steps with sets/reps, and ends with
+//  what members have said about it.
 //  The sequences are the `exercises` table, through WrittenPracticeStore.
 //
 
@@ -134,6 +135,10 @@ struct ExerciseDetailView: View {
                     PracticeRule()
                 }
                 .padding(.top, 20)
+
+                // A section's gap below the sequence (the stack adds 28).
+                PracticeCommentsSection(thread: CommentThread(exercise))
+                    .padding(.top, Theme.sectionGap - 28)
 
                 Color.clear.frame(height: 120)
             }

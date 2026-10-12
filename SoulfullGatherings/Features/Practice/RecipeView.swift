@@ -3,7 +3,8 @@
 //  Soulfull Gatherings
 //
 //  Food Recipes section. The list shows each dish; the detail screen leads
-//  with a full-bleed photo, then meta, ingredients, and method.
+//  with a full-bleed photo, then meta, ingredients, method, and what members
+//  have said about it.
 //  The recipes are the `recipes` table, through WrittenPracticeStore.
 //
 
@@ -160,6 +161,10 @@ struct RecipeDetailView: View {
                             }
                         }
                     }
+
+                    // A section's gap below the method (the stack adds 36).
+                    PracticeCommentsSection(thread: CommentThread(recipe))
+                        .padding(.top, Theme.sectionGap - 36)
 
                     Color.clear.frame(height: 120)
                 }
