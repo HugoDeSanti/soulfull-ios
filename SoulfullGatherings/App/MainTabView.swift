@@ -440,6 +440,8 @@ private struct LiveProgram<Page: View>: View {
 private struct CommunityRoot: View {
     enum Route: Hashable {
         case friends
+        /// A friend's page, from their row on the Friends screen.
+        case friend(CommunityMember)
         case notifications
     }
     @Binding var navHidden: Bool
@@ -464,7 +466,11 @@ private struct CommunityRoot: View {
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case .friends:
-                        FriendsView(vm: vm)
+                        FriendsView(vm: vm, onOpenFriend: { path.append(.friend($0)) })
+                            .toolbar(.hidden, for: .navigationBar)
+                            .connectionBannerInset()
+                    case .friend(let member):
+                        FriendView(vm: vm, member: member)
                             .toolbar(.hidden, for: .navigationBar)
                             .connectionBannerInset()
                     case .notifications:

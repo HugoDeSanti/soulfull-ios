@@ -63,6 +63,9 @@ struct CommunityBackend {
     /// Everyone's feed for nil; only these members' otherwise.
     var fetchActivity: @MainActor (_ memberIDs: [UUID]?) async throws -> [CommunityActivity]
     var fetchFriendships: @MainActor (_ userID: UUID) async throws -> [Friendship]
+    /// Each friend's practice in numbers (0034); friends who don't share it
+    /// aren't in it.
+    var fetchFriendPractice: @MainActor () async throws -> [FriendPractice] = { [] }
     var fetchNotifications: @MainActor (_ userID: UUID) async throws -> [LikeNotification]
     /// Stamps exactly these notifications read — never "everything unread".
     var markNotificationsRead: @MainActor (_ userID: UUID, _ ids: [UUID]) async throws -> Void
@@ -80,6 +83,7 @@ struct CommunityBackend {
             currentUserID: { SupabaseService.shared.client.auth.currentUser?.id },
             fetchActivity: { try await SupabaseService.shared.fetchCommunityActivity(memberIDs: $0) },
             fetchFriendships: { try await SupabaseService.shared.fetchFriendships(userID: $0) },
+            fetchFriendPractice: { try await SupabaseService.shared.fetchFriendPractice() },
             fetchNotifications: { try await SupabaseService.shared.fetchNotifications(userID: $0) },
             markNotificationsRead: { try await SupabaseService.shared.markNotificationsRead(userID: $0, ids: $1) },
             searchMembers: { try await SupabaseService.shared.searchMembers($0) },
@@ -119,6 +123,25 @@ final class CommunityViewModel: MemberSafetyActions {
     private(set) var activityFailure: CommunityLoadFailure?
     private(set) var friendshipsFailure: CommunityLoadFailure?
     private(set) var friendshipsLoaded = false
+
+    /// Each friend's practice in numbers, by member id: the Friends screen's
+    /// line under a name, and a friend's page. Only friends who share their
+    /// practice are in it (0034).
+    private(set) var friendPractice: [UUID: FriendPractice] = [:]
+    private var friendPracticeLoadedAt: Date?
+    private var friendPracticeFailure: CommunityLoadFailure?
+    /// Who the friends were when it was read. A friend missing from an answer
+    /// read for them keeps their practice private; one made since hasn't been
+    /// asked about yet.
+    private var friendPracticeReadFor: Set<UUID>?
+    /// Bumped by each read; only the latest one lands. A read already out
+    /// when a request is accepted would otherwise answer for the old friends
+    /// and leave the new one waiting.
+    @ObservationIgnored private var friendPracticeRead = 0
+    /// The friends the read that is out was asked for. The Friends screen asks
+    /// on appear and again as its friends arrive; the same question twice is
+    /// one read.
+    @ObservationIgnored private var friendPracticeAsking: Set<UUID>?
 
     /// When each feed last answered. Absent means never, for this member.
     private var activityLoadedAt: [CommunityScope: Date] = [:]
@@ -218,6 +241,16 @@ final class CommunityViewModel: MemberSafetyActions {
         guard let row = friendships.first(where: { $0.otherID == memberID }) else { return .none }
         if row.isAccepted { return .friends }
         return row.direction == .sent ? .requested : .awaitingMyAnswer
+    }
+
+    /// Where a friend's numbers stand. What was read stays up through a
+    /// failed re-read; "private" is said only of a friend the answer was read
+    /// for, never of one made since.
+    func practice(of memberID: UUID) -> FriendPracticeStanding {
+        if let practice = friendPractice[memberID] { return .shared(practice) }
+        if friendPracticeReadFor?.contains(memberID) == true { return .keptPrivate }
+        if let friendPracticeFailure { return .unavailable(friendPracticeFailure) }
+        return .loading
     }
 
     // MARK: - Loading
@@ -402,6 +435,43 @@ final class CommunityViewModel: MemberSafetyActions {
         }
     }
 
+    /// Reads every friend's numbers in one call. Current while fresh and
+    /// while the friends are the ones it was read for, so accepting a request
+    /// reads again for the new friend. `force` is pull to refresh.
+    func loadFriendPractice(force: Bool = false) async {
+        #if DEBUG
+        // The fixture's numbers stand, read for whoever the friends are now.
+        if Self.isPreview { friendPracticeReadFor = Set(friendIDs); return }
+        #endif
+        // Answered for who the friends are, so it waits for them, as the
+        // Friends feed does.
+        guard userID != nil, friendshipsLoaded else { return }
+        let ids = Set(friendIDs)
+        guard force || friendPracticeFailure != nil || !isFresh(friendPracticeLoadedAt)
+                || friendPracticeReadFor != ids else { return }
+        guard force || friendPracticeAsking != ids else { return }
+        let generation = self.generation
+        friendPracticeRead += 1
+        let read = friendPracticeRead
+        friendPracticeAsking = ids
+        defer { if read == friendPracticeRead { friendPracticeAsking = nil } }
+        do {
+            let rows = try await backend.fetchFriendPractice()
+            guard generation == self.generation, read == friendPracticeRead else { return }
+            friendPractice = Dictionary(rows.filter { !isHidden($0.memberID) }.map { ($0.memberID, $0) },
+                                        uniquingKeysWith: { first, _ in first })
+            friendPracticeReadFor = ids
+            friendPracticeFailure = nil
+            friendPracticeLoadedAt = backend.now()
+        } catch where error.isCancellation {
+            return
+        } catch {
+            guard generation == self.generation, read == friendPracticeRead else { return }
+            Log.data.info("Friends' practice unavailable: \(error.localizedDescription)")
+            friendPracticeFailure = CommunityLoadFailure(offline: error.isOffline)
+        }
+    }
+
     private func isHidden(_ memberID: UUID?) -> Bool {
         guard let memberID else { return false }
         return hiddenMembers.contains(memberID)
@@ -437,6 +507,11 @@ final class CommunityViewModel: MemberSafetyActions {
         activityFailure = nil
         friendshipsFailure = nil
         friendshipsLoaded = false
+        friendPractice = [:]
+        friendPracticeLoadedAt = nil
+        friendPracticeFailure = nil
+        friendPracticeReadFor = nil
+        friendPracticeAsking = nil
         activityLoadedAt = [:]
         friendsFeedReadFor = nil
         friendshipsLoadedAt = nil
@@ -540,8 +615,9 @@ final class CommunityViewModel: MemberSafetyActions {
         defer { busy.remove(member.id) }
         actionError = nil
         let before = (all: allActivity, friends: friendsActivity, friendships: friendships,
-                      notifications: notifications, search: searchResults)
+                      notifications: notifications, search: searchResults, practice: friendPractice)
         hiddenMembers.insert(member.id)
+        friendPractice[member.id] = nil
         allActivity.removeAll { $0.member.id == member.id }
         friendsActivity.removeAll { $0.member.id == member.id }
         friendships.removeAll { $0.otherID == member.id }
@@ -566,6 +642,7 @@ final class CommunityViewModel: MemberSafetyActions {
             friendships = before.friendships
             notifications = before.notifications
             searchResults = before.search
+            friendPractice = before.practice
             actionError = error.isOffline
                 ? "You're offline, so \(member.displayName) isn't blocked. Reconnect and try again."
                 : "We couldn't block \(member.displayName) just now. Please try again."
@@ -713,7 +790,20 @@ final class CommunityViewModel: MemberSafetyActions {
             Friendship(requesterID: Self.previewSelf, addresseeID: Self.mateo.id, status: .pending,
                        createdAt: ago(50), other: Self.mateo, direction: .sent),
         ]
+        // Alma kept today, twelve days running; Theo's three-day streak ends
+        // yesterday, so it is still alive but not yet kept. Nia, once
+        // accepted, keeps her practice private: she isn't in it.
+        func run(_ first: Int, to last: Int) -> ClosedRange<CalendarDay> {
+            CalendarDay(day(first, at: 12), in: calendar)...CalendarDay(day(last, at: 12), in: calendar)
+        }
+        friendPractice = [
+            Self.alma.id: FriendPractice(memberID: Self.alma.id, latestRun: run(11, to: 0),
+                                         longestRun: 21, classesTaken: 48, minutesPracticed: 612),
+            Self.theo.id: FriendPractice(memberID: Self.theo.id, latestRun: run(3, to: 1),
+                                         longestRun: 9, classesTaken: 7, minutesPracticed: 140),
+        ]
         let ids = Set(friendIDs)
+        friendPracticeReadFor = ids
         friendsActivity = allActivity.filter { ids.contains($0.member.id) }
         activityLoadedAt = [.all: .now, .friends: .now]
         friendshipsLoaded = true

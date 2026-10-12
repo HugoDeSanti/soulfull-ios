@@ -4,13 +4,16 @@
 //
 //  The Community tab: the feed reads as sentences with a face beside each,
 //  the All | Friends toggle actually narrows it, the Friends screen moves a
-//  request from waiting to accepted, and a guest reaching for Friends is asked
-//  to sign in — not shown an empty list or a bare error.
+//  request from waiting to accepted, a friend's row carries their streak and
+//  opens their numbers, and a guest reaching for Friends is asked to sign in —
+//  not shown an empty list or a bare error.
 //
 //  The populated screens run against the `-preview-community` fixture, which
 //  holds four members (one of them "you"), six finished practices, two
-//  friends, one request waiting on you and one you sent. The guest test runs
-//  against the live backend, where the gate is the thing under test.
+//  friends (Alma kept a 12-day streak today; Theo's 3 days end yesterday), one
+//  request waiting on you (Nia, who keeps her practice private) and one you
+//  sent. The guest test runs against the live backend, where the gate is the
+//  thing under test.
 //
 
 import XCTest
@@ -104,6 +107,8 @@ final class CommunityTests: XCTestCase {
         }
         XCTAssertEqual(friendRows.count, 3, "Accepting should make three friends")
         XCTAssertFalse(app.buttons["Accept"].exists, "The request should be gone once accepted")
+        XCTAssertTrue(friendRows.allElementsBoundByIndex.contains { $0.label == "Nia, keeps their practice private" },
+                      "Nia shares no numbers, and her row should say so, got \(friendRows.allElementsBoundByIndex.map { $0.label })")
         shot(app, "04-friends-after-accept")
 
         // Search finds a member by name and offers Add for someone new.
@@ -123,6 +128,56 @@ final class CommunityTests: XCTestCase {
         element(app, "back-bar").tap()
         XCTAssertTrue(friendsButton.waitForExistence(timeout: 10))
         XCTAssertFalse(friendsButton.label.contains("request"), "No requests left, so no badge")
+    }
+
+    /// A friend's row says their streak and classes; it opens their page, where
+    /// the four numbers of their own You tab are; and they can be removed from
+    /// there, which closes the page.
+    func testAFriendsRowAndPageShowTheirPractice() {
+        let app = launch(fixture: true)
+
+        let friendsButton = element(app, "community-friends")
+        XCTAssertTrue(friendsButton.waitForExistence(timeout: 15))
+        friendsButton.tap()
+
+        let friendRows = app.descendants(matching: .any).matching(identifier: "friend-row")
+        XCTAssertTrue(friendRows.firstMatch.waitForExistence(timeout: 10), "No friends on the Friends screen")
+        let labels = friendRows.allElementsBoundByIndex.map { $0.label }
+        XCTAssertTrue(labels.contains("Alma G., 12-day streak · 48 classes"),
+                      "Alma's row should carry her streak and classes, got \(labels)")
+        XCTAssertTrue(labels.contains("Theo R., 3-day streak · 7 classes"),
+                      "Theo's streak ended yesterday and is still alive, got \(labels)")
+        shot(app, "06-friends-with-numbers")
+
+        let alma = friendRows.matching(NSPredicate(format: "label BEGINSWITH 'Alma G.'")).firstMatch
+        alma.tap()
+
+        let name = element(app, "friend-name")
+        XCTAssertTrue(name.waitForExistence(timeout: 10), "Alma's row didn't open her page")
+        XCTAssertEqual(name.label, "Alma G.")
+        let streak = element(app, "friend-stat-current-streak")
+        XCTAssertTrue(streak.waitForExistence(timeout: 5))
+        XCTAssertEqual(value(streak), "12 days, Practiced today")
+        XCTAssertEqual(value(element(app, "friend-stat-best-streak")), "21 days, Days in a row")
+        XCTAssertEqual(value(element(app, "friend-stat-classes")), "48, Sessions & movement")
+        XCTAssertEqual(value(element(app, "friend-stat-minutes"))?.hasPrefix("612, "), true,
+                       "612 minutes in class, got \(value(element(app, "friend-stat-minutes")) ?? "nothing")")
+        shot(app, "07-friend-page")
+
+        element(app, "friend-remove").tap()
+        let confirm = app.buttons.matching(NSPredicate(format: "label == 'Remove friend' AND identifier != 'friend-remove'")).firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Remove went through without asking")
+        shot(app, "08-remove-confirm")
+        confirm.tap()
+
+        XCTAssertTrue(friendRows.firstMatch.waitForExistence(timeout: 10), "Removing should close her page")
+        let deadline = Date().addingTimeInterval(10)
+        while friendRows.count != 1 && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        XCTAssertEqual(friendRows.count, 1, "Only Theo should be left")
+        XCTAssertFalse(friendRows.matching(NSPredicate(format: "label BEGINSWITH 'Alma G.'")).firstMatch.exists)
+        shot(app, "09-after-remove")
     }
 
     /// A like moves the count at once and can be taken back; your own line

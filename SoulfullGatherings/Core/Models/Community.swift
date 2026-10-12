@@ -115,6 +115,128 @@ enum FriendStanding: Hashable {
     case friends
 }
 
+// MARK: - A friend's practice
+
+/// A day on the calendar, with no time and no zone: a `date` as
+/// `friend_practice_stats()` answers it ("2026-10-12"), counted in the zone
+/// the app asked for.
+struct CalendarDay: Hashable, Comparable, Sendable {
+    let year: Int
+    let month: Int
+    let day: Int
+
+    init(year: Int, month: Int, day: Int) {
+        self.year = year
+        self.month = month
+        self.day = day
+    }
+
+    /// "YYYY-MM-DD", or nil for anything else.
+    init?(_ text: String) {
+        let parts = text.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3,
+              let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]),
+              (1...12).contains(month), (1...31).contains(day) else { return nil }
+        self.init(year: year, month: month, day: day)
+    }
+
+    /// The day `date` falls on in `calendar`.
+    init(_ date: Date, in calendar: Calendar) {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        self.init(year: parts.year ?? 0, month: parts.month ?? 1, day: parts.day ?? 1)
+    }
+
+    /// Its first moment in `calendar`, as `startOfDay` gives it.
+    func start(in calendar: Calendar) -> Date? {
+        calendar.date(from: DateComponents(year: year, month: month, day: day))
+            .map(calendar.startOfDay(for:))
+    }
+
+    static func < (a: CalendarDay, b: CalendarDay) -> Bool {
+        (a.year, a.month, a.day) < (b.year, b.month, b.day)
+    }
+}
+
+/// A friend's practice in numbers, from `friend_practice_stats()` (0034): only
+/// a friend who shares their practice, and only this. Never which practices,
+/// and never a calendar: the days of their latest run are its first and last.
+/// The You tab's rules count every figure (`PracticeStats`), so a friend sees
+/// the numbers the member sees on their own You tab.
+struct FriendPractice: Hashable, Sendable {
+    let memberID: UUID
+    /// Their latest run of consecutive practice days. Nil until they finish a
+    /// first practice.
+    let latestRun: ClosedRange<CalendarDay>?
+    /// The longest run they've ever had.
+    let longestRun: Int
+    /// Finished sessions and movement sittings.
+    let classesTaken: Int
+    /// Time spent in those, finished or not.
+    let minutesPracticed: Int
+
+    /// Their streak as of `now`. The latest run counts while it reaches today
+    /// or yesterday, by `PracticeStreak`, the rule the You tab uses, so it
+    /// moves at midnight with no new read.
+    func streak(calendar: Calendar = .current, now: Date) -> PracticeStreak {
+        var days = Set<Date>()
+        if let run = latestRun, var cursor = run.lowerBound.start(in: calendar),
+           let last = run.upperBound.start(in: calendar) {
+            // Bounded, so a malformed run can't spin: no run is 100 years long.
+            while cursor <= last, days.count < 36_525 {
+                days.insert(cursor)
+                guard let next = PracticeStreak.step(cursor, by: 1, calendar) else { break }
+                cursor = next
+            }
+        }
+        let streak = PracticeStreak(days: days, calendar: calendar, now: now)
+        return PracticeStreak(current: streak.current, best: max(longestRun, streak.best),
+                              keptToday: streak.keptToday)
+    }
+
+    /// When they last finished a practice, said for their streak's caption:
+    /// "Practiced today", "Last practiced yesterday", "Last practiced
+    /// Monday", "Last practiced 3 Oct". Nil if they never have.
+    func lastPracticedLabel(calendar: Calendar = .current, now: Date) -> String? {
+        guard let last = latestRun?.upperBound.start(in: calendar) else { return nil }
+        let today = calendar.startOfDay(for: now)
+        let days = calendar.dateComponents([.day], from: last, to: today).day ?? 0
+        switch days {
+        case ...0: return "Practiced today"
+        case 1:    return "Last practiced yesterday"
+        default:
+            var style = Date.FormatStyle.dateTime
+            style.timeZone = calendar.timeZone
+            let when = days < 7 ? last.formatted(style.weekday(.wide))
+                                : last.formatted(style.day().month(.abbreviated))
+            return "Last practiced \(when)"
+        }
+    }
+
+    /// The line under a friend's name on the Friends screen: "12-day streak ·
+    /// 48 classes", "48 classes" between streaks, "No practices finished yet".
+    func summary(calendar: Calendar = .current, now: Date) -> String {
+        let current = streak(calendar: calendar, now: now).current
+        let classes = classesTaken == 1 ? "1 class" : "\(classesTaken.formatted()) classes"
+        switch (current > 0, classesTaken > 0) {
+        case (true, true):   return "\(current)-day streak · \(classes)"
+        case (true, false):  return "\(current)-day streak"
+        case (false, true):  return classes
+        case (false, false): return latestRun == nil ? "No practices finished yet" : "No streak right now"
+        }
+    }
+}
+
+/// Where a friend's numbers stand on this screen.
+enum FriendPracticeStanding: Equatable {
+    /// Not read yet.
+    case loading
+    case shared(FriendPractice)
+    /// They have "Share my practice" off, so there is nothing to show.
+    case keptPrivate
+    /// The read failed, and there is nothing from earlier to show instead.
+    case unavailable(CommunityLoadFailure)
+}
+
 /// "Alma G. liked your Confidence Boost practice." Read from the
 /// `member_notifications` view; written only by the like trigger.
 struct LikeNotification: Identifiable, Hashable, Sendable {

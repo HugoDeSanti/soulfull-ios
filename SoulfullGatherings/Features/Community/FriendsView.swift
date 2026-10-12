@@ -3,7 +3,9 @@
 //  Soulfull Gatherings
 //
 //  Finding and keeping friends: search members by name, answer the requests
-//  waiting on you, see the ones you've sent, and the friends you have.
+//  waiting on you, see the ones you've sent, and the friends you have, each
+//  with their streak and classes under their name. A friend's row opens their
+//  page (`FriendView`), where they can be removed.
 //
 //  Pushed from the Community tab behind the account gate; the server refuses
 //  a guest anyway. Search matches on the full name server-side and answers
@@ -17,7 +19,8 @@ import SwiftUI
 
 struct FriendsView: View {
     @Bindable var vm: CommunityViewModel
-    @State private var removing: Friendship?
+    /// Push a friend's page.
+    var onOpenFriend: (CommunityMember) -> Void = { _ in }
     @State private var reporting: ReportTarget?
     @State private var blocking: CommunityMember?
     @FocusState private var searchFocused: Bool
@@ -56,19 +59,16 @@ struct FriendsView: View {
         .statusBarFade()
         .scrollDismissesKeyboard(.interactively)
         .background { PhotoBackdrop(imageName: "welcome-bg", blur: 24, darken: 0.8) }
-        .refreshable { await vm.loadFriendships(force: true) }
-        .task { await vm.loadFriendships() }
-        .confirmationDialog("Remove \(removing?.other?.displayName ?? "this friend")?",
-                            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
-                            titleVisibility: .visible) {
-            Button("Remove friend", role: .destructive) {
-                if let row = removing { Task { await vm.remove(row) } }
-                removing = nil
-            }
-            Button("Cancel", role: .cancel) { removing = nil }
-        } message: {
-            Text("You'll stop seeing each other's practices in your Friends feeds. They won't be told.")
+        .refreshable {
+            await vm.loadFriendships(force: true)
+            await vm.loadFriendPractice(force: true)
         }
+        .task {
+            await vm.loadFriendships()
+            await vm.loadFriendPractice()
+        }
+        // A request accepted here: the new friend's numbers.
+        .onChange(of: vm.friendIDs) { Task { await vm.loadFriendPractice() } }
         // The Friends screen is behind the gate already: everyone here is a member.
         .memberSafety(vm: vm, reporting: $reporting, blocking: $blocking,
                       isMember: true, requireAccount: { $0() })
@@ -278,11 +278,11 @@ struct FriendsView: View {
             } else {
                 ForEach(vm.friends) { row in
                     let member = row.other ?? CommunityMember(id: row.otherID, displayName: "A member", avatarUrl: nil)
-                    MemberRow(member: member, ruled: row.id != vm.friends.first?.id) {
-                        pill("Remove") { removing = row }
+                    MemberRow(member: member, ruled: row.id != vm.friends.first?.id,
+                              practice: vm.practice(of: member.id),
+                              onOpen: { onOpenFriend(member) }) {
                         safetyMenu(for: member)
                     }
-                    .accessibilityIdentifier("friend-row")
                     .listReveal()
                 }
             }
@@ -372,22 +372,36 @@ struct FriendsView: View {
 
 /// A face, a name, and whatever control the section puts beside them — an
 /// open row on the photo, with a hairline above it when `ruled` (every row
-/// but a section's first).
+/// but a section's first). A friend's row adds their practice in a line under
+/// the name, and opens their page from the face and the name.
 private struct MemberRow<Trailing: View>: View {
     let member: CommunityMember
     var ruled = false
+    /// A friend's numbers, for the line under the name.
+    var practice: FriendPracticeStanding? = nil
+    /// Opens their page. The face and the name become the button; the
+    /// controls beside them stay their own.
+    var onOpen: (() -> Void)? = nil
     @ViewBuilder var trailing: Trailing
+
+    /// Read inside `body`, so a streak moves at midnight.
+    private let clock = AppClock.shared
 
     var body: some View {
         HStack(spacing: 12) {
-            AvatarView(avatarUrl: member.avatarUrl, name: member.displayName,
-                       seed: member.id.uuidString, size: 44)
-            Text(member.displayName)
-                .font(Theme.body(15, weight: .medium))
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
-                .onPhoto()
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if let onOpen {
+                Button(action: onOpen) {
+                    identity(opens: true)
+                }
+                .buttonStyle(.soulPressable)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(spokenIdentity)
+                .accessibilityHint("Opens their page")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("friend-row")
+            } else {
+                identity(opens: false)
+            }
             trailing
         }
         .padding(.vertical, 12)
@@ -398,6 +412,73 @@ private struct MemberRow<Trailing: View>: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(member.displayName)
+    }
+
+    private func identity(opens: Bool) -> some View {
+        HStack(spacing: 12) {
+            AvatarView(avatarUrl: member.avatarUrl, name: member.displayName,
+                       seed: member.id.uuidString, size: 44)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(member.displayName)
+                    .font(Theme.body(15, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                if let practice {
+                    FriendPracticeLine(standing: practice, now: clock.now)
+                }
+            }
+            .onPhoto()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if opens {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Theme.inkSoft)
+                    .onPhoto()
+            }
+        }
+        // The whole block answers a tap, gaps included (rendering gotcha 5).
+        .contentShape(Rectangle())
+    }
+
+    private var spokenIdentity: String {
+        guard let practice else { return member.displayName }
+        switch practice {
+        case .shared(let numbers): return "\(member.displayName), \(numbers.summary(now: clock.now))"
+        case .keptPrivate:         return "\(member.displayName), keeps their practice private"
+        case .loading, .unavailable: return member.displayName
+        }
+    }
+}
+
+/// The line under a friend's name: their streak and classes, or that they
+/// keep them private. Held open while it loads, so the row doesn't grow as the
+/// numbers arrive; a read that failed leaves it blank (the friend's page
+/// says why).
+private struct FriendPracticeLine: View {
+    let standing: FriendPracticeStanding
+    let now: Date
+
+    var body: some View {
+        HStack(spacing: 5) {
+            switch standing {
+            case .shared(let practice):
+                // The one warm mark, as on the You tab: a streak that's alive.
+                if practice.streak(now: now).current > 0 {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 9, weight: .regular))
+                        .foregroundStyle(Theme.ember)
+                }
+                Text(practice.summary(now: now))
+            case .keptPrivate:
+                Text("Keeps their practice private")
+            case .loading, .unavailable:
+                Text(" ")
+            }
+        }
+        .font(Theme.body(12))
+        .foregroundStyle(Theme.inkSoft)
+        .lineLimit(1)
+        .animation(Theme.Motion.settle, value: standing)
     }
 }
 

@@ -123,6 +123,27 @@ extension SupabaseService {
             .execute()
     }
 
+    /// Each friend's practice in numbers, through `friend_practice_stats()`
+    /// (0034): one row per accepted friend who shares their practice, with
+    /// their days counted in `timeZone`. A friend who doesn't share has no
+    /// row. Uncached: it moves whenever a friend finishes anything.
+    func fetchFriendPractice(timeZone: TimeZone = .current) async throws -> [FriendPractice] {
+        let response = try await client
+            .rpc("friend_practice_stats", params: ["tz": timeZone.identifier])
+            .execute()
+        return try Self.decodeFriendPractice(response.data)
+    }
+
+    /// What `friend_practice_stats()` answers, decoded with the decoder
+    /// PostgREST's own `.value` uses. Static, so the mapping from the
+    /// function's rows is tested against the exact keys the SQL writes, with
+    /// no network.
+    nonisolated static func decodeFriendPractice(_ data: Data) throws -> [FriendPractice] {
+        try PostgrestClient.Configuration.jsonDecoder
+            .decode([FriendPracticeRow].self, from: data)
+            .map(\.practice)
+    }
+
     // MARK: - Safety (0028)
 
     /// The members this member has blocked, newest first, through
@@ -508,6 +529,39 @@ private struct NotificationRow: Decodable {
             createdAt: createdAt,
             readAt: readAt
         )
+    }
+}
+
+/// Read model for one row of `friend_practice_stats()`. The days are SQL
+/// `date`s, "YYYY-MM-DD", read as text so no decoder can put them in a zone.
+private struct FriendPracticeRow: Decodable {
+    let friendId: UUID
+    let runFirstDay: String?
+    let runLastDay: String?
+    let bestStreak: Int
+    let classesTaken: Int
+    let minutesPracticed: Int
+
+    enum CodingKeys: String, CodingKey {
+        case friendId         = "friend_id"
+        case runFirstDay      = "run_first_day"
+        case runLastDay       = "run_last_day"
+        case bestStreak       = "best_streak"
+        case classesTaken     = "classes_taken"
+        case minutesPracticed = "minutes_practiced"
+    }
+
+    var practice: FriendPractice {
+        let run: ClosedRange<CalendarDay>? = {
+            guard let first = runFirstDay.flatMap({ CalendarDay($0) }),
+                  let last = runLastDay.flatMap({ CalendarDay($0) }),
+                  first <= last else { return nil }
+            return first...last
+        }()
+        return FriendPractice(memberID: friendId, latestRun: run,
+                              longestRun: max(0, bestStreak),
+                              classesTaken: max(0, classesTaken),
+                              minutesPracticed: max(0, minutesPracticed))
     }
 }
 

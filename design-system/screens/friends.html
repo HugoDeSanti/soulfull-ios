@@ -15,7 +15,12 @@
      on it carries .on-photo). Every row (search results too) ends in "⋯" after
      its buttons (.member-menu in
      app.css): Report → report-member, Block → the confirmation described on
-     the community card. */
+     the community card. A FRIEND's row carries their practice in a line under
+     the name (friend_practice_stats(), 0034: "12-day streak · 48 classes",
+     the flame in ember while the streak is alive; "Keeps their practice
+     private" for a friend with Share my practice off; a blank line, held,
+     while it loads) and a chevron: face, name and line open their page
+     (friend.html), which is where Remove friend lives now. */
   .scr { padding: 62px var(--gutter) 130px; }
   .scr > * + * { margin-top: 36px; }
   .back { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink); }
@@ -46,6 +51,12 @@
   .pill.fill { background: var(--ink); border-color: var(--ink); color: #000; position: static; }  /* not app.css's .fill overlay helper */
   .chip-state { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
   .ctl { display: flex; gap: 8px; }
+  /* A friend: the face and the two lines are one link, ending in a chevron. */
+  .row .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .row .who .name { flex: none; }
+  .row .line { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+  .row .line svg { color: var(--ember); flex: none; }
+  .row .chev { color: var(--ink-soft); flex: none; }
 </style>
 </head><body>
 <div class="stage"><div class="device">
@@ -83,8 +94,8 @@
     <div class="sec">
       <div class="section-label on-photo"><span class="title">Friends</span></div>
       <div class="rows">
-        <div class="row"><div class="av t2">A</div><span class="name on-photo">Alma G.</span><button class="pill">Remove</button><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
-        <div class="row"><div class="av t3">T</div><span class="name on-photo">Theo R.</span><button class="pill">Remove</button><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t2">A</div><div class="who on-photo"><span class="name">Alma G.</span><span class="line"><svg width="8" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>12-day streak · 48 classes</span></div><svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1.5 1.5 5 5-5 5"/></svg><button class="member-menu" aria-label="More for Alma G."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
+        <div class="row"><div class="av t3">T</div><div class="who on-photo"><span class="name">Theo R.</span><span class="line"><svg width="8" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-3 5.5-3 9.5A3.5 3.5 0 0 0 12 15c2 0 3.5-1.6 3.5-3.6 0-1-.4-2-1-2.8 2.6 1.4 4.5 4.2 4.5 7.4A7 7 0 0 1 12 23a7 7 0 0 1-7-7c0-6 7-8 7-14z"/></svg>3-day streak · 7 classes</span></div><svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m1.5 1.5 5 5-5 5"/></svg><button class="member-menu" aria-label="More for Theo R."><svg width="15" height="4" viewBox="0 0 15 4" fill="currentColor"><circle cx="2" cy="2" r="1.7"/><circle cx="7.5" cy="2" r="1.7"/><circle cx="13" cy="2" r="1.7"/></svg></button></div>
       </div>
     </div>
   </div>

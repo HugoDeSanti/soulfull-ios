@@ -27,6 +27,10 @@ struct CommunityLoadTests {
         var notifications: [LikeNotification] = []
         var activityError: (any Error)?
         var friendshipsError: (any Error)?
+        var friendPractice: [FriendPractice] = []
+        var friendPracticeError: (any Error)?
+        /// Runs while a friend-practice read is out, before it answers.
+        var duringFriendPracticeRead: (@MainActor () async -> Void)?
         var searchResults: [CommunityMember] = []
         /// What the next request, block or report throws, if anything.
         var writeError: (any Error)?
@@ -37,6 +41,7 @@ struct CommunityLoadTests {
 
         private(set) var activityReads: [[UUID]?] = []
         private(set) var friendshipReads = 0
+        private(set) var friendPracticeReads = 0
         private(set) var notificationReads = 0
         private(set) var markedRead: [[UUID]] = []
         /// How many lines the feed was showing as each activity read began.
@@ -56,6 +61,14 @@ struct CommunityLoadTests {
                     self.friendshipReads += 1
                     if let error = self.friendshipsError { throw error }
                     return self.friendships
+                },
+                fetchFriendPractice: {
+                    self.friendPracticeReads += 1
+                    let answer = self.friendPractice
+                    let error = self.friendPracticeError
+                    await self.duringFriendPracticeRead?()
+                    if let error { throw error }
+                    return answer
                 },
                 fetchNotifications: { _ in
                     self.notificationReads += 1

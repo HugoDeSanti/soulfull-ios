@@ -190,7 +190,10 @@
 		  FINISHED session, movement sequence or recipe (never a journal prompt)
 		  is also shown to other members in the Community feed as "<first name>
 		  <last initial>. practiced <title>", unless the member turns
-		  "Share my practice" off on the You tab. Likes, guide follows and
+		  "Share my practice" off on the You tab. The same switch shows a
+		  member's accepted friends their streak, best streak, classes and
+		  minutes (`friend_practice_stats()`, 0034): numbers only, never
+		  which practices or on which days. Likes, guide follows and
 		  blocks (`member_blocks`, 0028) fall under the same type; friendships
 		  are declared as Contacts. Analytics too: the guide dashboard shows a
 		  guide how many people their sessions reached (0026).

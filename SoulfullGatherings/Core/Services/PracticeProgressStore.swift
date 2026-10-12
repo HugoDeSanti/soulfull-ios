@@ -557,28 +557,11 @@ struct PracticeStats: Equatable {
         classesTaken = classes
         minutesPracticed = seconds / 60
 
-        keptToday = days.contains(today)
+        let streak = PracticeStreak(days: days, calendar: calendar, now: now)
+        keptToday = streak.keptToday
         practicedToday = touchedToday
-        currentStreak = Self.run(endingOn: today, in: days, calendar: calendar)
-            // Yesterday still counts as a live streak — today isn't over yet.
-            ?? Self.step(today, by: -1, calendar)
-                .flatMap { Self.run(endingOn: $0, in: days, calendar: calendar) }
-            ?? 0
-
-        // Longest run: walk forward from every day that starts one.
-        var best = 0
-        for day in days {
-            guard let previous = Self.step(day, by: -1, calendar),
-                  !days.contains(previous) else { continue }
-            var length = 0
-            var cursor: Date? = day
-            while let current = cursor, days.contains(current) {
-                length += 1
-                cursor = Self.step(current, by: 1, calendar)
-            }
-            best = max(best, length)
-        }
-        bestStreak = max(best, currentStreak)
+        currentStreak = streak.current
+        bestStreak = streak.best
     }
 
     /// The one line on the streak tile that says what to do next. All of it
@@ -597,6 +580,51 @@ struct PracticeStats: Equatable {
         }
         return "Finish a practice today to start your streak"
     }
+}
+
+/// The streak rule, apart from where the days come from: a member's own
+/// ledger (`PracticeStats`), or a friend's latest run as the server hands it
+/// over (`FriendPractice`, 0034, which counts days by the same rule in SQL).
+struct PracticeStreak: Equatable {
+    /// Consecutive practice days up to today — or up to yesterday, because
+    /// today isn't over yet and a streak isn't lost until it is.
+    let current: Int
+    /// The longest run ever, the current one included.
+    let best: Int
+    /// Today is one of the days.
+    let keptToday: Bool
+
+    init(current: Int, best: Int, keptToday: Bool) {
+        self.current = current
+        self.best = best
+        self.keptToday = keptToday
+    }
+
+    /// `days` are the starts of the local days on which a practice was
+    /// finished, in `calendar`.
+    init(days: Set<Date>, calendar: Calendar, now: Date) {
+        let today = calendar.startOfDay(for: now)
+        keptToday = days.contains(today)
+        current = Self.run(endingOn: today, in: days, calendar: calendar)
+            ?? Self.step(today, by: -1, calendar)
+                .flatMap { Self.run(endingOn: $0, in: days, calendar: calendar) }
+            ?? 0
+
+        // Longest run: walk forward from every day that starts one.
+        var longest = 0
+        for day in days {
+            guard let previous = Self.step(day, by: -1, calendar),
+                  !days.contains(previous) else { continue }
+            var length = 0
+            var cursor: Date? = day
+            while let current = cursor, days.contains(current) {
+                length += 1
+                cursor = Self.step(current, by: 1, calendar)
+            }
+            longest = max(longest, length)
+        }
+        best = max(longest, current)
+    }
 
     /// Consecutive days ending on `day`, or nil if `day` itself wasn't one.
     private static func run(endingOn day: Date, in days: Set<Date>, calendar: Calendar) -> Int? {
@@ -614,7 +642,7 @@ struct PracticeStats: Equatable {
     /// 86,400 seconds, and re-normalised, so a clock change can't split a run —
     /// in a zone whose DST skips midnight, "start of day + 1 day" lands at 1am
     /// and would miss the set.
-    private static func step(_ day: Date, by offset: Int, _ calendar: Calendar) -> Date? {
+    static func step(_ day: Date, by offset: Int, _ calendar: Calendar) -> Date? {
         calendar.date(byAdding: .day, value: offset, to: day).map(calendar.startOfDay(for:))
     }
 }
