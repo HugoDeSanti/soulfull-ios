@@ -6,7 +6,7 @@ SwiftUI iOS app for a wellness retreat and community platform. Dark, editorial a
 
 ## Build & Run
 
-[XcodeGen](https://github.com/yonaskolb/XcodeGen): `project.yml` is the single source of truth (target, Swift 6, iOS 18, bundle ID `com.soulfullgatherings.app`, the Supabase SPM package, Geist fonts, entitlements, `Secrets.xcconfig` injection). Run `xcodegen generate` after editing `project.yml` **or adding any file** — targets use explicit file references.
+[XcodeGen](https://github.com/yonaskolb/XcodeGen): `project.yml` is the single source of truth (target, Swift 6, iOS 18, bundle ID `com.soulfullgatherings.app`, the Supabase SPM package (pinned to an exact version; every package's exact version is in the one tracked file of the generated project, `SoulfullGatherings.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`, which xcodegen leaves alone: upgrade by changing `project.yml`, building, and committing both), Geist fonts, entitlements, `Secrets.xcconfig` injection). Run `xcodegen generate` after editing `project.yml` **or adding any file** — targets use explicit file references.
 
 ```bash
 xcodegen generate

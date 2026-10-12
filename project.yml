@@ -24,9 +24,16 @@ settings:
     CURRENT_PROJECT_VERSION: "18"
 
 packages:
+  # Exact, so an archive on another machine builds what was tested here. It
+  # was `from: 2.0.0` with Package.resolved untracked, so a fresh clone took
+  # whatever 2.x was newest that day. Its own dependencies are pinned by the
+  # committed SoulfullGatherings.xcodeproj/project.xcworkspace/xcshareddata/
+  # swiftpm/Package.resolved (the one file in the generated project that is
+  # tracked; xcodegen leaves it alone). To upgrade: change this, build, and
+  # commit both.
   Supabase:
     url: https://github.com/supabase/supabase-swift
-    from: 2.0.0
+    exactVersion: 2.46.0
 
 schemes:
   SoulfullGatherings:
