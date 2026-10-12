@@ -44,6 +44,7 @@ struct ProfileView: View {
     @State private var showPhotoPicker = false
     @State private var photoItem: PhotosPickerItem?
     @State private var showBlocked = false
+    @State private var showEditName = false
 
     /// Has anything of their own to show. `-preview-you` renders the member
     /// layout against fixtures without an account.
@@ -109,6 +110,10 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showBlocked) {
             BlockedMembersView()
+        }
+        .sheet(isPresented: $showEditName) {
+            EditNameSheet(vm: EditNameViewModel(current: settings.userName, write: saveName),
+                          isGuide: guide.dashboard != nil)
         }
         .sheet(isPresented: $showAccount) {
             AccountView(mode: accountMode, initialName: settings.userName)
@@ -182,6 +187,16 @@ struct ProfileView: View {
         await auth.signOut()
     }
 
+    /// The profile first, then this phone's copy (`AppSettings.userName`,
+    /// which greets them on Home): the profile is where the name lives, and
+    /// the next sync would put the old one back on the phone otherwise.
+    private func saveName(_ name: String) async throws {
+        guard let id = auth.userID, auth.hasAccount else { throw AppError.unknown }
+        try await SupabaseService.shared.setProfileName(name, userID: id)
+        guard auth.userID == id else { return }
+        settings.userName = name
+    }
+
     // MARK: - Header
 
     private var header: some View {
@@ -195,14 +210,18 @@ struct ProfileView: View {
                     .breathing(scale: 1...1, opacity: 0.6...0.95)
             }
             VStack(spacing: 16) {
-                Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
-                    .font(Theme.eyebrow(12))
-                    .tracking(3)
-                    .foregroundStyle(Theme.ink)
-                Text("Welcome back.")
+                if auth.hasAccount {
+                    nameButton
+                } else {
+                    nameLine
+                }
+                // "Back" only for someone with an account to come back to: a
+                // guest opening the tab for the first time was welcomed back.
+                Text(isMember ? "Welcome back." : "Welcome.")
                     .font(Theme.headline(36, weight: .light))
                     .foregroundStyle(Theme.ink)
                     .kerning(-0.8)
+                    .accessibilityIdentifier("profile-welcome")
 
                 accountStatus
             }
@@ -211,6 +230,41 @@ struct ProfileView: View {
             .onPhoto()
             intentionsRow
         }
+    }
+
+    private var nameLine: some View {
+        Text((settings.userName.isEmpty ? "You" : settings.userName).uppercased())
+            .font(Theme.eyebrow(12))
+            .tracking(3)
+            .foregroundStyle(Theme.ink)
+    }
+
+    /// A member's name, which they can change: a small pencil says so, as the
+    /// camera does on the face above it. A guest's name only lives on this
+    /// phone, so theirs is just the line.
+    private var nameButton: some View {
+        Button {
+            showEditName = true
+        } label: {
+            HStack(spacing: 8) {
+                nameLine
+                Image(systemName: "pencil")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(Theme.inkSoft)
+            }
+            // About 44pt tall to the touch without moving anything: the
+            // padding widens the shape, the negative padding hands the room
+            // back to the layout (gotcha #5).
+            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+            .padding(.vertical, -14)
+            .padding(.horizontal, -12)
+        }
+        .buttonStyle(.soulPressable)
+        .accessibilityLabel(settings.userName.isEmpty ? "Add your name" : "Your name, \(settings.userName)")
+        .accessibilityHint("Change the name other members see")
+        .accessibilityIdentifier("profile-edit-name")
     }
 
     /// The member's face where the logo sits for a guest. Tapping offers a
@@ -573,10 +627,7 @@ struct ProfileView: View {
 
     /// "Hugo De Santiago" → "Hugo D.", the way the server abbreviates it.
     private static func abbreviated(_ name: String) -> String {
-        let parts = name.split(whereSeparator: \.isWhitespace).map(String.init)
-        guard let first = parts.first else { return "You" }
-        guard parts.count > 1, let initial = parts[1].first else { return first }
-        return "\(first) \(initial)."
+        MemberName.shownInCommunity(name) ?? "You"
     }
 
     // MARK: - Shared section states

@@ -70,6 +70,10 @@ final class ProfileTests: XCTestCase {
         XCTAssertFalse(element(app, "stat-current-streak").exists,
                        "A guest was shown practice stats they can't have")
         XCTAssertTrue(app.buttons["Create account"].exists, "A guest needs a way to make an account from here")
+        XCTAssertEqual(element(app, "profile-welcome").label, "Welcome.",
+                       "A guest has no account to come back to, so isn't welcomed back")
+        XCTAssertFalse(element(app, "profile-edit-name").exists,
+                       "A guest's name lives only on the phone; editing it is for members")
         shot(app, "01-you-as-guest")
     }
 
@@ -84,6 +88,7 @@ final class ProfileTests: XCTestCase {
         let streak = element(app, "stat-current-streak")
         XCTAssertTrue(streak.waitForExistence(timeout: 15), "The stats grid never appeared")
         shot(app, "02-you-member-top")
+        XCTAssertEqual(element(app, "profile-welcome").label, "Welcome back.")
 
         XCTAssertEqual(value(streak), "4 days, You've completed a practice today",
                        "Current streak: today and the three days before")

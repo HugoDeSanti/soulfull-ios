@@ -57,6 +57,18 @@ enum MemberName {
         capped(name.trimmingCharacters(in: .whitespacesAndNewlines))
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    /// How other members see the name in Community, the way the server's
+    /// `community_display_name()` shortens it: the first word and the SECOND
+    /// word's initial ("Hugo De Santiago" → "Hugo D."), a single word as it is.
+    /// Nil for no name. (The server also hides an objectionable name, which
+    /// this doesn't try to know.)
+    static func shownInCommunity(_ name: String) -> String? {
+        let words = name.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard let first = words.first else { return nil }
+        guard words.count > 1, let initial = words[1].first else { return first }
+        return "\(first) \(initial)."
+    }
 }
 
 // MARK: - Bookings (retreat reservations / payments)
