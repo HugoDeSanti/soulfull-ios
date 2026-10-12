@@ -33,6 +33,33 @@
 --
 -- How to apply: Management API (one transaction with its schema_migrations
 -- row) or `supabase db push`. Safe to re-run.
+--
+-- APPLIED to the live project 2026-10-12 through the Management API, in one
+-- transaction with its schema_migrations row (0032), after a dry run inside an
+-- aborted transaction that ran every check below as three test members and a
+-- guest. The first dry run caught a newline-only comment going through
+-- (`btrim` takes only spaces); the trim became the regexp below, and the
+-- second dry run held everywhere: guest insert 42501; journal 23514; missing
+-- practice 23503; blank, tabs-and-newlines and 501 characters 23514; https
+-- and www → comment_link; "shit" → comment_objectionable; "Scunthorpe, and I
+-- assess my breath" accepted, trimmed, created_at the server's; repeated id
+-- 23505; update 42501; another member's delete 0 rows; the thread showed each
+-- member both comments, is_mine on their own only, the table their own rows
+-- only; a guest's thread 0 rows; anon 42501; after a block each saw only
+-- their own and a third member both; the linked guide's comment is_guide,
+-- a member's not; the 21st comment in an hour refused; a deleted comment's
+-- report kept its text with comment_id null. After applying: RLS on with 3
+-- policies, the trigger, the two report columns and the widened reason check
+-- are in place; grants are authenticated DELETE/INSERT/SELECT on the table
+-- and SELECT on the view, nothing for anon (a REST read with the anon key
+-- answers 401 / 42501).
+--
+-- `report-member` v3 is NOT deployed yet: on 2026-10-12 every deploy failed
+-- with Supabase's "Function deploy failed due to an internal error" (500),
+-- the live v2's own code included, during a declared Edge Function incident.
+-- Until v3 is live, a comment reported as "Hateful or offensive" is refused
+-- (v2 doesn't know the reason) and the other reasons are filed against the
+-- member without the comment.
 
 
 -- ===========================================================================
@@ -135,7 +162,9 @@ as $$
 declare
     recent integer;
 begin
-    new.body       := btrim(new.body);
+    -- Whitespace of every kind off both ends, newlines included: `btrim`
+    -- alone takes only spaces, and a dry run posted "\n" as a comment.
+    new.body       := regexp_replace(new.body, '^[[:space:]]+|[[:space:]]+$', '', 'g');
     new.created_at := now();
 
     -- Any other kind fails the column's check, with its own message.
@@ -254,7 +283,7 @@ alter table public.member_reports add constraint member_reports_reason_check
 --   G inserts a comment                                → 42501 (RLS)
 --   A comments on journal 1                            → 23514 (content_kind check)
 --   A comments on exercise 9999999                     → 23503
---   A comments '   '                                   → 23514 (empty once trimmed)
+--   A comments '   ' / E'\t\n\r '                     → 23514 (empty once trimmed)
 --   A comments 501 characters                          → 23514
 --   A comments 'see https://x.io' / 'www.x.io'         → P0001 comment_link
 --   A comments 'this is shit'                          → P0001 comment_objectionable
