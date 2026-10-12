@@ -54,12 +54,12 @@
 -- and SELECT on the view, nothing for anon (a REST read with the anon key
 -- answers 401 / 42501).
 --
--- `report-member` v3 is NOT deployed yet: on 2026-10-12 every deploy failed
--- with Supabase's "Function deploy failed due to an internal error" (500),
--- the live v2's own code included, during a declared Edge Function incident.
--- Until v3 is live, a comment reported as "Hateful or offensive" is refused
--- (v2 doesn't know the reason) and the other reasons are filed against the
--- member without the comment.
+-- `report-member` v3 deployed later the same day (version 3, ACTIVE): the
+-- first attempts had failed with Supabase's 500 "internal error", the live
+-- v2's own code included, during a declared Edge Function incident. Checked:
+-- 401 without a JWT; a guest's report with reason 'offensive' about an
+-- unknown member gets past the reason check to 404 "No such member" (v2
+-- answered 400 "Unknown reason"), writing nothing and emailing no one.
 
 
 -- ===========================================================================
