@@ -112,7 +112,8 @@ SoulfullGatherings/
 │   │                              # screens, never Release (some are real people's names). A #Preview using one needs `#if DEBUG`
 │   ├── DesignSystem/              # Theme, Components, Atmosphere, SoulGlass, Pressable, ShaderFX + Shaders.metal, PinchBrowse, Parallax,
 │   │                              # PresenceBadge, CatalogImage, AvatarView (tone from a STABLE hash: hashValue is salted per launch)
-│   ├── Services/                  # SupabaseService (actor), SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,
+│   ├── Services/                  # SupabaseService (actor; its calls in +Catalog / +Member / +Community / +Guide, each beside
+│   │                              # its DTOs), CatalogCache, SupabaseConfig, RemoteImage, AppFeatures (v1 flags), LegalLinks,
 │   │                              # LocalUserStore, and @Observable singletons: AppClock, PracticeProgressStore, ProgramStore (+ the pure
 │   │                              # ProgramUnlockRule), WrittenPracticeStore, InstructorDirectory, PresenceStore,
 │   │                              # PushRegistrar (+ the AppDelegate), ProgramNotifications
@@ -210,9 +211,9 @@ The earlier "quiet luxury" pass (Liquid Glass, squish, zoom pushes, honey glows)
 
 The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SDK comes through SPM (`@preconcurrency import Supabase`).
 
-- **`SupabaseService`** is an actor singleton. Its `client` is `nonisolated`, so `AuthManager` can reach it without an actor hop. Catalog reads use 5-minute caches, and nothing invalidates them automatically, so call `invalidateCache()` on logout or an explicit refresh. Member data is never cached.
+- **`SupabaseService`** is an actor singleton. Its `client` is `nonisolated`, so `AuthManager` can reach it without an actor hop. Catalog reads go through `CatalogCache` (`catalog.value(_:)`): five minutes, and **shared while in flight**, so two screens asking at once make one request. Nothing invalidates it automatically, so call `invalidateCache()` on logout or an explicit refresh; a read still out when it's cleared isn't kept. Member data is never cached.
 - **Credentials** flow from `Config/Secrets.xcconfig` → build settings → `Info.plist` (`SupabaseHost`, `SupabaseAnonKey`) → `SupabaseConfig`. They never appear in Swift source. `SUPABASE_HOST` is the bare host with no `https://`, because `//` starts a comment in xcconfig. Missing or placeholder values crash at launch with setup instructions, by design.
-- **Adding a fetch:** add a private `Codable …Row` DTO in `SupabaseService.swift` with snake_case `CodingKeys` and a computed property that returns the model. Then add `func fetch…() async throws -> [T]`, cached if it's catalog data. Surface failures through `AppError`.
+- **Adding a fetch:** in the `SupabaseService+<Area>.swift` it belongs to, add a private `Codable …Row` DTO (in that file's DTO section, with snake_case `CodingKeys` and a computed property that returns the model) and `func fetch…() async throws -> [T]`, through `catalog.value(_:)` if it's catalog data (add a `CatalogCache.Key`). A DTO two areas decode drops `private`. Surface failures through `AppError`.
 
 ### Migrations
 - **The live database is the authoritative schema.** Migrations 0001–0009 were removed from the repo after being applied; recover them with `git show d20e3f6:supabase/migrations/`. Every file in `supabase/migrations/` has been applied, and each file's header explains its design and how it was verified.
@@ -427,6 +428,7 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - `PracticeStatsTests`: streaks, classes, minutes, and the streak caption.
   - `ProgramUnlockRuleTests` and `ProgramDayResolutionTests`: day unlocks, and pending vs missing activities.
   - `MediaTimeMeterTests`, `WrittenSittingTests` and `PendingPlayWritesTests`: the payout measurement, and practice that couldn't reach the server.
+  - `CatalogCacheTests`, `TabRouterTests`, `RemoteImageDecodeTests`: the catalog cache, the shell's state, and how photos are held.
   - `LocalUserStoreTests`: per-member privacy.
   - `GuideDashboardTests`: UTC months, a month's money standing (estimate / no pool / due / paid), and the mapping of `guide_dashboard()`'s JSON.
   - `CommunitySafetyTests`: a block takes someone off every list and stays put against a late read, a refused block restores everything, the cooldown message, a report's shape; plus the Blocked members list.
