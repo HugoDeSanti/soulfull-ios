@@ -44,7 +44,7 @@ open SoulfullGatherings.xcodeproj   # ⌘R — iPhone only, portrait only
 
 - **Only a session that is really gone becomes a guest** (`SessionRestoreDecision`): no stored session, or GoTrue rejecting the refresh token. Offline, timeouts, 5xx and the like keep the stored session and set `.failed(ConnectionFailure)` (`.offline` / `.unreachable`); the banner's Retry, or coming back to the foreground, runs `retry()` (which keeps `state` at `.failed` and flags `isRetrying` while it tries). Falling back to a guest on any error once overwrote a member's Keychain session after a network blip at launch, and wiped their stores.
 
-- **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (authenticated **and** not anonymous), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too.
+- **Identity:** `State` (`initializing` / `authenticated` / `failed`), `isAnonymous`, `hasAccount` (a permanent account is signed in on this device: **identity, not connectivity**, so a member whose session couldn't be confirmed offline is still a member; it used to need `.authenticated` too, and on a plane the journal asked a member to sign up), `email`, `userID`. **Gate account-only flows on `hasAccount`, never `isAuthenticated`**, because a guest is authenticated too. A member whose session is gone (sign-out, deletion, a refused refresh token) is forgotten at once (`forgetMember`, then the new guest), not when the new guest arrives, so a failed anonymous sign-in can't leave them in place.
 - **Guests are disposable.** A guest is an anonymous auth user with **no `profiles` row**, and the nightly pg_cron job `purge-idle-guests` deletes one idle for 30 days (0023). A purged guest's next launch just gets a new guest, because the SDK reports the session missing and `initialize()` falls back to `signInAnonymously()`. So never give a guest server state that has to survive. A second job, `purge-stale-auth-flows` (0025), deletes `auth.flow_state` rows older than 7 days: confirmations left behind by the code path, another device, a deleted account or nobody.
 - **Email/password:** `createAccount` upgrades the guest in place (`auth.update`, same user id, data carries over) and falls back to `signUp` without an anonymous session. `signOut` re-opens a fresh anonymous session. `AuthManager.pushOnboardingAnswers` is the only code that writes the device's answers to `profiles`: it pushes on create (and from `finishOnboarding` for a member), hydrates on sign-in, does nothing when the device has no answers (it would blank the row), and `mergeProfile` handles Apple sign-in, which can't tell a new account from a returning one.
 - **Welcome's "I already have an account" offers sign-in** (`AccountView(mode: .signIn)`, closable, never a gate); `AppState.returnFromWelcomeSignIn()` goes straight to main when the profile has a name, to onboarding when it doesn't, and stays on Welcome when the sheet was closed.
@@ -87,7 +87,7 @@ This lists only what the file names don't make obvious. Features follow `Feature
 ```
 Config/Secrets.xcconfig(.example)  # Gitignored: Supabase host + anon key + DEVELOPMENT_TEAM. Copy the example on a new machine
 supabase/                          # Backend as code; not in the Xcode build
-├── migrations/                    # 0010–0028 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
+├── migrations/                    # 0010–0029 (0001–0009 removed: `git show d20e3f6:supabase/migrations/`)
 ├── functions/                     # Deno Edge Functions (deploy + secrets: functions/README.md):
 │                                  #   create-payment-intent, stripe-webhook (--no-verify-jwt) — Stripe, v1-dormant
 │                                  #   send-retreat-enquiry — Resend; the applicant's email comes from the JWT, never the body
@@ -263,9 +263,10 @@ The project is `qkepgohdosmzebdmsctn.supabase.co` ("Soulfull iOS"). The Swift SD
 
 **Social:**
 - **`community_members`** (owner-rights view): id, avatar, and a `display_name` shortened **in SQL** ("Hugo De Santiago" → "Hugo D."), so the full name never leaves the row. Permanent accounts only. `search_members(q)` searches by name, **never by email**.
+  - **A guest sees only the members the feed already shows them** (0029): shared, finished, non-journal practice in the last 30 days. Any guest could page through every member before. Members see everyone (minus blocks).
   - **It leaves out anyone either side has blocked** (0028), per caller (`auth.uid()` in an owner-rights view reads the caller's JWT). The feed, presence and follower faces, `member_notifications` and the friendship/like insert policies all go through it, so that one filter covers them; `search_members` carries its own.
   - An objectionable name (`is_objectionable_name()`, whole words, EN + ES, plus "soulfull"/"admin") shows as "A member".
-- **`community_activity`** (owner-rights view): finished plays only, **never journal prompts**, and only from members with `share_activity` on. It never exposes seconds played. Adds `like_count` / `liked_by_me`.
+- **`community_activity`** (owner-rights view): finished plays only, **never journal prompts**, only from members with `share_activity` on, and only the **last 30 days** (0029: it used to serve anyone's whole history). Ordered by `completed_at`, stamped once by the server (it was `updated_at`, which any no-op PATCH moved). It never exposes seconds played. Adds `like_count` / `liked_by_me`.
 - **`friendships`**: one row per pair of members, in either order. Only the addressee can update a row, and only to `accepted`. Either side can delete it, which covers decline, withdraw and unfriend.
   - **A decline starts a 30-day cooldown** for that direction (0028): the addressee deleting a *pending* row is logged in `friend_request_declines`, and a new request inside 30 days raises `P0001 friend_request_cooldown`, which the app words as such (`Error.isFriendRequestCooldown`). Withdrawing starts none; the decliner can still ask the other way.
 - **`member_blocks`** (0028): owner RLS, members only (`caller_has_account()`). A block's trigger ends the friendship/request and removes likes (and their notifications) both ways. The blocked member can never read it.
@@ -288,7 +289,7 @@ Runbook: `docs/ADDING-A-RETREAT.md`.
   - `https://…` is loaded directly.
   - `bucket/path.jpg` is a public Storage object (the first segment is the bucket).
   - A bare name is a bundled asset.
-- **Retreat photos** live in the public `retreat-images` bucket, named `<place>-<yyyy>-<mm>.jpg`. Catalog photography is public on purpose. Private member media (`practice-media`) is served through signed URLs (`signedMediaURL`, valid for 1h).
+- **Retreat photos** live in the public `retreat-images` bucket, named `<place>-<yyyy>-<mm>.jpg`. Catalog photography is public on purpose. Private member media (`practice-media`) is served through signed URLs (`signedMediaURL`, valid for 1h), and **only members can read or sign it** (0029; its policy once covered `anon`, so the key in the IPA downloaded the library).
 - **Image caching:** Supabase serves public objects with `cache-control: no-cache` no matter what you upload them with, so `RemoteImageCache` caches **decoded** images instead of relying on `URLCache`.
 - **The brochure** is the `retreats.experience` jsonb column.
   - ⚠️ **A malformed `experience` fails soft:** the error is logged and the retreat shows the short layout. When "the brochure isn't showing", check the log for a decode error first. `programs.curriculum` fails soft the same way.
@@ -299,10 +300,14 @@ Every practice opened is recorded to `practice_plays`. That table is the member'
 - **The payout rule (owner's decision, 2026-10-07):** a guide earns on **time heard** and is paid a **share of a monthly pool**. The pool is **15% of the app's revenue after costs** (agreed 2026-10-07; costs include the fees Apple takes and cloud hosting, and the rest of the list is open). The share is their sessions' seconds heard that month over every guide's; earnings are pool × share, rounded down to the cent. Sessions only (the written libraries show reach on the dashboard but take no part), never a guide's own plays, UTC months. While a month runs, guides see an estimate from the share so far; **a month whose pool isn't set shows the share and no amount**. The payout run and the guide dashboard read the same view. Runbook: `docs/CREATOR-PAYOUTS.md`.
 - **`practice_plays.instructor_id`** is the guide a play credits, **stamped by a server trigger** from the content row at insert and frozen after it. The client never sets it (its `creator` is a name it sends, so it can't be trusted with money). It has **no foreign key on purpose**: `on delete set null` is an UPDATE that the freeze would revert, and `restrict` would stop a guide being taken down. Rows from before 0026 were backfilled only where the session's guide matched the `creator` snapshot, with the integrity trigger off (it moves `updated_at`, which program days read).
 - **Rows:** each row has a client-generated `client_event_id`, so a retried write can't pay a creator twice. `content_title` / `creator` / `category` are copies taken at the time. **There is no delete policy**, because deleting a play would erase a creator's earnings.
-- **A DB trigger enforces integrity:**
+- **A DB trigger enforces integrity** (latest in 0029):
+  - **Only a permanent account may write a play** (`caller_has_account()` in the insert and update policies). A guest can't open a practice, so a guest's play is never real.
+  - **At insert the server says what was played:** title, creator, category and `duration_seconds` come from the catalog row (journal 900s, recipe `minutes × 60`, as in `PracticePlay`), a play of something that doesn't exist is refused (23503), and `created_at` / `started_at` are the server's clock. All of these were once the client's, so one call could claim 2,000,000,000 seconds, backdate into a paid month, or put any title in the feed.
   - The identity columns, `duration_seconds`, title and category are frozen.
-  - `seconds_played` can only go up and is capped at the frozen duration.
-  - `completed` latches.
+  - `seconds_played` can only go up, is capped at the duration, and **can't run ahead of the time since the play began** (+120s for failed heartbeats).
+  - **A play older than a day is closed:** its seconds and completion stop moving, so a past month's shares can't be topped up.
+  - `completed` latches, and `completed_at` is stamped the moment it does.
+  - ⚠️ **Every heartbeat is an upsert, and the insert branch runs first on the proposed row; what it leaves is what `EXCLUDED` hands the update.** So it bounds seconds only for a play that is really new. Bounding there unconditionally capped every play at two minutes.
   - **When you change the trigger, test the cap as well as `seconds_played`.** The cap was once client-writable, which made it useless.
 - ⚠️ **`user_id` is frozen only when the new value isn't null.** `on delete set null` is itself an UPDATE, and a blanket freeze undid it. RLS (`with check (auth.uid() = user_id)`) stops a client from nulling its own row. As a result, deleting an account **anonymises** its plays rather than deleting them, because the creator still earned them.
 - ⚠️ **Retiring a library once real rows use it:**
@@ -311,16 +316,16 @@ Every practice opened is recorded to `practice_plays`. That table is the member'
   - Migration 0012 shows the `count(*)` query that tells you whether real rows exist.
 - **Measurement:**
   - **Media sessions:** `PlaybackReporter` counts *media* time, so seeking and pausing count for nothing, and it reports every 20s. A session **completes only when its end is reached with at least 80% actually heard** (`MediaTimeMeter.requiredShare`), counted across unfinished sittings.
-  - **Written practices** count time on screen (`.practiceActivity(_:)`), in the foreground only and capped at 30 minutes per visit. A journal prompt completes once something is written; the others after 45s. Journal plays declare a nominal 900s duration so the server cap applies to them too.
+  - **Written practices** count time on screen (`.practiceActivity(_:)`), in the foreground only and capped at 30 minutes per visit. A journal prompt completes once something is written **in that visit** (`JournalCompletion`: reopening last week's reflection used to count); the others after 45s. Journal plays declare a nominal 900s duration so the server cap applies to them too.
   - **A written practice with media** passes `enabled: false` so a sitting isn't counted twice.
-- **Client-reported seconds are capped, not proven.** Making payouts defensible against a determined cheat would need an Edge Function that cross-checks the Storage access logs.
+- **Client-reported seconds are capped, not proven.** A member can still run several plays at once, each bounded as above. Making payouts defensible against a determined cheat would need an Edge Function that cross-checks the Storage access logs.
 
 ### Digital programs (the Programs tab)
 A program is free to join (behind the account gate), self-paced, and opens a day at a time. Its days live in the hand-authored `programs.curriculum` jsonb: `0014_seed_program_finding_ground.sql` is the complete worked example (activities are `{"kind", "content_id", "note"}`), and it fails soft like the brochure.
 - **The unlock rule is the feature.** Day 1 opens on enrolment. Day N+1 opens when **every activity of day N is done _and_ the local date has moved past the day day N was finished on** (`startOfDay + 1 day`, not `+86400`).
   - The rule lives in `ProgramUnlockRule`.
   - `ProgramDayState` keeps `complete` / `open` / `opens(date)` / `awaitingPreviousDay` separate, because "come back tomorrow" and "not finished yet" call for different actions.
-- ⚠️ **An activity counts toward a day only if it was completed after that day unlocked** (`lastPlayedAt >= dayUnlockedAt`). `practice_progress.completed` never resets, so without this rule a member's past practice would complete days the moment they enrol. The same practice on day 2 and day 6 has to be done twice, on purpose.
+- ⚠️ **An activity counts toward a day only if it was FINISHED after that day unlocked** (`lastCompletedAt >= dayUnlockedAt`, from `practice_progress.last_completed_at`, 0029). `practice_progress.completed` never resets, so without a date a member's past practice would complete days the moment they enrol. The date was once `lastPlayedAt`, which moves on any open, so two seconds of last month's session finished today's day. The same practice on day 2 and day 6 has to be done twice, on purpose.
 - **The device clock decides the date,** so winding it forward skips the wait. Accepted: this is a free program, not an exam.
 - **Day completion is latched,** even though activity completion is not.
 - **Programs record nothing of their own.** Activities open the same screens as the Practice tab and write `practice_plays` the same way, so a creator is paid identically either way. Leaving a program clears the enrolment and day rows and **touches no play history**.
@@ -364,7 +369,7 @@ Journal reflections and trip checklists stay on the phone. The privacy policy pr
   - `Error.isOffline` counts only `notConnectedToInternet` / `networkConnectionLost` / `dataNotAllowed` / `internationalRoamingOff`. `timedOut` may be our backend.
   - A sample catalog shown as real is Guideline 2.1(a) temporary content. For the same reason, **never invent state**: no fake progress, no fake "present" counts.
 - **Anything on screen that depends on the date reads `AppClock.shared.now`, never `Date.now`.** The app is mostly suspended, and SwiftUI only re-renders on observed changes; `SoulfullGatheringsApp` ticks the clock when the scene becomes active and at midnight / time-zone changes, which re-renders every view that read it (day unlocks, the greeting, the streak). Logic that takes time as an argument (`ProgramUnlockRule`, `PracticeStats`) is passed `AppClock.shared.now` by its live caller.
-- **Media plays in a `.playback` audio session** (`PlaybackAudioSession` in `PracticePlayerView`), with the `audio` background mode in `project.yml` and lock-screen / Control Center controls (`AudioTransport`). Without it, sessions were silent with the ringer switch on silent and stopped when the phone locked. Media time keeps counting in the background, which is real listening.
+- **Media plays in a `.playback` audio session** (`PlaybackAudioSession` in `PracticePlayerView`), with the `audio` background mode in `project.yml` and lock-screen / Control Center controls (`AudioTransport`). Without it, sessions were silent with the ringer switch on silent and stopped when the phone locked. Media time keeps counting in the background, which is real listening. A session that **breaks mid-listen** (the signed URL lasts an hour, or the stream drops) shows the offline / our-end failure, and Try again signs a new URL and carries on from the same moment (`PlaybackFailureWatch`); it used to sit on a Play button that did nothing.
 - **Never force-refresh practice history as the player or a practice page closes.** `PracticeProgressStore.record` applies each write locally at once; a forced read that answers before the final write lands replaces that fresher copy (stale "N min left", a program day that doesn't close).
 - **Remote images (`CatalogImage`) are keyed by URL** and read the decoded cache synchronously in `body`. A new URL in the same place (a changed profile photo) must never show the old picture, and a cached photo paints on its first frame. Seed the cache with an image the device made itself (`RemoteImageCache.insert`).
 - **Tabs are rebuilt when a member becomes a guest** (sign-out, deletion: `MainTabView.shell`, keyed on `isAnonymous`), never on sign-in, because the account gate replays into the tab it came from.
@@ -420,7 +425,8 @@ To get screenshots, run `xcrun xcresulttool export attachments --path build/ui.x
   - `LocalUserStoreTests`: per-member privacy.
   - `GuideDashboardTests`: UTC months, a month's money standing (estimate / no pool / due / paid), and the mapping of `guide_dashboard()`'s JSON.
   - `CommunitySafetyTests`: a block takes someone off every list and stays put against a late read, a refused block restores everything, the cooldown message, a report's shape; plus the Blocked members list.
-  - `AccountGateReplayTests`, `PasswordResetFlowTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
+  - `PracticeProgressStoreTests` and `ProgramStoreTests`: a read that answers after the member left is dropped; a practice opened again keeps when it was finished.
+  - `AccountGateReplayTests`, `PasswordResetFlowTests`, `JournalCompletionTests`, `RetreatEnquiryFormTests`, `WrittenPracticeStoreTests`, `ErrorClassificationTests`, and the instructor follow and library suites.
 
 ### UI journeys: the only ones that earn a UI test
 | File | Journey |

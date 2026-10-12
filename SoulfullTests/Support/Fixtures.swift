@@ -64,11 +64,15 @@ enum Fixtures {
                        recipes: recipes.map { recipe($0) })
     }
 
+    /// A finished one was finished when it was last played, unless
+    /// `lastCompletedAt` says otherwise.
     static func progress(_ kind: PracticeContentKind = .journal, contentID: Int = 1,
-                         completed: Bool, lastPlayedAt: Date) -> PracticeProgress {
+                         completed: Bool, lastPlayedAt: Date,
+                         lastCompletedAt: Date? = nil) -> PracticeProgress {
         PracticeProgress(kind: kind, contentID: contentID, title: "A practice", creator: nil,
                          category: nil, positionSeconds: 0, durationSeconds: nil,
                          totalSecondsPlayed: 60, completed: completed, playCount: 1,
-                         lastPlayedAt: lastPlayedAt)
+                         lastPlayedAt: lastPlayedAt,
+                         lastCompletedAt: lastCompletedAt ?? (completed ? lastPlayedAt : nil))
     }
 }

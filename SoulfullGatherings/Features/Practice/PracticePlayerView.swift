@@ -67,6 +67,12 @@ struct PracticePlayerView: View {
     /// per presentation, so each listen is its own row. See
     /// `PracticeActivity.swift`.
     @State private var reporter: PlaybackReporter?
+    /// Notices the session breaking after it started — see
+    /// `PlaybackFailureWatch`.
+    @State private var failureWatch: PlaybackFailureWatch?
+    /// Where a session that broke mid-listen had got to, so "Try again"
+    /// carries on from there rather than from the last resume point.
+    @State private var resumeAfterFailure: Double?
 
     var body: some View {
         ZStack {
@@ -116,6 +122,7 @@ struct PracticePlayerView: View {
     /// still has a player item attached fails as busy, and whatever the member
     /// was listening to before wouldn't be told it can resume.
     private func tearDown() {
+        failureWatch?.stop()
         player?.pause()
         transport?.stop()
         reporter?.finish()
@@ -341,8 +348,10 @@ struct PracticePlayerView: View {
             let avPlayer = AVPlayer(url: url)
 
             // Pick up where they left off. Only offered for a practice that was
-            // genuinely under way — see `PracticeProgress.isResumable`.
-            let resumeAt = reporter.resumePosition
+            // genuinely under way — see `PracticeProgress.isResumable` — or
+            // where this one broke, on "Try again".
+            let resumeAt = resumeAfterFailure ?? reporter.resumePosition
+            resumeAfterFailure = nil
             if resumeAt > 0 {
                 await avPlayer.seek(to: CMTime(seconds: resumeAt, preferredTimescale: 600),
                                     toleranceBefore: .zero, toleranceAfter: .zero)
@@ -359,6 +368,9 @@ struct PracticePlayerView: View {
             }
             self.reporter = reporter
             reporter.attach(to: avPlayer)
+            if let item = avPlayer.currentItem {
+                failureWatch = PlaybackFailureWatch(item: item) { error in playbackBroke(error) }
+            }
             player = avPlayer
             avPlayer.play()
         } catch where error.isCancellation {
@@ -367,6 +379,74 @@ struct PracticePlayerView: View {
             Log.media.error("Couldn't resolve media: \(error.localizedDescription)")
             loadFailure = PlayerLoadFailure(offline: error.isOffline)
         }
+    }
+
+    /// The session stopped being playable mid-listen. Bank what was heard, let
+    /// go of the broken player and say why; "Try again" signs a fresh URL and
+    /// carries on from the same moment.
+    private func playbackBroke(_ error: (any Error)?) {
+        guard let player else { return }
+        Log.media.error("Playback failed: \(error?.localizedDescription ?? "no error given")")
+        let position = CMTimeGetSeconds(player.currentTime())
+        resumeAfterFailure = position.isFinite && position > 0 ? position : nil
+        tearDown()
+        self.player = nil
+        transport = nil
+        reporter = nil
+        failureWatch = nil
+        loadFailure = PlayerLoadFailure(offline: error?.isOffline ?? false)
+    }
+}
+
+// MARK: - Playback failure
+
+/// Notices a session that stops being playable after it started: the signed
+/// URL ran out during a long pause (it lasts an hour), or the stream lost its
+/// connection. The player used to sit on a Play button that did nothing, with
+/// no word of why.
+@MainActor
+final class PlaybackFailureWatch {
+    private let item: AVPlayerItem
+    private let onFailure: @MainActor ((any Error)?) -> Void
+    private var statusObservation: NSKeyValueObservation?
+    private var failedObserver: (any NSObjectProtocol)?
+    private var fired = false
+
+    init(item: AVPlayerItem, onFailure: @escaping @MainActor ((any Error)?) -> Void) {
+        self.item = item
+        self.onFailure = onFailure
+        // KVO may call back on any thread: hop to the main actor and read the
+        // status there.
+        statusObservation = item.observe(\.status, options: [.new]) { @Sendable [weak self] _, _ in
+            Task { @MainActor in self?.check() }
+        }
+        failedObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] note in
+            let error = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? any Error
+            MainActor.assumeIsolated { self?.fail(error) }
+        }
+    }
+
+    func stop() {
+        statusObservation?.invalidate()
+        statusObservation = nil
+        if let failedObserver { NotificationCenter.default.removeObserver(failedObserver) }
+        failedObserver = nil
+    }
+
+    private func check() {
+        if item.status == .failed { fail(item.error) }
+    }
+
+    /// Once: the status and the notification can both report one failure.
+    private func fail(_ error: (any Error)?) {
+        guard !fired else { return }
+        fired = true
+        stop()
+        onFailure(error ?? item.error)
     }
 }
 

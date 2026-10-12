@@ -146,8 +146,8 @@ struct MainTabView: View {
                 .transaction { $0.animation = nil }
         }
         // Member → guest: sign-out, deletion, or a session lost for good. Keyed
-        // on `isAnonymous` rather than `hasAccount`, which also dips while a
-        // member's session is merely being retried.
+        // on `isAnonymous`, the identity itself: a member whose session is
+        // merely being retried is still that member.
         .onChange(of: auth.isAnonymous) { wasGuest, isGuest in
             guard !wasGuest, isGuest else { return }
             pushed = []

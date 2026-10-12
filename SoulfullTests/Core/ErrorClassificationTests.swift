@@ -39,6 +39,20 @@ struct ErrorClassificationTests {
         #expect(!elsewhere.isOffline)
     }
 
+    /// A stream that loses its connection fails with AVFoundation's own error,
+    /// the URL error underneath it. The player has to read through to say
+    /// "you're offline" rather than "our end".
+    @Test func aWrappedErrorIsReadByWhatItWraps() {
+        func wrapping(_ code: Int) -> NSError {
+            NSError(domain: "AVFoundationErrorDomain", code: -11800,
+                    userInfo: [NSUnderlyingErrorKey: NSError(domain: NSURLErrorDomain, code: code)])
+        }
+
+        #expect(wrapping(NSURLErrorNotConnectedToInternet).isOffline)
+        #expect(!wrapping(NSURLErrorTimedOut).isOffline)
+        #expect(!NSError(domain: "AVFoundationErrorDomain", code: -11800).isOffline)
+    }
+
     /// The SDK surfaces a cancelled task as `URLError(.cancelled)`, not
     /// `CancellationError` — both must read as cancellation, nothing else must.
     @Test func cancellationArrivesInTwoShapes() {

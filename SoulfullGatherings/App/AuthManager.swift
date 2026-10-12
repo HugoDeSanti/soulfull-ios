@@ -44,9 +44,18 @@ final class AuthManager {
 
     var isAuthenticated: Bool { state == .authenticated }
 
-    /// A permanent (non-anonymous) account is signed in. Gate Reserve / paid
-    /// flows on this — not on `isAuthenticated`, which is true for guests too.
-    var hasAccount: Bool { isAuthenticated && !isAnonymous }
+    /// A permanent (non-anonymous) account is signed in on this device. Gate
+    /// account-only flows on this — not on `isAuthenticated`, which is true for
+    /// guests too.
+    ///
+    /// Who, not whether the server could be reached: a member whose session
+    /// couldn't be confirmed (offline at launch, a stalled refresh — `.failed`
+    /// keeps their stored session) is still that member. This used to require
+    /// `.authenticated` too, so on a plane the journal asked a member to create
+    /// an account and the You tab called them a guest. What they then reach
+    /// for says "you're offline" itself. A session that is really gone is
+    /// forgotten (`forgetMember`), which is what turns this off.
+    var hasAccount: Bool { !isAnonymous }
 
     /// Current user id — used to key the `profiles` row.
     var userID: UUID? { supabase.auth.currentUser?.id }
@@ -166,6 +175,7 @@ final class AuthManager {
             case .openGuest:
                 // First launch, a purged guest, a refresh token the server
                 // refused: there is nothing to keep.
+                forgetMember()
                 await signInAnonymously()
             case .keepSession(let failure):
                 Log.auth.error("Session restore failed, keeping the stored session: \(error.localizedDescription)")
@@ -618,6 +628,9 @@ final class AuthManager {
         } catch {
             Log.auth.error("Sign-out failed: \(error.localizedDescription)")
         }
+        // The SDK drops the session from the device before it calls the
+        // server, so it's gone whether or not that call worked.
+        forgetMember()
         await SupabaseService.shared.invalidateCache()
         endConfirmationWatch()
         pendingConfirmation = nil
@@ -658,6 +671,16 @@ final class AuthManager {
     }
 
     // MARK: - Private
+
+    /// The member's session is gone from this device: let go of who they were
+    /// now, not when the guest that replaces them arrives. That used to wait
+    /// for `signInAnonymously`, and when it failed (offline, or its rate
+    /// limit) the member stayed: still not anonymous, their private data still
+    /// in scope, their journal entry still open in a tab nobody rebuilt.
+    private func forgetMember() {
+        guard !isAnonymous else { return }
+        apply(nil)
+    }
 
     private func signInAnonymously() async {
         do {

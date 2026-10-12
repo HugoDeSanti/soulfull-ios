@@ -26,10 +26,36 @@
 
 import SwiftUI
 
+/// What `ProgramStore` reads a member's standing through. `live` is the app's;
+/// tests hand in their own (`SoulfullTests/Programs/ProgramStoreTests`).
+struct ProgramStateBackend {
+    var currentUserID: @MainActor () -> UUID?
+    var fetchState: @MainActor (_ userID: UUID) async throws -> ([ProgramEnrollment], [ProgramDayCompletion])
+
+    /// Computed rather than stored, so there is no shared global to make
+    /// `Sendable`.
+    static var live: ProgramStateBackend {
+        ProgramStateBackend(
+            currentUserID: { SupabaseService.shared.client.auth.currentUser?.id },
+            fetchState: { userID in
+                async let enrolled = SupabaseService.shared.fetchProgramEnrollments(userID: userID)
+                async let days = SupabaseService.shared.fetchProgramDayCompletions(userID: userID)
+                return try await (enrolled, days)
+            }
+        )
+    }
+}
+
 @Observable @MainActor
 final class ProgramStore {
 
     static let shared = ProgramStore()
+
+    private let backend: ProgramStateBackend
+
+    init(backend: ProgramStateBackend = .live) {
+        self.backend = backend
+    }
 
     /// Keyed by program id.
     private(set) var enrollments: [String: ProgramEnrollment] = [:]
@@ -54,7 +80,7 @@ final class ProgramStore {
 
     /// Read from the live session rather than threaded through the view tree —
     /// same reasoning as `PracticeProgressStore`.
-    private var userID: UUID? { SupabaseService.shared.client.auth.currentUser?.id }
+    private var userID: UUID? { backend.currentUserID() }
 
     var currentUserID: UUID? { userID }
 
@@ -66,9 +92,11 @@ final class ProgramStore {
         isLoading = true
         defer { isLoading = false }
         do {
-            async let enrolled = SupabaseService.shared.fetchProgramEnrollments(userID: userID)
-            async let days = SupabaseService.shared.fetchProgramDayCompletions(userID: userID)
-            let (rows, dayRows) = try await (enrolled, days)
+            let (rows, dayRows) = try await backend.fetchState(userID)
+            // The session can change while this reads — a sign-out, a sign-in
+            // as someone else. Their programs must not land on the next
+            // person's Home.
+            guard self.userID == userID else { return }
             enrollments = Dictionary(uniqueKeysWithValues: rows.map { ($0.programID, $0) })
             var byProgram: [String: [Int: Date]] = [:]
             for row in dayRows { byProgram[row.programID, default: [:]][row.day] = row.completedAt }
@@ -80,7 +108,7 @@ final class ProgramStore {
             // Missing tables (before 0013) or no connection both mean "nothing
             // joined" — the tab renders as a plain catalog, which is correct.
             Log.data.info("Program state unavailable: \(error.localizedDescription)")
-            if loadedFor != userID {
+            if self.userID == userID, loadedFor != userID {
                 enrollments = [:]
                 completions = [:]
                 status = .unavailable(offline: error.isOffline)
@@ -374,18 +402,20 @@ enum ProgramUnlockRule {
     }
 
     /// Whether a practice's progress counts toward a day that unlocked at
-    /// `unlocked`.
+    /// `unlocked`: it was FINISHED since then.
     ///
-    /// ⚠️ The `lastPlayedAt >= unlocked` half is load-bearing and easy to drop
-    /// as redundant. `practice_progress.completed` is latched for all time, so
-    /// without it a member with any history at all would have days 1–4 marked
-    /// finished the instant they enrolled and the pacing — the whole point —
-    /// would evaporate. The visible consequence is intentional: the same prompt
-    /// can appear on day 2 and day 6, and must be genuinely re-done the second
+    /// ⚠️ When it was finished, not whether it ever was, and not when it was
+    /// last opened. `practice_progress.completed` is latched for all time, so
+    /// without a date a member with any history would have days 1–4 marked
+    /// finished the instant they enrolled. And the date used to be
+    /// `lastPlayedAt`, which moves on any open: a session finished last month
+    /// and opened today for two seconds finished today's day, which then
+    /// latched. The visible consequence is intentional: the same prompt can
+    /// appear on day 2 and day 6, and must be genuinely re-done the second
     /// time.
     static func counts(_ progress: PracticeProgress?, towardDayUnlockedAt unlocked: Date?) -> Bool {
-        guard let unlocked, let progress else { return false }
-        return progress.completed && progress.lastPlayedAt >= unlocked
+        guard let unlocked, let finished = progress?.lastCompletedAt else { return false }
+        return finished >= unlocked
     }
 }
 

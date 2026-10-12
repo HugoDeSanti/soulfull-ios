@@ -956,7 +956,13 @@ struct PracticeProgress: Identifiable, Hashable, Sendable {
     let totalSecondsPlayed: Int
     let completed: Bool
     let playCount: Int
+    /// When it was last opened — finished or not.
     let lastPlayedAt: Date
+    /// When it was last FINISHED (`practice_progress.last_completed_at`, 0029).
+    /// Not `lastPlayedAt`: a practice finished last month and opened for two
+    /// seconds today was played today, but finished last month — and a
+    /// digital-retreat day asks when it was finished.
+    var lastCompletedAt: Date? = nil
 
     var id: String { "\(kind.rawValue)-\(contentID)" }
 

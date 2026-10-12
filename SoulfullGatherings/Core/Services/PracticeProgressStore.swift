@@ -28,10 +28,44 @@ enum HistoryLoadStatus: Equatable {
     case unavailable(offline: Bool)
 }
 
+/// What `PracticeProgressStore` reads and writes through. `live` is the app's;
+/// tests hand in their own (`SoulfullTests/Practice/PracticeProgressStoreTests`).
+struct PracticeProgressBackend {
+    var currentUserID: @MainActor () -> UUID?
+    var fetchProgress: @MainActor (_ userID: UUID) async throws -> [PracticeProgress]
+    var fetchLedger: @MainActor (_ userID: UUID) async throws -> [PracticePlayRecord]
+    var recordPlay: @MainActor (_ play: PracticePlay, _ userID: UUID, _ secondsPlayed: Int,
+                                _ positionSeconds: Int, _ completed: Bool) async throws -> Void
+    var now: @MainActor () -> Date
+
+    /// Computed rather than stored, so there is no shared global to make
+    /// `Sendable`.
+    static var live: PracticeProgressBackend {
+        PracticeProgressBackend(
+            currentUserID: { SupabaseService.shared.client.auth.currentUser?.id },
+            fetchProgress: { try await SupabaseService.shared.fetchPracticeProgress(userID: $0) },
+            fetchLedger: { try await SupabaseService.shared.fetchPracticeLedger(userID: $0) },
+            recordPlay: { play, userID, seconds, position, completed in
+                try await SupabaseService.shared.recordPracticePlay(play, userID: userID,
+                                                                    secondsPlayed: seconds,
+                                                                    positionSeconds: position,
+                                                                    completed: completed)
+            },
+            now: { Date.now }
+        )
+    }
+}
+
 @Observable @MainActor
 final class PracticeProgressStore {
 
     static let shared = PracticeProgressStore()
+
+    private let backend: PracticeProgressBackend
+
+    init(backend: PracticeProgressBackend = .live) {
+        self.backend = backend
+    }
 
     /// Keyed by `PracticeProgress.id` ("session-4", "journal-2", …).
     private(set) var progress: [String: PracticeProgress] = [:]
@@ -51,7 +85,7 @@ final class PracticeProgressStore {
     /// Read straight from the live session rather than threaded through the
     /// view tree: the player is a sheet and the detail screens are deep in a
     /// stack, and every one of them would otherwise need an `AuthManager`.
-    private var userID: UUID? { SupabaseService.shared.client.auth.currentUser?.id }
+    private var userID: UUID? { backend.currentUserID() }
 
     // MARK: - Loading
 
@@ -85,7 +119,11 @@ final class PracticeProgressStore {
         isLoading = true
         defer { isLoading = false }
         do {
-            let rows = try await SupabaseService.shared.fetchPracticeProgress(userID: userID)
+            let rows = try await backend.fetchProgress(userID)
+            // The session can change while this reads (see `refreshLedger`):
+            // one member's Continue card must not land on the next person's
+            // Home.
+            guard self.userID == userID else { return }
             progress = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
             loadedFor = userID
         } catch where error.isCancellation {
@@ -94,14 +132,14 @@ final class PracticeProgressStore {
             // both mean "no history to show" — the Practice tab and Home simply
             // render as they did before progress existed.
             Log.data.info("Practice progress unavailable: \(error.localizedDescription)")
-            if loadedFor != userID { progress = [:] }
+            if self.userID == userID, loadedFor != userID { progress = [:] }
         }
     }
 
     private func refreshLedger(for userID: UUID, force: Bool) async {
         guard force || ledgerLoadedFor != userID || ledgerStatus != .loaded else { return }
         do {
-            let rows = try await SupabaseService.shared.fetchPracticeLedger(userID: userID)
+            let rows = try await backend.fetchLedger(userID)
             // The session can change while the pages load; don't hand one
             // member's history to the next.
             guard self.userID == userID else { return }
@@ -113,7 +151,7 @@ final class PracticeProgressStore {
             Log.data.info("Practice ledger unavailable: \(error.localizedDescription)")
             // Numbers already on screen for this member are better than none;
             // only a member with nothing loaded yet is told it failed.
-            if ledgerLoadedFor != userID {
+            if self.userID == userID, ledgerLoadedFor != userID {
                 ledger = [:]
                 ledgerStatus = .unavailable(offline: error.isOffline)
             }
@@ -133,6 +171,7 @@ final class PracticeProgressStore {
         ledgerLoadedFor = nil
         ledgerStatus = .notLoaded
         foldedSeconds.removeAll()
+        finishedEvents.removeAll()
     }
 
     #if DEBUG
@@ -199,13 +238,7 @@ final class PracticeProgressStore {
         applyLocally(play, secondsPlayed: secondsPlayed, positionSeconds: positionSeconds, completed: completed)
         applyToLedger(play, secondsPlayed: secondsPlayed, completed: completed)
         do {
-            try await SupabaseService.shared.recordPracticePlay(
-                play,
-                userID: userID,
-                secondsPlayed: secondsPlayed,
-                positionSeconds: positionSeconds,
-                completed: completed
-            )
+            try await backend.recordPlay(play, userID, secondsPlayed, positionSeconds, completed)
         } catch {
             Log.data.error("Couldn't record practice play: \(error.localizedDescription)")
         }
@@ -230,6 +263,17 @@ final class PracticeProgressStore {
         let carried = max(0, (existing?.totalSecondsPlayed ?? 0) - alreadyFolded)
         foldedSeconds[play.eventID] = secondsPlayed
 
+        // Finished when this play first says so — the server stamps
+        // `completed_at` once, at that moment, and later heartbeats of the
+        // same play don't move it. An open that doesn't finish keeps the
+        // finish from before.
+        let now = backend.now()
+        var lastCompletedAt = existing?.lastCompletedAt
+        if completed, !finishedEvents.contains(play.eventID) {
+            finishedEvents.insert(play.eventID)
+            lastCompletedAt = now
+        }
+
         progress[key] = PracticeProgress(
             kind: play.kind,
             contentID: play.contentID,
@@ -241,13 +285,16 @@ final class PracticeProgressStore {
             totalSecondsPlayed: carried + secondsPlayed,
             completed: completed || (existing?.completed ?? false),
             playCount: max(existing?.playCount ?? 1, 1),
-            lastPlayedAt: .now
+            lastPlayedAt: now,
+            lastCompletedAt: lastCompletedAt
         )
     }
 
     /// Seconds already folded into the optimistic mirror for an in-flight play.
     /// Bounded by the number of practices opened in one app session.
     private var foldedSeconds: [UUID: Int] = [:]
+    /// Plays already folded in as finished, so their finish keeps its moment.
+    private var finishedEvents: Set<UUID> = []
 
     /// Mirrors the ledger row this heartbeat upserts, applying the same rules
     /// the DB trigger does — seconds never go backwards and are clamped to the
@@ -263,7 +310,7 @@ final class PracticeProgressStore {
             kind: play.kind,
             secondsPlayed: seconds,
             completed: completed || (existing?.completed ?? false),
-            startedAt: existing?.startedAt ?? .now
+            startedAt: existing?.startedAt ?? backend.now()
         )
     }
 }

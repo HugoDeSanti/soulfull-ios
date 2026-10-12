@@ -81,6 +81,10 @@ struct JournalListView: View {
 struct JournalDetailView: View {
     let prompt: JournalPrompt
     @State private var entry = ""
+    /// The reflection as this visit found it, read once when it begins (the
+    /// `onAppear` after coming back from a pushed screen doesn't move it) —
+    /// see `JournalCompletion`.
+    @State private var foundEntry: String?
     /// Debounces the save so a long reflection isn't rewritten per keystroke.
     @State private var saveTask: Task<Void, Never>?
     @FocusState private var writing: Bool
@@ -192,7 +196,10 @@ struct JournalDetailView: View {
             PhotoBackdrop(imageName: prompt.imageUrl, blur: 26, darken: 0.82)
         }
         .scrollDismissesKeyboard(.interactively)
-        .onAppear { entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? "" }
+        .onAppear {
+            entry = LocalUserStore.shared.privateText(forKey: storageKey) ?? ""
+            if foundEntry == nil { foundEntry = entry }
+        }
         // A peek belongs to one sitting: tapping back into the editor starts
         // receded again rather than inheriting the last reveal.
         .onChange(of: writing) { _, isWriting in
@@ -216,8 +223,10 @@ struct JournalDetailView: View {
         }
         // Records that this prompt was opened, and for how long — never the
         // reflection itself, which stays on the device. A prompt counts as done
-        // once something has been written against it.
-        .practiceActivity(.journal(prompt), completedWhen: { !entry.isEmpty })
+        // once something has been written in this visit.
+        .practiceActivity(.journal(prompt), completedWhen: {
+            JournalCompletion.isDone(entry: entry, foundEntry: foundEntry ?? "")
+        })
         .toolbar {
             if writing {
                 ToolbarItem(placement: .keyboard) {
@@ -282,6 +291,16 @@ struct JournalDetailView: View {
         .onPhoto()
         .padding(.top, 10)
         .transition(.opacity)
+    }
+}
+
+/// When a visit to a prompt counts as practice done: something was written in
+/// it. Not "the reflection isn't empty" — that was true of every return to a
+/// prompt written in before, so reading last week's entry for five seconds
+/// kept today's streak and finished a digital-retreat day.
+enum JournalCompletion {
+    static func isDone(entry: String, foundEntry: String) -> Bool {
+        !entry.isEmpty && entry != foundEntry
     }
 }
 

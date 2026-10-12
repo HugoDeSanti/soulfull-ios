@@ -49,18 +49,28 @@ extension Error {
     /// here: they are just as likely to mean our backend is down as that the
     /// user is offline, and those fall through to the generic message. Read off
     /// `NSError` rather than casting to `URLError`, because the Supabase SDK
-    /// hands some failures back already bridged.
+    /// hands some failures back already bridged. Looks under a wrapping error
+    /// too: AVFoundation reports a stream that lost its connection as its own
+    /// error (-11800) with the URL error as the underlying one.
     var isOffline: Bool {
-        let ns = self as NSError
-        guard ns.domain == NSURLErrorDomain else { return false }
-        switch ns.code {
-        case NSURLErrorNotConnectedToInternet,
-             NSURLErrorNetworkConnectionLost,
-             NSURLErrorDataNotAllowed,
-             NSURLErrorInternationalRoamingOff:
-            return true
-        default:
-            return false
+        var error: NSError? = self as NSError
+        // Bounded: an underlying-error chain is short, and a cyclic one
+        // shouldn't hang the caller.
+        for _ in 0..<4 {
+            guard let ns = error else { return false }
+            if ns.domain == NSURLErrorDomain {
+                switch ns.code {
+                case NSURLErrorNotConnectedToInternet,
+                     NSURLErrorNetworkConnectionLost,
+                     NSURLErrorDataNotAllowed,
+                     NSURLErrorInternationalRoamingOff:
+                    return true
+                default:
+                    return false
+                }
+            }
+            error = ns.userInfo[NSUnderlyingErrorKey] as? NSError
         }
+        return false
     }
 }

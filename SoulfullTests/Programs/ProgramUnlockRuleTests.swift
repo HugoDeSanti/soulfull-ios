@@ -97,4 +97,15 @@ struct ProgramUnlockRuleTests {
         #expect(!ProgramUnlockRule.counts(nil, towardDayUnlockedAt: dayOpened))
         #expect(!ProgramUnlockRule.counts(after, towardDayUnlockedAt: nil))
     }
+
+    /// `lastPlayedAt` moves on any open. Opening last month's session for two
+    /// seconds used to finish today's day, and the day's completion latches.
+    @Test func aPracticeFinishedBeforeTheDayOpenedDoesNotCountForBeingOpenedAgain() {
+        let dayOpened = calendar.at(2026, 9, 15)
+        let reopened = Fixtures.progress(completed: true,
+                                         lastPlayedAt: calendar.at(2026, 9, 15, 9),
+                                         lastCompletedAt: calendar.at(2026, 8, 20, 19))
+
+        #expect(!ProgramUnlockRule.counts(reopened, towardDayUnlockedAt: dayOpened))
+    }
 }

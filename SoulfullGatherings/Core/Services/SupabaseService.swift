@@ -1582,6 +1582,8 @@ private struct PracticeProgressRow: Decodable {
     let completed: Bool
     let playCount: Int
     let lastPlayedAt: Date
+    /// Since 0029. Optional so a database without it still decodes.
+    let lastCompletedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case creator, category, completed
@@ -1593,6 +1595,7 @@ private struct PracticeProgressRow: Decodable {
         case totalSecondsPlayed = "total_seconds_played"
         case playCount          = "play_count"
         case lastPlayedAt       = "last_played_at"
+        case lastCompletedAt    = "last_completed_at"
     }
 
     var progress: PracticeProgress {
@@ -1607,7 +1610,11 @@ private struct PracticeProgressRow: Decodable {
             totalSecondsPlayed: totalSecondsPlayed,
             completed: completed,
             playCount: playCount,
-            lastPlayedAt: lastPlayedAt
+            lastPlayedAt: lastPlayedAt,
+            // Without 0029's column, the last open stands in for the last
+            // finish — the rule the app ran on before it. With it, a finished
+            // practice always has one (0029 backfilled them).
+            lastCompletedAt: lastCompletedAt ?? (completed ? lastPlayedAt : nil)
         )
     }
 }
