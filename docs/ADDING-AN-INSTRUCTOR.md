@@ -97,7 +97,8 @@ update public.instructors
 ```
 
 **Linking replaces the guide's name with the account's** (0027). From then on
-the name lives on the member's profile (`profiles.full_name`): renaming the
+the name lives on the member's profile (`profiles.first_name` / `last_name`,
+which the server joins into `full_name`, 0033): renaming the
 member renames the guide and the `lead` on their sessions and digital
 retreats, and editing the guide's name in the dashboard is reverted. A guide's
 name is public in full, where Community shows members as "First L.". An

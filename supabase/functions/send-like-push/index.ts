@@ -78,19 +78,22 @@ Deno.serve(async (req) => {
     if (blocks && blocks.length > 0) return json({ sent: 0, reason: "blocked" });
   }
 
-  // The liker as every member sees them ("Hugo D.", or "A member" for an
-  // objectionable name): the same `community_display_name()` the views use.
+  // The liker as every member sees them ("Mary Ann S.", or "A member" for an
+  // objectionable name): the same `community_display_name()` the views use,
+  // from the name's two parts (0033). Deploy only after 0033 is applied: before
+  // it, the select fails and every push says "Someone".
   // A deleted account (actor_id null) stays "Someone".
   let actorName: string | null = null;
   if (note.actor_id) {
     const { data: profile } = await admin
       .from("profiles")
-      .select("full_name")
+      .select("first_name, last_name")
       .eq("id", note.actor_id)
       .maybeSingle();
     if (profile) {
       const { data: shown } = await admin.rpc("community_display_name", {
-        full_name: profile.full_name,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
       });
       if (typeof shown === "string") actorName = shown;
     }
